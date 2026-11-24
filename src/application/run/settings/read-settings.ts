@@ -158,15 +158,17 @@ const withNamedSource = (request: {
   const { ruleSet, catalogue } = request.held;
   if (ruleSet === TOOL_RULE_SET) return request.held;
   const location = request.ruleSets.find(({ name }) => name === ruleSet.name)?.location;
+  const folder = location?.location === "folder" ? location.path : undefined;
   const symptoms = catalogue.symptoms.map((symptom): Symptom =>
-    location?.location === "folder" && symptom.sourceFile !== undefined
-      ? { ...symptom, sourceFile: `${location.path}/${symptom.sourceFile}` }
+    folder !== undefined && symptom.sourceFile !== undefined
+      ? { ...symptom, sourceFile: `${folder}/${symptom.sourceFile}` }
       : symptom,
   );
   const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
   const checks = catalogue.checks.map((check) => ({
     ...check,
     symptom: byName.get(check.symptom.name) ?? check.symptom,
+    page: folder === undefined ? check.page : `${folder}/${check.page}`,
   }));
   return { ruleSet, catalogue: { ...catalogue, symptoms, checks } };
 };

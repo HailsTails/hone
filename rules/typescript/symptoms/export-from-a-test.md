@@ -1,4 +1,4 @@
-# Export from a test file
+# Export from a test
 
 ```json
 {

@@ -133,7 +133,7 @@ const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames 
 });
 
 export const checksNamedFor = (request: {
-  readonly names: VersionOneNames;
+  readonly names: Pick<VersionOneNames, "namedClauses">;
   readonly clause: ClauseAddress;
 }): readonly CheckNames[] =>
   request.names.namedClauses.flatMap((named) => {

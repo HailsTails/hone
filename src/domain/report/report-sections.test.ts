@@ -195,6 +195,7 @@ describe("runVerdictOf", () => {
     const castExpressions: Check = {
       name: "cast-expressions",
       symptom: CLAIMED_TYPE,
+      page: "claimed-type/cast-expressions.md",
       clause: {
         ruleSet: TOOL_RULE_SET,
         discipline: disciplineIdOf("CD-2"),

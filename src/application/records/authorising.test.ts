@@ -121,6 +121,7 @@ const CLAIMED_TYPE: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
@@ -212,7 +213,7 @@ const editorAdding = (request: {
 
 const readerRefusing = (
   refused: readonly { readonly place: RecordPlace; readonly refusals: readonly RecordRefusal[] }[],
-): RecordsReader => ({
+): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {

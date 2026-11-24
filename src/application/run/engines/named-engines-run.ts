@@ -1,7 +1,10 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
+import type { Conventions } from "../../../domain/settings/conventions.ts";
+import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
 import type {
   NamedEngineCall,
   NamedEngineFailure,
@@ -14,10 +17,15 @@ import type {
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
 import { type CheckedTree, typescriptFilesOf } from "../checked-tree-of.ts";
-import type { NamedSettingsReading } from "../settings/read-settings.ts";
+
+export type EngineSettings = {
+  readonly selection: { readonly selected: readonly { readonly binding: CheckBinding }[] };
+  readonly eslintConfigLookup: EslintConfigLookupChoice;
+  readonly conventions: Pick<Conventions, "testFiles">;
+};
 
 export type NamedEnginesRequest = Omit<RunnerLocation, "mechanism"> & {
-  readonly settings: NamedSettingsReading;
+  readonly settings: EngineSettings;
   readonly repoRoot: AbsolutePath;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];

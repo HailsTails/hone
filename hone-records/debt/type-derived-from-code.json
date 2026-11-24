@@ -11,7 +11,7 @@
     },
     {
       "answers": "type-derived-from-code#factory-return-types",
-      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test-body/assertion-site/assertion-site.ts"
     },
     {
       "answers": "type-derived-from-code#factory-return-types",

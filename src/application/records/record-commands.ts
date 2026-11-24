@@ -41,7 +41,7 @@ export type RecordDebtPorts = {
   readonly catalogue: SymptomCatalogue;
   readonly source: Pick<RecordsSource, "read">;
   readonly store: RecordsStore;
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded" | "documentsWithRepointed">;
 };
 

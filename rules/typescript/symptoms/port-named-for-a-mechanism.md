@@ -27,7 +27,7 @@
     "person"
   ],
   "recipes": [
-    "port-in-the-domain"
+    "port-in-a-module-of-its-own"
   ],
   "correctUses": []
 }

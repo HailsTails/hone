@@ -230,6 +230,7 @@ const CLAIMED_TYPE: Symptom = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
@@ -238,6 +239,7 @@ const CLOCK_CHECK: Check = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
@@ -344,7 +346,7 @@ const storeOf = () => {
 
 const readerRefusing = (request: {
   readonly refused: readonly RefusedRecord[];
-}): RecordsReader => ({
+}): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {
@@ -356,7 +358,9 @@ const readerRefusing = (request: {
   }),
 });
 
-const readerHolding = (request: { readonly records: readonly PlacedRecord[] }): RecordsReader => ({
+const readerHolding = (request: {
+  readonly records: readonly PlacedRecord[];
+}): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {

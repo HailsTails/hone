@@ -147,6 +147,7 @@ const CLAIMED_TYPE: Symptom = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-17"),
@@ -159,6 +160,7 @@ const CLOCK_CHECK: Check = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),

@@ -231,6 +231,36 @@ describe("proofWritesAppliedOf", () => {
       failure: { kind: "unwritable", path: CONFIG, detail: "EPERM" },
       attempted: [{ kind: "file-replaced", path: CONFIG, original: ORIGINAL_CONFIG }],
     },
+    {
+      name: "a file that cannot be removed",
+      stopped: {
+        effect: { kind: "remove-restorable-file", path: CONFIG, original: ORIGINAL_CONFIG },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: CONFIG, detail: "EBUSY" },
+      attempted: [],
+    },
+    {
+      name: "a file that cannot be removed for good",
+      stopped: {
+        effect: { kind: "remove-file", path: CONFIG },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: CONFIG, detail: "EBUSY" },
+      attempted: [],
+    },
+    {
+      name: "a folder that cannot be removed",
+      stopped: {
+        effect: { kind: "remove-directory-if-empty", path: DEBT_FOLDER },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: DEBT_FOLDER, detail: "EBUSY" },
+      attempted: [],
+    },
   ] as const)("stops at $name", ({ stopped, failure, attempted }) => {
     expect(
       proofWritesAppliedOf({
@@ -245,6 +275,39 @@ describe("proofWritesAppliedOf", () => {
       failure,
       attempted: [{ kind: "directory-created", path: REPO }, ...attempted],
     });
+  });
+});
+
+describe("proofWritesAppliedOf on a removal", () => {
+  it("records a removed file with its original, so undoing it puts the file back", () => {
+    const applied = proofWritesAppliedOf({
+      applied: {
+        outcome: "all-applied",
+        settled: [
+          {
+            effect: { kind: "remove-restorable-file", path: CONFIG, original: ORIGINAL_CONFIG },
+            outcome: "applied",
+          },
+          { effect: { kind: "remove-directory-if-empty", path: DEBT_FOLDER }, outcome: "applied" },
+        ],
+      },
+    });
+
+    expect(applied).toEqual({
+      outcome: "written",
+      writes: [{ kind: "file-removed", path: CONFIG, original: ORIGINAL_CONFIG }],
+    });
+  });
+
+  it("records nothing for a final removal, since it cannot be undone", () => {
+    const applied = proofWritesAppliedOf({
+      applied: {
+        outcome: "all-applied",
+        settled: [{ effect: { kind: "remove-file", path: CONFIG }, outcome: "applied" }],
+      },
+    });
+
+    expect(applied).toEqual({ outcome: "written", writes: [] });
   });
 });
 

@@ -36,7 +36,7 @@ const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-give
 
 export type PlannedProjectionPorts = {
   readonly directory: DirectoryPort;
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly boundCatalogueOf: BoundCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
@@ -82,7 +82,7 @@ const settingsReadingOf = (
 };
 
 const recordsReadingFor = (request: {
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly documents: readonly MappedRecordsDocument[];
   readonly catalogue: SymptomCatalogue;
 }): Result<RecordsReading, ProjectionFailure> => {

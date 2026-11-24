@@ -3,6 +3,7 @@ import type { RecordsEditor } from "../application/ports/records/records-editor.
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
 import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
+import type { CurrentNamesUpgrade } from "../application/ports/upgrade/current-names-upgrade.ts";
 import {
   authoriseOf,
   pruneDebtOf,
@@ -15,6 +16,7 @@ import {
   type VersionTwoStages,
   versionTwoRunOver,
 } from "../application/run/version-two-run.ts";
+import * as currentNamesUpgrade from "../application/upgrade/current-names/current-names-upgrade.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
@@ -42,7 +44,10 @@ export type VersionTwoRecordInput = {
 };
 
 const recordFailureOf = <Value>(request: {
-  readonly recorded: Result<Value, RecordCommandFailure>;
+  readonly recorded: Result<
+    Value,
+    RecordCommandFailure | currentNamesUpgrade.CurrentNamesUpgradeFailure
+  >;
 }): Result<Value, RunLoadFailure> =>
   request.recorded.outcome === "failed"
     ? {
@@ -143,6 +148,32 @@ export const versionTwoAuthoriseOf = (
         recordsEditor: request.recordsEditor,
       },
       request: request.authorising,
+    }),
+  });
+};
+
+export const writeCurrentNames = (
+  request: VersionTwoRecordInput &
+    Pick<
+      currentNamesUpgrade.CurrentNamesUpgradePorts,
+      "fileText" | "settingsPath" | "settingsFormat" | "effects"
+    >,
+): Result<CurrentNamesUpgrade, RunLoadFailure> => {
+  const catalogue = request.stages.catalogue();
+  if (catalogue.outcome === "failed") {
+    return catalogue;
+  }
+  return recordFailureOf({
+    recorded: currentNamesUpgrade.writeCurrentNames({
+      ports: {
+        source: request.recordsSourceFor({ catalogue: catalogue.value }),
+        recordsReader: request.recordsReader,
+        fileText: request.fileText,
+        repoRoot: request.repoRoot,
+        settingsPath: request.settingsPath,
+        settingsFormat: request.settingsFormat,
+        effects: request.effects,
+      },
     }),
   });
 };

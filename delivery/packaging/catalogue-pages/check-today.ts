@@ -1,9 +1,10 @@
 import { clauseAddressText } from "../../../src/domain/rule-set/clause-address.ts";
-import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import type {
+  CatalogueFile,
+  SymptomWire,
+} from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 
 export type CheckToday = "reuse" | "partial" | "only review" | "review" | "new";
-
-type Symptom = CatalogueFile["symptoms"][number];
 
 type Sight = CatalogueFile["clauses"][number]["sight"];
 
@@ -23,7 +24,7 @@ const symptomsSeenBy = (request: { readonly sight: Sight }): readonly string[] =
 
 const reviewedBy = (request: {
   readonly file: CatalogueFile;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomWire;
 }): "a review clause" | "no review clause" => {
   const checkedClauses = new Set(
     request.file.checks.flatMap(({ clause }) =>
@@ -41,7 +42,7 @@ const reviewedBy = (request: {
 
 export const checkTodayOf = (request: {
   readonly file: CatalogueFile;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomWire;
 }): CheckToday => {
   const checks = request.file.checks.filter((check) => check.symptom === request.symptom.name);
   if (checks.length > 0) {

@@ -17,6 +17,7 @@ import {
   VERSION_TWO_PROJECT,
   VERSION_TWO_PRUNE_DEBT,
   VERSION_TWO_RECORD_DEBT,
+  CURRENT_NAMES_UPGRADE,
 } from "./commands.ts";
 import {
   type CommandHandler,
@@ -26,7 +27,7 @@ import {
 } from "./composed-command.ts";
 import { installedPortsOver } from "./installed-ports.ts";
 import type { ToolPorts } from "./tool-ports.ts";
-import { alreadyUpgradedCommand, UPGRADE } from "./upgrade-command.ts";
+import { UPGRADE } from "./upgrade-command.ts";
 import {
   notReadyCommandOf,
   settingsRequiringCommandOf,
@@ -70,7 +71,7 @@ export const toolSubcommandsOf = (ports: ToolPorts): Subcommands => ({
   upgrade: settingsRequiringCommandOf({
     ports,
     versionOne: commandOf({ tool: UPGRADE, ports }),
-    versionTwo: alreadyUpgradedCommand,
+    versionTwo: commandOf({ tool: CURRENT_NAMES_UPGRADE, ports }),
   }),
 });
 

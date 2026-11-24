@@ -98,6 +98,7 @@ const FAILURES_AS_VALUES: Recipe = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER],
   forms: [],
@@ -106,6 +107,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
@@ -114,6 +116,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
@@ -134,8 +137,8 @@ const CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -157,9 +160,23 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-describe("checkAddressOf", () => {
-  type AddressRow = { readonly name: string; readonly check: Check; readonly address: string };
+type AddressRow = { readonly name: string; readonly check: Check; readonly address: string };
 
+type AddressedRow = { readonly address: string; readonly check: Check };
+
+type ClauseRow = {
+  readonly name: string;
+  readonly clause: ClauseAddress;
+  readonly checks: readonly Check[];
+};
+
+type NotOfTheClauseRow = {
+  readonly name: string;
+  readonly clause: ClauseAddress;
+  readonly address: string;
+};
+
+describe("checkAddressOf", () => {
   it.each<AddressRow>([
     {
       name: "a check that is its clause's only check",
@@ -177,9 +194,7 @@ describe("checkAddressOf", () => {
 });
 
 describe("checkAt", () => {
-  type FoundRow = { readonly address: string; readonly check: Check };
-
-  it.each<FoundRow>([
+  it.each<AddressedRow>([
     { address: "loop-keyword#loops", check: LOOP_KEYWORD_LOOPS },
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },
     { address: "rebinding#test-body", check: REBINDING_TEST_BODY },
@@ -198,12 +213,6 @@ describe("checkAt", () => {
 });
 
 describe("checksOf", () => {
-  type ClauseRow = {
-    readonly name: string;
-    readonly clause: ClauseAddress;
-    readonly checks: readonly Check[];
-  };
-
   it.each<ClauseRow>([
     { name: "a clause that sees one symptom", clause: LOOPS_CLAUSE, checks: [LOOP_KEYWORD_LOOPS] },
     {
@@ -265,7 +274,7 @@ describe("checkNamedAt", () => {
     ).toEqual({ named: "unnamed" });
   });
 
-  it.each<{ readonly address: string; readonly check: Check }>([
+  it.each<AddressedRow>([
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },
     { address: "rebinding#test-body", check: REBINDING_TEST_BODY },
   ])("is the check $address when the clause has it", ({ address, check }) => {
@@ -275,7 +284,7 @@ describe("checkNamedAt", () => {
     });
   });
 
-  it.each<{ readonly name: string; readonly clause: ClauseAddress; readonly address: string }>([
+  it.each<NotOfTheClauseRow>([
     { name: "a check of another clause", clause: LOOPS_CLAUSE, address: "rebinding#test-body" },
     { name: "a check no clause has", clause: TEST_BODY_CLAUSE, address: "rebinding#loops" },
     {

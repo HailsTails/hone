@@ -12,8 +12,10 @@ import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { DEFAULT_TEST_FILES } from "../../../domain/settings/test-files.ts";
 import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
+import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
 import {
   createNamedVersionOneEnginePass,
   type NamedVersionOnePassRequest,
@@ -69,6 +71,7 @@ const LOOP: Check = {
     recipes: [],
     correctUses: [],
   },
+  page: "loop-keyword/loops.md",
   clause: CLAUSE,
   engines: [{ name: "walker" }],
   forms: [],
@@ -144,6 +147,30 @@ const WALKER_PIECE = {
   editions: { declared: [FIRST], default: FIRST, latest: FIRST },
 } as const;
 
+const ACME = { name: ruleSetNameOf("acme") };
+
+const TEAM_LOOP: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: ACME } };
+
+const LOOP_BINDING: CheckBinding = {
+  address: "loop-keyword#loops",
+  ruleSet: TOOL_RULE_SET,
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/walker/loop-keyword/loops",
+  settings: {},
+  forms: {},
+  checkSettings: {},
+  edition: FIRST,
+};
+
+const WALKER_LOCATION: RunnerLocation = {
+  installRoot: INSTALL,
+  mechanism: "walker",
+  moduleExtension: ".ts",
+  path: INPUT.path,
+  modules: INPUT.modules,
+};
+
 describe("createNamedVersionOneEnginePass", () => {
   it("refuses a legacy selection whose clause cannot be matched to a named check", async () => {
     const pass = createNamedVersionOneEnginePass(INPUT);
@@ -193,20 +220,12 @@ describe("createNamedVersionOneEnginePass", () => {
     expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
       call: { mechanism: "walker", runner: RUNNER, request: expect.anything() },
       projection: PROJECTION,
-      location: {
-        installRoot: INSTALL,
-        mechanism: "walker",
-        moduleExtension: ".ts",
-        path: INPUT.path,
-        modules: INPUT.modules,
-      },
+      location: WALKER_LOCATION,
     });
     expect(engine.run).not.toHaveBeenCalled();
   });
 
   it("sends a team rule set's checks with their own rule set", async () => {
-    const acme = { name: ruleSetNameOf("acme") };
-    const teamLoop: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: acme } };
     const measureVersionOne = vi
       .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
       .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
@@ -220,8 +239,8 @@ describe("createNamedVersionOneEnginePass", () => {
       catalogues: [
         { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
         {
-          ruleSet: acme,
-          catalogue: { ...CATALOGUE, symptoms: [teamLoop.symptom], checks: [teamLoop] },
+          ruleSet: ACME,
+          catalogue: { ...CATALOGUE, symptoms: [TEAM_LOOP.symptom], checks: [TEAM_LOOP] },
         },
       ],
       sources: {
@@ -247,33 +266,15 @@ describe("createNamedVersionOneEnginePass", () => {
           installRoot: INSTALL,
           files: [],
           trackedPaths: [],
-          bindings: [
-            {
-              address: "loop-keyword#loops",
-              ruleSet: TOOL_RULE_SET,
-              engine: "walker",
-              anchor: { kind: "file" },
-              pieceRoot: "/install/walker/loop-keyword/loops",
-              settings: {},
-              forms: {},
-              checkSettings: {},
-              edition: FIRST,
-            },
-          ],
-          checks: [LOOP, teamLoop],
+          bindings: [LOOP_BINDING],
+          checks: [LOOP, TEAM_LOOP],
           answered: [],
           declaredConfigRoots: [],
           testFiles: DEFAULT_TEST_FILES,
         },
       },
       projection: PROJECTION,
-      location: {
-        installRoot: INSTALL,
-        mechanism: "walker",
-        moduleExtension: ".ts",
-        path: INPUT.path,
-        modules: INPUT.modules,
-      },
+      location: WALKER_LOCATION,
     });
   });
 });

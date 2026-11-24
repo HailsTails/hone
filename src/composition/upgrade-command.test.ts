@@ -9,12 +9,7 @@ import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { commandOf } from "./composed-command.ts";
-import {
-  alreadyUpgradedCommand,
-  foundTreeStagesOf,
-  UPGRADE,
-  type UpgradeCommandPorts,
-} from "./upgrade-command.ts";
+import { foundTreeStagesOf, UPGRADE, type UpgradeCommandPorts } from "./upgrade-command.ts";
 
 const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "walker" } }';
 
@@ -29,9 +24,9 @@ const PORTS = {
   entryKind: { kindOf: vi.fn() },
   foundTreeRecordsSourceOf: vi.fn(),
   loadFailureDetail: vi.fn(),
-  recordsReader: { recordsReadingOf: vi.fn() },
+  recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
   boundCatalogueOf: vi.fn(),
-  settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
+  settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn(), renameKeys: vi.fn() },
   settingsSourcesOf: vi.fn(),
   checkPieceSourceOf: vi.fn(),
   namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
@@ -104,17 +99,6 @@ describe("the upgrade command", () => {
       [{ text: "load failure: git-failed git ls-files: not a git repository\n" }],
     ]);
     expect(vi.mocked(command.process.exitWith).mock.calls).toEqual([[{ code: 2 }]]);
-  });
-});
-
-describe("alreadyUpgradedCommand", () => {
-  it("says the repository is already on version 2 and exits 0", async () => {
-    const command = commandWith({ arguments: ["--repo", "/repo"], git: gitListing(GIT_FAILED) });
-    await alreadyUpgradedCommand(command);
-    expect(vi.mocked(command.process.writeOut).mock.calls).toEqual([
-      [{ text: "already on version 2; nothing to upgrade\n" }],
-    ]);
-    expect(vi.mocked(command.process.exitWith).mock.calls).toEqual([[{ code: 0 }]]);
   });
 });
 

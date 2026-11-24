@@ -78,7 +78,7 @@ const firstPieceFrom = (
 
 export const firstInstalledPieceFor = (
   request: InstallFiles & {
-    readonly names: VersionOneNames;
+    readonly names: Pick<VersionOneNames, "namedClauses">;
     readonly clause: ClauseAddress;
     readonly mechanism: EngineId;
   },
@@ -86,7 +86,7 @@ export const firstInstalledPieceFor = (
 
 export const installedPiecesFor = (
   request: InstallFiles & {
-    readonly names: VersionOneNames;
+    readonly names: Pick<VersionOneNames, "namedClauses">;
     readonly clause: ClauseAddress;
     readonly mechanisms: readonly EngineId[];
   },
@@ -101,7 +101,9 @@ export const installedPiecesFor = (
 };
 
 export const catalogueClausesOf = (
-  request: InstallFiles & { readonly names: VersionOneNames },
+  request: InstallFiles & {
+    readonly names: Pick<VersionOneNames, "clauses" | "claimsPieceForms" | "namedClauses">;
+  },
 ): Result<CatalogueFile["clauses"], VersionTwoLoadFailure> => {
   const forms = everyOk({
     entries: request.names.claimsPieceForms,
@@ -126,13 +128,13 @@ export const catalogueClausesOf = (
       );
       const unknown = forms.find(([, check]) => !names.has(checkAddressOfNames(check)));
       if (unknown !== undefined) {
-        const [section, check] = unknown;
+        const [form, check] = unknown;
         return {
           outcome: "failed",
           error: {
             kind: "file-malformed",
             path: first.value.piece.declarationPath,
-            detail: `form ${section} names unregistered check ${checkAddressOfNames(check)}`,
+            detail: `form ${form} names unregistered check ${checkAddressOfNames(check)}`,
           },
         };
       }
@@ -142,7 +144,7 @@ export const catalogueClausesOf = (
           clause,
           sight: {
             kind: "symptom-by-form",
-            forms: forms.map(([section, { symptom }]) => ({ section, symptom })),
+            forms: forms.map(([form, { symptom }]) => ({ form, symptom })),
           },
         },
       };

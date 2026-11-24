@@ -6,6 +6,8 @@ import type {
   DirectoryEntry,
   DirectoryPort,
 } from "../application/ports/file-system/directory-port.ts";
+import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -42,6 +44,7 @@ import type { CheckHit, CheckNativeException } from "../domain/runner/check-obse
 import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
+import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
@@ -51,6 +54,7 @@ import {
   AUTHORISE,
   VERSION_TWO_PRUNE_DEBT,
   VERSION_TWO_RECORD_DEBT,
+  CURRENT_NAMES_UPGRADE,
   type VersionTwoRecordPorts,
 } from "./commands.ts";
 import { commandOf } from "./composed-command.ts";
@@ -78,6 +82,15 @@ const versionTwoAuthoriseCommandOf =
   (ports: Omit<VersionTwoRecordPorts, keyof CommandRequest>) => (command: CommandRequest) => {
     const authoriseCommand = commandOf({ tool: AUTHORISE, ports: { ...command, ...ports } });
     return authoriseCommand(command);
+  };
+
+const createUpgradeCommand =
+  (ports: Omit<VersionTwoRecordPorts, keyof CommandRequest>) => (command: CommandRequest) => {
+    const upgradeCommand = commandOf({
+      tool: CURRENT_NAMES_UPGRADE,
+      ports: { ...command, ...ports },
+    });
+    return upgradeCommand(command);
   };
 
 const recordsFolderPorts = (request: {
@@ -311,9 +324,9 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
@@ -378,7 +391,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -420,6 +433,7 @@ const CAST_EXPRESSIONS = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
@@ -428,6 +442,7 @@ const CLOCK_CHECK: Check = {
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
   symptom: BRANCH_IN_A_TEST,
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
@@ -436,6 +451,7 @@ const TEST_BODY_CHECK: Check = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
@@ -451,7 +467,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
@@ -461,7 +477,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
       },
     },
     { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
@@ -637,6 +653,9 @@ const ranWith = async (request: {
 }) => {
   const { held } = request;
   const stagesOver = vi.fn<StagesOver>().mockReturnValue(request.stages);
+  const createNew = vi
+    .fn<FileCreationPort["createNew"]>()
+    .mockReturnValue({ outcome: "ok", value: undefined });
   const process = {
     arguments: request.arguments,
     writeOut: vi.fn<ProcessPort["writeOut"]>(),
@@ -648,11 +667,14 @@ const ranWith = async (request: {
     gitTree: gitTreeStub(),
     directory: held.directory,
     fileRemoval: held.fileRemoval,
+    fileCreation: { createNew },
+    directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
     recordsSourceOf: createRecordsFolder,
     settingsSourcesOf: createSettingsSources,
     stagesOver,
     recordsReader,
     recordsEditor,
+    settingsFormat: SETTINGS_FILE_FORMAT,
   });
   await command(commandOver({ process, fileText: held.fileText }));
   return {
@@ -660,6 +682,7 @@ const ranWith = async (request: {
     exits: process.exitWith.mock.calls,
     written: vi.mocked(held.fileText.write).mock.calls,
     removed: vi.mocked(held.fileRemoval.remove).mock.calls,
+    created: createNew.mock.calls,
     stagesOver,
   };
 };
@@ -1431,5 +1454,84 @@ describe("versionTwoAuthoriseCommandOf", () => {
       exits: [[{ code: 2 }]],
     });
     expect(ran.stagesOver).not.toHaveBeenCalled();
+  });
+});
+
+describe("createUpgradeCommand", () => {
+  const FORMER_DOCUMENT =
+    '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "export-from-a-test-file#test-file-export",\n      "file": "src/a.test.ts"\n    }\n  ]\n}\n';
+
+  const CURRENT_DOCUMENT =
+    '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "export-from-a-test#test-file-export",\n      "file": "src/a.test.ts"\n    }\n  ]\n}\n';
+
+  it("moves a record filed under a former symptom name to its current name without reading the settings, printing the move, exit 0", async () => {
+    const stages = stagesGiving({});
+    const ran = await ranWith({
+      handler: createUpgradeCommand,
+      arguments: ["--repo", "/repo"],
+      stages,
+      held: recordsFolderPorts({
+        exists: "present",
+        folders: [{ name: "debt", kind: "directory" }],
+        files: [{ name: "export-from-a-test-file.json", kind: "file" }],
+        text: FORMER_DOCUMENT,
+      }),
+    });
+    expect({
+      writes: ran.writes,
+      exits: ran.exits,
+      created: ran.created,
+      removed: ran.removed,
+      settingsRead: vi.mocked(stages.settings).mock.calls,
+    }).toEqual({
+      writes: [
+        [
+          {
+            text: "renamed hone-records/debt/export-from-a-test-file.json -> hone-records/debt/export-from-a-test.json (1 record)\n",
+          },
+        ],
+      ],
+      exits: [[{ code: 0 }]],
+      created: [
+        [{ path: "/repo/hone-records/debt/export-from-a-test.json", text: CURRENT_DOCUMENT }],
+      ],
+      removed: [[{ path: "/repo/hone-records/debt/export-from-a-test-file.json" }]],
+      settingsRead: [],
+    });
+  });
+
+  it("says the repository is already on version 2, writing nothing, when no record uses a former name", async () => {
+    const ran = await ranWith({
+      handler: createUpgradeCommand,
+      arguments: ["--repo", "/repo"],
+      stages: stagesGiving({}),
+      held: debtHeld({ text: DEBT_DOCUMENT }),
+    });
+    expect({
+      writes: ran.writes,
+      exits: ran.exits,
+      written: ran.written,
+    }).toEqual({
+      writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
+      exits: [[{ code: 0 }]],
+      written: [],
+    });
+  });
+
+  it("prints the load failure line and exits 2 when Hone's catalogue cannot be read", async () => {
+    const ran = await ranWith({
+      handler: createUpgradeCommand,
+      arguments: ["--repo", "/repo"],
+      stages: stagesGiving({
+        catalogue: vi
+          .fn<VersionTwoStages["catalogue"]>()
+          .mockReturnValue({ outcome: "failed", error: CONFIG_ABSENT }),
+      }),
+      held: nothingHeld(),
+    });
+    expect({ writes: ran.writes, exits: ran.exits }).toEqual({
+      writes: [[{ text: CONFIG_ABSENT_LINE }]],
+      exits: [[{ code: 2 }]],
+    });
   });
 });

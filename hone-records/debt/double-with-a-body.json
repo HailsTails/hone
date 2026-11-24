@@ -39,10 +39,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {
@@ -83,27 +79,11 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/application/run/engines/named-engines-run.test.ts"
     },
     {
       "answers": "double-with-a-body#stub-implementation",
       "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/engines/piece-engines.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#stub-implementation",
-      "file": "src/infrastructure/engines/piece-engines.test.ts"
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",

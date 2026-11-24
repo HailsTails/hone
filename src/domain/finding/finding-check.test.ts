@@ -121,9 +121,9 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
@@ -186,7 +186,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -228,6 +228,7 @@ const CAST_EXPRESSIONS = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
@@ -236,6 +237,7 @@ const CLOCK_CHECK: Check = {
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
   symptom: BRANCH_IN_A_TEST,
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
@@ -244,6 +246,7 @@ const TEST_BODY_CHECK: Check = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
@@ -259,7 +262,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
@@ -269,7 +272,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
       },
     },
     { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
@@ -292,6 +295,7 @@ const findingOf = (
 const ANGLE_BRACKETS_CHECK: Check = {
   name: "angle-brackets",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/angle-brackets.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
@@ -304,8 +308,7 @@ const TWO_CAST_CHECKS: SymptomCatalogue = {
 
 const BRANCH_REMEDY: CheckFinding["remedy"] = {
   fix: "write one test per case",
-  page: CHECKS_PAGE,
-  section: "branching-with-if",
+  form: "branching-with-if",
 };
 
 type Row = {
@@ -315,81 +318,79 @@ type Row = {
   readonly resolved: FindingCheck;
 };
 
-const ROWS: readonly Row[] = [
-  {
-    name: "a finding naming a check its engine measures resolves to that check",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({
-      mechanism: ESLINT,
-      check: "claimed-type#cast-expressions",
-    }),
-    resolved: { resolved: "check", check: CAST_CHECK, engine: ESLINT_ENGINE },
-  },
-  {
-    name: "a finding naming one of two checks of a symptom resolves to the one it names",
-    catalogue: TWO_CAST_CHECKS,
-    finding: findingOf({
-      mechanism: ESLINT,
-      check: "claimed-type#angle-brackets",
-    }),
-    resolved: { resolved: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE },
-  },
-  {
-    name: "a finding naming a check its engine does not measure resolves to nothing",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({
-      mechanism: AUDIT,
-      check: "claimed-type#cast-expressions",
-    }),
-    resolved: { resolved: "none" },
-  },
-  {
-    name: "a finding naming an unregistered check resolves to nothing",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({
-      mechanism: ESLINT,
-      check: "claimed-type#loops",
-    }),
-    resolved: { resolved: "none" },
-  },
-  {
-    name: "a Walker finding with a named check resolves to its catalogue entry",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: AUDIT }),
-    resolved: { resolved: "check", check: CLOCK_CHECK, engine: WALKER },
-  },
-  {
-    name: "a finding with a remedy resolves by its check address",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({
-      check: "branch-in-a-test#test-body",
-      mechanism: AUDIT,
-      remedy: BRANCH_REMEDY,
-    }),
-    resolved: { resolved: "check", check: TEST_BODY_CHECK, engine: WALKER },
-  },
-  {
-    name: "a finding naming a missing check for a known symptom resolves to nothing",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ check: "branch-in-a-test#missing", mechanism: AUDIT }),
-    resolved: { resolved: "none" },
-  },
-  {
-    name: "a finding from the wrong engine does not resolve by its symptom alone",
-    catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: ESLINT }),
-    resolved: { resolved: "none" },
-  },
-  {
-    name: "a missing check does not resolve to another check of the same symptom",
-    catalogue: TWO_CAST_CHECKS,
-    finding: findingOf({ check: "claimed-type#unknown", mechanism: ESLINT }),
-    resolved: { resolved: "none" },
-  },
-];
-
 describe("checkOfFinding", () => {
-  it.each(ROWS)("$name", ({ catalogue, finding, resolved }) => {
+  it.each<Row>([
+    {
+      name: "a finding naming a check its engine measures resolves to that check",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({
+        mechanism: ESLINT,
+        check: "claimed-type#cast-expressions",
+      }),
+      resolved: { resolved: "check", check: CAST_CHECK, engine: ESLINT_ENGINE },
+    },
+    {
+      name: "a finding naming one of two checks of a symptom resolves to the one it names",
+      catalogue: TWO_CAST_CHECKS,
+      finding: findingOf({
+        mechanism: ESLINT,
+        check: "claimed-type#angle-brackets",
+      }),
+      resolved: { resolved: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE },
+    },
+    {
+      name: "a finding naming a check its engine does not measure resolves to nothing",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({
+        mechanism: AUDIT,
+        check: "claimed-type#cast-expressions",
+      }),
+      resolved: { resolved: "none" },
+    },
+    {
+      name: "a finding naming an unregistered check resolves to nothing",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({
+        mechanism: ESLINT,
+        check: "claimed-type#loops",
+      }),
+      resolved: { resolved: "none" },
+    },
+    {
+      name: "a Walker finding with a named check resolves to its catalogue entry",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: AUDIT }),
+      resolved: { resolved: "check", check: CLOCK_CHECK, engine: WALKER },
+    },
+    {
+      name: "a finding with a remedy resolves by its check address",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({
+        check: "branch-in-a-test#test-body",
+        mechanism: AUDIT,
+        remedy: BRANCH_REMEDY,
+      }),
+      resolved: { resolved: "check", check: TEST_BODY_CHECK, engine: WALKER },
+    },
+    {
+      name: "a finding naming a missing check for a known symptom resolves to nothing",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({ check: "branch-in-a-test#missing", mechanism: AUDIT }),
+      resolved: { resolved: "none" },
+    },
+    {
+      name: "a finding from the wrong engine does not resolve by its symptom alone",
+      catalogue: REPORT_CATALOGUE,
+      finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: ESLINT }),
+      resolved: { resolved: "none" },
+    },
+    {
+      name: "a missing check does not resolve to another check of the same symptom",
+      catalogue: TWO_CAST_CHECKS,
+      finding: findingOf({ check: "claimed-type#unknown", mechanism: ESLINT }),
+      resolved: { resolved: "none" },
+    },
+  ])("$name", ({ catalogue, finding, resolved }) => {
     expect(checkOfFinding({ catalogue, finding })).toEqual(resolved);
   });
 });

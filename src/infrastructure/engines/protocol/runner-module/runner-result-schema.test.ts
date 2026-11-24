@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Result } from "../../../../domain/result.ts";
-import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type {
-  CaseVerdict,
-  ProjectionWrite,
-} from "../../../../domain/runner/runner-result-types.ts";
+import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
 import {
   caseVerdictSchema,
   hitSchema,
@@ -32,12 +27,6 @@ const FORTY = "class A {} class B {} class C {} class D";
 const LIMIT_LONG_SNIPPET = `${FORTY}${FORTY}${FORTY}${FORTY}${FORTY}`;
 
 const write = { path: "eslint.config.js", effect: "written" };
-
-const projectionWriteResultSchema = runnerResultSchema({ value: projectionWriteSchema });
-
-type ProjectionWriteResultOutput = NonNullable<
-  (typeof projectionWriteResultSchema)["~standard"]["types"]
->["output"];
 
 describe("hitSchema", () => {
   it("accepts a hit naming a clause address, a repository file, an anchor and a snippet", () => {
@@ -74,16 +63,25 @@ describe("hitSchema", () => {
     expect(hitSchema.safeParse({ ...hit, anchor: { line: 0, column: 5 } }).success).toBe(false);
   });
 
-  it.each([
-    { name: "a page beside the rule", page: "CHECKS.md" },
-    { name: "a page in a folder of the rule", page: "pages/allowed-forms.md" },
-  ])("accepts a hit whose piece names a fix, $name, and the section that shows it", ({ page }) => {
+  it("accepts a hit whose piece names a fix and the form that shows it", () => {
     const remedied = {
       ...hit,
-      remedy: { fix: "write a factory", page, section: "a-class-and-its-factory" },
+      remedy: { fix: "write a factory", form: "a-class-and-its-factory" },
     };
 
     expect(hitSchema.safeParse(remedied)).toEqual({ success: true, data: remedied });
+  });
+
+  it("keeps no page a remedy names, leaving the page to the check", () => {
+    const paged = {
+      ...hit,
+      remedy: { fix: "write a factory", page: "CHECKS.md", form: "a-class-and-its-factory" },
+    };
+
+    expect(hitSchema.safeParse(paged)).toEqual({
+      success: true,
+      data: { ...hit, remedy: { fix: "write a factory", form: "a-class-and-its-factory" } },
+    });
   });
 
   it.each([
@@ -104,36 +102,11 @@ describe("hitSchema", () => {
   });
 
   it.each([
-    { name: "an empty fix", remedy: { fix: "", page: "CHECKS.md", section: "a-class" } },
-    {
-      name: "a section with a space",
-      remedy: { fix: "write a factory", page: "CHECKS.md", section: "a class" },
-    },
-    {
-      name: "a section with a capital",
-      remedy: { fix: "write a factory", page: "CHECKS.md", section: "A-class" },
-    },
-    {
-      name: "a section with a leading hash",
-      remedy: { fix: "write a factory", page: "CHECKS.md", section: "#a-class" },
-    },
-    { name: "no page", remedy: { fix: "write a factory", section: "a-class" } },
-    {
-      name: "a page outside the rule's folder",
-      remedy: { fix: "write a factory", page: "../CD-1/CHECKS.md", section: "a-class" },
-    },
-    {
-      name: "an absolute page",
-      remedy: { fix: "write a factory", page: "/rules/CHECKS.md", section: "a-class" },
-    },
-    {
-      name: "a page with a backslash",
-      remedy: { fix: "write a factory", page: "pages\\CHECKS.md", section: "a-class" },
-    },
-    {
-      name: "a page that is not Markdown",
-      remedy: { fix: "write a factory", page: "CHECKS.html", section: "a-class" },
-    },
+    { name: "an empty fix", remedy: { fix: "", form: "a-class" } },
+    { name: "a form with a space", remedy: { fix: "write a factory", form: "a class" } },
+    { name: "a form with a capital", remedy: { fix: "write a factory", form: "A-class" } },
+    { name: "a form with a leading hash", remedy: { fix: "write a factory", form: "#a-class" } },
+    { name: "no form", remedy: { fix: "write a factory" } },
   ])("refuses a remedy with $name", ({ remedy }) => {
     expect(hitSchema.safeParse({ ...hit, remedy }).success).toBe(false);
   });
@@ -186,7 +159,12 @@ describe("projectionWriteSchema", () => {
 
 describe("runnerResultSchema", () => {
   it("parses an ok envelope carrying its value", () => {
-    expect(projectionWriteResultSchema.safeParse({ outcome: "ok", value: write })).toEqual({
+    expect(
+      runnerResultSchema({ value: projectionWriteSchema }).safeParse({
+        outcome: "ok",
+        value: write,
+      }),
+    ).toEqual({
       success: true,
       data: { outcome: "ok", value: write },
     });
@@ -194,7 +172,7 @@ describe("runnerResultSchema", () => {
 
   it("parses a failed envelope carrying a runner failure", () => {
     expect(
-      projectionWriteResultSchema.safeParse({
+      runnerResultSchema({ value: projectionWriteSchema }).safeParse({
         outcome: "failed",
         error: { kind: "tool-failed", detail: "eslint exited 2" },
       }),
@@ -206,22 +184,19 @@ describe("runnerResultSchema", () => {
 
   it("refuses an ok envelope whose value fails the value schema", () => {
     expect(
-      projectionWriteResultSchema.safeParse({ outcome: "ok", value: "no write" }).success,
+      runnerResultSchema({ value: projectionWriteSchema }).safeParse({
+        outcome: "ok",
+        value: "no write",
+      }).success,
     ).toBe(false);
   });
 
   it("refuses a failed envelope whose error is not a runner failure", () => {
     expect(
-      projectionWriteResultSchema.safeParse({ outcome: "failed", error: { kind: "disk-full" } })
-        .success,
+      runnerResultSchema({ value: projectionWriteSchema }).safeParse({
+        outcome: "failed",
+        error: { kind: "disk-full" },
+      }).success,
     ).toBe(false);
-  });
-
-  it("infers the result type the author contract returns", () => {
-    const sameAsContract: Equal<
-      ProjectionWriteResultOutput,
-      Result<ProjectionWrite, RunnerFailure>
-    > = true;
-    expect(sameAsContract).toBe(true);
   });
 });

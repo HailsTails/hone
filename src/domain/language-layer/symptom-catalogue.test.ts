@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../finding/governance.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import {
   type Case,
+  type ClauseAndRemedy,
   type Principle,
   type Recipe,
   type RecordKind,
@@ -128,8 +128,8 @@ const CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "branching-with-if", symptom: BRANCH_IN_A_TEST },
-          { section: "a-let", symptom: REBINDING },
+          { form: "branching-with-if", symptom: BRANCH_IN_A_TEST },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -156,7 +156,7 @@ const CATALOGUE: SymptomCatalogue = {
 
 type ReadingRow = {
   readonly name: string;
-  readonly finding: Pick<Finding, "clause" | "remedy">;
+  readonly finding: ClauseAndRemedy;
   readonly reading: SymptomReading;
 };
 
@@ -174,14 +174,14 @@ describe("symptomReadingOf", () => {
       reading: { reading: "named", symptom: REBINDING },
     },
     {
-      name: "names the symptom of the form a by-form clause's finding gives as its section",
+      name: "names the symptom of the form a by-form clause's finding gives as its form",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write one test per case", page: "CHECKS.md", section: "branching-with-if" },
+        remedy: { fix: "write one test per case", form: "branching-with-if" },
       },
       reading: { reading: "named", symptom: BRANCH_IN_A_TEST },
     },
@@ -193,24 +193,24 @@ describe("symptomReadingOf", () => {
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" },
+        remedy: { fix: "write the values out", form: "a-let" },
       },
       reading: { reading: "named", symptom: REBINDING },
     },
     {
-      name: "is not in the catalogue for a by-form clause's section the catalogue does not list",
+      name: "is not in the catalogue for a by-form clause's form the catalogue does not list",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" },
+        remedy: { fix: "write it out", form: "a-new-form" },
       },
       reading: { reading: "not-in-catalogue" },
     },
     {
-      name: "is not in the catalogue for a by-form clause's finding with no section",
+      name: "is not in the catalogue for a by-form clause's finding with no form",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,

@@ -3,15 +3,7 @@
   "records": [
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/composition/commands.version-two-needed.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/run-tool-command.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",

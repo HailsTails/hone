@@ -23,6 +23,6 @@
     "result-union"
   ],
   "correctUses": [],
-  "howItIsSeen": "syntax for a `catch` that returns."
+  "howItIsSeen": "syntax for an empty `catch` block or promise rejection handler."
 }
 ```

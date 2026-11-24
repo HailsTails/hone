@@ -8,16 +8,16 @@ import type {
   RecordPlace,
   RecordsDocument,
 } from "../../../domain/records/hone-records/hone-record.ts";
-import type {
-  RecordAddition,
-  RecordRepointing,
-  RecordsEdit,
+import {
+  createRecordsDocument,
+  type RecordAddition,
+  type RecordRepointing,
+  type RecordsEdit,
 } from "../../../domain/records/hone-records/records-edit.ts";
-import { RECORDS_VERSION } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
-import { recordsDocumentSchema } from "../records-wire.ts";
+import { readEntries } from "../reading/records-entries.ts";
 
 type Edited = Result<readonly RecordsDocument[], RecordsEditFailure>;
 
@@ -29,25 +29,11 @@ const entriesHeldBy = (request: {
   if (held === undefined) {
     return { outcome: "ok", value: [] };
   }
-  const parsed = recordsDocumentSchema.safeParse(held.document);
-  return parsed.success
-    ? { outcome: "ok", value: parsed.data.records }
-    : {
-        outcome: "failed",
-        error: {
-          kind: "records-documents",
-          refusals: [{ kind: "document-refused", file: request.file, issues: parsed.error.issues }],
-        },
-      };
+  const entries = readEntries({ document: held });
+  return entries.outcome === "ok"
+    ? entries
+    : { outcome: "failed", error: { kind: "records-documents", refusals: [entries.error] } };
 };
-
-const documentOf = (request: {
-  readonly file: RepoPath;
-  readonly records: readonly ReadonlyJsonValue[];
-}): RecordsDocument => ({
-  file: request.file,
-  document: { version: RECORDS_VERSION, records: request.records },
-});
 
 const filesInOrderOf = (request: {
   readonly additions: readonly RecordAddition[];
@@ -71,7 +57,10 @@ export const documentsWithAdded = (request: {
         .map((addition) => addition.entry);
       return {
         outcome: "ok",
-        value: [...sofar.value, documentOf({ file, records: [...held.value, ...added] })],
+        value: [
+          ...sofar.value,
+          createRecordsDocument({ file, records: [...held.value, ...added] }),
+        ],
       };
     },
     { outcome: "ok", value: [] },
@@ -118,7 +107,7 @@ export const documentsWithRepointed = (request: {
       const records = held.value.map((entry, index) =>
         repointedEntryOf({ entry, file: repointedAt.get(index) }),
       );
-      return { outcome: "ok", value: [...sofar.value, documentOf({ file, records })] };
+      return { outcome: "ok", value: [...sofar.value, createRecordsDocument({ file, records })] };
     },
     { outcome: "ok", value: [] },
   );
@@ -150,7 +139,7 @@ const withoutPlaces = (request: {
     value:
       kept.length === 0
         ? { write: [], remove: [file] }
-        : { write: [documentOf({ file, records: kept })], remove: [] },
+        : { write: [createRecordsDocument({ file, records: kept })], remove: [] },
   };
 };
 

@@ -13,7 +13,7 @@ export const JSON_KIND_NAMES: Readonly<Record<JsonKind, string>> = {
   object: "an object",
 };
 
-type JsonObject = { readonly [key: string]: ReadonlyJsonValue };
+export type JsonObject = { readonly [key: string]: ReadonlyJsonValue };
 
 export const jsonKindOf = (request: { readonly value: ReadonlyJsonValue }): JsonKind => {
   if (request.value === null) return "null";
@@ -23,7 +23,7 @@ export const jsonKindOf = (request: { readonly value: ReadonlyJsonValue }): Json
   return "object";
 };
 
-const isJsonObject = (candidate: ReadonlyJsonValue): candidate is JsonObject =>
+export const isJsonObject = (candidate: ReadonlyJsonValue): candidate is JsonObject =>
   jsonKindOf({ value: candidate }) === "object";
 
 const sameItems = (request: {

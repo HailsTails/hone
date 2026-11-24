@@ -20,7 +20,7 @@ import {
 
 const STUB_WITH_VIFN: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "stub-with-vifn",
+  name: "stub-with-vi-fn",
   title: "Stub with vi.fn",
   standing: "accepted",
   reason: { text: "A stub states its answer.", standing: "accepted" },
@@ -48,6 +48,7 @@ const MOCKED: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),

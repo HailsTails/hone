@@ -22,7 +22,7 @@
   ],
   "reports": "seen",
   "recipes": [
-    "stub-with-vifn"
+    "stub-with-vi-fn"
   ],
   "correctUses": []
 }

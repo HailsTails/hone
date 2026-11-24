@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {
@@ -19,19 +15,11 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/version-chosen-command.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/infrastructure/content-files/symptom-catalogues/bound-catalogue.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/infrastructure/discipline-exceptions-folder/base-standing-records-source.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",

@@ -39,7 +39,7 @@
   "reports": "seen-to-breach",
   "recipes": [
     "assert-to-narrow",
-    "iteach-over-typed-rows"
+    "it-each-over-typed-rows"
   ],
   "correctUses": [],
   "breachACheckCouldName": "the type branched on, by types.",

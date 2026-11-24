@@ -55,13 +55,13 @@ describe("recipesPageOf", () => {
         prose: new Map([
           [
             "typescript/recipes/composition-root.md",
-            "- **Method:** One entry builds; see [the port](port-in-the-domain.md).",
+            "- **Method:** One entry builds; see [the port](port-in-a-module-of-its-own.md).",
           ],
         ]),
       }),
     ).toEqual({
       path: "rules/typescript/recipes.md",
-      text: "# Recipes for TypeScript\n\n## One place decides\n\n### Seam\n\n- **Chosen because (proposed):** Seams split.\n\n### Doer or orchestrator\n\n#### Composition root\n\n- **Chosen because:** Adapters are built once.\n\n- **Method:** One entry builds; see [the port](recipes/port-in-the-domain.md).\n",
+      text: "# Recipes for TypeScript\n\n## One place decides\n\n### Seam\n\n- **Chosen because (proposed):** Seams split.\n\n### Doer or orchestrator\n\n#### Composition root\n\n- **Chosen because:** Adapters are built once.\n\n- **Method:** One entry builds; see [the port](recipes/port-in-a-module-of-its-own.md).\n",
     });
   });
 });

@@ -126,6 +126,7 @@ const REBINDING: Symptom = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
@@ -134,6 +135,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const TEST_BODY_LOOP_KEYWORD_CHECK: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
@@ -142,6 +144,7 @@ const TEST_BODY_LOOP_KEYWORD_CHECK: Check = {
 const TEST_BODY_REBINDING_CHECK: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
@@ -162,8 +165,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -558,6 +561,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "rebinding" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
@@ -565,6 +569,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "loop-keyword" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
@@ -572,6 +577,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "branch-in-a-test" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
@@ -579,6 +585,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "text-past-its-reader" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
@@ -586,6 +593,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "computed-value-in-a-test" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
@@ -593,6 +601,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: { ...LOOP_KEYWORD, name: "claimed-type" },
+    page: "loop-keyword/test-body.md",
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],

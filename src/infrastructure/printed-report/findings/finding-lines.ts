@@ -16,7 +16,7 @@ import type {
   HeldException,
 } from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
-import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import type { Remedy, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
@@ -41,24 +41,30 @@ const symptomNote = (request: {
   return ` symptom: ${symptom.name} (${source}) may indicate: ${indicated}`;
 };
 
-const fixNote = (request: { readonly finding: CheckFinding }): string =>
-  request.finding.remedy === undefined
-    ? ""
-    : ` fix: ${onOneLine({ text: request.finding.remedy.fix })} (${request.finding.remedy.page}#${request.finding.remedy.section})`;
+const mapRemedyToText = (request: { readonly check: Check; readonly remedy: Remedy }): string =>
+  ` fix: ${onOneLine({ text: request.remedy.fix })} (${request.check.page}#${request.remedy.form})`;
+
+const fixNote = (request: { readonly site: CheckSite; readonly finding: CheckFinding }): string =>
+  request.site.sited === "check" && request.finding.remedy !== undefined
+    ? mapRemedyToText({ check: request.site.check, remedy: request.finding.remedy })
+    : "";
 
 export const findingLine = (
   request: CatalogueRequest & { readonly finding: CheckFinding; readonly symptomPage: string },
 ): string => {
   const site = findingSiteOf(request);
-  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage })}${fixNote(request)}`;
+  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage })}${fixNote({ site, finding: request.finding })}`;
 };
 
 export const answeredLine = (
   request: CatalogueRequest & { readonly answered: AnsweredFinding },
 ): string => {
   const { finding, by } = request.answered;
-  const owedFix = by.some((placed) => placed.record.kind === "debt") ? fixNote({ finding }) : "";
-  return `${locatedText({ site: findingSiteOf({ catalogue: request.catalogue, finding }), finding })}${owedFix}${referencesText({ lead: "answered by", records: by })}`;
+  const site = findingSiteOf({ catalogue: request.catalogue, finding });
+  const owedFix = by.some((placed) => placed.record.kind === "debt")
+    ? fixNote({ site, finding })
+    : "";
+  return `${locatedText({ site, finding })}${owedFix}${referencesText({ lead: "answered by", records: by })}`;
 };
 
 export const editionLine = (request: { readonly reading: CheckEdition }): string =>

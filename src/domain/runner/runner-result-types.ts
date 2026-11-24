@@ -4,8 +4,7 @@ import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 
 export type Remedy = {
   readonly fix: string;
-  readonly page: string;
-  readonly section: string;
+  readonly form: string;
 };
 
 export type MeasuredPair = {

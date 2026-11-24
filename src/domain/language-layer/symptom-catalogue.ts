@@ -68,7 +68,7 @@ export type Symptom = {
   readonly correctUses: readonly CorrectUse[];
 };
 
-export type FormSight = { readonly section: string; readonly symptom: Symptom };
+export type FormSight = { readonly form: string; readonly symptom: Symptom };
 
 export type ClauseSight =
   | { readonly kind: "one-symptom"; readonly symptom: Symptom }
@@ -83,6 +83,7 @@ export type Engine = { readonly name: EngineId };
 export type CheckContent = {
   readonly name: string;
   readonly symptom: Symptom;
+  readonly page: string;
   readonly clause?: ClauseAddress;
   readonly forms: readonly string[];
 };
@@ -137,7 +138,7 @@ const formReadingOf = (request: {
   readonly forms: readonly FormSight[];
   readonly remedy: Remedy | undefined;
 }): SymptomReading => {
-  const form = request.forms.find((candidate) => candidate.section === request.remedy?.section);
+  const form = request.forms.find((candidate) => candidate.form === request.remedy?.form);
   return form === undefined ? NOT_IN_CATALOGUE : { reading: "named", symptom: form.symptom };
 };
 
@@ -156,9 +157,11 @@ const sightReadingOf = (request: {
   }
 };
 
+export type ClauseAndRemedy = Pick<Finding, "clause" | "remedy">;
+
 export const symptomReadingOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly finding: Pick<Finding, "clause" | "remedy">;
+  readonly finding: ClauseAndRemedy;
 }): SymptomReading => {
   const catalogued = request.catalogue.clauses.find(
     (entry) => sameClauseAddress({ left: entry.clause, right: request.finding.clause }) === "same",

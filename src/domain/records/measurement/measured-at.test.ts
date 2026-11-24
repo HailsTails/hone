@@ -37,6 +37,7 @@ const FILE_B = repoPathOf("src/b.ts");
 const CHECK: Check = {
   name: "cast-expressions",
   symptom: SYMPTOM,
+  page: "claimed-type/cast-expressions.md",
   engines: [{ name: "eslint" }],
   forms: [],
 };

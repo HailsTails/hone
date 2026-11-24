@@ -79,6 +79,7 @@ const LAYERING_CLAUSE: ClauseAddress = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT],
   forms: [],
@@ -87,6 +88,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
@@ -95,6 +97,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
@@ -115,8 +118,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -583,10 +586,11 @@ describe("versionOneAwareRecordsSourceOf", () => {
         (request: { readonly repoRoot: typeof repoRoot }) => Pick<ExceptionRepository, "readAt">
       >()
       .mockReturnValue(repository);
-    const source = versionOneAwareRecordsSourceOf({
+    const createSource = versionOneAwareRecordsSourceOf({
       recordsSourceOf: () => sourceReadingBase({ base: NO_DOCUMENTS }),
       exceptionRepositoryOf,
-    })({
+    });
+    const source = createSource({
       fileText: { exists: vi.fn(), read: vi.fn() },
       directory: { list: vi.fn() },
       git: { textInBase: vi.fn() },

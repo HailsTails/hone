@@ -15,4 +15,4 @@
 
 - **Method:** A changed value is a new one: `{ ...order, total }` or `[...items].sort()`. Nothing writes to, deletes from, or rebinds a parameter.
 - **You can tell because:** No assignment to a parameter or its fields.
-- **Industry name:** immutability; Value Object (Fowler); functional core.
+- **Industry name:** immutability; Value Object (Fowler).

@@ -24,16 +24,12 @@ export const nativeExceptionKindSchema = z.enum([
   "command-line-option",
 ]);
 
-const PAGE_SECTION = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-const PAGE_UNDER_ITS_FOLDER =
-  /^(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.md$/;
+const FORM_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const remedySchema = z
   .object({
     fix: z.string().min(1),
-    page: z.string().regex(PAGE_UNDER_ITS_FOLDER),
-    section: z.string().regex(PAGE_SECTION),
+    form: z.string().regex(FORM_NAME),
   })
   .readonly();
 

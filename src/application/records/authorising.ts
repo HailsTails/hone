@@ -14,7 +14,7 @@ import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 export type AuthorisingPorts = {
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition">;
 };
 

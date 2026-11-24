@@ -149,6 +149,7 @@ const IMPORT_BOUNDARIES = {
 const checkOf = (request: {
   readonly name: string;
   readonly symptom: Symptom;
+  readonly page: string;
   readonly clause: Check["clause"];
 }): Check => ({
   ...request,
@@ -156,9 +157,19 @@ const checkOf = (request: {
   forms: [],
 });
 
-const CLASS_SYNTAX = checkOf({ name: "class-syntax", symptom: AUTHORED_CLASS, clause: NO_CLASS });
+const CLASS_SYNTAX = checkOf({
+  name: "class-syntax",
+  symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/class-syntax.md",
+  clause: NO_CLASS,
+});
 
-const THIS_KEYWORD = checkOf({ name: "this-keyword", symptom: AUTHORED_CLASS, clause: NO_THIS });
+const THIS_KEYWORD = checkOf({
+  name: "this-keyword",
+  symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/this-keyword.md",
+  clause: NO_THIS,
+});
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -179,8 +190,18 @@ const CATALOGUE: SymptomCatalogue = {
   checks: [
     CLASS_SYNTAX,
     THIS_KEYWORD,
-    checkOf({ name: "for-of", symptom: LOOP_KEYWORD, clause: NO_FOR_OF }),
-    checkOf({ name: "import-or-require", symptom: OUTSIDE_IMPORT, clause: IMPORT_BOUNDARIES }),
+    checkOf({
+      name: "for-of",
+      symptom: LOOP_KEYWORD,
+      page: "loop-keyword/for-of.md",
+      clause: NO_FOR_OF,
+    }),
+    checkOf({
+      name: "import-or-require",
+      symptom: OUTSIDE_IMPORT,
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      clause: IMPORT_BOUNDARIES,
+    }),
   ],
   namedBans: [{ outsideDependency: "lodash" }],
 };
@@ -1401,6 +1422,7 @@ describe("answerFindings, natives held", () => {
 const CLASS_HERITAGE = checkOf({
   name: "class-heritage",
   symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/class-heritage.md",
   clause: NO_CLASS,
 });
 
@@ -1559,6 +1581,7 @@ const MIXED_ENGINES: SymptomCatalogue = {
     {
       name: "class-in-types",
       symptom: AUTHORED_CLASS,
+      page: "authored-class-or-this/class-in-types.md",
       clause: CLASS_IN_TYPES,
       engines: [ESLINT_ENGINE],
       forms: [],
@@ -1566,6 +1589,7 @@ const MIXED_ENGINES: SymptomCatalogue = {
     {
       name: "import-in-types",
       symptom: OUTSIDE_IMPORT,
+      page: "outside-import-past-a-boundary/import-in-types.md",
       clause: IMPORT_IN_TYPES,
       engines: [ESLINT_ENGINE],
       forms: [],

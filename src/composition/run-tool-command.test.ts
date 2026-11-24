@@ -23,8 +23,10 @@ import { INSTALLED_PORTS, toolSubcommandsOf } from "./run-tool-command.ts";
 const dispatchedOver = (request: {
   readonly subcommands: Subcommands;
   readonly command: VersionOneCommandRequest;
-}): Promise<void> =>
-  toolCommandOf({ subcommands: request.subcommands, ports: request.command })(request.command);
+}): Promise<void> => {
+  const command = toolCommandOf({ subcommands: request.subcommands, ports: request.command });
+  return command(request.command);
+};
 
 const subcommandRan = (request: {
   readonly subcommand: Subcommand;
@@ -45,44 +47,6 @@ const subcommandRanOverDirectory = (request: {
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
-const requiredEntry = <Entry>(request: {
-  readonly table: Readonly<Record<string, Entry>>;
-  readonly key: string;
-}): Entry => {
-  const entry = request.table[request.key];
-  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
-  return entry;
-};
-
-const notUsed = (): never => {
-  throw new Error("this port is not used by the command under test");
-};
-
-const memoryFileTextOf = (request: {
-  readonly files: Readonly<Record<string, string>>;
-  readonly outsideFiles?: Readonly<Record<string, string>>;
-}): FileTextPort => {
-  const held = new Map([
-    ...Object.entries(request.files).map(([file, text]) => [`/repo/${file}`, text] as const),
-    ...Object.entries({ ...request.outsideFiles }),
-  ]);
-  const holdsUnder = (path: string): boolean =>
-    [...held.keys()].some((key) => key.startsWith(`${path}/`));
-  return {
-    exists: ({ path }) => (held.has(path) || holdsUnder(path) ? "present" : "absent"),
-    read: ({ path }) => {
-      const text = held.get(path);
-      return text === undefined
-        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }
-        : { outcome: "ok", value: text };
-    },
-    write: ({ path, text }) => {
-      held.set(path, text);
-      return { outcome: "ok", value: undefined };
-    },
-  };
-};
-
 const commandOver = (request: {
   readonly process: ProcessPort;
   readonly fileText: FileTextPort;
@@ -90,22 +54,22 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  modules: { load: notUsed },
+  modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
-    trackedPaths: notUsed,
-    changedSince: notUsed,
-    contentInBase: notUsed,
-    textInBase: notUsed,
-    renamedSince: notUsed,
+    trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
+    changedSince: vi.fn<GitPort["changedSince"]>(),
+    contentInBase: vi.fn<GitPort["contentInBase"]>(),
+    textInBase: vi.fn<GitPort["textInBase"]>(),
+    renamedSince: vi.fn<GitPort["renamedSince"]>(),
   },
-  exceptionRepositoryOf: notUsed,
+  exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
   exceptionEntryParser: {
-    parseExceptionEntries: notUsed,
-    importedEntriesIn: notUsed,
-    importSourcesOf: notUsed,
+    parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+    importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
   },
-  selectionRepositoryOf: notUsed,
-  shownPathOfRepository: notUsed,
+  selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
+  shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
   moduleUrl: ENTRY_URL,
 });
 
@@ -220,20 +184,6 @@ const subcommandsSpied = (): Subcommands => ({
   upgrade: vi.fn<CommandHandler>().mockResolvedValue(undefined),
 });
 
-type SubcommandCalls = {
-  readonly check: readonly Parameters<CommandHandler>[];
-  readonly project: readonly Parameters<CommandHandler>[];
-  readonly recordDebt: readonly Parameters<CommandHandler>[];
-  readonly pruneDebt: readonly Parameters<CommandHandler>[];
-};
-
-const callsOf = (request: { readonly subcommands: Subcommands }): SubcommandCalls => ({
-  check: vi.mocked(request.subcommands.check).mock.calls,
-  project: vi.mocked(request.subcommands.project).mock.calls,
-  recordDebt: vi.mocked(request.subcommands["record-debt"]).mock.calls,
-  pruneDebt: vi.mocked(request.subcommands["prune-debt"]).mock.calls,
-});
-
 const outputOf = (request: { readonly process: ProcessPort }) => ({
   writes: vi.mocked(request.process.writeOut).mock.calls,
   exits: vi.mocked(request.process.exitWith).mock.calls,
@@ -248,12 +198,12 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [[{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }]],
-      project: [],
-      recordDebt: [],
-      pruneDebt: [],
-    });
+    expect(vi.mocked(subcommands.check).mock.calls).toEqual([
+      [{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }],
+    ]);
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the project subcommand with the same ports and the arguments after it", async () => {
@@ -264,12 +214,12 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [[{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }]],
-      recordDebt: [],
-      pruneDebt: [],
-    });
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands.project).mock.calls).toEqual([
+      [{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }],
+    ]);
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the record-debt subcommand with the same ports and the arguments after it", async () => {
@@ -282,22 +232,20 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [],
-      recordDebt: [
-        [
-          {
-            ...request,
-            process: {
-              ...request.process,
-              arguments: ["--repo", "/repo", "--base-revision", "HEAD"],
-            },
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands["record-debt"]).mock.calls).toEqual([
+      [
+        {
+          ...request,
+          process: {
+            ...request.process,
+            arguments: ["--repo", "/repo", "--base-revision", "HEAD"],
           },
-        ],
+        },
       ],
-      pruneDebt: [],
-    });
+    ]);
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the prune-debt subcommand with the same ports and the arguments after it", async () => {
@@ -310,26 +258,22 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [],
-      recordDebt: [],
-      pruneDebt: [
-        [
-          {
-            ...request,
-            process: {
-              ...request.process,
-              arguments: ["--repo", "/repo", "--base-revision", "origin/main"],
-            },
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands["prune-debt"]).mock.calls).toEqual([
+      [
+        {
+          ...request,
+          process: {
+            ...request.process,
+            arguments: ["--repo", "/repo", "--base-revision", "origin/main"],
           },
-        ],
+        },
       ],
-    });
+    ]);
   });
 });
-
-const ranNothing = { check: [], project: [], recordDebt: [], pruneDebt: [] };
 
 describe("toolCommandOf refusing an invocation it cannot read", () => {
   it.each([
@@ -349,28 +293,26 @@ describe("toolCommandOf refusing an invocation it cannot read", () => {
 
       await dispatchedOver({ subcommands, command: commandRequest({ process: processPort }) });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: line }]], exits: [[{ code: 2 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: line }]],
+        exits: [[{ code: 2 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 });
 
 const helpRequest = (request: {
   readonly process: ProcessPort;
-  readonly files: Readonly<Record<string, string>>;
+  readonly exists: FileTextPort["exists"];
 }): VersionOneCommandRequest => ({
   ...commandRequest({ process: request.process }),
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-  fileText: memoryFileTextOf({ files: request.files }),
+  fileText: { ...UNUSED_FILE_TEXT, exists: request.exists },
 });
-
-const VERSION_ONE_FILES = { "disciplines.json": "{}" };
-
-const VERSION_TWO_FILES = { "hone.config.json": "{}" };
 
 describe("toolCommandOf printing help", () => {
   it.each([
@@ -386,15 +328,23 @@ describe("toolCommandOf printing help", () => {
 
       await dispatchedOver({
         subcommands,
-        command: helpRequest({ process: processPort, files: VERSION_TWO_FILES }),
+        command: helpRequest({
+          process: processPort,
+          exists: vi
+            .fn<FileTextPort["exists"]>()
+            .mockReturnValueOnce("absent")
+            .mockReturnValue("present"),
+        }),
       });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: runHelpText({ topic }) }]],
+        exits: [[{ code: 0 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 
@@ -415,15 +365,20 @@ describe("toolCommandOf printing help", () => {
 
       await dispatchedOver({
         subcommands,
-        command: helpRequest({ process: processPort, files: VERSION_ONE_FILES }),
+        command: helpRequest({
+          process: processPort,
+          exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+        }),
       });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: runHelpText({ topic }) }]],
+        exits: [[{ code: 0 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 
@@ -432,7 +387,10 @@ describe("toolCommandOf printing help", () => {
 
     await dispatchedOver({
       subcommands: subcommandsSpied(),
-      command: helpRequest({ process: processPort, files: {} }),
+      command: helpRequest({
+        process: processPort,
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      }),
     });
 
     expect(outputOf({ process: processPort })).toEqual({
@@ -446,7 +404,13 @@ describe("toolCommandOf printing help", () => {
 
     await dispatchedOver({
       subcommands: subcommandsSpied(),
-      command: helpRequest({ process: processPort, files: VERSION_TWO_FILES }),
+      command: helpRequest({
+        process: processPort,
+        exists: vi
+          .fn<FileTextPort["exists"]>()
+          .mockReturnValueOnce("absent")
+          .mockReturnValue("present"),
+      }),
     });
 
     expect(outputOf({ process: processPort })).toEqual({
@@ -466,7 +430,7 @@ const versionRequest = (request: {
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: {
     ...UNUSED_FILE_TEXT,
-    read: ({ path }) => requiredEntry({ table: { [PACKAGE_PATH]: request.read }, key: path }),
+    read: vi.fn<FileTextPort["read"]>().mockReturnValue(request.read),
   },
 });
 
@@ -483,10 +447,14 @@ describe("toolCommandOf printing the version", () => {
       }),
     });
 
-    expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual({
-      output: { writes: [[{ text: "1.2.3\n" }]], exits: [[{ code: 0 }]] },
-      ran: ranNothing,
+    expect(outputOf({ process: processPort })).toEqual({
+      writes: [[{ text: "1.2.3\n" }]],
+      exits: [[{ code: 0 }]],
     });
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("exits 2 with the load failure line when the install's package.json cannot be read", async () => {
@@ -558,55 +526,60 @@ const UNRESOLVABLE_PATH: PathPort = {
   }),
 };
 
-type AuthoriseCase = {
-  readonly case: string;
-  readonly files: Readonly<Record<string, string>>;
-  readonly path: PathPort;
-  readonly arguments: readonly string[];
-  readonly line: string;
-};
-
-const AUTHORISE_CASES: readonly AuthoriseCase[] = [
-  {
-    case: "a repository holding disciplines.json",
-    files: { "disciplines.json": "{}" },
-    path: POSIX_PATH,
-    arguments: ["--repo", "/repo"],
-    line: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run node /install/src/hone.ts upgrade --repo /repo, which rewrites every version 1 file as version 2, and commit what it writes\n",
-  },
-  {
-    case: "a folder holding neither settings file",
-    files: {},
-    path: POSIX_PATH,
-    arguments: ["--repo", "/repo"],
-    line: "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n",
-  },
-  {
-    case: "no --repo",
-    files: {},
-    path: POSIX_PATH,
-    arguments: [],
-    line: "load failure: arguments-invalid hone authorise needs --repo <dir>: the folder that holds hone.config.json, usually the repository root\n",
-  },
-  {
-    case: "a --repo that resolves to no absolute path",
-    files: {},
-    path: UNRESOLVABLE_PATH,
-    arguments: ["--repo", "src"],
-    line: "load failure: arguments-invalid --repo src resolves to no absolute path\n",
-  },
-];
-
 describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
-  it.each(AUTHORISE_CASES)(
+  it.each([
+    {
+      case: "a repository holding disciplines.json",
+      disciplines: "present",
+      config: "absent",
+      path: POSIX_PATH,
+      arguments: ["--repo", "/repo"],
+      line: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run node /install/src/hone.ts upgrade --repo /repo, which rewrites every version 1 file as version 2, and commit what it writes\n",
+    },
+    {
+      case: "a folder holding neither settings file",
+      disciplines: "absent",
+      config: "absent",
+      path: POSIX_PATH,
+      arguments: ["--repo", "/repo"],
+      line: "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n",
+    },
+    {
+      case: "no --repo",
+      disciplines: "absent",
+      config: "absent",
+      path: POSIX_PATH,
+      arguments: [],
+      line: "load failure: arguments-invalid hone authorise needs --repo <dir>: the folder that holds hone.config.json, usually the repository root\n",
+    },
+    {
+      case: "a --repo that resolves to no absolute path",
+      disciplines: "absent",
+      config: "absent",
+      path: UNRESOLVABLE_PATH,
+      arguments: ["--repo", "src"],
+      line: "load failure: arguments-invalid --repo src resolves to no absolute path\n",
+    },
+  ] as const)(
     "prints one load failure line naming what is wrong, and exits 2, given $case",
-    async ({ files, path, arguments: given, line }) => {
+    async ({ disciplines, config, path, arguments: given, line }) => {
       const processPort = processWith({ arguments: given });
 
       await subcommandRan({
         subcommand: "authorise",
         command: {
-          ...commandOver({ process: processPort, fileText: memoryFileTextOf({ files }) }),
+          ...commandOver({
+            process: processPort,
+            fileText: {
+              ...UNUSED_FILE_TEXT,
+              exists: vi
+                .fn<FileTextPort["exists"]>()
+                .mockReturnValueOnce(disciplines)
+                .mockReturnValueOnce(config)
+                .mockReturnValueOnce(disciplines)
+                .mockReturnValue(config),
+            },
+          }),
           path,
         },
       });
@@ -622,13 +595,20 @@ describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
 const CONFIG_ABSENT_LINE =
   "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n";
 
-const ALWAYS_RECORDABLE_KINDS: Readonly<Record<string, string>> = {
-  "/install/src/infrastructure/disciplines-file/version-one-names.json":
-    '{ "version": 1, "clauses": [], "recordKinds": {} }',
-  "/install/rules/record-kinds/authorised-location.md":
-    '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n',
-  "/install/rules/record-kinds/debt.md": '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n',
-};
+const VERSION_ONE_NAMES_READ = {
+  outcome: "ok",
+  value: '{ "version": 1, "clauses": [], "recordKinds": {} }',
+} as const;
+
+const AUTHORISED_LOCATION_KIND_READ = {
+  outcome: "ok",
+  value: '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n',
+} as const;
+
+const DEBT_KIND_READ = {
+  outcome: "ok",
+  value: '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n',
+} as const;
 
 describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
   it.each([
@@ -645,7 +625,20 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
       const processPort = processWith({ arguments: given });
       const command = commandOver({
         process: processPort,
-        fileText: memoryFileTextOf({ files: {}, outsideFiles: ALWAYS_RECORDABLE_KINDS }),
+        fileText: {
+          ...UNUSED_FILE_TEXT,
+          exists: vi
+            .fn<FileTextPort["exists"]>()
+            .mockReturnValueOnce("absent")
+            .mockReturnValueOnce("absent")
+            .mockReturnValueOnce("present")
+            .mockReturnValue("absent"),
+          read: vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce(VERSION_ONE_NAMES_READ)
+            .mockReturnValueOnce(AUTHORISED_LOCATION_KIND_READ)
+            .mockReturnValueOnce(DEBT_KIND_READ),
+        },
       });
       const directory: DirectoryPort = {
         list: vi
@@ -674,7 +667,76 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
   );
 });
 
+const FORMER_SETTINGS =
+  '{"version": 2, "checks": {"export-from-a-test-file#test-file-export": "walker"}}\n';
+
 describe("TOOL_SUBCOMMANDS on a repository holding hone.config.json", () => {
+  it("moves the settings to the current names when asked to upgrade", async () => {
+    const processPort = processWith({ arguments: ["--repo", "/repo"] });
+    const write = vi
+      .fn<FileTextPort["write"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+
+    await subcommandRanOverDirectory({
+      subcommand: "upgrade",
+      command: commandOver({
+        process: processPort,
+        fileText: {
+          exists: vi
+            .fn<FileTextPort["exists"]>()
+            .mockReturnValueOnce("absent")
+            .mockReturnValueOnce("present")
+            .mockReturnValueOnce("present")
+            .mockReturnValue("absent"),
+          read: vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce(VERSION_ONE_NAMES_READ)
+            .mockReturnValueOnce(AUTHORISED_LOCATION_KIND_READ)
+            .mockReturnValueOnce(DEBT_KIND_READ)
+            .mockReturnValueOnce({ outcome: "ok", value: FORMER_SETTINGS }),
+          write,
+        },
+      }),
+      directory: {
+        list: vi
+          .fn<DirectoryPort["list"]>()
+          .mockReturnValueOnce({
+            outcome: "ok",
+            value: [{ name: "record-kinds", kind: "directory" }],
+          })
+          .mockReturnValueOnce({
+            outcome: "ok",
+            value: [
+              { name: "authorised-location.md", kind: "file" },
+              { name: "debt.md", kind: "file" },
+            ],
+          }),
+        create: vi.fn<DirectoryPort["create"]>(),
+      },
+    });
+
+    expect([outputOf({ process: processPort }), write.mock.calls]).toEqual([
+      {
+        writes: [
+          [
+            {
+              text: "renamed hone.config.json checks export-from-a-test-file#test-file-export -> export-from-a-test#test-file-export\n",
+            },
+          ],
+        ],
+        exits: [[{ code: 0 }]],
+      },
+      [
+        [
+          {
+            path: "/repo/hone.config.json",
+            text: '{"version": 2, "checks": {"export-from-a-test#test-file-export": "walker"}}\n',
+          },
+        ],
+      ],
+    ]);
+  });
+
   it.each(["split-records"] as const)(
     "prints one not-ready-yet line naming %s and exits 2",
     async (subcommand) => {

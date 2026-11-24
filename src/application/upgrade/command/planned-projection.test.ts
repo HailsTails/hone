@@ -27,18 +27,14 @@ const SETTINGS: SettingsFile = {
   },
 };
 
-const notUsed = (): never => {
-  throw new Error("this port is not used by the command under test");
-};
-
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules"),
-  joinRepository: notUsed,
-  relative: notUsed,
-  directoryOf: notUsed,
-  repositoryDirectoryOf: notUsed,
-  resolve: notUsed,
-  fromFileUrl: notUsed,
+  joinRepository: vi.fn(),
+  relative: vi.fn(),
+  directoryOf: vi.fn(),
+  repositoryDirectoryOf: vi.fn(),
+  resolve: vi.fn(),
+  fromFileUrl: vi.fn(),
 };
 
 const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
@@ -57,22 +53,22 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
-  modules: { load: notUsed },
+  modules: { load: vi.fn() },
   git: {
-    trackedPaths: notUsed,
-    changedSince: notUsed,
-    contentInBase: notUsed,
-    textInBase: notUsed,
-    renamedSince: notUsed,
+    trackedPaths: vi.fn(),
+    changedSince: vi.fn(),
+    contentInBase: vi.fn(),
+    textInBase: vi.fn(),
+    renamedSince: vi.fn(),
   },
-  exceptionRepositoryOf: notUsed,
+  exceptionRepositoryOf: vi.fn(),
   exceptionEntryParser: {
-    parseExceptionEntries: notUsed,
-    importedEntriesIn: notUsed,
-    importSourcesOf: notUsed,
+    parseExceptionEntries: vi.fn(),
+    importedEntriesIn: vi.fn(),
+    importSourcesOf: vi.fn(),
   },
-  selectionRepositoryOf: notUsed,
-  shownPathOfRepository: notUsed,
+  selectionRepositoryOf: vi.fn(),
+  shownPathOfRepository: vi.fn(),
   moduleUrl: "file:///install/src/hone.ts",
 };
 
@@ -81,21 +77,26 @@ const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "n
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
-    const projected = await plannedProjectionOf({
+    const plan = plannedProjectionOf({
       command,
       repoRoot: absoluteRootOf("/repo"),
       installRoot: absoluteRootOf("/install"),
-      directory: { list: notUsed, create: notUsed },
-      recordsReader: { recordsReadingOf: notUsed },
+      directory: { list: vi.fn(), create: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       boundCatalogueOf: NO_CATALOGUE,
-      settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
-      settingsSourcesOf: notUsed,
-      checkPieceSourceOf: notUsed,
-      namedEngine: { load: notUsed, run: notUsed, project: notUsed },
-    })({
-      settings: SETTINGS,
-      documents: [],
+      settingsFormat: {
+        fileOf: vi.fn(),
+        documentOf: vi.fn(),
+        textOf: vi.fn(),
+        renameKeys: vi.fn(),
+      },
+      settingsSourcesOf: vi.fn(),
+      checkPieceSourceOf: vi.fn(),
+      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
     });
+
+    const projected = await plan({ settings: SETTINGS, documents: [] });
+
     expect(projected).toEqual({
       outcome: "failed",
       error: {

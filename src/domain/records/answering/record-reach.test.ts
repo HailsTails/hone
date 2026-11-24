@@ -92,7 +92,7 @@ const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
 
 const STUB_WITH_VIFN: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "stub-with-vifn",
+  name: "stub-with-vi-fn",
   title: "Stub with vi.fn",
   standing: "accepted",
   reason: { text: "A stub states its answer.", standing: "accepted" },
@@ -193,6 +193,7 @@ const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -205,6 +206,7 @@ const CAST_CHECK: Check = {
 const NON_NULL_CHECK: Check = {
   name: "non-null-assertions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -813,6 +815,7 @@ describe("holdsAt, an authorised location naming a check its symptom does not ha
 const IMPORT_CHECK: Check = {
   name: "import-or-require",
   symptom: OUTSIDE_IMPORT,
+  page: "outside-import-past-a-boundary/import-or-require.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-19"),

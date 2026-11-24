@@ -1,4 +1,4 @@
-# Assertion outside a test
+# Assertion outside a test body
 
 ```json
 {

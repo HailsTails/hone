@@ -11,8 +11,11 @@ import type {
   SyntaxNode,
 } from "../../runner/toolchain/typescript-parse.ts";
 import { type OwnPackageNames, moduleOriginOf, ownPackageNamesOf } from "./own-modules.ts";
+import type piece from "./piece.json";
 
-type Remedy = NonNullable<PieceHit["remedy"]>;
+type TestBodyFormName = keyof typeof piece.forms;
+
+type Remedy = NonNullable<PieceHit["remedy"]> & { readonly form: TestBodyFormName };
 
 export type TestBodyForm = {
   readonly introducedIn: Edition;
@@ -30,121 +33,89 @@ type BodyRequest = FormRequest & {
 
 const SECOND_EDITION: Edition = editionOf("2");
 
-const BRANCH_IN_A_TEST = "branch-in-a-test/test-body.md";
-
-const COMPUTED_VALUE_IN_A_TEST = "computed-value-in-a-test/test-body.md";
-
-const REBINDING = "rebinding/test-body.md";
-
-const TEXT_PAST_ITS_READER = "text-past-its-reader/test-body.md";
-
-const THROW_OR_CATCH_IN_A_TEST = "throw-or-catch-in-a-test/try-block.md";
-
-const DOUBLE_WITH_A_BODY = "double-with-a-body/logic-in-a-passed-function.md";
-
 const firstEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: editionOf("1"), remedy });
 
 const secondEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy });
 
 const BRANCHING = firstEdition({
   fix: "The test branches because the unit can return more than one shape. Give each outcome its own test or make the return type express the one outcome callers can rely on.",
-  page: BRANCH_IN_A_TEST,
-  section: "branching-with-if",
+  form: "branching-with-if",
 });
 const TRY_BLOCK = firstEdition({
   fix: "Catching inside the test can let it pass when no error occurs. Assert the failure the caller should observe, whether it is returned or thrown.",
-  page: THROW_OR_CATCH_IN_A_TEST,
-  section: "a-try-block",
+  form: "a-try-block",
 });
 const TERNARY = firstEdition({
   fix: "The test chooses between values at runtime. State the expected value for each case so the assertion cannot adapt to the result.",
-  page: BRANCH_IN_A_TEST,
-  section: "a-ternary",
+  form: "a-ternary",
 });
 const LET = firstEdition({
   fix: "A reassigned local makes the test depend on hidden state. Keep the expected values fixed and assert the interaction you need to observe.",
-  page: REBINDING,
-  section: "a-let",
+  form: "a-let",
 });
 const PICKING_METHOD = firstEdition({
   fix: "Selecting an element can discard data the caller should see. Assert the relevant membership or structure of the returned collection directly.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "a-method-that-picks-or-tests-an-element",
+  form: "a-method-that-picks-or-tests-an-element",
 });
 const COMPUTING_METHOD = firstEdition({
   fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value or the relevant properties explicitly.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "a-method-that-computes-a-value",
+  form: "a-method-that-computes-a-value",
 });
 const MUTATING_METHOD = firstEdition({
   fix: "Mutating the expected collection obscures its final state. State the finished collection so the reader can see what should be returned.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "a-method-that-mutates",
+  form: "a-method-that-mutates",
 });
 const SHORT_CIRCUIT = secondEdition({
   fix: "Short-circuiting lets the test skip a case when the unit returns an optional or falsy value. Make required output explicit in the unit's type or test each outcome separately.",
-  page: BRANCH_IN_A_TEST,
-  section: "a-short-circuit",
+  form: "a-short-circuit",
 });
 const INDEXED_OPTIONAL_CHAIN = secondEdition({
   fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
-  page: BRANCH_IN_A_TEST,
-  section: "an-optional-chain-after-an-index",
+  form: "an-optional-chain-after-an-index",
 });
 const MOCK_CALL_OPTIONAL_CHAIN = secondEdition({
   fix: "Optional access hides whether the dependency was called. Assert the expected call and its arguments.",
-  page: BRANCH_IN_A_TEST,
-  section: "an-optional-chain-on-a-mock-call",
+  form: "an-optional-chain-on-a-mock-call",
 });
 const MOCK_RESULT_OPTIONAL_CHAIN = secondEdition({
   fix: "Optional access hides whether the dependency returned a value. Assert the return from the expected call.",
-  page: BRANCH_IN_A_TEST,
-  section: "an-optional-chain-on-a-mock-result",
+  form: "an-optional-chain-on-a-mock-result",
 });
 const PROPERTY_OPTIONAL_CHAIN = secondEdition({
   fix: "The returned object can omit a property the caller needs. Make that property required in the unit's return type or test its absence as a separate outcome.",
-  page: BRANCH_IN_A_TEST,
-  section: "an-optional-chain-on-a-property",
+  form: "an-optional-chain-on-a-property",
 });
 const OPTIONAL_CALL = secondEdition({
   fix: "The unit's output makes the function optional, so callers cannot count on being able to call it. Make the function required in the return type or test the absent case separately.",
-  page: BRANCH_IN_A_TEST,
-  section: "an-optional-call",
+  form: "an-optional-call",
 });
 const SWITCH = secondEdition({
   fix: "The test branches on a value and can omit assertions for unexpected cases. State the expected outcome for each case separately.",
-  page: BRANCH_IN_A_TEST,
-  section: "a-switch",
+  form: "a-switch",
 });
 const JSON_CALL = secondEdition({
   fix: "Serializing or parsing inside the test can obscure the returned structure. Assert the object the caller needs and leave its wire format to the boundary adapter.",
-  page: TEXT_PAST_ITS_READER,
-  section: "serialising-or-parsing-json",
+  form: "serialising-or-parsing-json",
 });
 const OBJECT_ASSIGN = secondEdition({
   fix: "Building the expected object by mutation obscures its final shape. State the fields the caller should see and make any copied fields explicit.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "merging-objects",
+  form: "merging-objects",
 });
 const OBJECT_FROM_ENTRIES = secondEdition({
   fix: "Building the expected object from entries hides the shape the assertion promises. Write out the relevant fields and values.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "building-an-object-from-entries",
+  form: "building-an-object-from-entries",
 });
 const ARRAY_FROM = secondEdition({
   fix: "Generating the expected array hides the sequence being asserted. State the relevant elements, length, or ordering directly.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "building-an-array-from-a-length",
+  form: "building-an-array-from-a-length",
 });
 const MATH_CALL = secondEdition({
   fix: "Calculating the expected number can reproduce the implementation's error. State the expected number directly.",
-  page: COMPUTED_VALUE_IN_A_TEST,
-  section: "a-math-call",
+  form: "a-math-call",
 });
 const PASSED_ON_FUNCTION: Remedy = {
   fix: "A callback with its own logic makes the test depend on a second implementation. Give the collaborator a fixed answer and assert how it was used.",
-  page: DOUBLE_WITH_A_BODY,
-  section: "logic-inside-a-function-the-test-passes-on",
+  form: "logic-inside-a-function-the-test-passes-on",
 };
 
 const FORMS_IN_PAGE_ORDER: readonly TestBodyForm[] = [
@@ -174,8 +145,8 @@ export const TEST_BODY_REMEDIES: readonly Remedy[] = [
   PASSED_ON_FUNCTION,
 ];
 
-export const TEST_BODY_SECTIONS: readonly string[] = TEST_BODY_REMEDIES.map(
-  (remedy) => remedy.section,
+export const TEST_BODY_FORMS: readonly TestBodyFormName[] = TEST_BODY_REMEDIES.map(
+  (remedy) => remedy.form,
 );
 
 const PICKING_METHODS: readonly string[] = [
@@ -805,23 +776,23 @@ const enclosingFunctionOf = (request: FormRequest): SyntaxNode | undefined => {
   return enclosingFunctionOf({ syntaxApi: request.syntaxApi, node: request.node.parent });
 };
 
-const directCallbackIsPassedOn = (request: FormRequest): boolean => {
+const findDirectCallbackEnclosure = (request: FormRequest): Enclosure => {
   const { syntaxApi, node } = request;
   if (
     !syntaxApi.isCallExpression(node) ||
     !syntaxApi.isIdentifier(node.expression) ||
     TEST_REGISTRATION.has(node.expression.text)
   ) {
-    return false;
+    return "elsewhere";
   }
   const enclosing = enclosingFunctionOf({ syntaxApi, node: node.parent });
-  if (enclosing === undefined) return true;
+  if (enclosing === undefined) return "passed-on-function";
   const registration = enclosing.parent;
-  return (
-    syntaxApi.isCallExpression(registration) &&
+  return syntaxApi.isCallExpression(registration) &&
     syntaxApi.isIdentifier(registration.expression) &&
     TEST_REGISTRATION.has(registration.expression.text)
-  );
+    ? "passed-on-function"
+    : "elsewhere";
 };
 
 const enclosureOf = (request: FormRequest): Enclosure => {
@@ -834,7 +805,7 @@ const enclosureOf = (request: FormRequest): Enclosure => {
   const passedOn =
     syntaxApi.isObjectLiteralExpression(holder) ||
     takesImplementation({ syntaxApi, node: holder }) === "takes" ||
-    directCallbackIsPassedOn({ syntaxApi, node: holder });
+    findDirectCallbackEnclosure({ syntaxApi, node: holder }) === "passed-on-function";
   return passedOn ? "passed-on-function" : "elsewhere";
 };
 
@@ -874,7 +845,7 @@ export const check: WalkerPiece = {
                     if (form === undefined) return;
                     const binding = bindings.find(
                       ({ address, forms, edition }) =>
-                        forms?.[form.remedy.section] === address &&
+                        forms?.[form.remedy.form] === address &&
                         editionReaches({ edition, introducedIn: form.introducedIn }) === "reached",
                     );
                     if (binding === undefined) return;

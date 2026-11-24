@@ -6,6 +6,7 @@ import type {
   RecordsReading,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 
 export type RecordsReader = {
   readonly recordsReadingOf: (request: {
@@ -13,4 +14,7 @@ export type RecordsReader = {
     readonly catalogue: SymptomCatalogue;
     readonly base: RecordsAtBase;
   }) => Result<RecordsReading, readonly RecordsDocumentRefusal[]>;
+  readonly readEntries: (request: {
+    readonly document: RecordsDocument;
+  }) => Result<readonly ReadonlyJsonValue[], RecordsDocumentRefusal>;
 };

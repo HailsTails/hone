@@ -29,12 +29,12 @@ describe("recordsFileStandingOf", () => {
       },
     },
     {
-      file: repoPathOf("hone-records/deviations/stub-with-vifn.json"),
+      file: repoPathOf("hone-records/deviations/stub-with-vi-fn.json"),
       standing: {
         standing: "named",
         ruleSet: TOOL_RULE_SET,
         kind: "deviations",
-        name: "stub-with-vifn",
+        name: "stub-with-vi-fn",
       },
     },
     {

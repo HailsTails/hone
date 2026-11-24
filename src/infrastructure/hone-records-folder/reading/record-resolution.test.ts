@@ -71,7 +71,7 @@ const STATES_WHAT_THE_UNIT_GIVES_BACK: Case = {
 
 const STUB_WITH_VIFN: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "stub-with-vifn",
+  name: "stub-with-vi-fn",
   title: "Stub with vi.fn",
   standing: "accepted",
   reason: {
@@ -160,6 +160,7 @@ const DOUBLE_WITH_A_BODY: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -172,6 +173,7 @@ const CAST_CHECK: Check = {
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
   symptom: BRANCH_IN_A_TEST,
+  page: "branch-in-a-test/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -247,7 +249,7 @@ const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-ty
 
 const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/stub-with-vifn.json");
+const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/stub-with-vi-fn.json");
 
 const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
@@ -274,7 +276,7 @@ const CARRIED_AUTHORISED_LOCATION = {
 };
 
 const DEVIATION = {
-  recipe: "stub-with-vifn",
+  recipe: "stub-with-vi-fn",
   file: "src/sync/replay.test.ts",
   recipeReason: "A stub states its answer, so the test reads what the unit is handed.",
   reasonFails: "The replay is handed a stream whose answers depend on earlier calls.",
@@ -1319,7 +1321,7 @@ describe("recordOf, a record's own text never stops the reader", () => {
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
-        entry: { ...DEVIATION, recipe: "stub-with-vifn\n" },
+        entry: { ...DEVIATION, recipe: "stub-with-vi-fn\n" },
       }),
     ).toEqual({
       outcome: "failed",
@@ -1357,7 +1359,7 @@ describe("recordOf, deviations", () => {
       recordOf({
         catalogue: { ...CATALOGUE, recipes: [...CATALOGUE.recipes, teamRecipe] },
         base: UNMEASURED,
-        file: repoPathOf("hone-records/acme/deviations/stub-with-vifn.json"),
+        file: repoPathOf("hone-records/acme/deviations/stub-with-vi-fn.json"),
         filedUnder: { kind: "deviations", ruleSet: ACME },
         entry: DEVIATION,
       }),
@@ -1369,13 +1371,13 @@ describe("recordOf, deviations", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathOf("hone-records/acme/deviations/stub-with-vifn.json"),
+        file: repoPathOf("hone-records/acme/deviations/stub-with-vi-fn.json"),
         filedUnder: { kind: "deviations", ruleSet: ACME },
         entry: DEVIATION,
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "unknown-recipe", recipe: "acme/stub-with-vifn" }],
+      error: [{ kind: "unknown-recipe", recipe: "acme/stub-with-vi-fn" }],
     });
   });
 
@@ -1426,7 +1428,7 @@ describe("recordOf, deviations", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "misplaced", belongsIn: "hone-records/deviations/stub-with-vifn.json" }],
+      error: [{ kind: "misplaced", belongsIn: "hone-records/deviations/stub-with-vi-fn.json" }],
     });
   });
 });
