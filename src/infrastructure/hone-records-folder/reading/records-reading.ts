@@ -4,6 +4,7 @@ import type { RecordsReader } from "../../../application/ports/records/records-r
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   BaseMeasurement,
+  HeldAtBase,
   PlacedRecord,
   RecordPlace,
   RecordNote,
@@ -22,7 +23,7 @@ import { recordsFileStandingOf } from "../../../domain/records/hone-records/reco
 import type { Result } from "../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
-import { recordsDocumentSchema } from "../records-wire.ts";
+import { heldFileSchema, recordsDocumentSchema } from "../records-wire.ts";
 import { type FiledUnder, recordOf } from "./record-resolution.ts";
 
 type PlacedEntry = {
@@ -157,9 +158,24 @@ const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): rea
   );
 };
 
+const heldIn = (request: { readonly document: RecordsDocument }): readonly HeldAtBase[] => {
+  const parsed = recordsDocumentSchema.safeParse(request.document.document);
+  return parsed.success
+    ? parsed.data.records.flatMap((entry, index) => {
+        const held = heldFileSchema.safeParse(entry);
+        return held.success
+          ? [{ place: { file: request.document.file, index }, file: held.data.file }]
+          : [];
+      })
+    : [];
+};
+
 const baseMeasurementOf = (request: { readonly base: RecordsAtBase }): BaseMeasurement =>
   request.base.measured === "yes"
-    ? { measured: "yes" }
+    ? {
+        measured: "yes",
+        held: request.base.documents.flatMap((document) => heldIn({ document })),
+      }
     : { measured: "no", base: request.base.base };
 
 const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNote[] => {

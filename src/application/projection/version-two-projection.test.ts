@@ -58,7 +58,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 

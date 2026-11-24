@@ -79,7 +79,7 @@ export const readingFollowingRenames = (request: {
   }
   return {
     ...reading,
-    records: recordsFollowingRenames({ records: reading.records, renamed: renamed.renamed }),
+    records: recordsFollowingRenames({ records: reading.records, moved: request.moved }),
     refused: [...reading.refused, ...movedPathRefusalsOf({ moved: request.moved })],
   };
 };

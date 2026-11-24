@@ -493,7 +493,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes" },
+  base: { measured: "yes", held: [] },
 };
 
 const HELD_DEBT: PlacedRecord = {
@@ -726,9 +726,14 @@ describe("versionTwoRecordDebtCommandOf", () => {
       handler: versionTwoRecordDebtCommandOf,
       arguments: RECORD_ARGUMENTS,
       stages: stagesGiving({
-        records: vi
-          .fn<VersionTwoStages["records"]>()
-          .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
+        records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
+          outcome: "ok",
+          value: {
+            ...NO_RECORDS,
+            records: [HELD_DEBT],
+            base: { measured: "yes", held: [{ place: HELD_DEBT.place, file: FILE_A }] },
+          },
+        }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
           measured: "yes",
           renamed: new Map([[cart, { basePath: FILE_A, content: "unchanged" }]]),

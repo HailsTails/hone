@@ -154,7 +154,7 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
     }),
     records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
       outcome: "ok",
-      value: { records: [], refused: [], notes: [], base: { measured: "yes" } },
+      value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
     }),
     tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({
       outcome: "ok",
@@ -248,7 +248,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
-          base: { measured: "yes" },
+          base: { measured: "yes", held: [{ place: DEBT_ON_BASKET.place, file: BASKET }] },
         },
       }),
       engines: vi
@@ -269,7 +269,12 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
     recordsReader: {
       recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
         outcome: "ok",
-        value: { records: [DEBT_ON_BASKET], refused: [], notes: [], base: { measured: "yes" } },
+        value: {
+          records: [DEBT_ON_BASKET],
+          refused: [],
+          notes: [],
+          base: { measured: "yes", held: [{ place: DEBT_ON_BASKET.place, file: BASKET }] },
+        },
       }),
     },
     recordsEditor: {

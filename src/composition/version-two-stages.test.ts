@@ -478,7 +478,7 @@ describe("versionTwoStagesOver", () => {
       records: [],
       refused: [],
       notes: [],
-      base: { measured: "yes" },
+      base: { measured: "yes", held: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
@@ -509,7 +509,7 @@ describe("versionTwoStagesOver", () => {
       ],
       refused: [],
       notes: [],
-      base: { measured: "yes" },
+      base: { measured: "yes", held: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({

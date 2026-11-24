@@ -319,7 +319,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const stagesProjecting = (request: {
   readonly projected: Awaited<ReturnType<VersionTwoStages["projections"]>>;

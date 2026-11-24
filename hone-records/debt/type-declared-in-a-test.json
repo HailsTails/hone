@@ -59,10 +59,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/application/run/engines/named-engines-run.contract.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/application/upgrade/found-tree/found-tree-git.test.ts"
     },
     {

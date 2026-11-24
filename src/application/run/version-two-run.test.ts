@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type {
   Case,
@@ -299,7 +299,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const HIT: CheckHit = {
   check: "claimed-type#cast-expressions",
@@ -424,7 +429,14 @@ describe("versionTwoRunOver", () => {
         holding: { held: "stated" },
       },
     } as const;
-    const onDisk: RecordsReading = { ...RECORDS, records: [debtAtBase] };
+    const onDisk: RecordsReading = {
+      ...RECORDS,
+      records: [debtAtBase],
+      base: {
+        measured: "yes",
+        held: [{ place: debtAtBase.place, file: repoPathOf("src/basket.ts") }],
+      },
+    };
     const stages = stagesGiving({
       records: vi
         .fn<VersionTwoStages["records"]>()
@@ -438,20 +450,28 @@ describe("versionTwoRunOver", () => {
         .mockReturnValue({ measured: "yes", paths: new Set([FILE_A]) }),
     });
     const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
-    expect(run).toMatchObject({
-      outcome: "ok",
-      value: {
-        moved: [{ place: debtAtBase.place, file: FILE_A }],
-        report: {
-          forfeited: [{ place: debtAtBase.place, record: { ...debtAtBase.record, file: FILE_A } }],
-          refused: [
-            {
-              place: debtAtBase.place,
-              refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }],
-            },
-          ],
+    assert(run.outcome === "ok", "the run completes");
+    expect({
+      moved: run.value.moved,
+      forfeited: run.value.report.forfeited,
+      refused: run.value.report.refused,
+    }).toEqual({
+      moved: [{ place: debtAtBase.place, file: FILE_A }],
+      forfeited: [
+        {
+          place: debtAtBase.place,
+          record: {
+            kind: "debt",
+            symptom: CLAIMED_TYPE,
+            reach: { reaches: "whole-symptom" },
+            file: FILE_A,
+            holding: { held: "stated" },
+          },
         },
-      },
+      ],
+      refused: [
+        { place: debtAtBase.place, refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }] },
+      ],
     });
     expect(vi.mocked(stages.engines).mock.calls).toEqual([
       [

@@ -324,7 +324,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const CLEAN_RUN: NamedEngineRun = {
   mechanism: ESLINT,

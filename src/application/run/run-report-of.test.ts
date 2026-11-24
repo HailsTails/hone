@@ -378,7 +378,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes" },
+  base: { measured: "yes", held: [] },
 };
 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
@@ -752,7 +752,12 @@ describe("namedRunReportOf, findings and records", () => {
     expect(
       namedRunReportOf({
         ...REQUEST,
-        records: { records: [carried], refused: [refused], notes: [], base: { measured: "yes" } },
+        records: {
+          records: [carried],
+          refused: [refused],
+          notes: [],
+          base: { measured: "yes", held: [] },
+        },
       }),
     ).toMatchObject({
       refused: [refused],
@@ -867,14 +872,28 @@ describe("namedRunReportOf, the selection and the settings", () => {
         ...REQUEST,
         selection: {
           ...SELECTS_CAST,
-          selected: SELECTS_CAST.selected.map((selected) => ({
-            ...selected,
-            editions: {
-              declared: [editionOf("1"), editionOf("2")],
-              default: editionOf("1"),
-              latest: editionOf("2"),
+          selected: [
+            {
+              address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+              check: CAST_CHECK,
+              exceptions: "allowed",
+              binding: {
+                address: "claimed-type#cast-expressions",
+                ruleSet: TOOL_RULE_SET,
+                engine: "eslint",
+                anchor: { kind: "file" },
+                pieceRoot: "/install/pieces",
+                settings: {},
+                checkSettings: {},
+                edition: editionOf("1"),
+              },
+              editions: {
+                declared: [editionOf("1"), editionOf("2")],
+                default: editionOf("1"),
+                latest: editionOf("2"),
+              },
             },
-          })),
+          ],
           notAdopted: [
             {
               address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },

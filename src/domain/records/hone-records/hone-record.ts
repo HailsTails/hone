@@ -143,8 +143,10 @@ export type CarriedListing = {
   readonly standing: CarriedStanding;
 };
 
+export type HeldAtBase = { readonly place: RecordPlace; readonly file: RepoPath };
+
 export type BaseMeasurement =
-  | { readonly measured: "yes" }
+  | { readonly measured: "yes"; readonly held: readonly HeldAtBase[] }
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export type RecordNote = { readonly place: RecordPlace; readonly note: CatalogueNote };

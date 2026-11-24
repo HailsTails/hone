@@ -133,8 +133,12 @@ export const versionTwoRunOver = async (request: {
   });
   const renamed = request.stages.renamed();
   const moved =
-    renamed.measured === "yes"
-      ? recordsAtMovedPathsOf({ records: records.records, renamed: renamed.renamed })
+    renamed.measured === "yes" && records.base.measured === "yes"
+      ? recordsAtMovedPathsOf({
+          records: records.records,
+          renamed: renamed.renamed,
+          held: records.base.held,
+        })
       : [];
   const followed = readingFollowingRenames({ reading: records, renamed, moved });
   const touched = request.stages.touched({

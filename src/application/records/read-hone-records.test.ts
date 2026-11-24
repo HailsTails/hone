@@ -77,7 +77,12 @@ const sourceOf = (request: {
   readonly readAt: RecordsSource["readAt"];
 }): RecordsSource => request;
 
-const READING: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const READING: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const readerGiving = (
   reading: ReturnType<RecordsReader["recordsReadingOf"]>,
@@ -274,7 +279,7 @@ const READING_DEBT_ON_A: RecordsReading = {
   records: [DEBT_ON_A],
   refused: [],
   notes: [],
-  base: { measured: "yes" },
+  base: { measured: "yes", held: [] },
 };
 
 describe("readingFollowingRenames", () => {
@@ -318,7 +323,7 @@ describe("readingFollowingRenames", () => {
         },
       ],
       notes: [],
-      base: { measured: "yes" },
+      base: { measured: "yes", held: [] },
     });
   });
 

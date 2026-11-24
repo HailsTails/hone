@@ -369,16 +369,49 @@ describe("recordsReadingOf", () => {
     });
   });
 
-  it("says the base revision was measured when it was", () => {
+  it("says the base revision was measured when it was, with the file each base record held at its place", () => {
     expect(
       recordsReadingOf({
         documents: [],
         catalogue: CATALOGUE,
-        base: { measured: "yes", documents: [] },
+        base: {
+          measured: "yes",
+          documents: [
+            {
+              file: repoPathOf("hone-records/debt/claimed-type.json"),
+              document: {
+                version: 2,
+                records: [
+                  { answers: "claimed-type", file: "src/basket.ts" },
+                  { module: "src/clock.ts" },
+                  { answers: "claimed-type", file: "src/total.ts" },
+                ],
+              },
+            },
+            { file: repoPathOf("hone-records/debt/broken.json"), document: { records: [] } },
+          ],
+        },
       }),
     ).toEqual({
       outcome: "ok",
-      value: { records: [], refused: [], notes: [], base: { measured: "yes" } },
+      value: {
+        records: [],
+        refused: [],
+        notes: [],
+        base: {
+          measured: "yes",
+          held: [
+            {
+              place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+              file: "src/basket.ts",
+            },
+            {
+              place: { file: "hone-records/debt/claimed-type.json", index: 2 },
+              file: "src/total.ts",
+            },
+          ],
+        },
+      },
     });
   });
 
