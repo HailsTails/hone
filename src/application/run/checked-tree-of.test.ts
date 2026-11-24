@@ -60,6 +60,23 @@ describe("checkedTreeOf", () => {
     });
   });
 
+  it("probes only the files git tracks, never an untracked harness folder beside them", () => {
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
+    const join = vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts");
+    expect(
+      checkedTreeOf({
+        git: trackedByGit({ tracked: [A] }),
+        fileText: { exists },
+        path: { join },
+        repoRoot: REPO,
+        excluded: [],
+        eslintConfigRoots: [],
+      }),
+    ).toEqual({ outcome: "ok", value: { tracked: [A], declaredConfigRoots: [] } });
+    expect(join.mock.calls).toEqual([[{ segments: [REPO, A] }]]);
+    expect(exists.mock.calls).toEqual([[{ path: "/repo/src/a.ts" }]]);
+  });
+
   it("leaves out a tracked file that is not on disk", () => {
     const absent: Pick<FileTextPort, "exists"> = {
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),

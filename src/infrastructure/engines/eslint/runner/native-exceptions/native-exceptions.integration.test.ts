@@ -1,31 +1,16 @@
-import { afterAll, assert, describe, expect, it } from "vitest";
+import { afterAll, assert, describe, expect, it, vi } from "vitest";
 
-import type { ParsedNamedRunner } from "../../../../../application/ports/engine/engine-run.ts";
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import {
-  exceptionEntriesOfText,
-  parseExceptionEntries,
-  placedInSingleFile,
-} from "../../../../discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
 import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
@@ -34,8 +19,8 @@ import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-l
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { readHeldDiscipline } from "../../../../upgrade/version-one-rule-sets/held-discipline.ts";
 import { namedCheckConformance } from "../../../protocol/conformance.ts";
-import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { loadedNamedRunnerOf } from "../../../protocol/engine-run/engine-run.ts";
+import { loadedNamedRunnerOver } from "../../../protocol/engine-run/engine-run.ts";
+import { runnerModuleAt } from "../../../protocol/runner-module/runner-module-at.ts";
 import {
   toolchainBoundEmbeddedRunner,
   toolchainBoundNamedChecksRunner,
@@ -50,124 +35,161 @@ import {
   eslint9PieceModules,
   eslint9ToolchainModules,
 } from "../toolchain/eslint-9/eslint-9-engine.ts";
-import {
-  createEslintPort,
-  type EslintClass,
-  type EslintPort,
-  type EslintToolchain,
-} from "../toolchain/eslint-instance.ts";
-import {
-  defaultEslintToolchainPeers,
-  type EslintToolchainModules,
-  type EslintToolchainPeers,
-  loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
+import { createEslintPort } from "../toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
 
-type EslintLine = "eslint-10" | "eslint-9";
+const fileText = createDefaultFileTextPort({});
 
-const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+const fileRemoval = createDefaultFileRemovalPort({});
 
-type LineDefinition = {
-  readonly eslintVersion: RegExp;
-  readonly modules: EslintToolchainModules;
-  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
-};
+const modules = createDefaultModuleLoaderPort({});
 
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({
+const path = createDefaultPathPort({});
+
+const directory = createDefaultDirectoryPort({});
+
+const directoryTree = createDefaultDirectoryTreePort({});
+
+const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({
   installRoot: `${import.meta.dirname}/../../../../../..`,
   installForm: "source",
 });
 
-const RUNNER_MODULE_SUFFIX = "src/infrastructure/engines/eslint/runner/runner.ts";
+const ESLINT_10_TOOLCHAIN = loadEslintToolchain({ peers: DEVELOPMENT_PEERS });
 
-const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
-  "eslint-10": {
-    eslintVersion: /^10\./,
-    modules: DEVELOPMENT_PEERS.modules,
-    pieceModules: (request) => request.base,
-  },
-  "eslint-9": {
-    eslintVersion: /^9\./,
-    modules: eslint9ToolchainModules,
-    pieceModules: eslint9PieceModules,
-  },
-};
-
-const loadedEslintToolchain = async (request: {
-  readonly line: EslintLine;
-}): Promise<EslintToolchain> => {
-  const loaded = await loadEslintToolchain({
-    peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules },
-  });
-  assert(
-    loaded.outcome === "ok",
-    `the ${request.line} toolchain loads from the development install`,
-  );
-  assert(
-    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
-    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
-  );
-  return loaded.value;
-};
-
-const eslintClassOn = (request: { readonly line: EslintLine }): Promise<EslintClass> =>
-  LINES[request.line].modules.eslint().then((eslintModule) => eslintModule.ESLint);
-
-const eslintPortOn = async (request: { readonly line: EslintLine }): Promise<EslintPort> =>
-  createEslintPort({ toolchain: await loadedEslintToolchain(request) });
-
-const pieceModulesOn = (request: {
-  readonly line: EslintLine;
-  readonly base: ModuleLoaderPort;
-}): ModuleLoaderPort => LINES[request.line].pieceModules({ base: request.base });
-
-const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner =>
-  toolchainBoundEmbeddedRunner({
-    toolchain: loadedEslintToolchain(request).then(
-      (toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain }),
-    ),
-    projectedKinds: ESLINT_PROJECTED_KINDS,
-    runnerOf: (toolchain) =>
-      createEslintRunner({
-        fileText: createDefaultFileTextPort({}),
-        fileRemoval: createDefaultFileRemovalPort({}),
-        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
-        path: createDefaultPathPort({}),
-        eslint: createEslintPort({ toolchain }),
-        moduleExtension: ".ts",
-      }),
-  });
-
-const namedRunnerOn = (request: { readonly line: EslintLine }) =>
-  toolchainBoundNamedChecksRunner({
-    toolchain: loadedEslintToolchain(request).then(
-      (toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain }),
-    ),
-    fileScope: "typescript",
-    projectedKinds: ESLINT_PROJECTED_KINDS,
-    runnerOf: (toolchain) =>
-      createChecksRunner({
-        fileText: createDefaultFileTextPort({}),
-        fileRemoval: createDefaultFileRemovalPort({}),
-        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
-        path: createDefaultPathPort({}),
-        eslint: createEslintPort({ toolchain }),
-        moduleExtension: ".ts",
-      }),
-  });
-
-const runnerModulesOn = (request: {
-  readonly line: EslintLine;
-  readonly base: ModuleLoaderPort;
-}): ModuleLoaderPort => ({
-  load: (load) =>
-    load.path.replaceAll("\\", "/").endsWith(RUNNER_MODULE_SUFFIX)
-      ? Promise.resolve({
-          outcome: "ok",
-          value: { namedChecksRunner: namedRunnerOn({ line: request.line }) },
-        })
-      : request.base.load(load),
+const ESLINT_9_TOOLCHAIN = loadEslintToolchain({
+  peers: { location: DEVELOPMENT_PEERS.location, modules: eslint9ToolchainModules },
 });
+
+const ESLINT_9_PIECE_MODULES = eslint9PieceModules({ base: modules });
+
+const LINES = [
+  {
+    line: "eslint-10",
+    eslintVersion: /^10\./,
+    toolchain: ESLINT_10_TOOLCHAIN,
+    eslintModule: DEVELOPMENT_PEERS.modules.eslint,
+    embeddedRunner: toolchainBoundEmbeddedRunner({
+      toolchain: ESLINT_10_TOOLCHAIN,
+      projectedKinds: ESLINT_PROJECTED_KINDS,
+      runnerOf: (toolchain) =>
+        createEslintRunner({
+          fileText,
+          fileRemoval,
+          modules,
+          path,
+          eslint: createEslintPort({ toolchain }),
+          moduleExtension: ".ts",
+        }),
+    }),
+    namedRunner: toolchainBoundNamedChecksRunner({
+      toolchain: ESLINT_10_TOOLCHAIN,
+      fileScope: "typescript",
+      projectedKinds: ESLINT_PROJECTED_KINDS,
+      runnerOf: (toolchain) =>
+        createChecksRunner({
+          fileText,
+          fileRemoval,
+          modules,
+          path,
+          eslint: createEslintPort({ toolchain }),
+          moduleExtension: ".ts",
+        }),
+    }),
+  },
+  {
+    line: "eslint-9",
+    eslintVersion: /^9\./,
+    toolchain: ESLINT_9_TOOLCHAIN,
+    eslintModule: eslint9ToolchainModules.eslint,
+    embeddedRunner: toolchainBoundEmbeddedRunner({
+      toolchain: ESLINT_9_TOOLCHAIN,
+      projectedKinds: ESLINT_PROJECTED_KINDS,
+      runnerOf: (toolchain) =>
+        createEslintRunner({
+          fileText,
+          fileRemoval,
+          modules: ESLINT_9_PIECE_MODULES,
+          path,
+          eslint: createEslintPort({ toolchain }),
+          moduleExtension: ".ts",
+        }),
+    }),
+    namedRunner: toolchainBoundNamedChecksRunner({
+      toolchain: ESLINT_9_TOOLCHAIN,
+      fileScope: "typescript",
+      projectedKinds: ESLINT_PROJECTED_KINDS,
+      runnerOf: (toolchain) =>
+        createChecksRunner({
+          fileText,
+          fileRemoval,
+          modules: ESLINT_9_PIECE_MODULES,
+          path,
+          eslint: createEslintPort({ toolchain }),
+          moduleExtension: ".ts",
+        }),
+    }),
+  },
+];
+
+const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
+
+const SCRATCH = absolutePathSchema.parse(
+  path.join({ segments: [INSTALL_ROOT, "artefacts", "native-exceptions"] }),
+);
+
+afterAll(() => {
+  directoryTree.remove({ path: SCRATCH });
+});
+
+const DONE = { outcome: "ok", value: undefined };
+
+const CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
+
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: "CD-14", clause: "class-syntax" };
+
+const ESLINT_CLAUSE: RunnerClause = {
+  address: CLAUSE,
+  anchor: { kind: "keyword", keyword: "class" },
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+  clauseSettings: {},
+  edition: FIRST_EDITION,
+  settings: {
+    pluginNamespace: "hone",
+    pluginModule: "eslint-plugin.ts",
+    rule: "no-class-authoring",
+  },
+};
+
+const WALKER_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  ruleSet: TOOL_RULE_SET,
+  engine: "walker",
+  anchor: { kind: "keyword", keyword: "class" },
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/authored-class-or-this/class-keyword`,
+  checkSettings: {},
+  edition: FIRST_EDITION,
+  settings: { module: "class-syntax.ts" },
+};
+
+const ESLINT_CLASS_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  ruleSet: TOOL_RULE_SET,
+  engine: "eslint",
+  anchor: { kind: "keyword", keyword: "class" },
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+  edition: FIRST_EDITION,
+  checkSettings: {},
+  settings: {
+    pluginNamespace: "hone",
+    pluginModule: "eslint-plugin.ts",
+    rule: "no-class-authoring",
+  },
+};
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -211,409 +233,321 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const slashedText = (text: string): string => text.replaceAll("\\", "/");
-
-const overlaidFileText = (request: {
-  readonly base: FileTextPort;
-  readonly files: Readonly<Record<string, string>>;
-}): FileTextPort => {
-  const overlaid = (requested: string): string | undefined =>
-    Object.entries(request.files).find(
-      ([name]) => slashedText(name) === slashedText(requested),
-    )?.[1];
-  return {
-    ...request.base,
-    read: (reading) => {
-      const text = overlaid(reading.path);
-      return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
-    },
-    exists: (probing) =>
-      overlaid(probing.path) === undefined ? request.base.exists(probing) : "present",
-  };
-};
-
-const directory = createDefaultDirectoryPort({});
-
-const directoryTree = createDefaultDirectoryTreePort({});
-
-const madeDirectory = (request: { readonly path: string }): void => {
-  const made = directory.create({ path: absolutePathSchema.parse(request.path) });
-  assert(made.outcome === "ok", `${request.path} is made`);
-};
-
-const removedTree = (request: { readonly path: AbsolutePath }): void => {
-  const removed = directoryTree.remove({ path: request.path });
-  assert(removed.outcome === "ok", `${request.path} is removed`);
-};
-
-type ScratchRepositories = {
-  readonly repositoryWith: (request: {
-    readonly files: Readonly<Record<string, string>>;
-  }) => AbsolutePath;
-  readonly removeAll: () => void;
-};
-
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-}): ScratchRepositories => {
-  const made: AbsolutePath[] = [];
-  return {
-    repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(
-        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
-      );
-      madeDirectory({ path: folder });
-      made.push(folder);
-      Object.entries(repository.files).forEach(([name, text]) => {
-        request.fileText.write({ path: `${folder}/${name}`, text });
-      });
-      return folder;
-    },
-    removeAll: () => {
-      made.forEach((folder) => {
-        removedTree({ path: folder });
-      });
-    },
-  };
-};
-
-const STORED_LINT_CONFIG_NAME = "lint-config.fixture";
-
-const RESTORED_LINT_CONFIG_NAME = "eslint.config.mjs";
-
-const MODULE_FILE = /\.mjs$/;
-
-const RELATIVE_IMPORT = /from "(\.\.?\/[^"]*)"/g;
-
-const SAME_FOLDER_MARK = "./";
-
-type RehomedImports = {
-  readonly text: string;
-  readonly path: Pick<PathPort, "join" | "relative">;
-  readonly fixtureRoot: string;
-  readonly from: string;
-  readonly to: string;
-};
-
-const OUTSIDE_THE_ROOT = "..";
-
-const OUTSIDE_THE_ROOT_PREFIX = `${OUTSIDE_THE_ROOT}/`;
-
-const leavesTheRoot = (request: { readonly path: string }): "leaves" | "stays" =>
-  request.path === OUTSIDE_THE_ROOT || request.path.startsWith(OUTSIDE_THE_ROOT_PREFIX)
-    ? "leaves"
-    : "stays";
-
-const placeOfTarget = (
-  request: Omit<RehomedImports, "text"> & { readonly target: string },
-): "inside-the-fixture" | "outside-the-fixture" => {
-  const inside = request.path.relative({ from: request.fixtureRoot, to: request.target });
-  return inside.relation === "within-root" && leavesTheRoot({ path: inside.path }) === "stays"
-    ? "inside-the-fixture"
-    : "outside-the-fixture";
-};
-
-const rehomedSpecifier = (
-  request: Omit<RehomedImports, "text"> & { readonly specifier: string },
-): string => {
-  const target = request.path.join({ segments: [request.from, request.specifier] });
-  if (placeOfTarget({ ...request, target }) === "inside-the-fixture") {
-    return request.specifier;
-  }
-  const location = request.path.relative({ from: request.to, to: target });
-  if (location.relation === "different-root") {
-    return target;
-  }
-  return location.path.startsWith(".") ? location.path : `${SAME_FOLDER_MARK}${location.path}`;
-};
-
-const rehomedImports = (request: RehomedImports): string =>
-  request.text.replace(
-    RELATIVE_IMPORT,
-    (_whole, specifier: string) => `from "${rehomedSpecifier({ ...request, specifier })}"`,
-  );
-
-type Dependencies = {
-  readonly repositories: ScratchRepositories;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-};
-
-type ListedEntry = {
-  readonly path: string;
-  readonly name: string;
-  readonly entryKind: "file" | "directory";
-};
-
-type EntryRequest = Dependencies & {
-  readonly fixtureRoot: AbsolutePath;
-  readonly repo: AbsolutePath;
-  readonly entry: ListedEntry;
-};
-
-const slashed = (request: { readonly path: string }): string => request.path.replaceAll("\\", "/");
-
-const restoredName = (request: { readonly name: string }): string =>
-  request.name === STORED_LINT_CONFIG_NAME ? RESTORED_LINT_CONFIG_NAME : request.name;
-
-const restoredLocation = (request: { readonly entry: ListedEntry }): string => {
-  const shown = slashed({ path: request.entry.path });
-  const folder = shown.slice(0, shown.length - request.entry.name.length);
-  return `${folder}${restoredName({ name: request.entry.name })}`;
-};
-
-const failed = (request: { readonly what: string; readonly detail: string }): never => {
-  throw new Error(`${request.what}: ${request.detail}`);
-};
-
-const copiedFolder = (request: EntryRequest): void => {
-  madeDirectory({ path: `${request.repo}/${slashed({ path: request.entry.path })}` });
-};
-
-const textOf = (request: EntryRequest): string => {
-  const read = request.fileText.read({
-    path: `${request.fixtureRoot}/${slashed({ path: request.entry.path })}`,
-  });
-  return read.outcome === "ok"
-    ? read.value
-    : failed({
-        what: `a fixture file could not be read at ${request.entry.path}`,
-        detail: read.error.detail,
-      });
-};
-
-const restoredText = (request: EntryRequest): string => {
-  const text = textOf(request);
-  if (!MODULE_FILE.test(restoredName({ name: request.entry.name }))) {
-    return text;
-  }
-  const folder = request.path.directoryOf({ path: slashed({ path: request.entry.path }) });
-  return rehomedImports({
-    text,
-    path: request.path,
-    fixtureRoot: request.fixtureRoot,
-    from: request.path.join({ segments: [request.fixtureRoot, folder] }),
-    to: request.path.join({ segments: [request.repo, folder] }),
-  });
-};
-
-const copiedFile = (request: EntryRequest): void => {
-  const target = `${request.repo}/${restoredLocation({ entry: request.entry })}`;
-  const written = request.fileText.write({ path: target, text: restoredText(request) });
-  if (written.outcome !== "ok") {
-    failed({
-      what: `a fixture file could not be written at ${target}`,
-      detail: written.error.detail,
-    });
-  }
-};
-
-const copiedEntry = (request: EntryRequest): void => {
-  if (request.entry.entryKind === "directory") {
-    copiedFolder(request);
-    return;
-  }
-  copiedFile(request);
-};
-
-type TextFiles = Readonly<Record<string, string>>;
-
-const NO_TEXT_FILES: TextFiles = {};
-
-type RestoredFixture = { readonly fixtureRoot: AbsolutePath; readonly textFiles: TextFiles };
-
-type RestoredFixtureRepositories = {
-  readonly restoredFrom: (request: RestoredFixture) => AbsolutePath;
-};
-
-const writtenText = (
-  request: Dependencies & {
-    readonly repo: AbsolutePath;
-    readonly file: string;
-    readonly text: string;
+const OWNED_AUTHORISED_LOCATION: ExceptionRecord = {
+  kind: "authorised-location",
+  clause: CLAUSE,
+  mechanism: "eslint",
+  file: repoPathOf("src/owned.ts"),
+  reason: "wrapping factory for a library construction",
+  provenance: {
+    kind: "existing-authorisation",
+    source: "fictional native unit fixture; not historical authorisation",
   },
-): void => {
-  const target = `${request.repo}/${request.file}`;
-  madeDirectory({ path: request.path.directoryOf({ path: target }) });
-  const written = request.fileText.write({ path: target, text: request.text });
-  if (written.outcome !== "ok") {
-    failed({
-      what: `a fixture text could not be written at ${target}`,
-      detail: written.error.detail,
-    });
-  }
+  whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const listedTree = (request: { readonly root: AbsolutePath }): readonly ListedEntry[] => {
-  const listed = directoryTree.list({ path: request.root });
-  assert(listed.outcome === "ok", `${request.root} lists for restoring`);
-  return listed.value.map(({ path: entryPath, name, kind }): ListedEntry => ({
-    path: entryPath,
-    name,
-    entryKind: kind,
-  }));
-};
-
-const restoredOnce = (request: Dependencies & RestoredFixture): AbsolutePath => {
-  const listed = listedTree({ root: request.fixtureRoot });
-  const repo = request.repositories.repositoryWith({ files: {} });
-  const folders = listed.filter(({ entryKind }) => entryKind === "directory");
-  const files = listed.filter(({ entryKind }) => entryKind === "file");
-  [...folders, ...files].forEach((entry) => {
-    copiedEntry({ ...request, repo, entry });
-  });
-  Object.entries(request.textFiles).forEach(([file, text]) => {
-    writtenText({ ...request, repo, file, text });
-  });
-  const resolved = request.path.resolve({ path: repo });
-  return resolved.outcome === "ok"
-    ? resolved.value
-    : failed({
-        what: `the restored repository at ${repo} has no absolute path`,
-        detail: resolved.error.path,
-      });
-};
-
-const restoredFixtureRepositoriesOver = (
-  dependencies: Dependencies,
-): RestoredFixtureRepositories => {
-  const restoredByFixture = new Map<string, AbsolutePath>();
-  return {
-    restoredFrom: (fixture) => {
-      const key = JSON.stringify([fixture.fixtureRoot, fixture.textFiles]);
-      const known = restoredByFixture.get(key);
-      if (known !== undefined) {
-        return known;
-      }
-      const repo = restoredOnce({ ...dependencies, ...fixture });
-      restoredByFixture.set(key, repo);
-      return repo;
-    },
-  };
-};
-
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
-
-const CLAUSE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-14"),
-  clause: clauseIdOf("class-syntax"),
-};
-
-const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: "CD-14", clause: "class-syntax" };
-
-const ESLINT_CLAUSE: RunnerClause = {
-  address: CLAUSE,
-  anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
-  clauseSettings: {},
-  edition: FIRST_EDITION,
-  settings: {
-    pluginNamespace: "hone",
-    pluginModule: "eslint-plugin.ts",
-    rule: "no-class-authoring",
+const ROUTE_AUTHORISED_LOCATION: ExceptionRecord = {
+  kind: "authorised-location",
+  clause: CLAUSE,
+  mechanism: "eslint",
+  file: repoPathOf("route/[id].ts"),
+  reason: "wrapping factory for a library construction",
+  provenance: {
+    kind: "existing-authorisation",
+    source: "fictional native unit fixture route-brackets; not historical authorisation",
   },
+  whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const WALKER_BINDING: CheckBinding = {
-  address: "authored-class-or-this#class-keyword",
-  ruleSet: TOOL_RULE_SET,
-  engine: "walker",
-  anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/authored-class-or-this/class-keyword`,
-  checkSettings: {},
-  edition: FIRST_EDITION,
-  settings: { module: "class-syntax.ts" },
+const PACKAGE_LEGACY_CARVE_OUT: ExceptionRecord = {
+  kind: "file-carve-out",
+  clause: CLAUSE,
+  mechanism: "eslint",
+  file: repoPathOf("packages/a/legacy.ts"),
+  reason: "Inherited class awaiting paydown",
+  whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const fileText = createDefaultFileTextPort({});
+const SETTINGS = `{
+  "version": 1,
+  "ruleSets": {},
+  "clauses": {
+    "CD-14#class-syntax": "eslint"
+  }
+}
+`;
 
-const modules = createDefaultModuleLoaderPort({});
+const PROJECTION = `import piece0 from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 
-const path = createDefaultPathPort({});
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+];
+`;
 
-const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText });
+const HAND_EDITED_PROJECTION = `import piece0 from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 
-const restoredFixtures = restoredFixtureRepositoriesOver({ repositories, fileText, path });
+export default [
+  {
+    name: "hone-core/piece/hone-edited",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+];
+`;
 
-afterAll(() => {
-  repositories.removeAll();
-});
+const OWNED_PROJECTION = `import piece0 from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 
-const consumerRepoWithText = (request: {
-  readonly name: string;
-  readonly textFiles: TextFiles;
-}): AbsolutePath =>
-  restoredFixtures.restoredFrom({
-    fixtureRoot: absolutePathSchema.parse(`${import.meta.dirname}/${request.name}`),
-    textFiles: request.textFiles,
-  });
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+  {
+    name: "hone-core/file-records/CD-14#class-syntax",
+    files: [
+      "src/owned.ts",
+    ],
+    rules: { "hone/no-class-authoring": "off" },
+  },
+];
+`;
 
-const consumerRepo = (request: { readonly name: string }): AbsolutePath =>
-  consumerRepoWithText({ name: request.name, textFiles: NO_TEXT_FILES });
+const ROUTE_PROJECTION = `import piece0 from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 
-const TYPESCRIPT_FILE = /\.ts$/;
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+  {
+    name: "hone-core/file-records/CD-14#class-syntax",
+    files: [
+      "route/\\\\[id\\\\].ts",
+    ],
+    rules: { "hone/no-class-authoring": "off" },
+  },
+];
+`;
 
-const fixtureRecords = (request: { readonly name: string }): readonly ExceptionRecord[] => {
-  const repoRoot = absolutePathSchema.parse(`${import.meta.dirname}/${request.name}`);
-  const selection = createSelectionRepository({
-    repoRoot,
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    fileText,
-    path,
-  }).read({});
-  assert(selection.outcome === "ok", `${request.name} selects its clauses`);
-  const text = fileText.read({ path: `${repoRoot}/discipline-exceptions.json` });
-  assert(text.outcome === "ok", `${request.name} holds its records`);
-  const reading = parseExceptionEntries({
-    entries: placedInSingleFile({ entries: exceptionEntriesOfText({ text: text.value }) }),
-    selection: selection.value.selection,
-    baseline: UNMEASURED_EXCEPTION_BASELINE,
-    fileExceptionWhyChains: selection.value.fileExceptionWhyChains,
-  });
-  assert.isEmpty(reading.invalid, `${request.name}'s records are all valid`);
-  return reading.records;
-};
+const PACKAGE_LEGACY_ROOT_PROJECTION = `import piece0 from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 
-const runOf = (request: {
-  readonly name: string;
-  readonly tracked: readonly RepoPath[];
-  readonly line: EslintLine;
-  readonly records?: readonly ExceptionRecord[];
-  readonly textFiles?: TextFiles;
-}) =>
-  eslintRunnerOn({ line: request.line }).run({
-    repoRoot: consumerRepoWithText({
-      name: request.name,
-      textFiles: request.textFiles ?? NO_TEXT_FILES,
-    }),
-    installRoot: INSTALL_ROOT,
-    declaredConfigRoots: [],
-    files: request.tracked.filter((file) => TYPESCRIPT_FILE.test(file)),
-    trackedPaths: request.tracked,
-    clauses: [ESLINT_CLAUSE],
-    records: request.records ?? [],
-  });
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+  {
+    name: "hone-core/file-records/CD-14#class-syntax",
+    files: [
+      "packages/a/legacy.ts",
+    ],
+    rules: { "hone/no-class-authoring": "off" },
+  },
+];
+`;
 
-const classHit = (request: { readonly file: string; readonly line: number }) => ({
+const PACKAGE_LEGACY_SLICE = `import piece0 from "../../../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
+
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+  {
+    name: "hone-core/file-records/CD-14#class-syntax",
+    files: [
+      "legacy.ts",
+    ],
+    rules: { "hone/no-class-authoring": "off" },
+  },
+];
+`;
+
+const PROJECTED_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  ...projection,
+];
+`;
+
+const OVERRIDE_AFTER_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  ...projection,
+  { files: ["x.ts"], rules: { "hone/no-class-authoring": "off" } },
+];
+`;
+
+const GLOBAL_IGNORE_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  { ignores: ["gen/**", "nothing-here/**"] },
+  ...projection,
+];
+`;
+
+const SEVERITY_ZERO_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  ...projection,
+  { rules: { "hone/no-class-authoring": "off" } },
+];
+`;
+
+const RE_ENABLED_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  ...projection,
+  { files: ["src/owned.ts"], rules: { "hone/no-class-authoring": "error" } },
+];
+`;
+
+const FRAGMENT_CONFIG = `import plugin from "../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
+
+export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+  {
+    plugins: { "hone": plugin },
+    rules: { "hone/no-class-authoring": "error" },
+  },
+];
+`;
+
+const UNPROJECTED_CONFIG = `export default [
+  { files: ["**/*.{ts,tsx,mts,cts}"] },
+];
+`;
+
+const BARE_CONFIG = `export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }];
+`;
+
+const SPREAD_SLICE_CONFIG = `import projection from "./disciplines.eslint.mjs";
+
+export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];
+`;
+
+const KEPT_CLASS = "export class Kept {}\n";
+
+const PLAIN = "export const plain = 1;\n";
+
+const DEFAULT_SUPPRESSIONS = `{
+  "supp/a.ts": {
+    "hone/no-class-authoring": {
+      "count": 1
+    }
+  }
+}
+`;
+
+const SCRIPTED_SUPPRESSIONS = `{
+  "supp/b.ts": {
+    "hone/no-class-authoring": {
+      "count": 1
+    }
+  }
+}
+`;
+
+const DORMANT_SUPPRESSIONS = `{
+  "supp/clean.ts": {
+    "hone/no-class-authoring": {
+      "count": 1
+    }
+  }
+}
+`;
+
+const NESTED_SUPPRESSIONS = `{
+  "src/n.ts": {
+    "hone/no-class-authoring": {
+      "count": 1
+    }
+  }
+}
+`;
+
+const SUPPRESSION_SCRIPTS = `{
+  "name": "consumer",
+  "scripts": {
+    "lint": "eslint --suppressions-location custom/supp.json .",
+    "lint2": "eslint --suppressions-location=custom/supp2.json ."
+  }
+}
+`;
+
+const OPTION_SCRIPTS = `{
+  "name": "consumer",
+  "scripts": {
+    "lint": "eslint --rule 'hone/no-class-authoring: off' --ignore-pattern 'dormant/**' -c alt.config.mjs src",
+    "lint:suppress": "eslint --suppress-all --suppress-rule hone/no-class-authoring src",
+    "lint:extended": "eslint --rule 'hone/no-class-authoring-x: off' src",
+    "lint:resolved": "eslint -c eslint.config.mjs --ignore-pattern 'gen/**' src",
+    "lint:hidden": "eslint --ignore-pattern 'src/**' ."
+  }
+}
+`;
+
+const KEPT_IN_X = {
   clause: CLASS_SYNTAX,
-  file: request.file,
-  anchor: { line: request.line, column: 7 },
+  file: "x.ts",
+  anchor: { line: 1, column: 7 },
   snippet: "export class Kept {}",
+};
+
+describe.each(LINES)("the development install's $line toolchain", (line) => {
+  it("loads the ESLint major its line names", async () => {
+    await expect(line.toolchain).resolves.toMatchObject({
+      outcome: "ok",
+      value: { eslintVersion: expect.stringMatching(line.eslintVersion) },
+    });
+  });
 });
 
-describe.each(ESLINT_LINES)(
-  "real %s config resolution behind the ESLint runner's query instance, over a consumer repository",
+describe.each(LINES)(
+  "real $line config resolution behind the ESLint runner's query instance, over a consumer repository",
   (line) => {
     it("reports an unrecorded override block placed after the projection as a config-override", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-override-after`);
+      expect([
+        directory.create({ path: repo }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: OVERRIDE_AFTER_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/x.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({ name: "override-after", tracked: [repoPathOf("x.ts")], line }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("x.ts")],
+          trackedPaths: [repoPathOf("x.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
-          hits: [classHit({ file: "x.ts", line: 1 })],
+          hits: [KEPT_IN_X],
           nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
           projection: "current",
         },
@@ -621,16 +555,37 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports an unrecorded global ignore over a file holding a class, and core still finds the class", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-global-ignore`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/gen`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: GLOBAL_IGNORE_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/gen/g.ts`, text: KEPT_CLASS }),
+        fileText.write({ path: `${repo}/src/clean.ts`, text: PLAIN }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          name: "global-ignore",
-          tracked: [repoPathOf("gen/g.ts"), repoPathOf("src/clean.ts")],
-          line,
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("gen/g.ts"), repoPathOf("src/clean.ts")],
+          trackedPaths: [repoPathOf("gen/g.ts"), repoPathOf("src/clean.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
-          hits: [classHit({ file: "gen/g.ts", line: 1 })],
+          hits: [
+            {
+              clause: CLASS_SYNTAX,
+              file: "gen/g.ts",
+              anchor: { line: 1, column: 7 },
+              snippet: "export class Kept {}",
+            },
+          ],
           nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: "gen/g.ts" }],
           projection: "current",
         },
@@ -638,12 +593,28 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports a rule the team sets to severity 0 everywhere with no records as config-overrides, the projection still in effect", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-severity-zero`);
+      expect([
+        directory.create({ path: repo }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: SEVERITY_ZERO_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/x.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({ name: "severity-zero", tracked: [repoPathOf("x.ts")], line }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("x.ts")],
+          trackedPaths: [repoPathOf("x.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
-          hits: [classHit({ file: "x.ts", line: 1 })],
+          hits: [KEPT_IN_X],
           nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
           projection: "current",
         },
@@ -651,12 +622,23 @@ describe.each(ESLINT_LINES)(
     });
 
     it("finds no projection in effect when a later team block sets a recorded file back to error", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-re-enabled-record`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: RE_ENABLED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: OWNED_PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/src/owned.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          name: "re-enabled-record",
-          tracked: [repoPathOf("src/owned.ts")],
-          line,
-          records: fixtureRecords({ name: "re-enabled-record" }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("src/owned.ts")],
+          trackedPaths: [repoPathOf("src/owned.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [OWNED_AUTHORISED_LOCATION],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
@@ -671,20 +653,40 @@ describe.each(ESLINT_LINES)(
   },
 );
 
-describe.each(ESLINT_LINES)(
-  "eslint-suppressions.json files and package.json lint scripts read by the ESLint runner on %s, over a consumer repository",
+describe.each(LINES)(
+  "eslint-suppressions.json files and package.json lint scripts read by the ESLint runner on $line, over a consumer repository",
   (line) => {
     it("reports an entry in the default eslint-suppressions.json as a suppression-entry", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-suppression-default`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/supp`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/eslint-suppressions.json`, text: DEFAULT_SUPPRESSIONS }),
+        fileText.write({ path: `${repo}/supp/a.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          name: "suppression-default",
-          tracked: [repoPathOf("supp/a.ts"), repoPathOf("eslint-suppressions.json")],
-          line,
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("supp/a.ts")],
+          trackedPaths: [repoPathOf("supp/a.ts"), repoPathOf("eslint-suppressions.json")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
-          hits: [classHit({ file: "supp/a.ts", line: 1 })],
+          hits: [
+            {
+              clause: CLASS_SYNTAX,
+              file: "supp/a.ts",
+              anchor: { line: 1, column: 7 },
+              snippet: "export class Kept {}",
+            },
+          ],
           nativeExceptions: [
             {
               kind: "suppression-entry",
@@ -698,22 +700,46 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports entries in suppressions files a package.json script names in space and equals form, a dormant one included", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-suppression-scripted`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/supp`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/custom`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/package.json`, text: SUPPRESSION_SCRIPTS }),
+        fileText.write({ path: `${repo}/custom/supp.json`, text: SCRIPTED_SUPPRESSIONS }),
+        fileText.write({ path: `${repo}/custom/supp2.json`, text: DORMANT_SUPPRESSIONS }),
+        fileText.write({ path: `${repo}/supp/b.ts`, text: KEPT_CLASS }),
+        fileText.write({ path: `${repo}/supp/clean.ts`, text: PLAIN }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          line,
-          name: "suppression-scripted",
-          tracked: [
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("supp/b.ts"), repoPathOf("supp/clean.ts")],
+          trackedPaths: [
             repoPathOf("supp/b.ts"),
             repoPathOf("supp/clean.ts"),
             repoPathOf("package.json"),
             repoPathOf("custom/supp.json"),
             repoPathOf("custom/supp2.json"),
           ],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
-          hits: [classHit({ file: "supp/b.ts", line: 1 })],
+          hits: [
+            {
+              clause: CLASS_SYNTAX,
+              file: "supp/b.ts",
+              anchor: { line: 1, column: 7 },
+              snippet: "export class Kept {}",
+            },
+          ],
           nativeExceptions: [
             {
               kind: "suppression-entry",
@@ -733,14 +759,30 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports an entry in a nested tracked eslint-suppressions.json against its own directory", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-suppression-nested`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({
+          path: `${repo}/packages/a/eslint-suppressions.json`,
+          text: NESTED_SUPPRESSIONS,
+        }),
+        fileText.write({ path: `${repo}/packages/a/src/n.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          line,
-          name: "suppression-nested",
-          tracked: [
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("packages/a/src/n.ts")],
+          trackedPaths: [
             repoPathOf("packages/a/src/n.ts"),
             repoPathOf("packages/a/eslint-suppressions.json"),
           ],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
@@ -758,11 +800,24 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports each command-line option that weakens the run, and neither one that changes nothing ESLint already does nor a rule id that merely extends the selected one", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-command-line-options`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/package.json`, text: OPTION_SCRIPTS }),
+        fileText.write({ path: `${repo}/src/plain.ts`, text: PLAIN }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          line,
-          name: "command-line-options",
-          tracked: [repoPathOf("src/plain.ts"), repoPathOf("package.json")],
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("src/plain.ts")],
+          trackedPaths: [repoPathOf("src/plain.ts"), repoPathOf("package.json")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
@@ -811,7 +866,7 @@ describe.each(ESLINT_LINES)(
   },
 );
 
-const INLINE_FORM_FILES: readonly RepoPath[] = [
+const INLINE_FORM_FILES = [
   repoPathOf("i/disable-file.ts"),
   repoPathOf("i/disable-file-named.ts"),
   repoPathOf("i/disable-line.ts"),
@@ -822,113 +877,218 @@ const INLINE_FORM_FILES: readonly RepoPath[] = [
   repoPathOf("i/global.ts"),
 ];
 
-const INLINE_FORM_TEXTS: TextFiles = {
-  "i/disable-file-named.ts": "/* eslint-disable hone/no-class-authoring */\nexport class Kept {}\n",
-  "i/disable-line.ts":
-    "export const plain = 1;\nexport class Kept {} // eslint-disable-line hone/no-class-authoring\n",
-  "i/disable-next-line.ts":
-    "// eslint-disable-next-line hone/no-class-authoring\nexport class Kept {}\n",
-  "i/rule-config.ts": '/* eslint hone/no-class-authoring: "off" */\nexport class Kept {}\n',
-};
+const DISABLE_FILE = "/* eslint-disable */\nexport class Kept {}\n";
 
-const inlineFormsRunOf = (request: { readonly line: EslintLine }) =>
-  runOf({
-    name: "inline-forms",
-    textFiles: INLINE_FORM_TEXTS,
-    tracked: INLINE_FORM_FILES,
-    line: request.line,
-  });
+const DISABLE_FILE_NAMED = "/* eslint-disable hone/no-class-authoring */\nexport class Kept {}\n";
 
-describe.each(ESLINT_LINES)(
-  "inline configuration comments read by the ESLint runner's governance rule on real %s, over a consumer repository",
+const DISABLE_LINE =
+  "export const plain = 1;\nexport class Kept {} // eslint-disable-line hone/no-class-authoring\n";
+
+const DISABLE_NEXT_LINE =
+  "// eslint-disable-next-line hone/no-class-authoring\nexport class Kept {}\n";
+
+const RULE_CONFIG = '/* eslint hone/no-class-authoring: "off" */\nexport class Kept {}\n';
+
+const OTHER_RULE = "/* eslint-disable no-console */\nexport class Kept {}\n";
+
+const ENABLE = "/* eslint-enable hone/no-class-authoring */\nexport class Kept {}\n";
+
+const GLOBAL = "/* global foo */\nexport class Kept {}\n";
+
+const INLINE_FORM_EXCEPTIONS = [
+  {
+    kind: "inline-disable",
+    clause: CLASS_SYNTAX,
+    file: "i/disable-file.ts",
+    line: 1,
+    text: "/* eslint-disable */",
+  },
+  {
+    kind: "inline-disable",
+    clause: CLASS_SYNTAX,
+    file: "i/disable-file-named.ts",
+    line: 1,
+    text: "/* eslint-disable hone/no-class-authoring */",
+  },
+  {
+    kind: "inline-disable",
+    clause: CLASS_SYNTAX,
+    file: "i/disable-line.ts",
+    line: 2,
+    text: "// eslint-disable-line hone/no-class-authoring",
+  },
+  {
+    kind: "inline-disable",
+    clause: CLASS_SYNTAX,
+    file: "i/disable-next-line.ts",
+    line: 1,
+    text: "// eslint-disable-next-line hone/no-class-authoring",
+  },
+  {
+    kind: "inline-rule-config",
+    clause: CLASS_SYNTAX,
+    file: "i/rule-config.ts",
+    line: 1,
+    text: '/* eslint hone/no-class-authoring: "off" */',
+  },
+];
+
+const INLINE_FORM_HITS = [
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/disable-file.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/disable-file-named.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/disable-line.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {} // eslint-disable-line hone/no-class-authoring",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/disable-next-line.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/rule-config.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/other-rule.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/enable.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+  {
+    clause: CLASS_SYNTAX,
+    file: "i/global.ts",
+    anchor: { line: 2, column: 7 },
+    snippet: "export class Kept {}",
+  },
+];
+
+describe.each(LINES)(
+  "inline configuration comments read by the ESLint runner's governance rule on real $line, over a consumer repository",
   (line) => {
     it("reports each disable and rule-config form naming the selected rule and none of the rest", async () => {
-      await expect(inlineFormsRunOf({ line })).resolves.toMatchObject({
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-inline-forms-reported`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/i`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/i/disable-file.ts`, text: DISABLE_FILE }),
+        fileText.write({ path: `${repo}/i/disable-file-named.ts`, text: DISABLE_FILE_NAMED }),
+        fileText.write({ path: `${repo}/i/disable-line.ts`, text: DISABLE_LINE }),
+        fileText.write({ path: `${repo}/i/disable-next-line.ts`, text: DISABLE_NEXT_LINE }),
+        fileText.write({ path: `${repo}/i/rule-config.ts`, text: RULE_CONFIG }),
+        fileText.write({ path: `${repo}/i/other-rule.ts`, text: OTHER_RULE }),
+        fileText.write({ path: `${repo}/i/enable.ts`, text: ENABLE }),
+        fileText.write({ path: `${repo}/i/global.ts`, text: GLOBAL }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+      await expect(
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: INLINE_FORM_FILES,
+          trackedPaths: INLINE_FORM_FILES,
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
+      ).resolves.toMatchObject({
         outcome: "ok",
-        value: {
-          nativeExceptions: [
-            {
-              kind: "inline-disable",
-              clause: CLASS_SYNTAX,
-              file: "i/disable-file.ts",
-              line: 1,
-              text: "/* eslint-disable */",
-            },
-            {
-              kind: "inline-disable",
-              clause: CLASS_SYNTAX,
-              file: "i/disable-file-named.ts",
-              line: 1,
-              text: "/* eslint-disable hone/no-class-authoring */",
-            },
-            {
-              kind: "inline-disable",
-              clause: CLASS_SYNTAX,
-              file: "i/disable-line.ts",
-              line: 2,
-              text: "// eslint-disable-line hone/no-class-authoring",
-            },
-            {
-              kind: "inline-disable",
-              clause: CLASS_SYNTAX,
-              file: "i/disable-next-line.ts",
-              line: 1,
-              text: "// eslint-disable-next-line hone/no-class-authoring",
-            },
-            {
-              kind: "inline-rule-config",
-              clause: CLASS_SYNTAX,
-              file: "i/rule-config.ts",
-              line: 1,
-              text: '/* eslint hone/no-class-authoring: "off" */',
-            },
-          ],
-        },
+        value: { nativeExceptions: INLINE_FORM_EXCEPTIONS },
       });
     });
 
     it("still finds the class in every file whatever its inline comment says", async () => {
-      await expect(inlineFormsRunOf({ line })).resolves.toMatchObject({
-        outcome: "ok",
-        value: {
-          hits: [
-            classHit({ file: "i/disable-file.ts", line: 2 }),
-            classHit({ file: "i/disable-file-named.ts", line: 2 }),
-            {
-              clause: CLASS_SYNTAX,
-              file: "i/disable-line.ts",
-              anchor: { line: 2, column: 7 },
-              snippet: "export class Kept {} // eslint-disable-line hone/no-class-authoring",
-            },
-            classHit({ file: "i/disable-next-line.ts", line: 2 }),
-            classHit({ file: "i/rule-config.ts", line: 2 }),
-            classHit({ file: "i/other-rule.ts", line: 2 }),
-            classHit({ file: "i/enable.ts", line: 2 }),
-            classHit({ file: "i/global.ts", line: 2 }),
-          ],
-        },
-      });
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-inline-forms-found`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/i`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/i/disable-file.ts`, text: DISABLE_FILE }),
+        fileText.write({ path: `${repo}/i/disable-file-named.ts`, text: DISABLE_FILE_NAMED }),
+        fileText.write({ path: `${repo}/i/disable-line.ts`, text: DISABLE_LINE }),
+        fileText.write({ path: `${repo}/i/disable-next-line.ts`, text: DISABLE_NEXT_LINE }),
+        fileText.write({ path: `${repo}/i/rule-config.ts`, text: RULE_CONFIG }),
+        fileText.write({ path: `${repo}/i/other-rule.ts`, text: OTHER_RULE }),
+        fileText.write({ path: `${repo}/i/enable.ts`, text: ENABLE }),
+        fileText.write({ path: `${repo}/i/global.ts`, text: GLOBAL }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+      await expect(
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: INLINE_FORM_FILES,
+          trackedPaths: INLINE_FORM_FILES,
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
+      ).resolves.toMatchObject({ outcome: "ok", value: { hits: INLINE_FORM_HITS } });
     });
   },
 );
 
-describe.each(ESLINT_LINES)(
-  "real %s glob matching of the generated projection's record blocks, over a consumer repository",
+describe.each(LINES)(
+  "real $line glob matching of the generated projection's record blocks, over a consumer repository",
   (line) => {
     it("matches route/[id].ts by its authorised location, leaving the projection current with no native exception", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-route-brackets`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/route`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROUTE_PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/route/[id].ts`, text: KEPT_CLASS }),
+        fileText.write({ path: `${repo}/route/i.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          name: "route-brackets",
-          tracked: [repoPathOf("route/[id].ts"), repoPathOf("route/i.ts")],
-          line,
-          records: fixtureRecords({ name: "route-brackets" }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("route/[id].ts"), repoPathOf("route/i.ts")],
+          trackedPaths: [repoPathOf("route/[id].ts"), repoPathOf("route/i.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [ROUTE_AUTHORISED_LOCATION],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
           hits: [
-            classHit({ file: "route/[id].ts", line: 1 }),
-            classHit({ file: "route/i.ts", line: 1 }),
+            {
+              clause: CLASS_SYNTAX,
+              file: "route/[id].ts",
+              anchor: { line: 1, column: 7 },
+              snippet: "export class Kept {}",
+            },
+            {
+              clause: CLASS_SYNTAX,
+              file: "route/i.ts",
+              anchor: { line: 1, column: 7 },
+              snippet: "export class Kept {}",
+            },
           ],
           nativeExceptions: [],
           projection: "current",
@@ -938,30 +1098,74 @@ describe.each(ESLINT_LINES)(
   },
 );
 
-describe.each(ESLINT_LINES)(
-  "the ESLint runner's projection states under real %s, over a consumer repository",
+describe.each(LINES)(
+  "the ESLint runner's projection states under real $line, over a consumer repository",
   (line) => {
     it("reports the projection missing when it was never generated", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-projection-missing`);
+      expect([
+        directory.create({ path: repo }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: UNPROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/x.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({ name: "projection-missing", tracked: [repoPathOf("x.ts")], line }),
-      ).resolves.toMatchObject({
-        outcome: "ok",
-        value: { hits: [], projection: "missing" },
-      });
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("x.ts")],
+          trackedPaths: [repoPathOf("x.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
+      ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], projection: "missing" } });
     });
 
     it("reports the projection out-of-date when it was hand-edited", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-projection-hand-edited`);
+      expect([
+        directory.create({ path: repo }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: HAND_EDITED_PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/x.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({ name: "projection-hand-edited", tracked: [repoPathOf("x.ts")], line }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("x.ts")],
+          trackedPaths: [repoPathOf("x.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
-        value: { hits: [classHit({ file: "x.ts", line: 1 })], projection: "out-of-date" },
+        value: { hits: [KEPT_IN_X], projection: "out-of-date" },
       });
     });
 
     it("reports no projection in effect when the team config does not import the projection", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-projection-not-imported`);
+      expect([
+        directory.create({ path: repo }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: UNPROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/x.ts`, text: KEPT_CLASS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({ name: "projection-not-imported", tracked: [repoPathOf("x.ts")], line }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("x.ts")],
+          trackedPaths: [repoPathOf("x.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: {
@@ -974,12 +1178,24 @@ describe.each(ESLINT_LINES)(
     });
 
     it("reports no projection in effect when the piece's fragment is imported instead of the projection beside an authorised location", async () => {
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-fragment-not-projection`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: FRAGMENT_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: OWNED_PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/src/owned.ts`, text: KEPT_CLASS }),
+        fileText.write({ path: `${repo}/src/clean.ts`, text: PLAIN }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        runOf({
-          line,
-          name: "fragment-not-projection",
-          tracked: [repoPathOf("src/owned.ts"), repoPathOf("src/clean.ts")],
-          records: fixtureRecords({ name: "fragment-not-projection" }),
+        line.embeddedRunner.run({
+          repoRoot: repo,
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: [repoPathOf("src/owned.ts"), repoPathOf("src/clean.ts")],
+          trackedPaths: [repoPathOf("src/owned.ts"), repoPathOf("src/clean.ts")],
+          clauses: [ESLINT_CLAUSE],
+          records: [OWNED_AUTHORISED_LOCATION],
         }),
       ).resolves.toMatchObject({
         outcome: "ok",
@@ -994,7 +1210,7 @@ describe.each(ESLINT_LINES)(
   },
 );
 
-const SHARED_CASE_FILES: readonly RepoPath[] = [
+const SHARED_CASE_FILES = [
   repoPathOf("src/decl.ts"),
   repoPathOf("src/expr.ts"),
   repoPathOf("src/default.ts"),
@@ -1004,15 +1220,21 @@ const SHARED_CASE_FILES: readonly RepoPath[] = [
   repoPathOf("src/anon.ts"),
 ];
 
-const SHARED_CASES_RUN = {
-  repoRoot: consumerRepo({ name: "fr3-anchors" }),
-  installRoot: INSTALL_ROOT,
-  declaredConfigRoots: [],
-  files: SHARED_CASE_FILES,
-  trackedPaths: SHARED_CASE_FILES,
-};
+const DECLARATION = "export class Alpha {}\n";
 
-const EXPECTED_SHARED_HITS = [
+const EXPRESSION = "export const Beta = class {};\n";
+
+const DEFAULT_EXPORT = "export default\nclass {}\n";
+
+const ABSTRACT = "export abstract class Gamma {}\n";
+
+const NESTED = "export function make() {\n  class Delta {}\n  return Delta;\n}\n";
+
+const NAMESPACED = "export namespace Space {\n  export class Epsilon {}\n}\n";
+
+const ANONYMOUS = "export const zeta = new (class {})();\n";
+
+const EXPECTED_SHARED_ESLINT_HITS = [
   {
     clause: CLASS_SYNTAX,
     file: "src/decl.ts",
@@ -1057,6 +1279,51 @@ const EXPECTED_SHARED_HITS = [
   },
 ];
 
+const EXPECTED_SHARED_AUDIT_HITS = [
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/decl.ts",
+    anchor: { line: 1, column: 7 },
+    snippet: "export class Alpha {}",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/expr.ts",
+    anchor: { line: 1, column: 20 },
+    snippet: "export const Beta = class {};",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/default.ts",
+    anchor: { line: 2, column: 0 },
+    snippet: "class {}",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/abstract.ts",
+    anchor: { line: 1, column: 16 },
+    snippet: "export abstract class Gamma {}",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/nested.ts",
+    anchor: { line: 2, column: 2 },
+    snippet: "class Delta {}",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/space.ts",
+    anchor: { line: 2, column: 9 },
+    snippet: "export class Epsilon {}",
+  },
+  {
+    check: "authored-class-or-this#class-keyword",
+    file: "src/anon.ts",
+    anchor: { line: 1, column: 25 },
+    snippet: "export const zeta = new (class {})();",
+  },
+];
+
 const CLASS_SYNTAX_MEASURED_ON_SHARED_CASES = [
   { clause: CLASS_SYNTAX, file: "src/decl.ts" },
   { clause: CLASS_SYNTAX, file: "src/expr.ts" },
@@ -1067,238 +1334,294 @@ const CLASS_SYNTAX_MEASURED_ON_SHARED_CASES = [
   { clause: CLASS_SYNTAX, file: "src/anon.ts" },
 ];
 
-describe.each(ESLINT_LINES)(
-  "FR-3 over real files: the ESLint runner on real %s and the audit runner on real TypeScript",
+const CLASS_KEYWORD_MEASURED_ON_SHARED_CASES = [
+  { check: "authored-class-or-this#class-keyword", file: "src/decl.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/expr.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/default.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/abstract.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/nested.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/space.ts" },
+  { check: "authored-class-or-this#class-keyword", file: "src/anon.ts" },
+];
+
+const SHARED_CASE_RUNS = {
+  eslint: {
+    outcome: "ok",
+    value: {
+      hits: EXPECTED_SHARED_ESLINT_HITS,
+      nativeExceptions: [],
+      projection: "current",
+      slices: [],
+      unprojectedFolders: [],
+      measured: CLASS_SYNTAX_MEASURED_ON_SHARED_CASES,
+    },
+  },
+  audit: {
+    outcome: "ok",
+    value: {
+      hits: EXPECTED_SHARED_AUDIT_HITS,
+      nativeExceptions: [],
+      measured: CLASS_KEYWORD_MEASURED_ON_SHARED_CASES,
+      projection: "none",
+      slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+    },
+  },
+};
+
+describe.each(LINES)(
+  "FR-3 over real files: the ESLint runner on real $line and the audit runner on real TypeScript",
   (line) => {
     it("give the same whole anchors for every flagged CD-14 shared case", async () => {
-      const eslintRun = await eslintRunnerOn({ line }).run({
-        ...SHARED_CASES_RUN,
+      const repo = absolutePathSchema.parse(`${SCRATCH}/${line.line}-fr3-anchors`);
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/src`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: PROJECTED_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/src/decl.ts`, text: DECLARATION }),
+        fileText.write({ path: `${repo}/src/expr.ts`, text: EXPRESSION }),
+        fileText.write({ path: `${repo}/src/default.ts`, text: DEFAULT_EXPORT }),
+        fileText.write({ path: `${repo}/src/abstract.ts`, text: ABSTRACT }),
+        fileText.write({ path: `${repo}/src/nested.ts`, text: NESTED }),
+        fileText.write({ path: `${repo}/src/space.ts`, text: NAMESPACED }),
+        fileText.write({ path: `${repo}/src/anon.ts`, text: ANONYMOUS }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+      const eslintRun = await line.embeddedRunner.run({
+        repoRoot: repo,
+        installRoot: INSTALL_ROOT,
+        declaredConfigRoots: [],
+        files: SHARED_CASE_FILES,
+        trackedPaths: SHARED_CASE_FILES,
         records: [],
         clauses: [ESLINT_CLAUSE],
       });
       const walkerRun = await walkerRunner.run({
-        ...SHARED_CASES_RUN,
+        repoRoot: repo,
+        installRoot: INSTALL_ROOT,
+        declaredConfigRoots: [],
+        files: SHARED_CASE_FILES,
+        trackedPaths: SHARED_CASE_FILES,
         bindings: [WALKER_BINDING],
         answered: [],
         declaredConfigLookup: undefined,
         testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
-      expect({ eslint: eslintRun, audit: walkerRun }).toEqual({
-        eslint: {
-          outcome: "ok",
-          value: {
-            hits: EXPECTED_SHARED_HITS,
-            nativeExceptions: [],
-            projection: "current",
-            slices: [],
-            unprojectedFolders: [],
-            measured: CLASS_SYNTAX_MEASURED_ON_SHARED_CASES,
-          },
-        },
-        audit: {
-          outcome: "ok",
-          value: {
-            hits: EXPECTED_SHARED_HITS.map(({ file, anchor, snippet }) => ({
-              check: "authored-class-or-this#class-keyword",
-              file,
-              anchor,
-              snippet,
-            })),
-            nativeExceptions: [],
-            measured: CLASS_SYNTAX_MEASURED_ON_SHARED_CASES.map(({ file }) => ({
-              check: "authored-class-or-this#class-keyword",
-              file,
-            })),
-            projection: "none",
-            slices: [],
-            nestedConfigurations: [],
-            unprojectedFolders: [],
-            misnamedRuleIds: [],
-          },
-        },
-      });
+      expect({ eslint: eslintRun, audit: walkerRun }).toEqual(SHARED_CASE_RUNS);
     });
   },
 );
 
-type MechanicalCases = Extract<ClauseDefinition, { readonly kind: "mechanical" }>["cases"];
+const loadedNamedRunnerOf = loadedNamedRunnerOver({ runnerModuleOf: runnerModuleAt });
 
-const classSyntaxCases = (): MechanicalCases => {
-  const loaded = readHeldDiscipline({
-    fileText,
-    path,
-    ruleSetRoot: INSTALL_ROOT,
-    installRoot: INSTALL_ROOT,
-    discipline: disciplineIdOf("CD-14"),
-  });
-  assert(
-    loaded.outcome === "ok" && loaded.value.held === "present",
-    "CD-14 reads through the install's discipline reader",
-  );
-  const [classSyntax, staticOnlyClass, libraryConstruction, ...surplus] = loaded.value.file.clauses;
-  assert.isDefined(classSyntax, "CD-14 declares a first clause");
-  assert.isDefined(staticOnlyClass, "CD-14 declares a second clause");
-  assert.isDefined(libraryConstruction, "CD-14 declares a third clause");
-  assert.strictEqual(
-    classSyntax.id,
-    "class-syntax",
-    "CD-14 declares class-syntax as its first clause",
-  );
-  assert.strictEqual(
-    staticOnlyClass.id,
-    "static-only-class",
-    "CD-14 declares the static-only-class clause second",
-  );
-  assert.strictEqual(
-    libraryConstruction.id,
-    "library-construction",
-    "CD-14 declares the library-construction judgement clause third",
-  );
-  assert.isEmpty(surplus, "CD-14 declares exactly three clauses");
-  assert(classSyntax.kind === "mechanical", "CD-14 declares class-syntax as a mechanical clause");
-  return classSyntax.cases;
-};
-
-const ESLINT_CLASS_BINDING: CheckBinding = {
-  address: "authored-class-or-this#class-keyword",
-  ruleSet: TOOL_RULE_SET,
-  engine: "eslint",
-  anchor: ESLINT_CLAUSE.anchor,
-  pieceRoot: ESLINT_CLAUSE.pieceRoot,
-  edition: ESLINT_CLAUSE.edition,
-  checkSettings: ESLINT_CLAUSE.clauseSettings,
-  settings: ESLINT_CLAUSE.settings,
-};
-
-const CLASS_SYNTAX_CASES = classSyntaxCases();
-
-const coreLoadedEslintRunner = async (request: {
-  readonly line: EslintLine;
-}): Promise<ParsedNamedRunner> => {
-  const loaded = await loadedNamedRunnerOf({
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    modules: runnerModulesOn({ line: request.line, base: modules }),
-    path,
-    mechanism: "eslint",
-  });
-  assert(loaded.outcome === "ok", "core loads the ESLint runner module");
-  return loaded.value;
-};
-
-describe.each(ESLINT_LINES)(
-  "named check conformance over the loaded ESLint runner, on real %s",
+describe.each(LINES)(
+  "named check conformance over the loaded ESLint runner, on real $line",
   (line) => {
     it("has no failures for CD-14#class-syntax over every CD-14 shared case", async () => {
+      const load = vi
+        .fn<ModuleLoaderPort["load"]>()
+        .mockResolvedValue({ outcome: "ok", value: { namedChecksRunner: line.namedRunner } });
+      const loaded = await loadedNamedRunnerOf({
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".ts",
+        modules: { load },
+        path,
+        mechanism: "eslint",
+      });
+      const held = readHeldDiscipline({
+        fileText,
+        path,
+        ruleSetRoot: INSTALL_ROOT,
+        installRoot: INSTALL_ROOT,
+        discipline: disciplineIdOf("CD-14"),
+      });
+      expect(load).toHaveBeenCalledWith({
+        path: expect.stringMatching(
+          /[\\/]src[\\/]infrastructure[\\/]engines[\\/]eslint[\\/]runner[\\/]runner\.ts$/,
+        ),
+      });
+      expect(held).toMatchObject({
+        outcome: "ok",
+        value: {
+          held: "present",
+          file: {
+            clauses: [
+              { id: "class-syntax", kind: "mechanical" },
+              { id: "static-only-class" },
+              { id: "library-construction" },
+            ],
+          },
+        },
+      });
+      assert(loaded.outcome === "ok", "core loads the ESLint runner module");
+      assert(held.outcome === "ok", "CD-14 reads through the install's discipline reader");
+      assert(held.value.held === "present", "CD-14 is held by the install");
+      const [classSyntax] = held.value.file.clauses;
+      assert.isDefined(classSyntax, "CD-14 declares a first clause");
+      assert(
+        classSyntax.kind === "mechanical",
+        "CD-14 declares class-syntax as a mechanical clause",
+      );
       await expect(
         namedCheckConformance({
           binding: ESLINT_CLASS_BINDING,
-          cases: [...CLASS_SYNTAX_CASES.flag, ...CLASS_SYNTAX_CASES.allow],
-          runner: await coreLoadedEslintRunner({ line }),
+          cases: [...classSyntax.cases.flag, ...classSyntax.cases.allow],
+          runner: loaded.value,
         }),
       ).resolves.toEqual({ outcome: "ok", value: [] });
     });
   },
 );
 
-const ESLINT_PACKAGE_JSON = "node_modules/eslint/package.json";
+const ESLINT_10_PACKAGE = '{"name":"eslint","version":"10.11.0"}';
 
-const LINT_SCRIPT_PACKAGE_JSON = "package.json";
+const ESLINT_9_PACKAGE = '{"name":"eslint","version":"9.39.5"}';
 
-const eslintVersion = (request: { readonly version: string }): string =>
-  JSON.stringify({ name: "eslint", version: request.version });
+const ROOT_LINT_SCRIPT = '{"scripts":{"lint":"eslint ."}}';
 
-const lintScript = (request: { readonly command: string }): string =>
-  JSON.stringify({ scripts: { lint: request.command } });
+const NEAREST_LOOKUP_LINT_SCRIPT =
+  '{"scripts":{"lint":"eslint --flag v10_config_lookup_from_file ."}}';
 
-const monorepoRun = async (request: {
-  readonly line: EslintLine;
-  readonly name: string;
-  readonly version: string;
-  readonly lintCommand: string;
-  readonly records: readonly ExceptionRecord[];
-}) =>
-  createEslintRunner({
-    fileText: overlaidFileText({
-      base: fileText,
-      files: {
-        [`${consumerRepo({ name: request.name })}/${ESLINT_PACKAGE_JSON}`]: eslintVersion({
-          version: request.version,
-        }),
-        [`${consumerRepo({ name: request.name })}/${LINT_SCRIPT_PACKAGE_JSON}`]: lintScript({
-          command: request.lintCommand,
-        }),
-      },
-    }),
-    fileRemoval: createDefaultFileRemovalPort({}),
-    modules: pieceModulesOn({ line: request.line, base: modules }),
-    path,
-    eslint: await eslintPortOn({ line: request.line }),
-    moduleExtension: ".ts",
-  }).run({
-    repoRoot: consumerRepo({ name: request.name }),
-    installRoot: INSTALL_ROOT,
-    declaredConfigRoots: [],
-    files: [repoPathOf("packages/a/x.ts")],
-    trackedPaths: [
-      repoPathOf("packages/a/x.ts"),
-      repoPathOf("package.json"),
-      repoPathOf("packages/a/eslint.config.mjs"),
-    ],
-    clauses: [ESLINT_CLAUSE],
-    records: request.records,
-  });
+const NEAREST_LOOKUP_TEAMS = [
+  {
+    version: "10.11.0",
+    lintCommand: "eslint .",
+    eslintPackage: ESLINT_10_PACKAGE,
+    lintScript: ROOT_LINT_SCRIPT,
+  },
+  {
+    version: "9.39.5",
+    lintCommand: "eslint --flag v10_config_lookup_from_file .",
+    eslintPackage: ESLINT_9_PACKAGE,
+    lintScript: NEAREST_LOOKUP_LINT_SCRIPT,
+  },
+];
+
+const MONOREPO_FILES = [repoPathOf("packages/a/x.ts")];
+
+const MONOREPO_TRACKED = [
+  repoPathOf("packages/a/x.ts"),
+  repoPathOf("package.json"),
+  repoPathOf("packages/a/eslint.config.mjs"),
+];
 
 const PACKAGE_HIT = { file: "packages/a/x.ts" };
 
-const PACKAGE_LEGACY_CARVE_OUT: ExceptionRecord = {
-  kind: "file-carve-out",
-  clause: CLAUSE,
-  mechanism: "eslint",
-  file: repoPathOf("packages/a/legacy.ts"),
-  reason: "Inherited class awaiting paydown",
-  whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
-};
-
-const PACKAGE_CONFIG_REPO = {
-  name: "monorepo-package-config",
-  records: [PACKAGE_LEGACY_CARVE_OUT],
-};
-
-const ROOT_CONFIG_REPO = { name: "monorepo-root-config", records: [] };
-
-const NEAREST_LOOKUP_FLAG = "--flag v10_config_lookup_from_file";
-
-const NEAREST_LOOKUP_TEAMS = [
-  { version: "10.11.0", lintCommand: "eslint ." },
-  { version: "9.39.5", lintCommand: `eslint ${NEAREST_LOOKUP_FLAG} .` },
-];
-
-describe.each(ESLINT_LINES)(
-  "the ESLint runner on %s follows the config lookup the team's own ESLint run uses, over a monorepo with a config per package",
+describe.each(LINES)(
+  "the ESLint runner on $line follows the config lookup the team's own ESLint run uses, over a monorepo with a config per package",
   (line) => {
     it.each(NEAREST_LOOKUP_TEAMS)(
       "applies a package config's projection under ESLint $version running `$lintCommand`",
       async (team) => {
-        await expect(monorepoRun({ line, ...PACKAGE_CONFIG_REPO, ...team })).resolves.toMatchObject(
-          {
-            outcome: "ok",
-            value: { hits: [PACKAGE_HIT], projection: "current" },
-          },
-        );
+        const repo = `${SCRATCH}/${line.line}-package-config-applied-${team.version}`;
+        expect([
+          directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+          directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+          fileText.write({ path: `${repo}/eslint.config.mjs`, text: BARE_CONFIG }),
+          fileText.write({
+            path: `${repo}/disciplines.eslint.mjs`,
+            text: PACKAGE_LEGACY_ROOT_PROJECTION,
+          }),
+          fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+          fileText.write({
+            path: `${repo}/packages/a/eslint.config.mjs`,
+            text: SPREAD_SLICE_CONFIG,
+          }),
+          fileText.write({
+            path: `${repo}/packages/a/disciplines.eslint.mjs`,
+            text: PACKAGE_LEGACY_SLICE,
+          }),
+          fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+          fileText.write({
+            path: `${repo}/node_modules/eslint/package.json`,
+            text: team.eslintPackage,
+          }),
+          fileText.write({ path: `${repo}/package.json`, text: team.lintScript }),
+        ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+        await expect(
+          line.embeddedRunner.run({
+            repoRoot: absolutePathSchema.parse(repo),
+            installRoot: INSTALL_ROOT,
+            declaredConfigRoots: [],
+            files: MONOREPO_FILES,
+            trackedPaths: MONOREPO_TRACKED,
+            clauses: [ESLINT_CLAUSE],
+            records: [PACKAGE_LEGACY_CARVE_OUT],
+          }),
+        ).resolves.toMatchObject({
+          outcome: "ok",
+          value: { hits: [PACKAGE_HIT], projection: "current" },
+        });
       },
     );
 
     it("finds no projection in effect under ESLint 9 run from the root, which loads only the root config", async () => {
+      const repo = `${SCRATCH}/${line.line}-package-config-from-the-root`;
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: BARE_CONFIG }),
+        fileText.write({
+          path: `${repo}/disciplines.eslint.mjs`,
+          text: PACKAGE_LEGACY_ROOT_PROJECTION,
+        }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+        fileText.write({
+          path: `${repo}/packages/a/disciplines.eslint.mjs`,
+          text: PACKAGE_LEGACY_SLICE,
+        }),
+        fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+        fileText.write({
+          path: `${repo}/node_modules/eslint/package.json`,
+          text: ESLINT_9_PACKAGE,
+        }),
+        fileText.write({ path: `${repo}/package.json`, text: ROOT_LINT_SCRIPT }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        monorepoRun({ line, ...PACKAGE_CONFIG_REPO, version: "9.39.5", lintCommand: "eslint ." }),
+        line.embeddedRunner.run({
+          repoRoot: absolutePathSchema.parse(repo),
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: MONOREPO_FILES,
+          trackedPaths: MONOREPO_TRACKED,
+          clauses: [ESLINT_CLAUSE],
+          records: [PACKAGE_LEGACY_CARVE_OUT],
+        }),
       ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], projection: "not-included" } });
     });
 
     it.each(NEAREST_LOOKUP_TEAMS)(
       "finds no projection in effect where a package config drops it under ESLint $version running `$lintCommand`",
       async (team) => {
-        await expect(monorepoRun({ line, ...ROOT_CONFIG_REPO, ...team })).resolves.toMatchObject({
+        const repo = `${SCRATCH}/${line.line}-root-config-dropped-${team.version}`;
+        expect([
+          directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+          directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+          fileText.write({ path: `${repo}/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+          fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+          fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+          fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: BARE_CONFIG }),
+          fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+          fileText.write({
+            path: `${repo}/node_modules/eslint/package.json`,
+            text: team.eslintPackage,
+          }),
+          fileText.write({ path: `${repo}/package.json`, text: team.lintScript }),
+        ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+        await expect(
+          line.embeddedRunner.run({
+            repoRoot: absolutePathSchema.parse(repo),
+            installRoot: INSTALL_ROOT,
+            declaredConfigRoots: [],
+            files: MONOREPO_FILES,
+            trackedPaths: MONOREPO_TRACKED,
+            clauses: [ESLINT_CLAUSE],
+            records: [],
+          }),
+        ).resolves.toMatchObject({
           outcome: "ok",
           value: { hits: [], projection: "not-included" },
         });
@@ -1306,8 +1629,31 @@ describe.each(ESLINT_LINES)(
     );
 
     it("applies the root config's projection to every package under ESLint 9 run from the root", async () => {
+      const repo = `${SCRATCH}/${line.line}-root-config-from-the-root`;
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: BARE_CONFIG }),
+        fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+        fileText.write({
+          path: `${repo}/node_modules/eslint/package.json`,
+          text: ESLINT_9_PACKAGE,
+        }),
+        fileText.write({ path: `${repo}/package.json`, text: ROOT_LINT_SCRIPT }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        monorepoRun({ line, ...ROOT_CONFIG_REPO, version: "9.39.5", lintCommand: "eslint ." }),
+        line.embeddedRunner.run({
+          repoRoot: absolutePathSchema.parse(repo),
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: MONOREPO_FILES,
+          trackedPaths: MONOREPO_TRACKED,
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
         value: { hits: [PACKAGE_HIT], projection: "current" },
@@ -1316,70 +1662,154 @@ describe.each(ESLINT_LINES)(
   },
 );
 
-const PACKAGE_A = `${consumerRepo({ name: "monorepo-package-config" })}/packages/a`;
-
-const lintedFromPackage = async (request: { readonly line: EslintLine; readonly file: string }) => {
-  const Eslint = await eslintClassOn({ line: request.line });
-  return new Eslint({ cwd: PACKAGE_A }).lintText("export class Inherited {}\n", {
-    filePath: `${PACKAGE_A}/${request.file}`,
+describe.each(LINES)("a package that spreads its own projection slice, on real $line", (line) => {
+  it("lints from its own folder against its own config, honouring its carve-out", async () => {
+    const repo = `${SCRATCH}/${line.line}-slice-honoured`;
+    expect([
+      directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: BARE_CONFIG }),
+      fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+      fileText.write({
+        path: `${repo}/packages/a/disciplines.eslint.mjs`,
+        text: PACKAGE_LEGACY_SLICE,
+      }),
+    ]).toEqual([DONE, DONE, DONE, DONE]);
+    const { ESLint } = await line.eslintModule();
+    await expect(
+      new ESLint({ cwd: `${repo}/packages/a` }).lintText("export class Inherited {}\n", {
+        filePath: `${repo}/packages/a/legacy.ts`,
+      }),
+    ).resolves.toMatchObject([{ messages: [] }]);
   });
-};
 
-describe.each(ESLINT_LINES)(
-  "a package that spreads its own projection slice, on real %s",
-  (line) => {
-    it("lints from its own folder against its own config, honouring its carve-out", async () => {
-      await expect(lintedFromPackage({ line, file: "legacy.ts" })).resolves.toMatchObject([
-        { messages: [] },
-      ]);
-    });
+  it("lints from its own folder against its own config, still flagging a file its carve-outs do not name", async () => {
+    const repo = `${SCRATCH}/${line.line}-slice-flagging`;
+    expect([
+      directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: BARE_CONFIG }),
+      fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+      fileText.write({
+        path: `${repo}/packages/a/disciplines.eslint.mjs`,
+        text: PACKAGE_LEGACY_SLICE,
+      }),
+    ]).toEqual([DONE, DONE, DONE, DONE]);
+    const { ESLint } = await line.eslintModule();
+    await expect(
+      new ESLint({ cwd: `${repo}/packages/a` }).lintText("export class Inherited {}\n", {
+        filePath: `${repo}/packages/a/fresh.ts`,
+      }),
+    ).resolves.toMatchObject([{ messages: [{ ruleId: "hone/no-class-authoring" }] }]);
+  });
 
-    it("lints from its own folder against its own config, still flagging a file its carve-outs do not name", async () => {
-      await expect(lintedFromPackage({ line, file: "fresh.ts" })).resolves.toMatchObject([
-        { messages: [{ ruleId: "hone/no-class-authoring" }] },
-      ]);
-    });
-
-    it.each(NEAREST_LOOKUP_TEAMS)(
-      "is judged the same by the check from the root under ESLint $version running `$lintCommand`: slice current and applied, the uncarved file flagged",
-      async (team) => {
-        await expect(monorepoRun({ line, ...PACKAGE_CONFIG_REPO, ...team })).resolves.toMatchObject(
-          {
-            outcome: "ok",
-            value: {
-              hits: [PACKAGE_HIT],
-              projection: "current",
-              slices: [],
-              unprojectedFolders: [],
-            },
-          },
-        );
-      },
-    );
-
-    it.each(NEAREST_LOOKUP_TEAMS)(
-      "names the slice of a package whose config spreads no slice as missing and not applied under ESLint $version running `$lintCommand`",
-      async (team) => {
-        await expect(monorepoRun({ line, ...ROOT_CONFIG_REPO, ...team })).resolves.toMatchObject({
-          outcome: "ok",
-          value: {
-            projection: "not-included",
-            slices: [
-              { slice: "packages/a/disciplines.eslint.mjs", state: "missing" },
-              { slice: "packages/a/disciplines.eslint.mjs", state: "not-applied" },
-            ],
-          },
-        });
-      },
-    );
-
-    it("requires no slice for a package config ESLint 9 never loads, resolving every file from the root config", async () => {
+  it.each(NEAREST_LOOKUP_TEAMS)(
+    "is judged the same by the check from the root under ESLint $version running `$lintCommand`: slice current and applied, the uncarved file flagged",
+    async (team) => {
+      const repo = `${SCRATCH}/${line.line}-slice-judged-${team.version}`;
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: BARE_CONFIG }),
+        fileText.write({
+          path: `${repo}/disciplines.eslint.mjs`,
+          text: PACKAGE_LEGACY_ROOT_PROJECTION,
+        }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+        fileText.write({
+          path: `${repo}/packages/a/disciplines.eslint.mjs`,
+          text: PACKAGE_LEGACY_SLICE,
+        }),
+        fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+        fileText.write({
+          path: `${repo}/node_modules/eslint/package.json`,
+          text: team.eslintPackage,
+        }),
+        fileText.write({ path: `${repo}/package.json`, text: team.lintScript }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
       await expect(
-        monorepoRun({ line, ...ROOT_CONFIG_REPO, version: "9.39.5", lintCommand: "eslint ." }),
+        line.embeddedRunner.run({
+          repoRoot: absolutePathSchema.parse(repo),
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: MONOREPO_FILES,
+          trackedPaths: MONOREPO_TRACKED,
+          clauses: [ESLINT_CLAUSE],
+          records: [PACKAGE_LEGACY_CARVE_OUT],
+        }),
       ).resolves.toMatchObject({
         outcome: "ok",
-        value: { projection: "current", slices: [], unprojectedFolders: [] },
+        value: { hits: [PACKAGE_HIT], projection: "current", slices: [], unprojectedFolders: [] },
       });
+    },
+  );
+
+  it.each(NEAREST_LOOKUP_TEAMS)(
+    "names the slice of a package whose config spreads no slice as missing and not applied under ESLint $version running `$lintCommand`",
+    async (team) => {
+      const repo = `${SCRATCH}/${line.line}-slice-missing-${team.version}`;
+      expect([
+        directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+        directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+        fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+        fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: BARE_CONFIG }),
+        fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+        fileText.write({
+          path: `${repo}/node_modules/eslint/package.json`,
+          text: team.eslintPackage,
+        }),
+        fileText.write({ path: `${repo}/package.json`, text: team.lintScript }),
+      ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+      await expect(
+        line.embeddedRunner.run({
+          repoRoot: absolutePathSchema.parse(repo),
+          installRoot: INSTALL_ROOT,
+          declaredConfigRoots: [],
+          files: MONOREPO_FILES,
+          trackedPaths: MONOREPO_TRACKED,
+          clauses: [ESLINT_CLAUSE],
+          records: [],
+        }),
+      ).resolves.toMatchObject({
+        outcome: "ok",
+        value: {
+          projection: "not-included",
+          slices: [
+            { slice: "packages/a/disciplines.eslint.mjs", state: "missing" },
+            { slice: "packages/a/disciplines.eslint.mjs", state: "not-applied" },
+          ],
+        },
+      });
+    },
+  );
+
+  it("requires no slice for a package config ESLint 9 never loads, resolving every file from the root config", async () => {
+    const repo = `${SCRATCH}/${line.line}-slice-never-loaded`;
+    expect([
+      directory.create({ path: absolutePathSchema.parse(`${repo}/packages/a`) }),
+      directory.create({ path: absolutePathSchema.parse(`${repo}/node_modules/eslint`) }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: SPREAD_SLICE_CONFIG }),
+      fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: PROJECTION }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SETTINGS }),
+      fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: BARE_CONFIG }),
+      fileText.write({ path: `${repo}/packages/a/x.ts`, text: KEPT_CLASS }),
+      fileText.write({ path: `${repo}/node_modules/eslint/package.json`, text: ESLINT_9_PACKAGE }),
+      fileText.write({ path: `${repo}/package.json`, text: ROOT_LINT_SCRIPT }),
+    ]).toEqual([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+    await expect(
+      line.embeddedRunner.run({
+        repoRoot: absolutePathSchema.parse(repo),
+        installRoot: INSTALL_ROOT,
+        declaredConfigRoots: [],
+        files: MONOREPO_FILES,
+        trackedPaths: MONOREPO_TRACKED,
+        clauses: [ESLINT_CLAUSE],
+        records: [],
+      }),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { projection: "current", slices: [], unprojectedFolders: [] },
     });
-  },
-);
+  });
+});
