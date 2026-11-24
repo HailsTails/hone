@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "straight-through-tests"
-  },
+  "serves": [
+    {
+      "rule": "straight-through-tests"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"no find, use bare access in tests for determinstic insistence on behaviours\".",

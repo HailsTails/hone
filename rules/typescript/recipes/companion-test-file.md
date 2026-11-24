@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "tested-where-its-owned"
-  },
+  "serves": [
+    {
+      "rule": "tested-where-its-owned"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"if its a unit test it covers the unit it is the companion file to\".",

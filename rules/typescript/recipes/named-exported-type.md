@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "declared-not-asserted"
-  },
+  "serves": [
+    {
+      "rule": "declared-not-asserted"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "A derived type couples the consumer to the producer's implementation, not its contract.",

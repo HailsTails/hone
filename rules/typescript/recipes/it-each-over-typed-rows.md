@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "straight-through-tests"
-  },
+  "serves": [
+    {
+      "rule": "straight-through-tests"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"It's just boilerplate for cases being tested.\"",

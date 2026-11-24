@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "principle": "no-leak-across-a-boundary"
-  },
+  "serves": [
+    {
+      "principle": "no-leak-across-a-boundary"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"my insistence on not writing complex logic to parse\"; \"Hand rolled is potentially a messy and lossy option?\"; \"Zod is the wire.\"",

@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "one-word-everywhere"
-  },
+  "serves": [
+    {
+      "rule": "one-word-everywhere"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"to stop naming things 10 different ways for the same concept.\"",

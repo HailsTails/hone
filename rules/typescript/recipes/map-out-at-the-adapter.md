@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "principle": "no-leak-across-a-boundary"
-  },
+  "serves": [
+    {
+      "principle": "no-leak-across-a-boundary"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"As we should be runtime objects not json as soon as we leave a boundary\".",

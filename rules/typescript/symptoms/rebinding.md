@@ -38,7 +38,8 @@
   "reports": "seen",
   "recipes": [
     "copy-never-write-in",
-    "functional-iteration"
+    "functional-iteration",
+    "stub-with-vi-fn"
   ],
   "correctUses": []
 }

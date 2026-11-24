@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "straight-through-tests"
-  },
+  "serves": [
+    {
+      "rule": "straight-through-tests"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"more error throwing, not allowed\". A `try` or `catch` in a test is a branch that decides whether the test passes.",

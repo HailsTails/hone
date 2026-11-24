@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "declared-not-asserted"
-  },
+  "serves": [
+    {
+      "rule": "declared-not-asserted"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "One place sets strictness, so no project weakens it unseen.",

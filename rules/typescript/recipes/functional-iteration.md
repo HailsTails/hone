@@ -2,9 +2,14 @@
 
 ```json
 {
-  "serves": {
-    "rule": "doer-or-orchestrator"
-  },
+  "serves": [
+    {
+      "rule": "doer-or-orchestrator"
+    },
+    {
+      "principle": "no-hidden-effects"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"For of mutates by its nature. It doesn't return. It's state holding required or side effect based.\"",

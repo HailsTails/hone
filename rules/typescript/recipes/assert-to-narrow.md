@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "straight-through-tests"
-  },
+  "serves": [
+    {
+      "rule": "straight-through-tests"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"use vi assert to validate it's existence first to narrow the type to exclude the need for optional chain\".",

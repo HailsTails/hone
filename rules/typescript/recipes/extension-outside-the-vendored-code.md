@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "upstream-stays-untouched"
-  },
+  "serves": [
+    {
+      "rule": "upstream-stays-untouched"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"this must be justified as additional drift as impossible to apply as an extension instead\".",
