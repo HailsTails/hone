@@ -20,7 +20,7 @@ export const mapMappingRefusalToLine = (request: { readonly refusal: UpgradeRefu
     case "records-name-refused":
       return `${refusal.name} is not a name version 2 can file records under. ${FAULT_IN_HONE}`;
     case "confined-packages-unreadable":
-      return `the confined packages cannot be read (${refusal.detail}). Correct confinedPackages in disciplines.json, then run the upgrade again.`;
+      return `confinedPackages for ${refusal.clause} in disciplines.json is not a list of package names. Correct it, then run the upgrade again.`;
     case "symptom-unheld":
       return `${symptomUnheldText({ failure: refusal })}. ${FAULT_IN_HONE}`;
   }

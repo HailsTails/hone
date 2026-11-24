@@ -17,8 +17,10 @@ import {
   mapSelectionToVersionTwo,
   readConfinedPackages,
 } from "../../../domain/records/upgrade/selection-mapping.ts";
+import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
@@ -71,28 +73,26 @@ const mapInputsToVersionTwo = (request: {
     clauseChecks: request.clauseChecks,
     notAdoptedClauses: clausesCarriedAsNotAdopted({ inputs: request.inputs }),
   });
-  if (selection.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "mapping-refused", refusals: selection.error } };
-  }
   const confined = readConfinedPackages({ selection: request.selection });
-  if (confined.confined === "unreadable") {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "mapping-refused",
-        refusals: [{ kind: "confined-packages-unreadable", detail: confined.detail }],
-      },
-    };
-  }
   const records = mappedRecords({
     inputs: request.inputs,
     clauseChecks: request.clauseChecks,
     content: request.content,
     confinedOutsideDependencies: confined.packages,
   });
-  return records.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "mapping-refused", refusals: records.error } }
-    : { outcome: "ok", value: { settings: selection.value, records: records.value } };
+  const refusals: readonly UpgradeRefusal[] = [
+    ...(selection.outcome === "failed" ? selection.error : []),
+    ...(confined.confined === "unreadable"
+      ? confined.clauses.map((clause): UpgradeRefusal => ({
+          kind: "confined-packages-unreadable",
+          clause: clauseAddressText({ address: clause }),
+        }))
+      : []),
+    ...(records.outcome === "failed" ? records.error : []),
+  ];
+  return selection.outcome === "ok" && records.outcome === "ok" && refusals.length === 0
+    ? { outcome: "ok", value: { settings: selection.value, records: records.value } }
+    : { outcome: "failed", error: { kind: "mapping-refused", refusals } };
 };
 
 const recordFilesOf = (request: {

@@ -24,7 +24,7 @@ export type UpgradeRefusal =
       readonly credited: UnansweredCredit;
     }
   | { readonly kind: "records-name-refused"; readonly name: string }
-  | { readonly kind: "confined-packages-unreadable"; readonly detail: string }
+  | { readonly kind: "confined-packages-unreadable"; readonly clause: string }
   | SymptomUnheld;
 
 export type UpgradeDrop = {

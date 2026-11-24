@@ -158,11 +158,21 @@ describe("readConfinedPackages", () => {
     expect(confined).toEqual({ confined: "listed", packages: [] });
   });
 
-  it("reads a confinedPackages that is not a list of package names as unreadable, naming its clause", () => {
+  it("reads every confinedPackages that is not a list of package names as unreadable, naming each clause and carrying the readable packages", () => {
     const importBoundaries = {
       ruleSet: TOOL_RULE_SET,
       discipline: disciplineIdOf("CD-19"),
       clause: clauseIdOf("import-boundaries"),
+    };
+    const loops = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-15"),
+      clause: clauseIdOf("loops"),
+    };
+    const names = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-1"),
+      clause: clauseIdOf("names"),
     };
 
     const confined = readConfinedPackages({
@@ -175,14 +185,19 @@ describe("readConfinedPackages", () => {
         fileExceptionWhyChains: "required",
         reportOutput: "full",
         assessment: { forfeiture: "this-run" },
-        clauseSettings: [[importBoundaries, { confinedPackages: ["uuid", 3] }]],
+        clauseSettings: [
+          [importBoundaries, { confinedPackages: ["uuid", 3] }],
+          [loops, { confinedPackages: "zod" }],
+          [names, { confinedPackages: ["eslint"] }],
+        ],
         checkEditions: "pinned",
       },
     });
 
     expect(confined).toEqual({
       confined: "unreadable",
-      detail: "confinedPackages for CD-19#import-boundaries is not a list of package names",
+      clauses: [importBoundaries, loops],
+      packages: ["eslint"],
     });
   });
 });

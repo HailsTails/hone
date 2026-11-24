@@ -35,11 +35,8 @@ describe("mapMappingRefusalToLine", () => {
     },
     {
       name: "confined packages that cannot be read",
-      refusal: {
-        kind: "confined-packages-unreadable",
-        detail: "confinedPackages for CD-19#import-boundaries is not a list of package names",
-      },
-      line: "the confined packages cannot be read (confinedPackages for CD-19#import-boundaries is not a list of package names). Correct confinedPackages in disciplines.json, then run the upgrade again.",
+      refusal: { kind: "confined-packages-unreadable", clause: "CD-19#import-boundaries" },
+      line: "confinedPackages for CD-19#import-boundaries in disciplines.json is not a list of package names. Correct it, then run the upgrade again.",
     },
     {
       name: "a check whose symptom no catalogue holds",

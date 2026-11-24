@@ -594,10 +594,7 @@ describe("upgradePlanOf", () => {
       error: {
         kind: "mapping-refused",
         refusals: [
-          {
-            kind: "confined-packages-unreadable",
-            detail: "confinedPackages for CD-19#import-boundaries is not a list of package names",
-          },
+          { kind: "confined-packages-unreadable", clause: "CD-19#import-boundaries" },
         ],
       },
     });
@@ -707,6 +704,42 @@ describe("upgradePlanOf", () => {
       error: {
         kind: "mapping-refused",
         refusals: [{ kind: "symptom-unheld", symptom: LOOP_KEYWORD_LOOPS.symptom }],
+      },
+    });
+  });
+
+  it("refuses with the settings, confined packages and records refusals together, in that order", async () => {
+    const request = requestOver({
+      reading: {
+        selection: {
+          ...SELECTION,
+          clauses: [
+            [LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }],
+            [LAYERING_CLAUSE, { state: "run", mechanism: AUDIT }],
+          ],
+          clauseSettings: [[LAYERING_CLAUSE, { confinedPackages: [""] }]],
+        },
+        heads: [CARVE_OUT_HEAD],
+      },
+      answered: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "nothing" } }],
+    });
+
+    const plan = await upgradePlanOf(request);
+
+    expect(plan).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "mapping-refused",
+        refusals: [
+          { kind: "clause-without-check", clause: "CD-13#layering" },
+          { kind: "confined-packages-unreadable", clause: "CD-13#layering" },
+          {
+            kind: "record-answers-nothing",
+            clause: "CD-15#loops",
+            file: "src/a.ts",
+            credited: "nothing",
+          },
+        ],
       },
     });
   });
