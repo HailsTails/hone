@@ -36,6 +36,10 @@ const COMMAND_SOURCE = "src/hone.ts";
 
 const RUNNER_ENTRY = /^src\/infrastructure\/engines\/[^/]+\/runner\/runner\.ts$/;
 
+const TOP_LEVEL_PROCESS_ENTRY = /^src\/[^/]+\.process\.ts$/;
+
+const PROCESS_ENTRY_SHAPES = [RUNNER_ENTRY, TOP_LEVEL_PROCESS_ENTRY] as const;
+
 const PIECE_FILE = /^src\/infrastructure\/engines\/([^/]+)\/([^/]+)\/piece\.json$/;
 
 const NAMED_PIECE_FILE = new RegExp(
@@ -297,7 +301,9 @@ export const packagePlanOf = (request: {
   if (pieces.outcome === "failed") {
     return pieces;
   }
-  const runners = shippedPaths(request).filter((path) => RUNNER_ENTRY.test(path));
+  const processEntries = shippedPaths(request).filter((path) =>
+    PROCESS_ENTRY_SHAPES.some((shape) => shape.test(path)),
+  );
   const pieceModules = pieces.value.flatMap(pieceModuleEntries);
   return {
     outcome: "ok",
@@ -306,7 +312,7 @@ export const packagePlanOf = (request: {
         ...new Set([
           COMMAND_SOURCE,
           ...PUBLIC_TYPE_ENTRIES.map((entry) => entry.source),
-          ...runners,
+          ...processEntries,
           ...pieceModules,
         ]),
       ],
