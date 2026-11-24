@@ -593,9 +593,7 @@ describe("upgradePlanOf", () => {
       outcome: "failed",
       error: {
         kind: "mapping-refused",
-        refusals: [
-          { kind: "confined-packages-unreadable", clause: "CD-19#import-boundaries" },
-        ],
+        refusals: [{ kind: "confined-packages-unreadable", clause: "CD-19#import-boundaries" }],
       },
     });
   });
