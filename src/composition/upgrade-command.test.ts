@@ -124,7 +124,7 @@ describe("the upgrade command", () => {
 });
 
 describe("createFoundTreeReach", () => {
-  it("measures in a child process, over git that counts the files the upgrade wrote as tracked", () => {
+  it("measures in a child process, over git that counts the files the upgrade wrote as tracked and not those it removes", () => {
     const command = commandWith({
       arguments: [],
       git: gitListing({ outcome: "ok", value: [repoPathOf("src/a.ts")] }),
@@ -136,12 +136,13 @@ describe("createFoundTreeReach", () => {
       command,
       located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       written: [repoPathOf("hone.eslint.d.mts")],
+      removed: [repoPathOf("src/a.ts")],
     });
 
     const [[handed]] = childMeasuredStagesOver.mock.calls;
     expect(handed.ports.git.trackedPaths({ repoRoot: absoluteRootOf("/repo") })).toEqual({
       outcome: "ok",
-      value: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+      value: [repoPathOf("hone.eslint.d.mts")],
     });
   });
 
@@ -159,6 +160,7 @@ describe("createFoundTreeReach", () => {
       command,
       located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       written: [repoPathOf("hone-records/debt/loop-keyword.json")],
+      removed: [],
     });
 
     reach.recordsSourceFor({ catalogue: CATALOGUE });

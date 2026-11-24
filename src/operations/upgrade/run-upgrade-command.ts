@@ -43,6 +43,7 @@ import {
   plannedProjectionOf,
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
+import type { FoundTreeChanges } from "../../application/upgrade/found-tree/found-tree-git.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import { proofEffectsOver } from "../../application/upgrade/proof-writes/applied-effects.ts";
 import type { ProofQueries } from "../../application/upgrade/proof-writes/proof-writes.ts";
@@ -69,7 +70,11 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
-import { createSmoothingCommands, type FoundTreeReach } from "./smoothing-commands.ts";
+import {
+  createSmoothingCommands,
+  type FoundTreeReach,
+  type SmoothingCommandsRequest,
+} from "./smoothing-commands.ts";
 
 export type UpgradePorts = PlannedProjectionPorts & {
   readonly directory: DirectoryPort;
@@ -102,7 +107,7 @@ export type UpgradeInput = {
   readonly proofOf: (
     request: UpgradeProofRequest,
   ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
-  readonly foundTreeReach: (request: ProofWritten) => FoundTreeReach;
+  readonly foundTreeReach: (request: FoundTreeChanges) => FoundTreeReach;
   readonly pointers: CheckReportPointers;
 };
 
@@ -230,11 +235,11 @@ const projectionFilesFor = (request: UpgradeInput): ProjectionFilesOf =>
   });
 
 const versionTwoRunFor = (request: {
-  readonly foundTreeReach: UpgradeInput["foundTreeReach"];
+  readonly reach: SmoothingCommandsRequest["reach"];
   readonly proofWritten: ProofWritten;
 }): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
   versionTwoRunOver({
-    stages: request.foundTreeReach(request.proofWritten).stages,
+    stages: request.reach(request.proofWritten).stages,
     arguments: {
       forfeiture: undefined,
       reportOutput: undefined,
@@ -242,11 +247,24 @@ const versionTwoRunFor = (request: {
     },
   });
 
+const createReachOverLayout =
+  (
+    request: Pick<UpgradeInput, "foundTreeReach"> & {
+      readonly layout: Pick<TeamLayoutPlan, "files" | "removed">;
+    },
+  ): SmoothingCommandsRequest["reach"] =>
+  ({ written }) =>
+    request.foundTreeReach({
+      written: [...request.layout.files.map(({ file }) => file), ...written],
+      removed: request.layout.removed,
+    });
+
 const createUpgradeSmoothing = (
-  request: Pick<UpgradeInput, "foundTreeReach" | "located" | "ports" | "pointers">,
+  request: Pick<UpgradeInput, "located" | "ports" | "pointers"> &
+    Pick<SmoothingCommandsRequest, "reach">,
 ): SmoothingCommands =>
   createSmoothingCommands({
-    reach: request.foundTreeReach,
+    reach: request.reach,
     repoRoot: request.located.repoRoot,
     recordsReader: request.ports.recordsReader,
     recordsEditor: request.ports.recordsEditor,
@@ -257,9 +275,14 @@ const proofRequestOf = (
   request: UpgradeInput & {
     readonly prepared: Prepared;
     readonly ruleSetLayout: RuleSetLayoutRemoval;
+    readonly layoutFiles: TeamLayoutPlan["files"];
   },
 ): UpgradeProofRequest => {
-  const { ports, command, located, prepared } = request;
+  const { ports, command, located, prepared, ruleSetLayout, layoutFiles } = request;
+  const reach = createReachOverLayout({
+    foundTreeReach: request.foundTreeReach,
+    layout: { files: layoutFiles, removed: ruleSetLayout.removed },
+  });
   const at = {
     fileText: command.fileText,
     fileRemoval: ports.fileRemoval,
@@ -290,14 +313,13 @@ const proofRequestOf = (
     }),
     runs: request.proofRunsOf({
       versionOne: before.report,
-      versionTwo: (proofWritten) =>
-        versionTwoRunFor({ foundTreeReach: request.foundTreeReach, proofWritten }),
+      versionTwo: (proofWritten) => versionTwoRunFor({ reach, proofWritten }),
       pointers: request.pointers,
     }),
-    smoothing: createUpgradeSmoothing(request),
+    smoothing: createUpgradeSmoothing({ ...request, reach }),
     reading: prepared.read.reading,
     versionOneFiles: prepared.read.versionOneFiles,
-    ruleSetLayout: request.ruleSetLayout,
+    ruleSetLayout,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
     trackedPaths: prepared.trackedPaths,
@@ -401,6 +423,7 @@ export const upgradeOf = async (
           ...request,
           prepared: { ...prepared.value, catalogues },
           ruleSetLayout: { removed: plan.value.removed, folders: plan.value.folders },
+          layoutFiles: plan.value.files,
         }),
       ),
   });

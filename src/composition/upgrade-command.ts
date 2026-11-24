@@ -1,8 +1,9 @@
 import type { UpgradeArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import { moduleExtensionOf } from "../application/ports/host/module-extension.ts";
-import type { CheckReportPointers, ProofWritten } from "../application/ports/upgrade/proof-runs.ts";
+import type { CheckReportPointers } from "../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../application/ports/upgrade/upgrade-carried-over.ts";
+import type { FoundTreeChanges } from "../application/upgrade/found-tree/found-tree-git.ts";
 import { foundTreeRunReachOf } from "../application/upgrade/found-tree/found-tree-reach.ts";
 import { upgradeProof } from "../application/upgrade/proof/upgrade-proof.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
@@ -51,10 +52,11 @@ type Placed = {
 
 type Upgraded = { readonly located: RepositoryLocated; readonly carried: UpgradeCarriedOver };
 
-export const createFoundTreeReach = (request: Placed & ProofWritten): FoundTreeReach => {
-  const { ports, command, located, written } = request;
+export const createFoundTreeReach = (request: Placed & FoundTreeChanges): FoundTreeReach => {
+  const { ports, command, located, written, removed } = request;
   const found = foundTreeRunReachOf({
     written,
+    removed,
     recordsSourceOf: ports.recordsSourceOf,
     foundTreeRecordsSourceOf: ports.foundTreeRecordsSourceOf,
     loadFailureDetail: ports.loadFailureDetail,
@@ -146,7 +148,7 @@ const upgradeInputOf = (
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),
     proofRunsOf,
     proofOf: upgradeProof,
-    foundTreeReach: ({ written }) => createFoundTreeReach({ ...request, written }),
+    foundTreeReach: (changes) => createFoundTreeReach({ ...request, ...changes }),
     pointers: request.pointers,
   };
 };

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../application/ports/file-system/directory-removal-port.ts";
+import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
 import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
@@ -576,7 +577,7 @@ describe("upgradeOf", () => {
     });
   });
 
-  it("runs the version 2 proof and the smoothing commands over the found tree with the files the upgrade wrote, handing the check the report pointers", async () => {
+  it("runs the version 2 proof and the smoothing commands over the found tree with the team layout and the files the upgrade wrote, less those the layout removes, handing the check the report pointers", async () => {
     const proofRunsOf = vi.fn<ProofRunsOf>().mockReturnValue({
       versionOne: vi.fn<ProofRuns["versionOne"]>(),
       versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
@@ -599,16 +600,57 @@ describe("upgradeOf", () => {
       .fn<UpgradeInput["foundTreeReach"]>()
       .mockReturnValue({ stages, recordsSourceFor: vi.fn() });
     const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
-      outcome: "failed",
-      error: {
-        kind: "oracle-failed",
-        failure: { kind: "version-one-run-failed", detail: "x" },
+      outcome: "ok",
+      value: {
+        written: [],
+        replaced: [],
+        removed: { files: [], folders: [] },
+        records: [],
+        smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
       },
     });
+    const git = gitListing({ tracked: TRACKED });
+    const command = commandOver({ git });
+    const layout: VersionOneTeamLayout = {
+      ruleSet: { name: ruleSetNameOf("acme") },
+      location: { location: "folder", path: repoPathOf("acme") },
+      namesFile: repoPathOf("acme/version-two-names.json"),
+      clauses: [],
+      definitions: [
+        { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
+      ],
+      versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
+    };
     const written = { written: [repoPathOf("hone.eslint.d.mts")] };
     await upgradeOf(
       inputWith({
-        git: gitListing({ tracked: TRACKED }),
+        git,
+        command: {
+          ...command,
+          path: {
+            ...command.path,
+            join: vi
+              .fn<PathPort["join"]>()
+              .mockReturnValue("/repo/acme/rules/principles/repository-ready.md"),
+            directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue("/repo/acme"),
+          },
+        },
+        ports: {
+          ...PORTS,
+          entryKind: {
+            kindOf: vi
+              .fn<EntryKindPort["kindOf"]>()
+              .mockReturnValueOnce("absent")
+              .mockReturnValue("directory"),
+          },
+          fileCreation: {
+            createNew: vi
+              .fn<FileCreationPort["createNew"]>()
+              .mockReturnValue({ outcome: "ok", value: undefined }),
+          },
+        },
+        versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [layout] }),
+        itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
         recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
         versionOneReadOf: vi
           .fn<VersionOneReadOf>()
@@ -640,7 +682,32 @@ describe("upgradeOf", () => {
         pruneCommand: "hone prune-debt --repo /repo",
         projectCommand: "hone project --repo /repo",
       },
-      reachedFor: [[written], [written]],
+      reachedFor: [
+        [
+          {
+            written: [
+              repoPathOf("acme/rules/principles/repository-ready.md"),
+              repoPathOf("hone.eslint.d.mts"),
+            ],
+            removed: [
+              repoPathOf("acme/rules/ACME-1/discipline.json"),
+              repoPathOf("acme/version-two-names.json"),
+            ],
+          },
+        ],
+        [
+          {
+            written: [
+              repoPathOf("acme/rules/principles/repository-ready.md"),
+              repoPathOf("hone.eslint.d.mts"),
+            ],
+            removed: [
+              repoPathOf("acme/rules/ACME-1/discipline.json"),
+              repoPathOf("acme/version-two-names.json"),
+            ],
+          },
+        ],
+      ],
     });
   });
 });
