@@ -6,6 +6,7 @@ import type { RecordRepointing } from "../../domain/records/hone-records/records
 import { recordsAtMovedPathsOf } from "../../domain/records/hone-records/records-following-renames.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
+import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
 import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
@@ -18,7 +19,6 @@ import {
 } from "../../domain/settings/report-output.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
-import type { CheckedTree } from "./checked-tree-of.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {

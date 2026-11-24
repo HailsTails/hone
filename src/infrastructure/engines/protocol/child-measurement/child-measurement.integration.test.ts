@@ -15,7 +15,7 @@ describe("createDefaultChildEnginesStage", () => {
       baseRevision: undefined,
     });
 
-    const runs = await engines();
+    const runs = await engines({ tree: { tracked: [], declaredConfigRoots: [] } });
 
     expect(runs).toEqual({
       outcome: "failed",

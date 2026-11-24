@@ -2,6 +2,7 @@ import type { NamedEngineRun } from "../../../../application/ports/engine/engine
 import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
 import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type { RunLoadFailure } from "../../../../domain/report/run-load-failure.ts";
+import type { CheckedTree } from "../../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { createMeasurementEntrySegments } from "../../../node/modules/install-layout.ts";
 import {
@@ -11,6 +12,7 @@ import {
 } from "../../../node/process/execution-port.ts";
 import {
   createMeasurementArguments,
+  createMeasurementInput,
   decodeMeasuredRuns,
   type MeasurementArguments,
 } from "./measurement-wire.ts";
@@ -19,6 +21,12 @@ type ChildEnginesLocations = MeasurementArguments & {
   readonly path: Pick<PathPort, "join">;
   readonly moduleExtension: ModuleExtension;
 };
+
+type MeasuredTree = { readonly tree: CheckedTree };
+
+type ChildEnginesStage = (
+  stage: MeasuredTree,
+) => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>;
 
 type ChildEnginesRequest = ChildEnginesLocations & {
   readonly execution: ExecutionPort<"passed-through", "opened">;
@@ -36,13 +44,14 @@ const CHILD_MEASUREMENT_POLICY: ExecutionPolicy<"passed-through", "opened"> = {
 };
 
 const measureInChild = (
-  request: ChildEnginesRequest,
+  request: ChildEnginesRequest & MeasuredTree,
 ): Result<readonly NamedEngineRun[], RunLoadFailure> => {
   const executed = request.execution.run({
     arguments: [
       request.path.join({ segments: createMeasurementEntrySegments(request) }),
       ...createMeasurementArguments(request),
     ],
+    input: createMeasurementInput(request),
   });
   return executed.outcome === "failed"
     ? {
@@ -56,15 +65,13 @@ const measureInChild = (
 };
 
 export const createChildEnginesStage =
-  (
-    request: ChildEnginesRequest,
-  ): (() => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>) =>
-  () =>
-    Promise.resolve(measureInChild(request));
+  (request: ChildEnginesRequest): ChildEnginesStage =>
+  ({ tree }) =>
+    Promise.resolve(measureInChild({ ...request, tree }));
 
 export const createDefaultChildEnginesStage = (
   locations: ChildEnginesLocations,
-): (() => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>) =>
+): ChildEnginesStage =>
   createChildEnginesStage({
     ...locations,
     execution: createDefaultExecutionPort({ policy: CHILD_MEASUREMENT_POLICY }),

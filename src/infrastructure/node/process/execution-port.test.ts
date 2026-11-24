@@ -33,7 +33,11 @@ describe("createExecutionPort", () => {
     const execution = createExecutionPort({ spawn, policy, ambientEnvironment });
     const commandArguments = ["tool entry.mjs", "--label=a & b"];
 
-    const first = execution.run({ arguments: commandArguments, cwd: WORKING_DIRECTORY });
+    const first = execution.run({
+      arguments: commandArguments,
+      cwd: WORKING_DIRECTORY,
+      input: "the request",
+    });
     Object.assign(ambientEnvironment, { PATH: "changed ambient" });
     Object.assign(childEnvironment, { PATH: "changed child" });
     Object.assign(policy, { executable: "other", timeoutMilliseconds: 1, maximumOutputBytes: 1 });
@@ -52,6 +56,7 @@ describe("createExecutionPort", () => {
       executable: "node",
       arguments: ["tool entry.mjs", "--label=a & b"],
       cwd: WORKING_DIRECTORY,
+      input: "the request",
       environment: { PATH: "child search path", MODE: "isolated" },
       timeoutMilliseconds: 60000,
       maximumOutputBytes: 16777216,
@@ -228,6 +233,9 @@ describe("createExecutionSpawn", () => {
       }),
     });
     expect(spawnProvider).not.toHaveBeenCalledWith(
+      expect.objectContaining({ options: expect.objectContaining({ input: expect.anything() }) }),
+    );
+    expect(spawnProvider).not.toHaveBeenCalledWith(
       expect.objectContaining({ options: expect.objectContaining({ shell: true }) }),
     );
     expect(spawnProvider).not.toHaveBeenCalledWith(
@@ -248,6 +256,7 @@ describe("createExecutionSpawn", () => {
     const spawnOutcome = createExecutionSpawn({ spawnProvider })({
       executable: "node",
       arguments: ["measure.mjs"],
+      input: "the request",
       environment: {},
       timeoutMilliseconds: undefined,
       maximumOutputBytes: 1024,
@@ -268,6 +277,7 @@ describe("createExecutionSpawn", () => {
       commandArguments: ["measure.mjs"],
       options: {
         encoding: "utf8",
+        input: "the request",
         env: {},
         stdio: ["pipe", "inherit", "pipe", "pipe"],
         windowsHide: true,

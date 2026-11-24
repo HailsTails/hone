@@ -1,5 +1,6 @@
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
 import { exclusionOf } from "../../domain/repository/exclusion.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
@@ -11,11 +12,6 @@ export type TreeFailure = Extract<
   LoadFailure,
   { readonly kind: "git-failed" } | { readonly kind: "config-root-untracked" }
 >;
-
-export type CheckedTree = {
-  readonly tracked: readonly RepoPath[];
-  readonly declaredConfigRoots: readonly RepoPath[];
-};
 
 type TreeRequest = {
   readonly git: Pick<GitPort, "trackedPaths">;

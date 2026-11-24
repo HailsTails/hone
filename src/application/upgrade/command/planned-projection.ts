@@ -8,6 +8,7 @@ import type { MappedRecordsDocument } from "../../../domain/records/upgrade/reco
 import { runFailureOf } from "../../../domain/report/run-failure.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import { projectionOutputsOf } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
@@ -22,7 +23,7 @@ import type { CheckPieceSourceOf, SettingsSourcesOf } from "../../ports/settings
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
-import { type CheckedTree, checkedTreeOf } from "../../run/checked-tree-of.ts";
+import { checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import { namedEngineProjectionsOf } from "../../run/engines/named-engines-run.ts";
 import {

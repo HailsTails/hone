@@ -3,12 +3,15 @@ import { z } from "zod";
 import type { NamedEngineRun } from "../../../../application/ports/engine/engine-run.ts";
 import type { ProcessPort } from "../../../../application/ports/host/process-port.ts";
 import type { ReplyPort } from "../../../../application/ports/host/reply-port.ts";
+import type { RequestPort } from "../../../../application/ports/host/request-port.ts";
 import type { RunLoadFailure } from "../../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
+import type { CheckedTree } from "../../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { parsedJson } from "../../../content-files/parsed-json.ts";
 import { engineIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { namedChecksRunReportSchema } from "../checks/checks-runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
@@ -20,9 +23,11 @@ export type MeasurementArguments = {
   readonly baseRevision: string | undefined;
 };
 
+export type Measuring = MeasurementArguments & { readonly tree: CheckedTree };
+
 type MeasuredRuns = Result<readonly NamedEngineRun[], RunLoadFailure>;
 
-export type MeasureEngines = (measuring: MeasurementArguments) => Promise<MeasuredRuns>;
+export type MeasureEngines = (measuring: Measuring) => Promise<MeasuredRuns>;
 
 const measurementArgumentsSchema = z
   .tuple([absolutePathSchema, absolutePathSchema, z.string().min(1).optional()])
@@ -31,6 +36,16 @@ const measurementArgumentsSchema = z
 export const isMeasurementArgumentsSchemaEqual: Equal<
   DeepReadonly<z.output<typeof measurementArgumentsSchema>>,
   MeasurementArguments
+> = true;
+
+const checkedTreeSchema = z.strictObject({
+  tracked: z.array(repoPathSchema).readonly(),
+  declaredConfigRoots: z.array(repoPathSchema).readonly(),
+});
+
+export const isCheckedTreeSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof checkedTreeSchema>>,
+  CheckedTree
 > = true;
 
 const engineReplySchema = z.strictObject({
@@ -50,6 +65,9 @@ export const createMeasurementArguments = (request: MeasurementArguments): reado
   request.baseRevision === undefined
     ? [request.installRoot, request.repoRoot]
     : [request.installRoot, request.repoRoot, request.baseRevision];
+
+export const createMeasurementInput = (request: { readonly tree: CheckedTree }): string =>
+  JSON.stringify(request.tree);
 
 const mapRunToEngineReply = (request: {
   readonly run: NamedEngineRun;
@@ -78,21 +96,48 @@ const mapMeasuredToReply = (request: {
         runs: request.measured.value.map((run) => mapRunToEngineReply({ run })),
       };
 
+const decodeTree = (request: { readonly input: string }): Result<CheckedTree, string> => {
+  const parsed = parsedJson({ text: request.input });
+  if (parsed.outcome === "failed") {
+    return { outcome: "failed", error: `the tree is not JSON: ${parsed.error}` };
+  }
+  const tree = checkedTreeSchema.safeParse(parsed.value);
+  return tree.success
+    ? { outcome: "ok", value: tree.data }
+    : { outcome: "failed", error: z.prettifyError(tree.error) };
+};
+
+const decodeMeasuring = (request: {
+  readonly arguments: readonly string[];
+  readonly input: string;
+}): Result<Measuring, string> => {
+  const located = measurementArgumentsSchema.safeParse(request.arguments);
+  if (!located.success) {
+    return { outcome: "failed", error: z.prettifyError(located.error) };
+  }
+  const tree = decodeTree(request);
+  return tree.outcome === "ok"
+    ? { outcome: "ok", value: { ...located.data, tree: tree.value } }
+    : tree;
+};
+
 const readMeasured = async (request: {
   readonly process: Pick<ProcessPort, "arguments">;
+  readonly request: RequestPort;
   readonly measure: MeasureEngines;
 }): Promise<MeasuredRuns> => {
-  const measuring = measurementArgumentsSchema.safeParse(request.process.arguments);
-  return measuring.success
-    ? request.measure(measuring.data)
-    : {
-        outcome: "failed",
-        error: { kind: "arguments-invalid", detail: z.prettifyError(measuring.error) },
-      };
+  const measuring = decodeMeasuring({
+    arguments: request.process.arguments,
+    input: request.request.read(),
+  });
+  return measuring.outcome === "ok"
+    ? request.measure(measuring.value)
+    : { outcome: "failed", error: { kind: "arguments-invalid", detail: measuring.error } };
 };
 
 export const runEnginesMeasurement = async (request: {
   readonly process: Pick<ProcessPort, "arguments">;
+  readonly request: RequestPort;
   readonly reply: ReplyPort;
   readonly measure: MeasureEngines;
 }): Promise<void> => {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import type { ExecutionPort } from "../../../node/process/execution-port.ts";
 import { createChildEnginesStage } from "./child-measurement.ts";
@@ -26,11 +27,17 @@ describe("createChildEnginesStage", () => {
       baseRevision: "origin/main",
     });
 
-    const runs = await engines();
+    const runs = await engines({
+      tree: {
+        tracked: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+        declaredConfigRoots: [repoPathOf("packages/a")],
+      },
+    });
 
     expect(runs).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } });
     expect(execution.run).toHaveBeenCalledExactlyOnceWith({
       arguments: ["/install/src/measure-engines.process.js", "/install", "/repo", "origin/main"],
+      input: '{"tracked":["src/a.ts","hone.eslint.d.mts"],"declaredConfigRoots":["packages/a"]}',
     });
   });
 
@@ -57,7 +64,7 @@ describe("createChildEnginesStage", () => {
       baseRevision: undefined,
     });
 
-    const runs = await engines();
+    const runs = await engines({ tree: { tracked: [], declaredConfigRoots: [] } });
 
     expect(runs).toEqual({
       outcome: "failed",
