@@ -11,6 +11,9 @@ These rules hold for every session and subagent working in this repository. They
 - Currying only where one place binds a value and hands the function to another place. Never call `f(a)(b)` on one line.
 - Prefer static declarations (template literal types, closed unions) to runtime checks. Runtime parsing is for values crossing a boundary from outside.
 - Fix a tool's defect at its source, never by hand-editing records around it.
+- Judge each unit against the rules, not only whether checks pass. A clean self-check doesn't mean a unit holds one reason to change.
+- Function names use plain verbs: mostly `createX` (building an entity or value object) or `mapXToY`, and plain `read`, `write`, `run` or `remove` at a port. No `xOf` or `xFrom` names, no invented verbs.
+- Names come from Hone's own vocabulary, never from what the work is called (freeze, fold, slice and the like).
 
 ## Tests
 
@@ -20,6 +23,7 @@ These rules hold for every session and subagent working in this repository. They
 - A test with a real outside tool (ESLint, TypeScript, git, a package install) proves only the complexity or risk that tool itself brings, such as ESLint's rule protocol, config loading, ignores, disable directives and majors. Testing a capability end to end because it is used end to end is not owed.
 - Don't test the type system. No `@ts-expect-error` cases, no type-equality assertions.
 - No shared test helpers, harnesses or fixtures folders. What a test needs is written out in the test.
+- Arrange, act and assert are visibly apart: the input written out, the result bound, then asserted.
 - A new on-disk fixture needs Helen's explicit OK.
 
 ## Content
