@@ -49,7 +49,10 @@ describe("createEsbuildBundlerPort bundle", () => {
             path: "src/infrastructure/node/process/execution-port.js",
             text: expect.any(String),
             entryPoint: "src/infrastructure/node/process/execution-port.ts",
-            inputs: ["src/infrastructure/node/process/execution-port.ts"],
+            inputs: [
+              "src/infrastructure/node/process/execution-port.ts",
+              "src/infrastructure/node/process/reply-pipe.ts",
+            ],
             externalImports: ["node:child_process", "zod"],
           },
         ],
