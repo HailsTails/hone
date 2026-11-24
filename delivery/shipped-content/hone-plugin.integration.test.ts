@@ -1,7 +1,8 @@
 import { assert, describe, expect, it } from "vitest";
 
+import { mapToolCatalogueToEngineChecks } from "../../src/application/run/engines/tool-engine-checks.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import { createBoundCatalogueOf } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { honePluginAt } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/hone-plugin.ts";
 import { installedEslintBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
@@ -19,22 +20,18 @@ const REPOSITORY_ROOT = absolutePathSchema.parse(
 
 describe("honePluginAt, over this repository's catalogue and pieces", () => {
   it("loads the one plugin, holding a rule under the id of every check the catalogue runs on ESLint and no other", async () => {
-    const catalogue = readBoundCatalogue({
-      ruleSet: "hone",
-      inheritedRecordKinds: [],
-      directory: createDefaultDirectoryPort({}),
+    const checks = mapToolCatalogueToEngineChecks({
+      boundCatalogueOf: createBoundCatalogueOf({ directory: createDefaultDirectoryPort({}) }),
       fileText,
       path,
-      ruleSetRoot: REPOSITORY_ROOT,
       installRoot: REPOSITORY_ROOT,
     });
-    assert(catalogue.outcome === "ok", "this repository's catalogue reads");
-    assert(catalogue.value.held === "catalogue", "this repository holds a catalogue");
+    assert(checks.outcome === "ok", "this repository's catalogue reads into checks");
     const boundary = await installedEslintBoundary();
     assert(boundary.outcome === "ok", "the installed ESLint has a boundary");
 
     const plugin = await honePluginAt({
-      checks: catalogue.value.catalogue.checks,
+      checks: checks.value,
       installRoot: REPOSITORY_ROOT,
       fileText,
       path,

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { NamedEnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -26,6 +27,7 @@ import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
@@ -243,7 +245,7 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
   page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
@@ -252,7 +254,7 @@ const CLOCK_CHECK: Check = {
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
   page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
@@ -261,7 +263,7 @@ const TEST_BODY_CHECK: Check = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
@@ -283,15 +285,29 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -369,6 +385,108 @@ const SETTINGS: NamedSettingsReading = {
 };
 
 describe("versionTwoStagesOver", () => {
+  it("hands the engine the checks the run mapped for it, with their symptoms' titles", async () => {
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "tool-failed", detail: "stopped" },
+      },
+    });
+    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+      outcome: "ok",
+      value: {
+        fileScope: "tracked",
+        projectedKinds: [],
+        run: vi.fn(),
+        conform: vi.fn(),
+        project: vi.fn(),
+      },
+    });
+    const stages = versionTwoStagesOver({
+      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
+    });
+
+    await stages.engines({
+      catalogue: REPORT_CATALOGUE,
+      settings: {
+        ...SETTINGS,
+        selection: {
+          ...SETTINGS.selection,
+          selected: [
+            {
+              address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },
+              check: CLOCK_CHECK,
+              exceptions: "allowed",
+              editions: {
+                declared: [editionOf("1")],
+                default: editionOf("1"),
+                latest: editionOf("1"),
+              },
+              binding: {
+                engine: "walker",
+                address: "date-used-directly#clock-sources",
+                ruleSet: TOOL_RULE_SET,
+                anchor: { kind: "file" },
+                pieceRoot: "/install/pieces",
+                checkSettings: {},
+                edition: editionOf("1"),
+                settings: {},
+              },
+            },
+          ],
+        },
+      },
+      records: {
+        records: [],
+        refused: [],
+        notes: [],
+        base: { measured: "no", base: { state: "not-given" } },
+      },
+      tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [
+        {
+          name: "clock-sources",
+          symptom: {
+            ruleSet: TOOL_RULE_SET,
+            name: "date-used-directly",
+            title: "Date used directly",
+          },
+          engines: [WALKER],
+        },
+      ],
+    });
+
+    expect(run.mock.calls).toMatchObject([
+      [
+        {
+          mechanism: "walker",
+          request: {
+            checks: [
+              {
+                name: "clock-sources",
+                symptom: {
+                  ruleSet: TOOL_RULE_SET,
+                  name: "date-used-directly",
+                  title: "Date used directly",
+                },
+                engines: [WALKER],
+              },
+            ],
+          },
+        },
+      ],
+    ]);
+  });
+
   it("fails as a catalogue not read, unreadable, when the install holds nothing, not even its version 1 names", () => {
     expect(stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).catalogue()).toEqual({
       outcome: "failed",
@@ -510,7 +628,7 @@ describe("versionTwoStagesOver", () => {
           place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
           record: {
             kind: "debt",
-            symptom: CLAIMED_TYPE,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
             reach: WHOLE_SYMPTOM,
             file: repoPathOf("src/a.ts"),
             holding: { held: "stated" },
@@ -565,6 +683,7 @@ describe("createChildMeasuredStagesOver", () => {
       settings: SETTINGS,
       records: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
       tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [],
     });
 
     expect(runs).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: REPO } });

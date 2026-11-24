@@ -223,7 +223,7 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
   page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
@@ -232,7 +232,7 @@ const CLOCK_CHECK: Check = {
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
   page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
@@ -241,7 +241,7 @@ const TEST_BODY_CHECK: Check = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
@@ -263,15 +263,29 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],

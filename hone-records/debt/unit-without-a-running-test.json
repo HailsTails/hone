@@ -51,10 +51,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/composition/check-command.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/composition/shown-command-paths.ts"
     },
     {

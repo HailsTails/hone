@@ -159,10 +159,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/ambient-randomness/random-call/ambient-randomness.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/answer-set-in-a-hook/hook-answer/hook-answers.test.ts"
     },
     {
@@ -240,10 +236,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/process-global-used-in-place/debugger-statement/debugger-statement.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/process-global-used-in-place/direct-global-use/process-global-used-in-place.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
@@ -328,10 +320,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/typescript-compiler-options.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/throw-between-our-units/throw-statement/throws-in-production.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",

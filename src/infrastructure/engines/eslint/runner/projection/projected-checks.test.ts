@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  Symptom,
-} from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
@@ -19,53 +15,9 @@ const WALKER_ENGINE: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const TEST_SWITCHED_OFF: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "test-switched-off",
-  title: "Test switched off",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const POSITIONAL_PARAMETERS: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "positional-parameters",
-  title: "Positional parameters",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const REBINDING: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "rebinding",
-  title: "Rebinding",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
 const SKIPPED_TESTS_CHECK: Check = {
   name: "skipped-tests",
-  symptom: TEST_SWITCHED_OFF,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "test-switched-off" },
   page: "test-switched-off/skipped-tests.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -78,7 +30,7 @@ const SKIPPED_TESTS_CHECK: Check = {
 
 const NON_NULL_ASSERTIONS_CHECK: Check = {
   name: "non-null-assertions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -91,7 +43,7 @@ const NON_NULL_ASSERTIONS_CHECK: Check = {
 
 const PARAMETER_COUNT_CHECK: Check = {
   name: "parameter-count",
-  symptom: POSITIONAL_PARAMETERS,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "positional-parameters" },
   page: "positional-parameters/parameter-count.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -104,7 +56,7 @@ const PARAMETER_COUNT_CHECK: Check = {
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
   page: "rebinding/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -161,7 +113,7 @@ const TEAM = { name: ruleSetNameOf("team") };
 
 const TEAM_SKIPPED_TESTS_CHECK: Check = {
   ...SKIPPED_TESTS_CHECK,
-  symptom: { ...TEST_SWITCHED_OFF, ruleSet: TEAM },
+  symptom: { ruleSet: TEAM, name: "test-switched-off" },
   clause: {
     ruleSet: TEAM,
     discipline: disciplineIdOf("CD-27"),

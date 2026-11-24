@@ -2,6 +2,7 @@ import type { Finding } from "../finding/governance.ts";
 import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import type { OwnedName } from "../rule-set/rule-set-identity.ts";
 import type { Remedy } from "../runner/runner-result-types.ts";
 import type { RecordKindName, Standing } from "./authored-item-types.ts";
 
@@ -68,21 +69,27 @@ export type Symptom = {
   readonly correctUses: readonly CorrectUse[];
 };
 
-export type FormSight = { readonly form: string; readonly symptom: Symptom };
+export type SymptomAddress = OwnedName;
+
+export type CheckAddress = { readonly name: string; readonly symptom: SymptomAddress };
+
+export type FormSight = { readonly form: string; readonly symptom: SymptomAddress };
 
 export type ClauseSight =
-  | { readonly kind: "one-symptom"; readonly symptom: Symptom }
+  | { readonly kind: "one-symptom"; readonly symptom: SymptomAddress }
   | { readonly kind: "symptom-by-form"; readonly forms: readonly FormSight[] }
-  | { readonly kind: "method"; readonly recipe: Recipe; readonly outcomeSeenBy: readonly Symptom[] }
+  | {
+      readonly kind: "method";
+      readonly recipe: Recipe;
+      readonly outcomeSeenBy: readonly SymptomAddress[];
+    }
   | { readonly kind: "outside-the-cases" };
 
 export type CataloguedClause = { readonly clause: ClauseAddress; readonly sight: ClauseSight };
 
 export type Engine = { readonly name: EngineId };
 
-export type CheckContent = {
-  readonly name: string;
-  readonly symptom: Symptom;
+export type CheckContent = CheckAddress & {
   readonly page: string;
   readonly clause?: ClauseAddress;
   readonly forms: readonly string[];
@@ -117,14 +124,16 @@ export type ContentHolding =
   | { readonly held: "none" };
 
 export type SymptomReading =
-  | { readonly reading: "named"; readonly symptom: Symptom }
+  | { readonly reading: "named"; readonly symptom: SymptomAddress }
   | { readonly reading: "sees-no-symptom" }
   | { readonly reading: "not-in-catalogue" };
 
 export const pointedNameOf = (request: { readonly point: Pointed }): string =>
   request.point.kind === "rule" ? request.point.rule.name : request.point.principle.name;
 
-export const indicatedNamesOf = (request: { readonly symptom: Symptom }): readonly string[] => [
+export const indicatedNamesOf = (request: {
+  readonly symptom: Pick<Symptom, "mayIndicate">;
+}): readonly string[] => [
   ...new Set(
     request.symptom.mayIndicate.flatMap((indication) =>
       indication.points.map((point) => pointedNameOf({ point })),

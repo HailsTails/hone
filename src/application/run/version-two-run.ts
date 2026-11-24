@@ -1,4 +1,5 @@
 import type { NamedGovernedRun } from "../../domain/finding/governance.ts";
+import { createRuleContent, type RuleContent } from "../../domain/language-layer/rule-content.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
@@ -15,9 +16,10 @@ import {
   type VersionTwoReportOutput,
   reportOutputInEffect,
 } from "../../domain/settings/report-output.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import type { CheckedTree } from "./checked-tree-of.ts";
+import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {
   catalogueWithExternalChecks,
@@ -28,6 +30,7 @@ import type { TouchedMeasuring } from "./touched-set/touched-set-of.ts";
 export type VersionTwoRun = {
   readonly report: RunReport;
   readonly catalogue: SymptomCatalogue;
+  readonly content: RuleContent;
   readonly touched: TouchedSet;
   readonly output: VersionTwoReportOutput;
   readonly runs: readonly NamedGovernedRun[];
@@ -39,6 +42,7 @@ export type EngineStageRequest = {
   readonly settings: NamedSettingsReading;
   readonly records: RecordsReading;
   readonly tree: CheckedTree;
+  readonly checks: readonly EngineCheck[];
 };
 
 export type VersionTwoStages = {
@@ -73,7 +77,7 @@ export type VersionTwoRequest = {
   readonly measuring: TouchedMeasuring;
 };
 
-type Inputs = Omit<EngineStageRequest, "tree">;
+type Inputs = Omit<EngineStageRequest, "tree"> & { readonly content: RuleContent };
 
 export const settledCatalogueOf = (request: {
   readonly stages: Pick<VersionTwoStages, "catalogue" | "settings">;
@@ -105,12 +109,23 @@ export const versionTwoInputsOf = (request: {
     return settled;
   }
   const records = request.stages.records({ catalogue: settled.value.catalogue });
-  return records.outcome === "failed"
-    ? records
-    : { outcome: "ok", value: { ...settled.value, records: records.value } };
+  if (records.outcome === "failed") {
+    return records;
+  }
+  const content = createRuleContent({ catalogues: [settled.value.catalogue] });
+  const checks = mapChecksToEngineChecks({ checks: settled.value.catalogue.checks, content });
+  return checks.outcome === "failed"
+    ? checks
+    : {
+        outcome: "ok",
+        value: { ...settled.value, records: records.value, content, checks: checks.value },
+      };
 };
 
-export type MeasuredEngines = EngineStageRequest & { readonly runs: readonly NamedEngineRun[] };
+export type MeasuredEngines = EngineStageRequest & {
+  readonly content: RuleContent;
+  readonly runs: readonly NamedEngineRun[];
+};
 
 export const measureEngines = async (request: {
   readonly stages: VersionTwoStages;
@@ -123,26 +138,27 @@ export const measureEngines = async (request: {
   if (tree.outcome === "failed") {
     return tree;
   }
-  const measuring = { ...inputs.value, tree: tree.value };
+  const { content, ...stageInputs } = inputs.value;
+  const measuring = { ...stageInputs, tree: tree.value };
   const runs = await request.stages.engines(measuring);
   return runs.outcome === "failed"
     ? runs
-    : { outcome: "ok", value: { ...measuring, runs: runs.value } };
+    : { outcome: "ok", value: { ...measuring, content, runs: runs.value } };
 };
 
-export const versionTwoRunOver = async (request: {
-  readonly stages: VersionTwoStages;
+type RecordsAfterRenames = {
+  readonly moved: readonly RecordRepointing[];
+  readonly followed: RecordsReading;
+  readonly touched: TouchedSet;
+};
+
+const createRecordsAfterRenames = (request: {
+  readonly stages: Pick<VersionTwoStages, "renamed" | "touched">;
   readonly arguments: VersionTwoRequest;
-}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
-  const measured = await measureEngines(request);
-  if (measured.outcome === "failed") {
-    return measured;
-  }
-  const { catalogue, settings, records, tree, runs } = measured.value;
-  const assessment = assessmentInEffect({
-    requested: { forfeiture: request.arguments.forfeiture },
-    configured: settings.runSettings.assessment,
-  });
+  readonly settings: NamedSettingsReading;
+  readonly records: RecordsReading;
+}): RecordsAfterRenames => {
+  const { records } = request;
   const renamed = request.stages.renamed();
   const moved =
     renamed.measured === "yes" && records.base.measured === "yes"
@@ -154,13 +170,30 @@ export const versionTwoRunOver = async (request: {
       : [];
   const followed = readingFollowingRenames({ reading: records, renamed, moved });
   const touched = request.stages.touched({
-    assessment,
+    assessment: assessmentInEffect({
+      requested: { forfeiture: request.arguments.forfeiture },
+      configured: request.settings.runSettings.assessment,
+    }),
     measuring: request.arguments.measuring,
     records: followed,
     renamed,
   });
+  return { moved, followed, touched };
+};
+
+export const versionTwoRunOver = async (request: {
+  readonly stages: VersionTwoStages;
+  readonly arguments: VersionTwoRequest;
+}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const measured = await measureEngines(request);
+  if (measured.outcome === "failed") {
+    return measured;
+  }
+  const { catalogue, settings, records, content, tree, runs } = measured.value;
+  const { moved, followed, touched } = createRecordsAfterRenames({ ...request, settings, records });
   const report = namedRunReportOf({
     catalogue,
+    content,
     selection: settings.selection,
     excluded: settings.selection.excluded,
     notes: settings.notes,
@@ -170,11 +203,15 @@ export const versionTwoRunOver = async (request: {
     tracked: tree.tracked,
     available: settings.available,
   });
+  if (report.outcome === "failed") {
+    return report;
+  }
   return {
     outcome: "ok",
     value: {
-      report,
+      report: report.value,
       catalogue,
+      content,
       touched,
       runs,
       moved,

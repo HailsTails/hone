@@ -1,9 +1,9 @@
 import type {
   Case,
-  Check,
+  CheckAddress,
   Pointed,
   Recipe,
-  Symptom,
+  SymptomAddress,
 } from "../../language-layer/symptom-catalogue.ts";
 import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
@@ -36,7 +36,7 @@ export type Stated = { readonly held: "stated" };
 
 export type SymptomReach =
   | { readonly reaches: "whole-symptom" }
-  | { readonly reaches: "one-check"; readonly check: Check };
+  | { readonly reaches: "one-check"; readonly check: CheckAddress };
 
 export type AuthorisedReach =
   | SymptomReach
@@ -44,7 +44,7 @@ export type AuthorisedReach =
 
 export type Debt = {
   readonly kind: "debt";
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly reach: SymptomReach;
   readonly file: RepoPath;
   readonly note?: string;
@@ -54,7 +54,7 @@ export type Debt = {
 export type AuthorisedLocationLack = "case" | "owes" | "whyChain";
 
 export type CatalogueNote =
-  | { readonly kind: "unknown-check"; readonly symptom: Symptom; readonly check: string }
+  | { readonly kind: "unknown-check"; readonly symptom: SymptomAddress; readonly check: string }
   | { readonly kind: "unknown-case"; readonly case: string; readonly owes: string }
   | { readonly kind: "owes-not-owed"; readonly case: Case; readonly owes: string };
 
@@ -64,7 +64,7 @@ export type Owing =
 
 export type AuthorisedLocation = {
   readonly kind: "authorised-location";
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly reach: AuthorisedReach;
   readonly file: RepoPath;
   readonly holding:

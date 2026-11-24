@@ -262,6 +262,13 @@ describe("runLoadFailureLine, records that could not be read", () => {
       },
       line: "load failure: records-refused hone-records/acme/debt/console-output.json unknown-rule-set acme: no check this run reads comes from that rule set; declare it in hone.config.json and list its checks, or remove its records",
     },
+    {
+      failure: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "console-output" },
+      },
+      line: "load failure: symptom-unheld acme/console-output: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it",
+    },
   ])("prints $failure.kind", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: UPGRADE_COMMAND })).toBe(line);
   });

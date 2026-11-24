@@ -1,12 +1,12 @@
 import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
-import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { SymptomAddress } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { type OwnedName, ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
 import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
-import { reachOf, type Site } from "./record-reach.ts";
+import { type Holding, reachOf, type ResolvedSite } from "./record-reach.ts";
 
 type ReachKey = `symptom:${string}` | `check:${string}` | `recipe:${string}`;
 
@@ -24,15 +24,16 @@ export type RecordsByPlace = {
 
 const FOLDER_SEPARATOR = "/";
 
-type OwnedSymptom = Pick<Symptom, "ruleSet" | "name">;
-
-const symptomKey = (request: { readonly symptom: OwnedSymptom }): ReachKey =>
+const symptomKey = (request: { readonly symptom: SymptomAddress }): ReachKey =>
   `symptom:${ownedNameText(request.symptom)}`;
 
 const addressKey = (request: { readonly address: OwnedName }): ReachKey =>
   `check:${ownedNameText(request.address)}`;
 
-const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
+const checkKey = (request: {
+  readonly symptom: SymptomAddress;
+  readonly check: string;
+}): ReachKey =>
   addressKey({
     address: {
       ruleSet: request.symptom.ruleSet,
@@ -64,21 +65,21 @@ export const answeredAt = (request: {
   readonly ruleSet: RuleSetIdentity;
   readonly symptom: string;
   readonly address: string;
-}): boolean => {
+}): Holding => {
   const answers = request.byPlace.get(request.file);
   const { ruleSet } = request;
-  return (
-    answers !== undefined &&
-    (answers.has(symptomKey({ symptom: { ruleSet, name: request.symptom } })) ||
-      answers.has(addressKey({ address: { ruleSet, name: request.address } })))
-  );
+  if (answers === undefined) return "does-not-hold";
+  return answers.has(symptomKey({ symptom: { ruleSet, name: request.symptom } })) ||
+    answers.has(addressKey({ address: { ruleSet, name: request.address } }))
+    ? "holds"
+    : "does-not-hold";
 };
 
 const recipeKey = (request: { readonly recipe: OwnedName }): ReachKey =>
   `recipe:${ownedNameText(request.recipe)}`;
 
 const symptomReachKeysOf = (request: {
-  readonly symptom: OwnedSymptom;
+  readonly symptom: SymptomAddress;
   readonly reach: AuthorisedReach;
 }): readonly ReachKey[] => {
   const { symptom, reach } = request;
@@ -177,12 +178,12 @@ export const placedInRecordOrder = (request: {
     ),
   });
 
-const siteKeysOf = (request: { readonly site: Site }): readonly ReachKey[] => {
-  const { symptom, check } = request.site;
+const siteKeysOf = (request: { readonly site: ResolvedSite }): readonly ReachKey[] => {
+  const { symptom, check, recipes } = request.site;
   return [
     symptomKey({ symptom }),
     ...(check.found === "check" ? [checkKey({ symptom, check: check.check.name })] : []),
-    ...symptom.recipes.map((recipe) => recipeKey({ recipe })),
+    ...recipes.map((recipe) => recipeKey({ recipe })),
   ];
 };
 
@@ -203,7 +204,7 @@ const rankedAt = (request: {
 
 export const recordsReachingSites = (request: {
   readonly byPlace: RecordsByPlace;
-  readonly sites: readonly Site[];
+  readonly sites: readonly ResolvedSite[];
 }): readonly PlacedRecord[] =>
   inRankOrder({
     ranked: new Map(

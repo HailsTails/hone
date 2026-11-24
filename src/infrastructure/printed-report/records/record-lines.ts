@@ -1,5 +1,5 @@
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
-import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { SymptomAddress } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   AuthorisedReach,
   CarriedListing,
@@ -69,7 +69,7 @@ const heldText = (request: { readonly record: HoneRecord }): string => {
 };
 
 const reachedText = (request: {
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly reach: AuthorisedReach;
 }): string => {
   const { symptom, reach } = request;

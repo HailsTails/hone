@@ -97,7 +97,7 @@ const FAILURES_AS_VALUES: Recipe = {
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
   page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER],
@@ -106,7 +106,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
   page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
@@ -115,7 +115,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
   page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
@@ -131,21 +131,31 @@ const CATALOGUE: SymptomCatalogue = {
   engines: [WALKER],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: LOOPS_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+    },
     {
       clause: TEST_BODY_CLAUSE,
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { form: "a-for-loop", symptom: LOOP_KEYWORD },
-          { form: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+    {
+      clause: LAYERING_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
+    },
     {
       clause: RESULT_FAILURES_CLAUSE,
-      sight: { kind: "method", recipe: FAILURES_AS_VALUES, outcomeSeenBy: [REBINDING] },
+      sight: {
+        kind: "method",
+        recipe: FAILURES_AS_VALUES,
+        outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "rebinding" }],
+      },
     },
     {
       clause: {

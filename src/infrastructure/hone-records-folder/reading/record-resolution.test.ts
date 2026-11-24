@@ -8,6 +8,7 @@ import type {
   RecordKind,
   Rule,
   Symptom,
+  SymptomAddress,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
@@ -15,6 +16,7 @@ import type {
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
@@ -159,7 +161,7 @@ const DOUBLE_WITH_A_BODY: Symptom = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -172,7 +174,7 @@ const CAST_CHECK: Check = {
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
   page: "branch-in-a-test/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -182,6 +184,8 @@ const TEST_BODY_CHECK: Check = {
   engines: [],
   forms: ["branching-with-if"],
 };
+
+type DebtSymptomRow = { readonly symptom: SymptomAddress; readonly file: RepoPath };
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -307,7 +311,7 @@ describe("recordOf, a team's records in its rule set's folder", () => {
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: TEAM_TEXT_PAST_ITS_READER,
+        symptom: { ruleSet: ACME, name: "text-past-its-reader" },
         reach: WHOLE_SYMPTOM,
         file: "src/orders/charge-order.test.ts",
         holding: { held: "stated" },
@@ -345,7 +349,7 @@ describe("recordOf, debt", () => {
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: TEXT_PAST_ITS_READER,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
         reach: WHOLE_SYMPTOM,
         file: "src/orders/charge-order.test.ts",
         holding: { held: "stated" },
@@ -370,7 +374,7 @@ describe("recordOf, debt", () => {
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: TEXT_PAST_ITS_READER,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
         reach: WHOLE_SYMPTOM,
         file: "src/orders/charge-order.test.ts",
         note: "paid with the orders rewrite",
@@ -379,14 +383,23 @@ describe("recordOf, debt", () => {
     });
   });
 
-  it.each([
-    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/debt/claimed-type.json") },
+  it.each<DebtSymptomRow>([
     {
-      symptom: TEXT_PAST_ITS_READER,
+      symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+      file: repoPathOf("hone-records/debt/claimed-type.json"),
+    },
+    {
+      symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
       file: repoPathOf("hone-records/debt/text-past-its-reader.json"),
     },
-    { symptom: BRANCH_IN_A_TEST, file: repoPathOf("hone-records/debt/branch-in-a-test.json") },
-    { symptom: DOUBLE_WITH_A_BODY, file: repoPathOf("hone-records/debt/double-with-a-body.json") },
+    {
+      symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+      file: repoPathOf("hone-records/debt/branch-in-a-test.json"),
+    },
+    {
+      symptom: { ruleSet: TOOL_RULE_SET, name: "double-with-a-body" },
+      file: repoPathOf("hone-records/debt/double-with-a-body.json"),
+    },
   ])("accepts debt on $symptom.name, since every symptom accepts debt", ({ symptom, file }) => {
     expect(
       recordOf({
@@ -474,7 +487,7 @@ describe("recordOf, authorised locations", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -508,7 +521,7 @@ describe("recordOf, authorised locations", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: BRANCH_IN_A_TEST,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -537,7 +550,7 @@ describe("recordOf, authorised locations", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -565,7 +578,7 @@ describe("recordOf, authorised locations", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -608,7 +621,7 @@ describe("recordOf, authorised locations", () => {
         outcome: "ok",
         value: {
           kind: "authorised-location",
-          symptom: CLAIMED_TYPE,
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
           reach: WHOLE_SYMPTOM,
           file: "src/adapters/stripe-webhook.ts",
           holding: {
@@ -640,7 +653,7 @@ describe("recordOf, authorised locations", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: TEXT_PAST_ITS_READER,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
         reach: WHOLE_SYMPTOM,
         file: "src/orders/charge-order.test.ts",
         holding: {
@@ -701,8 +714,14 @@ describe("recordOf, a record naming one check of its symptom", () => {
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
-        reach: { reaches: "one-check", check: CAST_CHECK },
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: { held: "stated" },
       },
@@ -722,8 +741,14 @@ describe("recordOf, a record naming one check of its symptom", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
-        reach: { reaches: "one-check", check: CAST_CHECK },
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
           held: "stated",
@@ -751,8 +776,14 @@ describe("recordOf, a record naming one check of its symptom", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
-        reach: { reaches: "one-check", check: CAST_CHECK },
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
           held: "carried",
@@ -799,7 +830,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: { reaches: "unknown-check", check: "non-null-assertions" },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -828,7 +859,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: { reaches: "unknown-check", check: "test-body" },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -939,7 +970,7 @@ describe("recordOf, carried records", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -973,7 +1004,7 @@ describe("recordOf, carried records", () => {
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/adapters/stripe-webhook.ts",
         holding: {
@@ -1058,7 +1089,7 @@ describe("recordOf, carried records", () => {
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: TEXT_PAST_ITS_READER,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
         reach: WHOLE_SYMPTOM,
         file: "src/orders/charge-order.test.ts",
         holding: { held: "carried", entry, lacks: [], standing: "unjudged" },
@@ -1603,7 +1634,7 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
       outcome: "ok",
       value: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/collections/lodash-grouping.ts",
         holding: { held: "stated" },
@@ -1624,7 +1655,7 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
       outcome: "ok",
       value: {
         kind: "authorised-location",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: "src/collections/lodash-grouping.ts",
         holding: {

@@ -4,10 +4,10 @@ import type { PathPort } from "../../../../../application/ports/host/path-port.t
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { AddressedCheck } from "../../../../../domain/language-layer/check-address-text.ts";
 import {
-  type OwnedCheck,
   qualifiedAddressOf,
   qualifiedCheckAddressOf,
 } from "../../../../../domain/language-layer/check-address.ts";
+import type { CheckAddress } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
@@ -50,7 +50,7 @@ const projectedRuleOf = (request: {
 });
 
 export const projectedNamedChecksOf = (request: {
-  readonly checks: readonly (OwnedCheck & Pick<RuledCheck, "engines">)[];
+  readonly checks: readonly (CheckAddress & Pick<RuledCheck, "engines">)[];
   readonly bindings: readonly CheckBinding[];
 }): Result<readonly ProjectedCheck[], ProjectionFailure> => {
   const registered = new Map(

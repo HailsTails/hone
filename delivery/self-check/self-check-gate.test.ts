@@ -117,6 +117,7 @@ const producedOf = (request: {
   run: {
     report: request.report,
     catalogue: EMPTY_CATALOGUE,
+    content: { symptoms: new Map() },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
     runs: [],

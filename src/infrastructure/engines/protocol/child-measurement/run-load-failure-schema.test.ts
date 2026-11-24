@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import { runLoadFailureSchema } from "./run-load-failure-schema.ts";
 
 describe("runLoadFailureSchema", () => {
@@ -88,6 +89,21 @@ describe("runLoadFailureSchema", () => {
         kind: "renamed-address-outside-listings",
         path: "hone.config.json",
         listings: ["checks", "checkSettings"],
+      },
+    });
+  });
+
+  it("reads a symptom no catalogue holds back with its address", () => {
+    const parsed = runLoadFailureSchema.safeParse({
+      kind: "symptom-unheld",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+    });
+
+    expect(parsed).toEqual({
+      success: true,
+      data: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
       },
     });
   });

@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type {
   Case,
-  Check,
   Pointed,
   Recipe,
   Rule,
-  Symptom,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   CatalogueNote,
@@ -52,46 +50,6 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   title: "World values through a port",
   standing: "accepted",
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "A cast.",
-  mayIndicate: [
-    {
-      case: GIVES_A_VALUE_ITS_TYPE,
-      situation: "or needs it narrower",
-      points: [OWED_DECLARED_NOT_ASSERTED],
-    },
-  ],
-  breachUsuallySits: "at the producer",
-  recipes: [],
-  correctUses: [
-    {
-      situation: "a schema proves the type",
-      kind: {
-        name: "authorised-location",
-        title: "Authorised location",
-        phrase: "an authorised location",
-        todaysFormat: "authorised-location",
-      },
-    },
-  ],
-};
-
-const CAST_CHECK: Check = {
-  name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
-  page: "claimed-type/cast-expressions.md",
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-2"),
-    clause: clauseIdOf("cast-expressions"),
-  },
-  engines: [{ name: "eslint" }],
-  forms: [],
 };
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
@@ -148,7 +106,7 @@ const CLOCK_ADAPTER = repoPathOf("src/adapters/system-clock.ts");
 
 const STATED_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: { held: "stated" },
@@ -156,7 +114,7 @@ const STATED_DEBT: HoneRecord = {
 
 const CARRIED_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: { held: "carried", entry: {}, lacks: [], standing: "established" },
@@ -164,7 +122,7 @@ const CARRIED_DEBT: HoneRecord = {
 
 const MATCHED_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: {
@@ -180,7 +138,7 @@ const MATCHED_LOCATION: HoneRecord = {
 
 const UNKNOWN_CASE_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: {
@@ -195,7 +153,7 @@ const UNKNOWN_CASE_LOCATION: HoneRecord = {
 
 const UNOWED_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: {
@@ -210,7 +168,7 @@ const UNOWED_LOCATION: HoneRecord = {
 
 const CARRIED_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: {
@@ -260,15 +218,18 @@ const DEPENDENCY: HoneRecord = {
 
 const CAST_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
-  reach: { reaches: "one-check", check: CAST_CHECK },
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  reach: {
+    reaches: "one-check",
+    check: { name: "cast-expressions", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+  },
   file: FILE,
   holding: { held: "stated" },
 };
 
 const UNKNOWN_CHECK_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: { reaches: "unknown-check", check: "cast-old" },
   file: FILE,
   holding: {
@@ -284,7 +245,7 @@ const UNKNOWN_CHECK_LOCATION: HoneRecord = {
 
 const CARRIED_UNKNOWN_CHECK_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: { reaches: "unknown-check", check: "cast-old" },
   file: FILE,
   holding: {
@@ -538,7 +499,11 @@ describe("recordNoteLine", () => {
   it.each<{ readonly name: string; readonly note: CatalogueNote; readonly line: string }>([
     {
       name: "a check its symptom does not have",
-      note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "cast-old" },
+      note: {
+        kind: "unknown-check",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        check: "cast-old",
+      },
       line: 'hone-records/authorised-locations/claimed-type.json records[2] unknown-check: the catalogue has no check "cast-old" of claimed-type',
     },
     {

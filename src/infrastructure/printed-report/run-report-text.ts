@@ -13,6 +13,7 @@ import {
   editionLine,
   findingLine,
   heldLine,
+  type NotedContent,
   notRunLine,
   unrecordedLines,
 } from "./findings/finding-lines.ts";
@@ -30,6 +31,7 @@ import { symptomLine } from "./symptoms/symptom-lines.ts";
 export type RunReportRequest = PruneCommand & {
   readonly report: RunReport;
   readonly catalogue: SymptomCatalogue;
+  readonly content: NotedContent;
   readonly symptomPage: string;
   readonly projectCommand: string;
   readonly output: VersionTwoReportOutput;
@@ -44,7 +46,12 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
   editions: (request) => request.report.editions.map((reading) => editionLine({ reading })),
   findings: (request) =>
     request.report.findings.map((finding) =>
-      findingLine({ catalogue: request.catalogue, finding, symptomPage: request.symptomPage }),
+      findingLine({
+        catalogue: request.catalogue,
+        content: request.content,
+        finding,
+        symptomPage: request.symptomPage,
+      }),
     ),
   answered: (request) =>
     request.report.answered.map((answered) =>

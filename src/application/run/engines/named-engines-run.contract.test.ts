@@ -1,12 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  RecordKind,
-  Rule,
-  Symptom,
-} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import type {
   RecordsReading,
@@ -21,6 +15,7 @@ import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type {
+  EngineCheck,
   NamedEngineRun,
   NamedEngineRunRequest,
   ParsedNamedRunner,
@@ -50,55 +45,18 @@ const ESLINT = "eslint" as const;
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const DECLARED_NOT_ASSERTED: Rule = {
-  name: "declared-not-asserted",
-  title: "Declared, not asserted",
-  principle: { name: "one-place-decides", title: "One place decides" },
-  standing: "accepted",
-};
-
-const DEBT: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-
-const AUTHORISED_LOCATION: RecordKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "A cast.",
-  mayIndicate: [
-    {
-      case: {
-        name: "gives-a-value-its-type",
-        title: "Gives a value its type",
-        standing: "accepted",
-        owes: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
-      },
-      situation: "or needs it narrower",
-      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
-    },
-  ],
-  breachUsuallySits: "at the producer",
-  recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
-};
-
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: "hone", name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   engines: [ESLINT_ENGINE],
   forms: [],
+};
+
+const CAST_ENGINE_CHECK: EngineCheck = {
+  name: "cast-expressions",
+  symptom: { ruleSet: "hone", name: "claimed-type", title: "Claimed type" },
+  engines: [ESLINT_ENGINE],
 };
 
 const README = repoPathOf("README.md");
@@ -148,7 +106,7 @@ const DEBT_ON_A: RecordsReading = {
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
       record: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: "hone", name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: A,
         holding: { held: "stated" },
@@ -214,7 +172,7 @@ const enginesRequestOf = (request: {
   readonly lookup: NamedSettingsReading["eslintConfigLookup"];
   readonly engine: NamedEnginePort;
 }): NamedEnginesRequest => ({
-  checks: [CAST_CHECK],
+  checks: [CAST_ENGINE_CHECK],
   settings: settingsBinding(request),
   answered: answeredFilesOf({ records: DEBT_ON_A.records }),
   tree: { tracked: [A, README], declaredConfigRoots: [] },
@@ -231,7 +189,7 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   installRoot: INSTALL,
   files: [A],
   trackedPaths: [A, README],
-  checks: [CAST_CHECK],
+  checks: [CAST_ENGINE_CHECK],
   bindings: [bindingOn({ mechanism: ESLINT })],
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],

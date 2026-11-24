@@ -105,7 +105,16 @@ describe("versionTwoProjectionOver", () => {
     const stages = stagesGiving({});
     expect(await versionTwoProjectionOver({ stages })).toEqual({ outcome: "ok", value: [WRITTEN] });
     expect(vi.mocked(stages.projections).mock.calls).toEqual([
-      [{ catalogue: REPORT_CATALOGUE, settings: SETTINGS, records: RECORDS, tree: TREE }],
+      [
+        {
+          catalogue: REPORT_CATALOGUE,
+          settings: SETTINGS,
+          records: RECORDS,
+          tree: TREE,
+          content: { symptoms: new Map() },
+          checks: [],
+        },
+      ],
     ]);
   });
 
