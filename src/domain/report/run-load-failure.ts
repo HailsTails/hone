@@ -43,27 +43,12 @@ export type CatalogueNotRead = {
 
 export type UpgradeNeeded = { readonly kind: "upgrade-needed"; readonly path: string };
 
-export type SettingsRenameRefusal =
-  | {
-      readonly kind: "listed-under-both-names";
-      readonly path: string;
-      readonly under: string;
-      readonly from: string;
-      readonly to: string;
-    }
-  | {
-      readonly kind: "renamed-address-outside-listings";
-      readonly path: string;
-      readonly listings: readonly string[];
-    };
-
 export type RunLoadFailureSource =
   | VersionTwoLoadFailure
   | CheckChoiceRefusal
   | HoneRecordsFailure
   | CatalogueNotRead
   | UpgradeNeeded
-  | SettingsRenameRefusal
   | SymptomUnheld;
 
 export type EngineNaming =
@@ -129,7 +114,6 @@ export type RunLoadFailure =
   | { readonly kind: "records-refused"; readonly refusals: readonly RecordsDocumentRefusal[] }
   | CatalogueNotRead
   | UpgradeNeeded
-  | SettingsRenameRefusal
   | SymptomUnheld;
 
 type EnginesRequest = { readonly engines: readonly Engine[] };
@@ -202,8 +186,6 @@ export const runLoadFailureOf = (
     case "unexpected-error":
     case "catalogue-not-read":
     case "upgrade-needed":
-    case "listed-under-both-names":
-    case "renamed-address-outside-listings":
     case "symptom-unheld":
       return source;
     case "selection-absent":

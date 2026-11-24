@@ -55,44 +55,6 @@ describe("runLoadFailureSchema", () => {
     });
   });
 
-  it("reads a settings rename listed under both names back", () => {
-    const parsed = runLoadFailureSchema.safeParse({
-      kind: "listed-under-both-names",
-      path: "hone.config.json",
-      under: "checks",
-      from: "claimed-type#non-null-assertions",
-      to: "claimed-type#non-null",
-    });
-
-    expect(parsed).toEqual({
-      success: true,
-      data: {
-        kind: "listed-under-both-names",
-        path: "hone.config.json",
-        under: "checks",
-        from: "claimed-type#non-null-assertions",
-        to: "claimed-type#non-null",
-      },
-    });
-  });
-
-  it("reads a renamed address outside the settings listings back", () => {
-    const parsed = runLoadFailureSchema.safeParse({
-      kind: "renamed-address-outside-listings",
-      path: "hone.config.json",
-      listings: ["checks", "checkSettings"],
-    });
-
-    expect(parsed).toEqual({
-      success: true,
-      data: {
-        kind: "renamed-address-outside-listings",
-        path: "hone.config.json",
-        listings: ["checks", "checkSettings"],
-      },
-    });
-  });
-
   it("reads a symptom no catalogue holds back with its address", () => {
     const parsed = runLoadFailureSchema.safeParse({
       kind: "symptom-unheld",

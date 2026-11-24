@@ -667,17 +667,12 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
   );
 });
 
-const FORMER_SETTINGS =
-  '{"version": 2, "checks": {"export-from-a-test-file#test-file-export": "walker"}}\n';
-
 describe("TOOL_SUBCOMMANDS on a repository holding hone.config.json", () => {
-  it("moves the settings to the current names when asked to upgrade", async () => {
+  it("says the repository is already on version 2 and writes nothing when asked to upgrade", async () => {
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
-    const write = vi
-      .fn<FileTextPort["write"]>()
-      .mockReturnValue({ outcome: "ok", value: undefined });
+    const write = vi.fn<FileTextPort["write"]>();
 
-    await subcommandRanOverDirectory({
+    await subcommandRan({
       subcommand: "upgrade",
       command: commandOver({
         process: processPort,
@@ -685,55 +680,19 @@ describe("TOOL_SUBCOMMANDS on a repository holding hone.config.json", () => {
           exists: vi
             .fn<FileTextPort["exists"]>()
             .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("present")
-            .mockReturnValueOnce("present")
-            .mockReturnValue("absent"),
-          read: vi
-            .fn<FileTextPort["read"]>()
-            .mockReturnValueOnce(VERSION_ONE_NAMES_READ)
-            .mockReturnValueOnce(AUTHORISED_LOCATION_KIND_READ)
-            .mockReturnValueOnce(DEBT_KIND_READ)
-            .mockReturnValueOnce({ outcome: "ok", value: FORMER_SETTINGS }),
+            .mockReturnValueOnce("present"),
+          read: vi.fn<FileTextPort["read"]>(),
           write,
         },
       }),
-      directory: {
-        list: vi
-          .fn<DirectoryPort["list"]>()
-          .mockReturnValueOnce({
-            outcome: "ok",
-            value: [{ name: "record-kinds", kind: "directory" }],
-          })
-          .mockReturnValueOnce({
-            outcome: "ok",
-            value: [
-              { name: "authorised-location.md", kind: "file" },
-              { name: "debt.md", kind: "file" },
-            ],
-          }),
-        create: vi.fn<DirectoryPort["create"]>(),
-      },
     });
 
     expect([outputOf({ process: processPort }), write.mock.calls]).toEqual([
       {
-        writes: [
-          [
-            {
-              text: "renamed hone.config.json checks export-from-a-test-file#test-file-export -> export-from-a-test#test-file-export\n",
-            },
-          ],
-        ],
+        writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
         exits: [[{ code: 0 }]],
       },
-      [
-        [
-          {
-            path: "/repo/hone.config.json",
-            text: '{"version": 2, "checks": {"export-from-a-test#test-file-export": "walker"}}\n',
-          },
-        ],
-      ],
+      [],
     ]);
   });
 
