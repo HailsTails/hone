@@ -13,6 +13,8 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
+import { debtOutcomeLine, prunedDebtLine } from "../records/record-command-lines.ts";
+import { recordSubjectText } from "../records/record-lines.ts";
 
 const ALREADY_ON_VERSION_TWO: CommandOutcome = {
   code: 0,
@@ -51,6 +53,7 @@ const mapFailureToLine = (request: Shown & { readonly failure: ProofWriteFailure
     case "path-already-exists":
       return `could not write ${shown}: it already exists`;
     case "replaced-file-unreadable":
+    case "removed-file-unreadable":
       return `could not read ${shown}: ${failure.detail}`;
     case "directory-uncreatable":
       return `could not create ${shown}: ${failure.detail}`;
@@ -115,6 +118,9 @@ const recordLineOf = (request: { readonly record: RecordLine }): string => {
   if ("reason" in record) {
     return `reason ${clause}: ${record.reason.trim().split(SEPARATE_WORDS).join(" ")}`;
   }
+  if (record.newKind === "not-carried") {
+    return `${record.recordKind} ${clause} ${record.file} -> nothing it answers; not carried`;
+  }
   if ("file" in record) {
     const party = record.outsideParty === undefined ? "" : ` for ${record.outsideParty}`;
     return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}${party}`;
@@ -128,6 +134,25 @@ const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): r
       ? [`carried ${checkAddressOf({ check: record.check })} ${record.file}`]
       : [],
   );
+
+const countWrittenRecords = (request: { readonly records: readonly RecordLine[] }): number =>
+  request.records.filter((record) => "holding" in record).length;
+
+const mapSmoothedToLines = (request: {
+  readonly carried: UpgradeCarriedOver;
+}): readonly string[] => {
+  const { records, smoothed } = request.carried;
+  const recordedDebt = smoothed.recordedDebt.filter(({ effect }) => effect === "recorded");
+  return [
+    ...smoothed.removedCarried.map(
+      ({ record }) => `removed ${recordSubjectText({ record })}: it answers nothing`,
+    ),
+    ...recordedDebt.map((outcome) => debtOutcomeLine({ outcome })),
+    ...smoothed.prunedDebt.map((pruned) => prunedDebtLine({ pruned })),
+    ...smoothed.projected.map((file) => `projected ${file}`),
+    `upgrade: records written ${countWrittenRecords({ records })}, carried records removed ${smoothed.removedCarried.length}, debt recorded ${recordedDebt.length}, debt pruned ${smoothed.prunedDebt.length}; version 2's check passes`,
+  ];
+};
 
 export const upgradeSuccessOutcomeOf = (request: {
   readonly carried: UpgradeCarriedOver;
@@ -147,7 +172,7 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...carriedLinesOf({ records: carried.records }),
       ...carried.mentions.map(({ file, line }) => `mention ${file}:${line}`),
       ...carried.unread.map(({ file, detail }) => `mention-unread ${file} ${detail}`),
-      `upgrade: same findings (${carried.findings}) and verdict as this Hone's version 1 check, not your installed 1.x`,
+      ...mapSmoothedToLines({ carried }),
     ]
       .map((line) => `${line}\n`)
       .join(""),

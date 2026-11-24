@@ -1150,7 +1150,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
     });
   });
 
-  it("keeps the debt when a package slice is missing, so the engine linted nothing under a current root projection", async () => {
+  it("refuses, keeping the debt, when a package slice is missing, naming the project command that writes it", async () => {
     const missingSlice: ChecksSliceProblem = {
       slice: repoPathOf("packages/a/hone.eslint.mjs"),
       state: "missing",
@@ -1158,8 +1158,14 @@ describe("versionTwoPruneDebtCommandOf", () => {
     expect(
       await prunedWhileEngineRan({ run: { ...runOf({ hits: [] }), slices: [missingSlice] } }),
     ).toEqual({
-      writes: [[{ text: "" }]],
-      exits: [[{ code: 0 }]],
+      writes: [
+        [
+          {
+            text: "load failure: projection-stale eslint missing packages/a/hone.eslint.mjs: that slice is not written; run node /install/src/hone.ts project --repo /repo and commit every file it writes\n",
+          },
+        ],
+      ],
+      exits: [[{ code: 2 }]],
       removed: [],
     });
   });

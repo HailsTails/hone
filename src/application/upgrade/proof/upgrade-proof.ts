@@ -1,6 +1,6 @@
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
-import { clausesCarriedAsNotAdopted } from "../../../domain/records/upgrade/records-mapping.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
+import { runVerdictOf } from "../../../domain/report/report-sections.ts";
+import { verdictOf } from "../../../domain/report/verdict.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
@@ -12,10 +12,12 @@ import type {
   AfterWriting,
   ProofCarriedOver,
   ProofRefusal,
+  Smoothed,
   Unrestored,
 } from "../../ports/upgrade/proof-outcome.ts";
-import type { ProofRuns } from "../../ports/upgrade/proof-runs.ts";
+import type { ProofCheck, ProofRunFailure, ProofRuns } from "../../ports/upgrade/proof-runs.ts";
 import type { RecordAnswerOracle } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { SmoothingCommands } from "../../ports/upgrade/smoothing-commands.ts";
 import type {
   VersionOneFiles,
   VersionOneReading,
@@ -24,8 +26,6 @@ import {
   patchedProjectionsOf,
   restoredOriginalProjections,
 } from "../patching/projection-patching.ts";
-import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
-import { reportedWrittenFilesOf } from "../proof-comparison/reported-written-files.ts";
 import {
   type PlannedFile,
   type ProofQueries,
@@ -41,6 +41,7 @@ import {
   removedVersionOneFiles,
   type VersionOneRemoval,
 } from "../proof-writes/version-one-removal.ts";
+import { runSmoothing, type SmoothingState } from "../smoothing/upgrade-smoothing.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 import { replacementsOf } from "./projection-replacements.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
@@ -56,6 +57,7 @@ export type UpgradeProofRequest = {
   readonly effects: ProofEffects;
   readonly oracle: RecordAnswerOracle;
   readonly runs: ProofRuns;
+  readonly smoothing: SmoothingCommands;
   readonly reading: VersionOneReading;
   readonly versionOneFiles: VersionOneFiles;
   readonly catalogues: readonly RuleSetCatalogue[];
@@ -254,87 +256,107 @@ const projectionsRefusalOf = (request: { readonly refusal: ProjectionsRefusal })
 
 type Written = {
   readonly plan: UpgradePlan;
-  readonly before: CheckReport;
   readonly placed: Placed;
   readonly writes: ProofWrites;
   readonly removed: readonly AbsolutePath[];
 };
 
-const rolledBackWith = (request: UpgradeProofRequest & Written): readonly Unrestored[] =>
-  rolledBackWrites({ effects: request.effects, writes: request.writes });
-
-type RunsAgree = { readonly agreed: "both-runs-agree"; readonly written: readonly RepoPath[] };
-
-const comparedAfterWriting = async (
-  request: UpgradeProofRequest & Written,
-): Promise<Result<RunsAgree, ProofRefusal>> => {
-  const written = request.placed.files.map(({ file }) => file);
-  const after = await request.runs.versionTwo({ written });
-  if (after.outcome === "failed") {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "version-two-run-failed",
-        failure: after.error,
-        unrestored: rolledBackWith(request),
-        removedByVersionOne: [],
-      },
-    };
-  }
-  if (after.value.misnamed.length > 0) {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "directives-name-no-check",
-        directives: after.value.misnamed,
-        unrestored: rolledBackWith(request),
-        removedByVersionOne: [],
-      },
-    };
-  }
-  const differences = proofDifferencesOf({
-    before: request.before,
-    after: after.value,
-    catalogues: request.catalogues,
-    notAdoptedClauses: clausesCarriedAsNotAdopted({ inputs: request.plan.inputs }),
-  });
-  return differences.length > 0
-    ? {
-        outcome: "failed",
-        error: {
-          kind: "differences",
-          differences,
-          writtenReported: reportedWrittenFilesOf({ written, after: after.value }),
-          unrestored: rolledBackWith(request),
-          removedByVersionOne: [],
-        },
-      }
-    : { outcome: "ok", value: { agreed: "both-runs-agree", written } };
+type CheckPasses = {
+  readonly check: "passes";
+  readonly written: readonly RepoPath[];
+  readonly smoothed: Smoothed;
 };
 
-const comparedOrRolledBack = async (
-  request: UpgradeProofRequest & Written,
-): Promise<Result<RunsAgree, ProofRefusal>> => {
+const refusedWith = (request: {
+  readonly effects: ProofEffects;
+  readonly writes: ProofWrites;
+  readonly refusal: (unrestored: readonly Unrestored[]) => ProofRefusal;
+}): Result<never, ProofRefusal> => ({
+  outcome: "failed",
+  error: request.refusal(rolledBackWrites({ effects: request.effects, writes: request.writes })),
+});
+
+const checkedReport = async (
+  request: UpgradeProofRequest & { readonly state: SmoothingState },
+): Promise<Result<ProofCheck, ProofRunFailure>> => {
   try {
-    return await comparedAfterWriting(request);
+    return await request.runs.versionTwo({ written: request.state.written });
   } catch (thrown: unknown) {
     return {
       outcome: "failed",
-      error: {
-        kind: "version-two-run-failed",
-        failure: { kind: "run-failed", detail: failureDetailOf({ thrown }) },
-        unrestored: rolledBackWith(request),
-        removedByVersionOne: [],
-      },
+      error: { kind: "run-failed", detail: failureDetailOf({ thrown }) },
     };
   }
 };
 
-const removedAfterComparing = (
-  request: UpgradeProofRequest & Written & { readonly agreement: RunsAgree },
+const checkedAfterSmoothing = async (
+  request: UpgradeProofRequest & { readonly state: SmoothingState },
+): Promise<Result<CheckPasses, ProofRefusal>> => {
+  const { effects, state } = request;
+  const checked = await checkedReport(request);
+  if (checked.outcome === "failed") {
+    return refusedWith({
+      effects,
+      writes: state.writes,
+      refusal: (unrestored) => ({
+        kind: "version-two-run-failed",
+        failure: checked.error,
+        unrestored,
+        removedByVersionOne: [],
+      }),
+    });
+  }
+  const { report, failing } = checked.value;
+  if (report.misnamed.length > 0) {
+    return refusedWith({
+      effects,
+      writes: state.writes,
+      refusal: (unrestored) => ({
+        kind: "directives-name-no-check",
+        directives: report.misnamed,
+        unrestored,
+        removedByVersionOne: [],
+      }),
+    });
+  }
+  return runVerdictOf({ report }) === "fail"
+    ? refusedWith({
+        effects,
+        writes: state.writes,
+        refusal: (unrestored) => ({
+          kind: "check-failed",
+          failing,
+          unrestored,
+          removedByVersionOne: [],
+        }),
+      })
+    : {
+        outcome: "ok",
+        value: { check: "passes", written: state.written, smoothed: state.smoothed },
+      };
+};
+
+const smoothedAndChecked = async (
+  request: UpgradeProofRequest & Written,
+): Promise<Result<CheckPasses, ProofRefusal>> => {
+  const smoothed = await runSmoothing({
+    queries: request.queries,
+    effects: request.effects,
+    commands: request.smoothing,
+    repoRoot: request.repoRoot,
+    writes: request.writes,
+    written: request.placed.files.map(({ file }) => file),
+  });
+  return smoothed.outcome === "failed"
+    ? smoothed
+    : checkedAfterSmoothing({ ...request, state: smoothed.value });
+};
+
+const removedAfterPassing = (
+  request: UpgradeProofRequest & Written & { readonly passing: CheckPasses },
 ): Result<ProofCarriedOver, ProofRefusal> => {
   const carried: AfterWriting = {
-    written: request.agreement.written,
+    written: request.passing.written,
     replaced: request.placed.replaced,
   };
   const removed = removedVersionOneFiles({
@@ -361,12 +383,12 @@ const removedAfterComparing = (
           ...carried,
           removed: { ...removed.value, files: [...request.removed, ...removed.value.files] },
           records: request.plan.lines,
-          findings: request.before.findings.length,
+          smoothed: request.passing.smoothed,
         },
       };
 };
 
-const writtenAndCompared = async (
+const writtenAndChecked = async (
   request: UpgradeProofRequest & Omit<Written, "writes">,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const writes = writtenProofFiles({
@@ -382,16 +404,15 @@ const writtenAndCompared = async (
     };
   }
   const written: UpgradeProofRequest & Written = { ...request, writes: writes.value };
-  const compared = await comparedOrRolledBack(written);
-  return compared.outcome === "failed"
-    ? compared
-    : removedAfterComparing({ ...written, agreement: compared.value });
+  const passing = await smoothedAndChecked(written);
+  return passing.outcome === "failed"
+    ? passing
+    : removedAfterPassing({ ...written, passing: passing.value });
 };
 
 const afterProjecting = async (
   request: UpgradeProofRequest & {
     readonly plan: UpgradePlan;
-    readonly before: CheckReport;
     readonly projections: readonly VersionOneProjection[];
     readonly removed: readonly AbsolutePath[];
   },
@@ -417,7 +438,7 @@ const afterProjecting = async (
       error: { kind: "removal-refused", failure: outside, removedByVersionOne: [] },
     };
   }
-  return writtenAndCompared({ ...request, placed: placed.value });
+  return writtenAndChecked({ ...request, placed: placed.value });
 };
 
 const withRemovedByVersionOne = <Value>(request: {
@@ -434,7 +455,7 @@ const withRemovedByVersionOne = <Value>(request: {
 };
 
 const projectedOver = async (
-  request: UpgradeProofRequest & { readonly plan: UpgradePlan; readonly before: CheckReport },
+  request: UpgradeProofRequest & { readonly plan: UpgradePlan },
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const reading = await request.versionOneProjectionsOf();
   const carried = await afterReading({ ...request, projectionsReading: reading });
@@ -444,7 +465,6 @@ const projectedOver = async (
 const afterReading = async (
   request: UpgradeProofRequest & {
     readonly plan: UpgradePlan;
-    readonly before: CheckReport;
     readonly projectionsReading: VersionOneProjectionsReading;
   },
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
@@ -470,6 +490,19 @@ const afterReading = async (
 const provenOver = async (
   request: UpgradeProofRequest,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
+  const before = await request.runs.versionOne();
+  if (before.outcome === "failed") {
+    return {
+      outcome: "failed",
+      error: { kind: "version-one-run-failed", failure: before.error, removedByVersionOne: [] },
+    };
+  }
+  if (verdictOf({ report: before.value }) === "fail") {
+    return {
+      outcome: "failed",
+      error: { kind: "version-one-check-fails", removedByVersionOne: [] },
+    };
+  }
   const answered = await request.oracle.answer({
     records: request.reading.heads.map(({ record }) => record),
   });
@@ -489,24 +522,7 @@ const provenOver = async (
       error: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] },
     };
   }
-  const before = await request.runs.versionOne();
-  if (before.outcome === "failed") {
-    return {
-      outcome: "failed",
-      error: { kind: "version-one-run-failed", failure: before.error, removedByVersionOne: [] },
-    };
-  }
-  if (before.value.uncovered.length > 0) {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "version-one-uncovered",
-        clauses: before.value.uncovered,
-        removedByVersionOne: [],
-      },
-    };
-  }
-  return projectedOver({ ...request, plan: plan.value, before: before.value });
+  return projectedOver({ ...request, plan: plan.value });
 };
 
 export const upgradeProof = async (

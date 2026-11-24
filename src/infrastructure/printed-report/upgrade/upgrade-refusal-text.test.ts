@@ -15,8 +15,6 @@ const ISSUES = "https://github.com/HailsTails/hone/issues";
 
 const FAULT = `This is a fault in hone, not in your repository. Report it at ${ISSUES}, with this output.`;
 
-const CAUSE_NOT_SHOWN = `Nothing in the two runs shows the cause. Check whether something in your repository explains it; if nothing does, report it at ${ISSUES}, with this output.`;
-
 const SETTINGS = absoluteRootOf("/repo/hone.config.json");
 
 const OLD_FILE = absoluteRootOf("/repo/disciplines.eslint.mjs");
@@ -65,28 +63,6 @@ describe("upgradeFailureOutcomeOf", () => {
       outcome: {
         code: 1,
         text: "upgrade refused:\nCD-14#class-syntax in src/a.ts is held by both a file carve-out and an authorised location. Remove one of them first, then run the upgrade again.\nNothing was changed.\n",
-      },
-    },
-    {
-      name: "a carve-out answers nothing",
-      failure: {
-        kind: "plan-refused",
-        refusal: {
-          kind: "mapping-refused",
-          refusals: [
-            {
-              kind: "record-answers-nothing",
-              clause: "CD-15#loops",
-              file: repoPathOf("src/a.ts"),
-              credited: "nothing",
-            },
-          ],
-        },
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nthe file carve-out for CD-15#loops in src/a.ts answers no finding. Remove it, or fix the file it names, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -353,6 +329,97 @@ Nothing was changed.
       },
     },
     {
+      name: "version 1's check fails",
+      failure: { kind: "version-one-check-fails", removedByVersionOne: [] },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nversion 1's check fails; fix or record what it reports, then upgrade.\nNothing was changed.\n",
+      },
+    },
+    {
+      name: "version 1's run fails",
+      failure: {
+        kind: "version-one-run-failed",
+        failure: { kind: "run-failed", detail: "disciplines.json is malformed" },
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nversion 1's run failed (disciplines.json is malformed). Run hone check and fix its load failure first.\nNothing was changed.\n",
+      },
+    },
+    {
+      name: "a smoothing step's run fails and a removed file cannot be put back",
+      failure: {
+        kind: "smoothing-failed",
+        step: "prune-debt",
+        failure: {
+          kind: "run-failed",
+          failure: {
+            kind: "projection-stale",
+            problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+            projectCommand: "hone project --repo /repo",
+          },
+        },
+        unrestored: [{ written: "file-removed", path: SETTINGS, detail: "EPERM" }],
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nthe upgrade's prune-debt step failed (load failure: projection-stale eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run hone project --repo /repo and commit every file it writes). Fix what it names, then run the upgrade again.\nThese files could not be put back; put them right by hand:\n  restore /repo/hone.config.json from version control (EPERM)\n",
+      },
+    },
+    {
+      name: "the measured run before removing carried records leaves something unmeasured",
+      failure: {
+        kind: "smoothing-failed",
+        step: "remove-carried",
+        failure: {
+          kind: "run-unmeasured",
+          unmeasured: [
+            { kind: "engine-not-run", engine: { name: "eslint" }, projection: "measured-nothing" },
+          ],
+        },
+        unrestored: [],
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nthe upgrade's remove-carried step could not judge which carried records answer nothing, because version 2 left this unmeasured:\n  engine-not-run eslint measured-nothing: the eslint engine measured no file in this run, so the records its checks answer were not judged, neither kept as answering nor removed as stale; check that the eslint configuration lints the files under check\nFix what it names, then run the upgrade again.\nNothing was changed.\n",
+      },
+    },
+    {
+      name: "version 2's check fails on the upgraded repository",
+      failure: {
+        kind: "check-failed",
+        failing: [
+          "unrecorded (1)",
+          "claimed-type#cast-expressions eslint ignore hone.eslint.d.mts",
+        ],
+        unrestored: [],
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nversion 2's check fails on the upgraded repository:\n  unrecorded (1)\n  claimed-type#cast-expressions eslint ignore hone.eslint.d.mts\nFix what it reports, then run the upgrade again.\nNothing was changed.\n",
+      },
+    },
+    {
+      name: "a records file a smoothing step removes cannot be read",
+      failure: {
+        kind: "write-refused",
+        refusal: {
+          failure: { kind: "removed-file-unreadable", path: SETTINGS, detail: "EACCES" },
+          unrestored: [],
+        },
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\n/repo/hone.config.json could not be read to be removed (EACCES). Make it readable, then run the upgrade again.\nNothing was changed.\n",
+      },
+    },
+    {
       name: "a slice version 1 removed cannot be placed in the repository",
       failure: {
         kind: "unplaceable-path",
@@ -375,29 +442,6 @@ Nothing was changed.
       outcome: {
         code: 1,
         text: `upgrade refused:\nversion 2's run failed (config unreadable). ${FAULT}\nversion 1's own project removed these files, and the upgrade does not put them back; restore them from version control:\n  /repo/old/disciplines.eslint.mjs\nThese files could not be put back; put them right by hand:\n  delete /repo/hone.config.json (EBUSY)\n`,
-      },
-    },
-    {
-      name: "version 1 already reports clauses uncovered",
-      failure: {
-        kind: "version-one-uncovered",
-        clauses: [
-          {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("CD-1"),
-            clause: clauseIdOf("claimed-type"),
-          },
-          {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("CD-2"),
-            clause: clauseIdOf("claimed-members"),
-          },
-        ],
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nversion 1 already reports CD-1#claimed-type, CD-2#claimed-members as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -443,64 +487,6 @@ Nothing was changed.
       outcome: {
         code: 1,
         text: `upgrade refused:\nversion 2's run failed (config unreadable). ${FAULT}\nThese files could not be put back; put them right by hand:\n  delete /repo/hone.config.json (EBUSY)\n  delete the empty folder /repo/hone-records (EACCES)\n  restore /repo/disciplines.eslint.mjs from version control (EPERM)\n  restore /repo/disciplines.eslint.mjs from version control (EEXIST)\n`,
-      },
-    },
-    {
-      name: "the two runs differ",
-      failure: {
-        kind: "differences",
-        differences: [
-          { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
-        ],
-        writtenReported: [],
-        unrestored: [],
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  findings:\n    only after: CD-15#loops src/a.ts 3:1\n${CAUSE_NOT_SHOWN}\nNothing was changed.\n`,
-      },
-    },
-    {
-      name: "the two runs differ on files the upgrade writes",
-      failure: {
-        kind: "differences",
-        differences: [
-          {
-            section: "unrecorded",
-            onlyBefore: [],
-            onlyAfter: ["eslint ignore CD-14#class-syntax hone.eslint.d.mts"],
-          },
-        ],
-        writtenReported: [repoPathOf("hone.eslint.d.mts")],
-        unrestored: [],
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n",
-      },
-    },
-    {
-      name: "the two runs differ in sections version 2 names with hyphens",
-      failure: {
-        kind: "differences",
-        differences: [
-          { section: "not-adopted", onlyBefore: ["CD-6#naming-convention"], onlyAfter: [] },
-          { section: "doubly-held", onlyBefore: ["CD-15#loops src/a.ts audit"], onlyAfter: [] },
-          {
-            section: "invalid-records",
-            onlyBefore: [],
-            onlyAfter: ["hone-records/debt/loop-keyword.json 0"],
-          },
-        ],
-        writtenReported: [],
-        unrestored: [],
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  not-adopted:\n    only before: CD-6#naming-convention\n  doubly-held:\n    only before: CD-15#loops src/a.ts audit\n  invalid-records:\n    only after: hone-records/debt/loop-keyword.json 0\n${CAUSE_NOT_SHOWN}\nNothing was changed.\n`,
       },
     },
     {

@@ -1,40 +1,15 @@
+import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
+import type { PrunableDebt } from "../../../domain/records/debt/prunable-debt.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import type { PlanRefusal } from "./plan-refusal.ts";
 import type { ProofRunFailure } from "./proof-runs.ts";
 import type { OracleFailure } from "./record-answer-oracle.ts";
-
-export const PROOF_SECTIONS = [
-  "excluded",
-  "findings",
-  "answered",
-  "unrecorded",
-  "misnamed",
-  "paid",
-  "stale",
-  "forfeited",
-  "doubly-held",
-  "invalid-records",
-  "not-adopted",
-  "not-run",
-  "editions",
-  "unmeasured",
-  "projection-problems",
-  "assessment",
-  "verdict",
-] as const;
-
-export type ProofSection = (typeof PROOF_SECTIONS)[number];
-
-export type ProofDifference = {
-  readonly section: ProofSection;
-  readonly onlyBefore: readonly string[];
-  readonly onlyAfter: readonly string[];
-};
+import type { SmoothingFailure, SmoothingStep } from "./smoothing-commands.ts";
 
 export type ProofWrite =
   | { readonly kind: "directory-created"; readonly path: AbsolutePath }
@@ -46,6 +21,11 @@ export type ProofWriteFailure =
   | { readonly kind: "path-already-exists"; readonly path: AbsolutePath }
   | {
       readonly kind: "replaced-file-unreadable";
+      readonly path: AbsolutePath;
+      readonly detail: string;
+    }
+  | {
+      readonly kind: "removed-file-unreadable";
       readonly path: AbsolutePath;
       readonly detail: string;
     }
@@ -84,12 +64,19 @@ export type RemovalFailure =
       readonly removed: Removed;
     };
 
+export type Smoothed = {
+  readonly removedCarried: readonly PlacedRecord[];
+  readonly recordedDebt: readonly DebtOutcome[];
+  readonly prunedDebt: readonly PrunableDebt[];
+  readonly projected: readonly RepoPath[];
+};
+
 export type ProofCarriedOver = {
   readonly written: readonly RepoPath[];
   readonly replaced: readonly RepoPath[];
   readonly removed: Removed;
   readonly records: readonly RecordLine[];
-  readonly findings: number;
+  readonly smoothed: Smoothed;
 };
 
 export type AfterWriting = {
@@ -101,15 +88,12 @@ type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[
 
 export type ProofRefusal =
   | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
-  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-run-failed";
       readonly failure: ProofRunFailure;
     } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-uncovered";
-      readonly clauses: readonly ClauseAddress[];
-    } & AfterVersionOneProject)
+  | ({ readonly kind: "version-one-check-fails" } & AfterVersionOneProject)
+  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-project-failed";
       readonly detail: string;
@@ -140,9 +124,14 @@ export type ProofRefusal =
       readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({
-      readonly kind: "differences";
-      readonly differences: readonly ProofDifference[];
-      readonly writtenReported: readonly RepoPath[];
+      readonly kind: "smoothing-failed";
+      readonly step: SmoothingStep;
+      readonly failure: SmoothingFailure;
+      readonly unrestored: readonly Unrestored[];
+    } & AfterVersionOneProject)
+  | ({
+      readonly kind: "check-failed";
+      readonly failing: readonly string[];
       readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({

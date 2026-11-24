@@ -15,7 +15,7 @@ import { codePointOrder } from "../code-point-order.ts";
 import type { ExceptionRecord } from "../discipline-exceptions/exception-record.ts";
 import type { NamedFolderKind } from "../hone-records/named-folder-kind.ts";
 import { RECORDS_VERSION, namedRecordsFileOf } from "../hone-records/records-layout.ts";
-import type { UnansweredCredit, UpgradeRefusal } from "./upgrade-refusal.ts";
+import type { UpgradeRefusal } from "./upgrade-refusal.ts";
 
 export type CarriedEntry = { readonly [key: string]: ReadonlyJsonValue };
 
@@ -99,7 +99,14 @@ export type CarveOutReasonLine = {
   readonly reason: string;
 };
 
-export type RecordLine = PlacedRecordLine | NotAdoptedLine | CarveOutReasonLine;
+export type NotCarriedLine = {
+  readonly recordKind: "file-carve-out";
+  readonly clause: ClauseAddress;
+  readonly file: RepoPath;
+  readonly newKind: "not-carried";
+};
+
+export type RecordLine = PlacedRecordLine | NotCarriedLine | NotAdoptedLine | CarveOutReasonLine;
 
 export type MappedRecords = {
   readonly documents: readonly MappedRecordsDocument[];
@@ -225,35 +232,30 @@ const debtRecordOf = (request: {
     : { answers, file: request.record.file, ...noteOf({ reason: request.record.reason }) };
 };
 
-const checksCarriedBy = (request: {
-  readonly answer: CarveOutAnswer;
-}): Result<readonly Check[], UnansweredCredit> => {
-  const { answer } = request;
-  if (answer.credit === "nothing") {
-    return { outcome: "failed", error: "nothing" };
-  }
-  return answer.credit === "suppression-only" && answer.checks.length === 0
-    ? { outcome: "failed", error: "suppression-only" }
-    : { outcome: "ok", value: answer.checks };
-};
+const checksCarriedBy = (request: { readonly answer: CarveOutAnswer }): readonly Check[] =>
+  request.answer.credit === "nothing" ? [] : request.answer.checks;
 
 const carveOutOutcome = (request: {
   readonly input: Extract<RecordInput, { readonly kind: "file-carve-out" }>;
 }): InputOutcome => {
   const { record, answer, entry } = request.input;
   const carried = checksCarriedBy({ answer });
-  if (carried.outcome === "failed") {
-    return refusedWith({
-      refusal: {
-        kind: "record-answers-nothing",
-        clause: clauseAddressText({ address: record.clause }),
-        file: record.file,
-        credited: carried.error,
-      },
-    });
+  if (carried.length === 0) {
+    return {
+      placed: [],
+      choices: [
+        {
+          recordKind: "file-carve-out",
+          clause: record.clause,
+          file: record.file,
+          newKind: "not-carried",
+        },
+      ],
+      refusals: [],
+    };
   }
   return outcomeOfPlacements({
-    placements: withoutRepeats({ checks: carried.value }).map((check) =>
+    placements: withoutRepeats({ checks: carried }).map((check) =>
       placedAt({
         origin: originOf({ recordKind: "file-carve-out", record }),
         kind: "debt",

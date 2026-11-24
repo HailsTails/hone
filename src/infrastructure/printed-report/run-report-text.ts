@@ -141,5 +141,13 @@ export const renderRunSectionsText = (request: RunReportRequest): string =>
     .map((line) => `${line}\n`)
     .join("");
 
+export const mapRunReportToFailingLines = (
+  request: Omit<RunReportRequest, "output">,
+): readonly string[] =>
+  RUN_SECTION_NAMES.filter((name) => runSectionRoleOf({ section: name }) === "failing")
+    .map((name) => ({ name, lines: SECTION_LINES[name]({ ...request, output: "full" }) }))
+    .filter((section) => section.lines.length > 0)
+    .flatMap((section) => [headingOf({ section }), ...section.lines]);
+
 export const renderRunReportText = (request: RunReportRequest): string =>
   `${renderRunSectionsText(request)}${verdictLine(request)}\n`;

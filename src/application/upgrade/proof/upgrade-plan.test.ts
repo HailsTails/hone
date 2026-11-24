@@ -707,7 +707,20 @@ describe("upgradePlanOf", () => {
   });
 
   it("refuses with the settings, confined packages and records refusals together, in that order", async () => {
+    const location: Extract<ExceptionRecord, { readonly kind: "authorised-location" }> = {
+      kind: "authorised-location",
+      clause: LOOPS_CLAUSE,
+      mechanism: AUDIT,
+      file: SRC_A,
+      reason: "kept",
+    };
     const request = requestOver({
+      catalogues: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          catalogue: { ...SETTINGS_CATALOGUE, symptoms: [REBINDING], checks: [LOOP_KEYWORD_LOOPS] },
+        },
+      ],
       reading: {
         selection: {
           ...SELECTION,
@@ -717,9 +730,22 @@ describe("upgradePlanOf", () => {
           ],
           clauseSettings: [[LAYERING_CLAUSE, { confinedPackages: [""] }]],
         },
-        heads: [CARVE_OUT_HEAD],
+        heads: [
+          {
+            kind: "authorised-location",
+            record: location,
+            entry: {
+              kind: "authorised-location",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "kept",
+            },
+          },
+        ],
       },
-      answered: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "nothing" } }],
+      answered: [
+        { kind: "authorised-location", record: location, answer: { reach: "whole-clause" } },
+      ],
     });
 
     const plan = await upgradePlanOf(request);
@@ -731,22 +757,19 @@ describe("upgradePlanOf", () => {
         refusals: [
           { kind: "clause-without-check", clause: "CD-13#layering" },
           { kind: "confined-packages-unreadable", clause: "CD-13#layering" },
-          {
-            kind: "record-answers-nothing",
-            clause: "CD-15#loops",
-            file: "src/a.ts",
-            credited: "nothing",
-          },
+          { kind: "symptom-unheld", symptom: LOOP_KEYWORD_LOOPS.symptom },
         ],
       },
     });
   });
 
-  it("refuses with the mapping's own refusals when a carve-out answered nothing", async () => {
+  it("refuses with both the settings' and the records' own refusals when a carve-out's clause has no check", async () => {
     await expect(
       upgradePlanOf(
         requestOver({
-          answered: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "nothing" } }],
+          reading: { ...READING, heads: [CLAUSE_WIDE_HEAD] },
+          answered: [],
+          catalogues: [],
         }),
       ),
     ).resolves.toEqual({
@@ -754,12 +777,8 @@ describe("upgradePlanOf", () => {
       error: {
         kind: "mapping-refused",
         refusals: [
-          {
-            kind: "record-answers-nothing",
-            clause: "CD-15#loops",
-            file: "src/a.ts",
-            credited: "nothing",
-          },
+          { kind: "clause-without-check", clause: "CD-15#loops" },
+          { kind: "clause-without-check", clause: "CD-15#loops" },
         ],
       },
     });

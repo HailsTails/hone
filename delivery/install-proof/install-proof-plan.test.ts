@@ -403,6 +403,37 @@ const WRONG_FIELDS_REJECTED: ProofAction = {
   expectation: { exitCode: 2, output: WRONG_FIELD_REPORT },
 };
 
+const TEAM_RECORDED_SETUP = {
+  replace: ["disciplines.eslint.mjs"],
+  files: [
+    {
+      name: "disciplines.eslint.mjs",
+      text: `import piece0 from "./tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts";
+
+export default [
+  {
+    name: "hone-core/piece/acme",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "acme": piece0 },
+    rules: { "acme/no-console-calls": "error" },
+  },
+  {
+    name: "hone-core/file-records/acme/ACME-1#console-calls",
+    files: [
+      "src/start-banner.ts",
+    ],
+    rules: { "acme/no-console-calls": "off" },
+  },
+];
+`,
+    },
+    {
+      name: "discipline-exceptions.json",
+      text: '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "acme/ACME-1#console-calls", "file": "src/start-banner.ts", "reason": "startup banner" }, { "kind": "file-carve-out", "clause": "acme/ACME-2#scratch-files", "file": "notes.scratch.md", "reason": "working notes" }] }\n',
+    },
+  ],
+};
+
 const TEAM_ACTIONS: readonly ProofAction[] = [
   {
     kind: "typecheck",
@@ -414,7 +445,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 0,
       output:
-        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone-records/acme/debt/direct-console.json\nwrote hone-records/acme/debt/scratch-file.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nfile-carve-out acme/ACME-1#console-calls src/start-banner.ts -> debt direct-console#console-calls\nfile-carve-out acme/ACME-2#scratch-files notes.scratch.md -> debt scratch-file#scratch-files\nupgrade: records written 2, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
     },
   },
   { kind: "commit", message: "upgrade" },
@@ -441,16 +472,13 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   {
     kind: "check",
     expectation: {
-      exitCode: 1,
+      exitCode: 0,
       output: `editions (1)
 acme/scratch-file#scratch-files walker edition 1 of 2
-findings (2)
-acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); symptom: direct-console (tools/disciplines/acme/rules/typescript/symptoms/direct-console.md) may indicate: repository-ready
-acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md symptom: scratch-file (tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md) may indicate: repository-ready
-symptoms (2)
-direct-console: Direct console. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/direct-console.md
-scratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md
-verdict: fail
+answered (2)
+acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); answered by debt
+acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md answered by debt
+verdict: pass
 `,
     },
   },
@@ -503,6 +531,7 @@ describe("the proof cases", () => {
         fixture: "team",
         toolchain: "current",
         typeStripping: "enabled",
+        setup: TEAM_RECORDED_SETUP,
         actions: TEAM_ACTIONS,
       },
       {

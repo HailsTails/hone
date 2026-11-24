@@ -1,11 +1,12 @@
 import type { UpgradeArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import { moduleExtensionOf } from "../application/ports/host/module-extension.ts";
-import type { ProofWritten } from "../application/ports/upgrade/proof-runs.ts";
+import type { CheckReportPointers, ProofWritten } from "../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../application/ports/upgrade/upgrade-carried-over.ts";
-import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { foundTreeRunReachOf } from "../application/upgrade/found-tree/found-tree-reach.ts";
 import { upgradeProof } from "../application/upgrade/proof/upgrade-proof.ts";
+import type { LoadFailure } from "../domain/report/load-failure.ts";
+import type { Result } from "../domain/result.ts";
 import { parseUpgradeArguments } from "../infrastructure/command-line/arguments/command-arguments.ts";
 import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
 import { itemTextFrom } from "../infrastructure/content-files/item-folders/item-text.ts";
@@ -22,6 +23,8 @@ import {
   type UpgradePorts,
   upgradeOf,
 } from "../operations/upgrade/run-upgrade-command.ts";
+import type { FoundTreeReach } from "../operations/upgrade/smoothing-commands.ts";
+import { checkCommandsOf, symptomPageOf } from "./check-command.ts";
 import { loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import {
@@ -32,7 +35,13 @@ import {
 
 export type UpgradeCommandPorts = VersionOneToolPorts &
   VersionTwoRepositoryPorts &
-  Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf" | "measureVersionOne">;
+  Pick<
+    ToolPorts,
+    | keyof UpgradePorts
+    | "foundTreeRecordsSourceOf"
+    | "measureVersionOne"
+    | "childMeasuredStagesOver"
+  >;
 
 type Placed = {
   readonly ports: UpgradeCommandPorts;
@@ -42,7 +51,7 @@ type Placed = {
 
 type Upgraded = { readonly located: RepositoryLocated; readonly carried: UpgradeCarriedOver };
 
-export const foundTreeStagesOf = (request: Placed & ProofWritten): VersionTwoStages => {
+export const createFoundTreeReach = (request: Placed & ProofWritten): FoundTreeReach => {
   const { ports, command, located, written } = request;
   const found = foundTreeRunReachOf({
     written,
@@ -51,15 +60,49 @@ export const foundTreeStagesOf = (request: Placed & ProofWritten): VersionTwoSta
     loadFailureDetail: ports.loadFailureDetail,
     command: ports,
   });
-  return stagesOverRepository({
-    ports: { ...ports, recordsSourceOf: found.recordsSourceOf, git: found.git },
-    moduleUrl: command.moduleUrl,
-    located,
-    baseRevision: found.baseRevision,
-  });
+  return {
+    stages: stagesOverRepository({
+      ports: {
+        ...ports,
+        stagesOver: ports.childMeasuredStagesOver,
+        recordsSourceOf: found.recordsSourceOf,
+        git: found.git,
+      },
+      moduleUrl: command.moduleUrl,
+      located,
+      baseRevision: found.baseRevision,
+    }),
+    recordsSourceFor: ({ catalogue }) =>
+      found.recordsSourceOf({
+        fileText: ports.fileText,
+        git: found.git,
+        gitTree: ports.gitTree,
+        directory: ports.directory,
+        repoRoot: located.repoRoot,
+        catalogue,
+      }),
+  };
 };
 
-const upgradeInputOf = (request: Placed): UpgradeInput => {
+const createPointers = (request: Placed): Result<CheckReportPointers, LoadFailure> => {
+  const { ports, command, located } = request;
+  const commands = checkCommandsOf({
+    path: ports.path,
+    moduleUrl: command.moduleUrl,
+    repoRoot: located.repoRoot,
+    arguments: { baseRevision: undefined, forfeiture: undefined },
+  });
+  return commands.outcome === "failed"
+    ? commands
+    : {
+        outcome: "ok",
+        value: { ...commands.value, symptomPage: symptomPageOf({ ports, located }) },
+      };
+};
+
+const upgradeInputOf = (
+  request: Placed & { readonly pointers: CheckReportPointers },
+): UpgradeInput => {
   const { ports, command, located } = request;
   const { fileText, path } = ports;
   return {
@@ -103,7 +146,8 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),
     proofRunsOf,
     proofOf: upgradeProof,
-    foundTreeStages: ({ written }) => foundTreeStagesOf({ ...request, written }),
+    foundTreeReach: ({ written }) => createFoundTreeReach({ ...request, written }),
+    pointers: request.pointers,
   };
 };
 
@@ -118,7 +162,12 @@ export const UPGRADE: ToolCommand<UpgradeArguments, Upgraded, UpgradeCommandPort
     if (located.outcome === "failed") {
       return loadFailed({ failure: located.error });
     }
-    const upgraded = await upgradeOf(upgradeInputOf({ ports, command, located: located.value }));
+    const placed = { ports, command, located: located.value };
+    const pointers = createPointers(placed);
+    if (pointers.outcome === "failed") {
+      return loadFailed({ failure: pointers.error });
+    }
+    const upgraded = await upgradeOf(upgradeInputOf({ ...placed, pointers: pointers.value }));
     if (upgraded.outcome === "ok") {
       return { outcome: "ok", value: { located: located.value, carried: upgraded.value } };
     }

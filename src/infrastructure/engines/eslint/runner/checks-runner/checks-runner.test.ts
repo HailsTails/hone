@@ -1148,6 +1148,24 @@ describe("checksRunnerOver, giving the projection as project", () => {
     });
   });
 
+  it("gives the same files when it projects again over a tree that holds what it projected", async () => {
+    const { runnerOver } = projectingRunner();
+    const first = await runnerOver.project(WITH_A_PACKAGE_CONFIG);
+
+    const second = await runnerOver.project({
+      ...WITH_A_PACKAGE_CONFIG,
+      trackedPaths: [
+        ...WITH_A_PACKAGE_CONFIG.trackedPaths,
+        CHECKS_PROJECTION_PATH,
+        PACKAGE_SLICE_PATH,
+        CHECKS_DECLARATION_PATH,
+        PACKAGE_DECLARATION_PATH,
+      ],
+    });
+
+    expect(second).toEqual(first);
+  });
+
   it("gives the answered files as off blocks, so records change the projection", async () => {
     const { runnerOver } = projectingRunner();
     const answered = [

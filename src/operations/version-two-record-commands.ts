@@ -13,6 +13,8 @@ import {
 import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
 import {
   settledCatalogueOf,
+  type VersionTwoRequest,
+  type VersionTwoRun,
   type VersionTwoStages,
   versionTwoRunOver,
 } from "../application/run/version-two-run.ts";
@@ -56,30 +58,46 @@ const recordFailureOf = <Value>(request: {
       }
     : request.recorded;
 
-export const versionTwoRecordDebtOf = async (
-  request: VersionTwoRecordInput & {
-    readonly leave: readonly RepoPath[];
-    readonly projectCommand: string;
+type ProjectCommand = { readonly projectCommand: string };
+
+const runOverCurrentProjection = async (
+  request: ProjectCommand & {
+    readonly stages: VersionTwoStages;
+    readonly arguments: VersionTwoRequest;
   },
+): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const run = await versionTwoRunOver(request);
+  if (run.outcome === "failed") {
+    return run;
+  }
+  const { report } = run.value;
+  const stale = refreshableProjectionOf({
+    problems: report["projection-problems"],
+    unmeasured: report.unmeasured,
+  });
+  return stale === undefined
+    ? run
+    : {
+        outcome: "failed",
+        error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
+      };
+};
+
+export const versionTwoRecordDebtOf = async (
+  request: VersionTwoRecordInput &
+    ProjectCommand & {
+      readonly leave: readonly RepoPath[];
+    },
 ): Promise<Result<RecordedDebt, RunLoadFailure>> => {
-  const run = await versionTwoRunOver({
+  const run = await runOverCurrentProjection({
     stages: request.stages,
+    projectCommand: request.projectCommand,
     arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
   });
   if (run.outcome === "failed") {
     return run;
   }
   const { catalogue, report, runs, touched, moved } = run.value;
-  const stale = refreshableProjectionOf({
-    problems: report["projection-problems"],
-    unmeasured: report.unmeasured,
-  });
-  if (stale !== undefined) {
-    return {
-      outcome: "failed",
-      error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
-    };
-  }
   const recorded = recordFailureOf({
     recorded: recordDebtOf({
       ports: {
@@ -105,10 +123,12 @@ export const versionTwoRecordDebtOf = async (
 };
 
 export const versionTwoPruneDebtOf = async (
-  request: VersionTwoRecordInput & { readonly forfeiture: ForfeitureAssessment | undefined },
+  request: VersionTwoRecordInput &
+    ProjectCommand & { readonly forfeiture: ForfeitureAssessment | undefined },
 ): Promise<Result<readonly PrunableDebt[], RunLoadFailure>> => {
-  const run = await versionTwoRunOver({
+  const run = await runOverCurrentProjection({
     stages: request.stages,
+    projectCommand: request.projectCommand,
     arguments: {
       forfeiture: request.forfeiture,
       reportOutput: undefined,

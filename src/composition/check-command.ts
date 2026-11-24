@@ -40,7 +40,7 @@ export type VersionTwoCheckRun = {
   readonly run: VersionTwoRun;
 };
 
-const checkCommandsOf = (request: {
+export const checkCommandsOf = (request: {
   readonly path: PathPort;
   readonly moduleUrl: string;
   readonly repoRoot: AbsolutePath;
@@ -66,7 +66,7 @@ const checkCommandsOf = (request: {
       };
 };
 
-const symptomPageOf = (request: {
+export const symptomPageOf = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
   readonly located: RepositoryLocated;
 }): string => {

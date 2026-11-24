@@ -73,7 +73,7 @@ const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts
 });
 
 const PORTS: UpgradePorts = {
-  recordsReader: { recordsReadingOf: vi.fn() },
+  recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
   boundCatalogueOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn(), renameKeys: vi.fn() },
   settingsSourcesOf: vi.fn(),
@@ -86,6 +86,12 @@ const PORTS: UpgradePorts = {
   directoryRemoval: { removeEmpty: vi.fn() },
   entryKind: { kindOf: vi.fn() },
   loadFailureDetail: vi.fn(),
+  recordsEditor: {
+    documentsWithAdded: vi.fn(),
+    placeOfAddition: vi.fn(),
+    documentsWithRepointed: vi.fn(),
+    documentsWithRemoved: vi.fn(),
+  },
 };
 
 const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): UpgradeInput => ({
@@ -105,7 +111,12 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   versionOneReadOf: vi.fn<VersionOneReadOf>(),
   proofRunsOf: vi.fn(),
   proofOf: vi.fn(),
-  foundTreeStages: vi.fn(),
+  foundTreeReach: vi.fn(),
+  pointers: {
+    symptomPage: "rules/typescript/symptoms.md",
+    pruneCommand: "hone prune-debt --repo /repo",
+    projectCommand: "hone project --repo /repo",
+  },
   ...request,
 });
 
@@ -362,7 +373,7 @@ describe("upgradeOf", () => {
       replaced: [],
       removed: { files: [], folders: [] },
       records: [],
-      findings: 0,
+      smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
     };
 
     it("reads every tracked file, the version 1 exclude included, and returns what they mention when the proof is ok", async () => {
@@ -565,7 +576,7 @@ describe("upgradeOf", () => {
     });
   });
 
-  it("runs the version 2 proof over the found tree with the files the upgrade wrote", async () => {
+  it("runs the version 2 proof and the smoothing commands over the found tree with the files the upgrade wrote, handing the check the report pointers", async () => {
     const proofRunsOf = vi.fn<ProofRunsOf>().mockReturnValue({
       versionOne: vi.fn<ProofRuns["versionOne"]>(),
       versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
@@ -584,7 +595,16 @@ describe("upgradeOf", () => {
         .mockReturnValue({ measured: "yes", renamed: new Map() }),
       touched: vi.fn<VersionTwoStages["touched"]>(),
     };
-    const foundTreeStages = vi.fn<UpgradeInput["foundTreeStages"]>().mockReturnValue(stages);
+    const foundTreeReach = vi
+      .fn<UpgradeInput["foundTreeReach"]>()
+      .mockReturnValue({ stages, recordsSourceFor: vi.fn() });
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
+      outcome: "failed",
+      error: {
+        kind: "oracle-failed",
+        failure: { kind: "version-one-run-failed", detail: "x" },
+      },
+    });
     const written = { written: [repoPathOf("hone.eslint.d.mts")] };
     await upgradeOf(
       inputWith({
@@ -594,23 +614,33 @@ describe("upgradeOf", () => {
           .fn<VersionOneReadOf>()
           .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
         proofRunsOf,
-        proofOf: vi.fn().mockResolvedValue({
-          outcome: "failed",
-          error: {
-            kind: "oracle-failed",
-            failure: { kind: "version-one-run-failed", detail: "x" },
-          },
-        }),
-        foundTreeStages,
+        proofOf,
+        foundTreeReach,
       }),
     );
     const [[sources]] = proofRunsOf.mock.calls;
+    const [[proofRequest]] = proofOf.mock.calls;
+
+    const run = await sources.versionTwo(written);
+    const projected = await proofRequest.smoothing.project(written);
+
     expect({
-      run: await sources.versionTwo(written),
-      stagesFor: foundTreeStages.mock.calls,
+      run,
+      projected,
+      pointers: sources.pointers,
+      reachedFor: foundTreeReach.mock.calls,
     }).toEqual({
       run: { outcome: "failed", error: { kind: "config-absent", repo: "/repo" } },
-      stagesFor: [[written]],
+      projected: {
+        outcome: "failed",
+        error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+      },
+      pointers: {
+        symptomPage: "rules/typescript/symptoms.md",
+        pruneCommand: "hone prune-debt --repo /repo",
+        projectCommand: "hone project --repo /repo",
+      },
+      reachedFor: [[written], [written]],
     });
   });
 });
