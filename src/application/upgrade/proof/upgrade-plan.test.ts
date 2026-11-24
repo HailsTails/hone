@@ -7,6 +7,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
@@ -26,14 +28,14 @@ const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -91,6 +93,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
@@ -100,6 +103,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
@@ -109,6 +113,7 @@ const REBINDING_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -418,6 +423,186 @@ describe("upgradePlanOf", () => {
     });
   });
 
+  it("carries a CD-19 authorised location as one record for each package its clause confined, then one for node modules", async () => {
+    const outsideImport: Symptom = {
+      ...LOOP_KEYWORD,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const importsClause = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-19"),
+      clause: clauseIdOf("import-boundaries"),
+    };
+    const importCatalogues: readonly RuleSetCatalogue[] = [
+      {
+        ruleSet: TOOL_RULE_SET,
+        catalogue: {
+          ...SETTINGS_CATALOGUE,
+          symptoms: [outsideImport],
+          clauses: [
+            { clause: importsClause, sight: { kind: "one-symptom", symptom: outsideImport } },
+          ],
+          checks: [
+            {
+              name: "import-or-require",
+              symptom: outsideImport,
+              page: "outside-import-past-a-boundary/import-or-require.md",
+              clause: importsClause,
+              engines: [ESLINT_ENGINE],
+              forms: [],
+              findingSpecifics: ["outside-party"],
+            },
+          ],
+        },
+      },
+    ];
+    const idsLocation: Extract<ExceptionRecord, { readonly kind: "authorised-location" }> = {
+      kind: "authorised-location",
+      clause: importsClause,
+      mechanism: "eslint",
+      file: repoPathOf("src/adapters/ids.ts"),
+      reason: "the ids adapter",
+    };
+    const idsEntry = {
+      kind: "authorised-location",
+      clause: "CD-19#import-boundaries",
+      file: "src/adapters/ids.ts",
+      reason: "the ids adapter",
+    } as const;
+    const idsRecord = {
+      answers: "outside-import-past-a-boundary#import-or-require",
+      file: "src/adapters/ids.ts",
+      carried: idsEntry,
+    };
+    const projectionFilesOf = projecting({ files: [] });
+    await upgradePlanOf(
+      requestOver({
+        projectionFilesOf,
+        catalogues: importCatalogues,
+        reading: {
+          selection: {
+            ...SELECTION,
+            clauses: [[importsClause, { state: "run", mechanism: "eslint" }]],
+            clauseSettings: [[importsClause, { confinedPackages: ["uuid", "zod"] }]],
+          },
+          heads: [{ kind: "authorised-location", record: idsLocation, entry: idsEntry }],
+        },
+        answered: [
+          { kind: "authorised-location", record: idsLocation, answer: { reach: "whole-clause" } },
+        ],
+      }),
+    );
+    expect(projectionFilesOf).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        documents: [
+          {
+            file: "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+            version: 2,
+            records: [
+              { ...idsRecord, outsideParty: "uuid" },
+              { ...idsRecord, outsideParty: "zod" },
+              { ...idsRecord, outsideParty: "node:" },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  it("refuses to plan when the packages CD-19 confines are not package names", async () => {
+    const outsideImport: Symptom = {
+      ...LOOP_KEYWORD,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const importsClause = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-19"),
+      clause: clauseIdOf("import-boundaries"),
+    };
+    const importCatalogues: readonly RuleSetCatalogue[] = [
+      {
+        ruleSet: TOOL_RULE_SET,
+        catalogue: {
+          ...SETTINGS_CATALOGUE,
+          symptoms: [outsideImport],
+          clauses: [
+            { clause: importsClause, sight: { kind: "one-symptom", symptom: outsideImport } },
+          ],
+          checks: [
+            {
+              name: "import-or-require",
+              symptom: outsideImport,
+              page: "outside-import-past-a-boundary/import-or-require.md",
+              clause: importsClause,
+              engines: [ESLINT_ENGINE],
+              forms: [],
+              findingSpecifics: ["outside-party"],
+            },
+          ],
+        },
+      },
+    ];
+    const idsLocation: Extract<ExceptionRecord, { readonly kind: "authorised-location" }> = {
+      kind: "authorised-location",
+      clause: importsClause,
+      mechanism: "eslint",
+      file: repoPathOf("src/adapters/ids.ts"),
+      reason: "the ids adapter",
+    };
+    const idsEntry = {
+      kind: "authorised-location",
+      clause: "CD-19#import-boundaries",
+      file: "src/adapters/ids.ts",
+      reason: "the ids adapter",
+    } as const;
+    const request = requestOver({
+      projectionFilesOf: projecting({ files: [] }),
+      catalogues: importCatalogues,
+      reading: {
+        selection: {
+          ...SELECTION,
+          clauses: [[importsClause, { state: "run", mechanism: "eslint" }]],
+          clauseSettings: [[importsClause, { confinedPackages: [""] }]],
+        },
+        heads: [{ kind: "authorised-location", record: idsLocation, entry: idsEntry }],
+      },
+      answered: [
+        { kind: "authorised-location", record: idsLocation, answer: { reach: "whole-clause" } },
+      ],
+    });
+
+    const plan = await upgradePlanOf(request);
+
+    expect(plan).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "mapping-refused",
+        refusals: [
+          {
+            kind: "confined-packages-unreadable",
+            detail: "confinedPackages for CD-19#import-boundaries is not a list of package names",
+          },
+        ],
+      },
+    });
+  });
+
   it("plans no projection file when the engines project none", async () => {
     await expect(
       upgradePlanOf(requestOver({ projectionFilesOf: projecting({ files: [] }) })),
@@ -479,6 +664,50 @@ describe("upgradePlanOf", () => {
     ).resolves.toEqual({
       outcome: "failed",
       error: { kind: "location-unanswered", clause: "CD-15#loops", file: "src/a.ts" },
+    });
+  });
+
+  it("refuses with the mapping's own refusal when an authorised location is at a check whose symptom no catalogue holds", async () => {
+    const location: Extract<ExceptionRecord, { readonly kind: "authorised-location" }> = {
+      kind: "authorised-location",
+      clause: LOOPS_CLAUSE,
+      mechanism: AUDIT,
+      file: SRC_A,
+      reason: "kept",
+    };
+    const head: HeadRecord = {
+      kind: "authorised-location",
+      record: location,
+      entry: {
+        kind: "authorised-location",
+        clause: "CD-15#loops",
+        file: "src/a.ts",
+        reason: "kept",
+      },
+    };
+    const symptomUnheldCatalogues: readonly RuleSetCatalogue[] = [
+      {
+        ruleSet: TOOL_RULE_SET,
+        catalogue: { ...SETTINGS_CATALOGUE, symptoms: [REBINDING], checks: [LOOP_KEYWORD_LOOPS] },
+      },
+    ];
+
+    const planned = await upgradePlanOf(
+      requestOver({
+        catalogues: symptomUnheldCatalogues,
+        reading: { ...READING, heads: [head] },
+        answered: [
+          { kind: "authorised-location", record: location, answer: { reach: "whole-clause" } },
+        ],
+      }),
+    );
+
+    expect(planned).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "mapping-refused",
+        refusals: [{ kind: "symptom-unheld", symptom: LOOP_KEYWORD_LOOPS.symptom }],
+      },
     });
   });
 

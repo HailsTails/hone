@@ -1,5 +1,3 @@
-import type { z } from "zod";
-
 import type {
   CarriedStanding,
   RecordRefusal,
@@ -8,12 +6,13 @@ import type {
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 
 const entriesAtBaseOf = (request: {
   readonly base: Extract<RecordsAtBase, { readonly measured: "yes" }>;
   readonly file: RepoPath;
-}): readonly z.core.util.JSONType[] =>
+}): readonly ReadonlyJsonValue[] =>
   request.base.documents
     .filter((document) => document.file === request.file)
     .flatMap((document) => {
@@ -24,7 +23,7 @@ const entriesAtBaseOf = (request: {
 export const carriedStandingOf = (request: {
   readonly base: RecordsAtBase;
   readonly file: RepoPath;
-  readonly entry: z.core.util.JSONType;
+  readonly entry: ReadonlyJsonValue;
 }): Result<CarriedStanding, readonly RecordRefusal[]> => {
   if (request.base.measured === "no") {
     return { outcome: "ok", value: "unjudged" };

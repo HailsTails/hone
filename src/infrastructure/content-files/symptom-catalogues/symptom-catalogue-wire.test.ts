@@ -5,9 +5,10 @@ import type {
   Engine,
   Principle,
   Recipe,
-  RecordKind,
   Rule,
   Symptom,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
@@ -175,14 +176,14 @@ const FUNCTIONAL_ITERATION: Recipe = {
   reason: { text: '"For of mutates by its nature."', standing: "proposed" },
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -205,7 +206,12 @@ const LOOP_KEYWORD: Symptom = {
   breachUsuallySits: "in the unit",
   recipes: [FUNCTIONAL_ITERATION],
   correctUses: [
-    { situation: "draining a stream", kind: AUTHORISED_LOCATION, at: "in its source's adapter" },
+    {
+      situation: "draining a stream",
+      kind: AUTHORISED_LOCATION,
+      at: "in its source's adapter",
+      binding: "check-and-file",
+    },
     { situation: "a known stream", kind: DEBT },
   ],
 };
@@ -285,8 +291,204 @@ describe("catalogueContentOf", () => {
     });
   });
 
-  it("resolves every name a document gives to the entry it names, field by field", () => {
-    expect(catalogueContentOf({ ruleSet: TOOL_RULE_SET, document: DOCUMENT })).toEqual({
+  it("keeps what an authorised-location correct use binds", () => {
+    const onePlaceDecides: Principle = { name: "one-place-decides", title: "One place decides" };
+    const checksConditionsBeforeItsWork: Case = {
+      name: "checks-conditions-before-its-work",
+      title: "Checks conditions before its work",
+      standing: "accepted",
+      owes: [{ kind: "principle", principle: onePlaceDecides }],
+    };
+    const document = {
+      ...EMPTY_DOCUMENT,
+      principles: [{ name: "one-place-decides", title: "One place decides" }],
+      cases: [CASE_DOCUMENT],
+      symptoms: [
+        {
+          ...SYMPTOM_DOCUMENT,
+          correctUses: [
+            { situation: "the adapter", kind: "authorised-location", binds: ["outside-party"] },
+          ],
+        },
+      ],
+    };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [onePlaceDecides],
+        rules: [],
+        cases: [checksConditionsBeforeItsWork],
+        recipes: [],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [],
+        symptoms: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            name: "work-inside-a-condition",
+            title: "Work inside a condition",
+            seen: "An `if` inside another `if`.",
+            mayIndicate: [
+              {
+                case: checksConditionsBeforeItsWork,
+                points: [{ kind: "principle", principle: onePlaceDecides }],
+              },
+            ],
+            breachUsuallySits: "in the unit's questions",
+            recipes: [],
+            correctUses: [
+              {
+                situation: "the adapter",
+                kind: AUTHORISED_LOCATION,
+                binding: "check-file-and-outside-party",
+              },
+            ],
+          },
+        ],
+        clauses: [],
+        checks: [],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("keeps the specifics a check's findings report", () => {
+    const uselessElseClause: ClauseAddress = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-42"),
+      clause: clauseIdOf("useless-else"),
+    };
+    const onePlaceDecides: Principle = { name: "one-place-decides", title: "One place decides" };
+    const checksConditionsBeforeItsWork: Case = {
+      name: "checks-conditions-before-its-work",
+      title: "Checks conditions before its work",
+      standing: "accepted",
+      owes: [{ kind: "principle", principle: onePlaceDecides }],
+    };
+    const workInsideACondition: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "work-inside-a-condition",
+      title: "Work inside a condition",
+      seen: "An `if` inside another `if`.",
+      mayIndicate: [
+        {
+          case: checksConditionsBeforeItsWork,
+          points: [{ kind: "principle", principle: onePlaceDecides }],
+        },
+      ],
+      breachUsuallySits: "in the unit's questions",
+      recipes: [],
+      correctUses: [],
+    };
+    const document = {
+      ...EMPTY_DOCUMENT,
+      principles: [{ name: "one-place-decides", title: "One place decides" }],
+      cases: [CASE_DOCUMENT],
+      symptoms: [SYMPTOM_DOCUMENT],
+      clauses: [
+        {
+          clause: "CD-42#useless-else",
+          sight: { kind: "one-symptom", symptom: "work-inside-a-condition" },
+        },
+      ],
+      checks: [
+        {
+          symptom: "work-inside-a-condition",
+          name: "useless-else",
+          clause: "CD-42#useless-else",
+          findingSpecifics: ["outside-party"],
+        },
+      ],
+    };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [onePlaceDecides],
+        rules: [],
+        cases: [checksConditionsBeforeItsWork],
+        recipes: [],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [],
+        symptoms: [workInsideACondition],
+        clauses: [
+          {
+            clause: uselessElseClause,
+            sight: {
+              kind: "one-symptom",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "work-inside-a-condition" },
+            },
+          },
+        ],
+        checks: [
+          {
+            name: "useless-else",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "work-inside-a-condition" },
+            page: "work-inside-a-condition/useless-else.md",
+            clause: uselessElseClause,
+            forms: [],
+            findingSpecifics: ["outside-party"],
+          },
+        ],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("resolves the principles, rules, cases and recipes a document names", () => {
+    const document = { ...DOCUMENT, symptoms: [], clauses: [], checks: [], namedBans: [] };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [NO_HIDDEN_EFFECTS],
+        rules: [DOER_OR_ORCHESTRATOR],
+        cases: [MAKES_A_NEW_VALUE, COORDINATES_OTHER_UNITS],
+        recipes: [FUNCTIONAL_ITERATION],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [WALKER, ESLINT],
+        symptoms: [],
+        clauses: [],
+        checks: [],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("resolves a symptom's cases, points, recipes and correct uses to the entries they name", () => {
+    const document = { ...DOCUMENT, clauses: [], checks: [], namedBans: [] };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [NO_HIDDEN_EFFECTS],
+        rules: [DOER_OR_ORCHESTRATOR],
+        cases: [MAKES_A_NEW_VALUE, COORDINATES_OTHER_UNITS],
+        recipes: [FUNCTIONAL_ITERATION],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [WALKER, ESLINT],
+        symptoms: [LOOP_KEYWORD],
+        clauses: [],
+        checks: [],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("resolves each clause's sight to the symptoms and recipe it names", () => {
+    const document = { ...DOCUMENT, checks: [], namedBans: [] };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
       outcome: "ok",
       value: {
         principles: [NO_HIDDEN_EFFECTS],
@@ -319,9 +521,44 @@ describe("catalogueContentOf", () => {
               outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "loop-keyword" }],
             },
           },
+          { clause: PII_REDACTION_CLAUSE, sight: { kind: "outside-the-cases" } },
+        ],
+        checks: [],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("resolves each check to its symptom and clause, with the forms of its clause", () => {
+    const [loops, testBody] = DOCUMENT.clauses;
+    const document = { ...DOCUMENT, clauses: [loops, testBody], namedBans: [] };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [NO_HIDDEN_EFFECTS],
+        rules: [DOER_OR_ORCHESTRATOR],
+        cases: [MAKES_A_NEW_VALUE, COORDINATES_OTHER_UNITS],
+        recipes: [FUNCTIONAL_ITERATION],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [WALKER, ESLINT],
+        symptoms: [LOOP_KEYWORD],
+        clauses: [
           {
-            clause: PII_REDACTION_CLAUSE,
-            sight: { kind: "outside-the-cases" },
+            clause: LOOPS_CLAUSE,
+            sight: {
+              kind: "one-symptom",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+            },
+          },
+          {
+            clause: TEST_BODY_LOGIC_CLAUSE,
+            sight: {
+              kind: "symptom-by-form",
+              forms: [{ form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } }],
+            },
           },
         ],
         checks: [
@@ -331,6 +568,7 @@ describe("catalogueContentOf", () => {
             page: "loop-keyword/loops.md",
             clause: LOOPS_CLAUSE,
             forms: [],
+            findingSpecifics: [],
           },
           {
             name: "test-body",
@@ -338,8 +576,31 @@ describe("catalogueContentOf", () => {
             page: "loop-keyword/test-body.md",
             clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],
+            findingSpecifics: [],
           },
         ],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("reads each named ban as the outside dependency it bans", () => {
+    const document = { ...EMPTY_DOCUMENT, namedBans: [{ outsideDependency: "lodash" }] };
+
+    const content = catalogueContentOf({ ruleSet: TOOL_RULE_SET, document });
+
+    expect(content).toEqual({
+      outcome: "ok",
+      value: {
+        principles: [],
+        rules: [],
+        cases: [],
+        recipes: [],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [],
+        symptoms: [],
+        clauses: [],
+        checks: [],
         namedBans: [{ outsideDependency: "lodash" }],
       },
     });
@@ -384,6 +645,7 @@ describe("catalogueContentOf", () => {
             page: "loop-keyword/loops.md",
             clause: LOOPS_CLAUSE,
             forms: [],
+            findingSpecifics: [],
           },
           {
             name: "test-body",
@@ -391,6 +653,7 @@ describe("catalogueContentOf", () => {
             page: "loop-keyword/test-body.md",
             clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],
+            findingSpecifics: [],
           },
         ],
       }),
@@ -434,8 +697,8 @@ describe("catalogueContentOf", () => {
       outcome: "ok",
       value: {
         checks: [
-          { name: "test-body", forms: ["branching-with-if", "a-ternary"] },
-          { name: "test-body", forms: ["a-let"] },
+          { name: "test-body", forms: ["branching-with-if", "a-ternary"], findingSpecifics: [] },
+          { name: "test-body", forms: ["a-let"], findingSpecifics: [] },
         ],
       },
     });
@@ -841,12 +1104,12 @@ describe("catalogueContentOf", () => {
           {
             ...SYMPTOM_DOCUMENT,
             correctUses: [
-              { situation: "correct use", kind: "boundary-record", at: "on the clock adapter" },
+              { situation: "correct use", kind: "deviation", at: "on the clock adapter" },
             ],
           },
         ],
       },
-      refusal: "✖ symptoms names boundary-record, which the catalogue does not hold",
+      refusal: "✖ symptoms names deviation, which the catalogue does not hold",
     },
     {
       name: "a catalogue without debt, which every symptom takes",
@@ -997,6 +1260,59 @@ describe("catalogueContentOf", () => {
         ],
       },
       refusal: "✖ CD-27#test-body-logic sees rebinding, which no check names",
+    },
+    {
+      name: "a correct use that binds a specific but is no authorised location",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        symptoms: [
+          {
+            ...SYMPTOM_DOCUMENT,
+            correctUses: [{ situation: "correct use", kind: "debt", binds: ["outside-party"] }],
+          },
+        ],
+      },
+      refusal: '✖ Unrecognized key: "binds"\n  → at symptoms[0].correctUses[0]',
+    },
+    {
+      name: "two authorised-location correct uses on one symptom that bind differently",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        symptoms: [
+          {
+            ...SYMPTOM_DOCUMENT,
+            correctUses: [
+              { situation: "the adapter", kind: "authorised-location", binds: ["outside-party"] },
+              { situation: "a test", kind: "authorised-location" },
+            ],
+          },
+        ],
+      },
+      refusal:
+        "✖ work-inside-a-condition has authorised-location correct uses that bind differently",
+    },
+    {
+      name: "a correct use binding an outside party that its symptom's check does not report",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        symptoms: [
+          {
+            ...SYMPTOM_DOCUMENT,
+            correctUses: [
+              { situation: "the adapter", kind: "authorised-location", binds: ["outside-party"] },
+            ],
+          },
+        ],
+        checks: [
+          {
+            symptom: "work-inside-a-condition",
+            name: "useless-else",
+            clause: "CD-42#useless-else",
+          },
+        ],
+      },
+      refusal:
+        "✖ work-inside-a-condition binds outside-party, which its check useless-else does not report",
     },
     {
       name: "a named ban that names nothing",

@@ -28,7 +28,7 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
+      "kind": "authorised-location",
       "at": "on the adapter for random values or new ids"
     }
   ]

@@ -39,7 +39,7 @@ Without `--base-revision`, Hone cannot tell which files were touched, so debt ca
 
 Give it the base that the run assessing forfeiture is given, such as `origin/main` for a branch: a record for a file changed since that base is forfeited by that run, so the command writes none for such a file and says so, and a check against a later revision, such as `HEAD`, would not show it.
 
-It never writes anything that needs an owner's reason: no authorised location, no boundary record, no deviation, no dependency record and no setting. It prints one line per finding and per native exception under `unrecorded`, and writes nothing for:
+It never writes anything that needs an owner's reason: no authorised location, no deviation, no dependency record and no setting. It prints one line per finding and per native exception under `unrecorded`, and writes nothing for:
 
 - a symptom and file that already hold debt;
 - a file under a `--leave` path. `--leave` takes an exact file or folder, as `exclude` does, and may be given once for each path. It names the deliberate, permanent exceptions, which a person records as an authorised location with a why chain;
@@ -135,9 +135,8 @@ The keys version 1's `disciplines.json` used under other names are refused, each
 A folder at the repository root; without it, no record answers any finding. It holds the records that answer findings, one file for each kind and symptom or recipe, each a document `{ "version": 2, "records": [...] }`. A file in the wrong folder or under a name that is not a catalogue name is refused, naming where each record belongs. Each record names what it reaches by the symptom's name, or by `<symptom>#<check>` to reach one check of it. [rules/records.md](rules/records.md) says what each kind is for.
 
 - **Debt** is in `hone-records/debt/<symptom>.json`: `answers`, `file` and an optional `note`, a note to future developers on what the debt signals, which nothing reads. It says a finding in one file is owed. It needs no case and no why-chain; forfeiture is what holds it: it is forfeited once its file is touched.
-- **An authorised location** is in `hone-records/authorised-locations/<symptom>.json`: `answers`, `file`, `case` and `owes`, naming the case the file is and the principle it owes, and a `whyChain`. It says the symptom is correct in that file. [`hone authorise`](#commands) writes one from the arguments it is given.
+- **An authorised location** is in `hone-records/authorised-locations/<symptom>.json`: `answers` as `<symptom>#<check>`, `file`, `case` and `owes`, naming the case the file is and the principle it owes, and a `whyChain`. It says the check's finding is correct in that file. A symptom whose authorised-location correct use binds an outside party, such as Outside import past a boundary, also takes `outsideParty`: a package's name or a module such as `node:fs`, and the record answers only that party's imports. A symptom with no authorised-location correct use takes none. [`hone authorise`](#commands) writes one from the arguments it is given.
 - **A deviation** is in `hone-records/deviations/<recipe>.json`: `recipe`, `file`, `recipeReason`, `reasonFails`, `evidence` and `ruleHolds`. It says why a file does not follow a recipe the catalogue gives.
-- **A boundary record** is in `hone-records/boundary-records.json`: `module`, `outsideParty` (a runtime facility such as `runtime:clock`, or an outside module's specifier), the `ports` the module declares and an optional `conformist`. It says the module is where an outside party is met.
 - **A dependency record** is in `hone-records/dependency-records.json`: `dependency`, `nativeWay`, `whyNotEnough` and an optional `peerRisk`. It says why a package is used where the platform's own way exists.
 
 An authorised location's `whyChain` follows the [why-chain contract](docs/why-chain-contract.md), which gives its shape, what Hone refuses and what review still judges.

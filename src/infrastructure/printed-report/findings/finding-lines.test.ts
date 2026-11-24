@@ -12,6 +12,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -145,21 +147,14 @@ const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -184,7 +179,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -222,7 +222,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -250,6 +256,7 @@ const CLOCK_CHECK: Check = {
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
@@ -259,6 +266,7 @@ const TEST_BODY_CHECK: Check = {
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
@@ -268,6 +276,7 @@ const CAST_CHECK: Check = {
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -281,7 +290,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -348,6 +357,7 @@ const SECOND_CAST_CHECK: Check = {
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEAM_FINDING: CheckFinding = {
@@ -366,16 +376,6 @@ const DEBT: PlacedRecord = {
     reach: WHOLE_SYMPTOM,
     file: WEBHOOK_FILE,
     holding: { held: "stated" },
-  },
-};
-
-const CLOCK_BOUNDARY: PlacedRecord = {
-  place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
-  record: {
-    kind: "boundary-record",
-    module: ORDER_FILE,
-    outsideParty: { kind: "runtime", facility: "clock" },
-    holding: { held: "stated", ports: ["Clock"] },
   },
 };
 
@@ -398,6 +398,7 @@ const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
     reach: { reaches: "unknown-check", check: "test-bodies" },
     file: TEST_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "carried",
       entry: {},
       lacks: ["case", "owes", "whyChain"],
@@ -466,6 +467,7 @@ describe("findingLine", () => {
       page: "rules/team/checks/no-moment.md",
       engines: [ESLINT_ENGINE],
       forms: [],
+      findingSpecifics: [],
     };
     expect(
       findingLine({
@@ -514,13 +516,32 @@ describe("findingLine", () => {
 
 describe("answeredLine", () => {
   it("names each record that answers the finding, by its kind, after the finding's place and snippet", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
-        answered: { finding: CLOCK_FINDING, by: [DEBT, CLOCK_BOUNDARY] },
+        answered: { finding: CLOCK_FINDING, by: [DEBT, clockLocation] },
       }),
     ).toBe(
-      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); answered by debt answered by boundary-record runtime:clock",
+      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); answered by debt answered by authorised-location carried",
     );
   });
 
@@ -549,6 +570,25 @@ describe("answeredLine", () => {
 
 describe("heldLine", () => {
   it("prints a held inline disable that names its rule by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       heldLine({
         catalogue: REPORT_CATALOGUE,
@@ -562,15 +602,34 @@ describe("heldLine", () => {
             reach: "one-check",
             mechanism: ESLINT,
           },
-          by: [DEBT, CLOCK_BOUNDARY],
+          by: [DEBT, clockLocation],
         },
       }),
     ).toBe(
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by boundary-record runtime:clock",
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by authorised-location carried",
     );
   });
 
   it("notes that a held inline disable naming no rule escapes every selected check", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       heldLine({
         catalogue: REPORT_CATALOGUE,
@@ -584,11 +643,11 @@ describe("heldLine", () => {
             reach: "every-selected-check",
             mechanism: ESLINT,
           },
-          by: [DEBT, CLOCK_BOUNDARY],
+          by: [DEBT, clockLocation],
         },
       }),
     ).toBe(
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by boundary-record runtime:clock",
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by authorised-location carried",
     );
   });
 });

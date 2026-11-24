@@ -90,28 +90,6 @@ describe("upgradeFailureOutcomeOf", () => {
       },
     },
     {
-      name: "a file carve-out that held up only a suppression no record can hold is refused",
-      failure: {
-        kind: "plan-refused",
-        refusal: {
-          kind: "mapping-refused",
-          refusals: [
-            {
-              kind: "record-answers-nothing",
-              clause: "CD-15#loops",
-              file: repoPathOf("src/a.ts"),
-              credited: "suppression-only",
-            },
-          ],
-        },
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nthe file carve-out for CD-15#loops in src/a.ts answers only a suppression no version 2 record can hold. Remove it, or fix the file it names, then run the upgrade again.\nNothing was changed.\n",
-      },
-    },
-    {
       name: "version 2's projection cannot be made",
       failure: {
         kind: "plan-refused",
@@ -614,21 +592,6 @@ Nothing was changed.
       outcome: {
         code: 3,
         text: "upgrade incomplete:\nversion 2 is in place (written: hone.config.json, hone.eslint.mjs; replaced: eslint.config.mjs, packages/a/eslint.config.mjs), but /repo/disciplines.eslint.mjs could not be removed (EBUSY).\nDelete these version 1 files by hand, then commit:\n  /repo/disciplines.eslint.mjs\n  /repo/disciplines.json\n",
-      },
-    },
-    {
-      name: "a project clause has no version 2 check",
-      failure: {
-        kind: "plan-refused",
-        refusal: {
-          kind: "mapping-refused",
-          refusals: [{ kind: "clause-without-check", clause: "acme/CD-1#thing" }],
-        },
-        removedByVersionOne: [],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nacme/CD-1#thing has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.\nNothing was changed.\n",
       },
     },
     {

@@ -8,7 +8,7 @@ import type {
   UnavailablePeers,
 } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
-import { symptomUnheldText } from "./load-failure-lines.ts";
+import { symptomUnheldText } from "../symptoms/symptom-lines.ts";
 
 const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");

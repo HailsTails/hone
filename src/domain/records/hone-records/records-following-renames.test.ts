@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { Recipe, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { Check, Recipe, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
-import type { PlacedRecord } from "./hone-record.ts";
+import type { AuthorisedBinding, AuthorisedLocation, PlacedRecord } from "./hone-record.ts";
 import {
   movedPathRefusalsOf,
   recordsAtMovedPathsOf,
@@ -70,16 +70,6 @@ const DEVIATION_ON_BASKET: PlacedRecord = {
   },
 };
 
-const BOUNDARY_ON_BASKET: PlacedRecord = {
-  place: { file: repoPathOf("hone-records/boundary-records/clock.json"), index: 0 },
-  record: {
-    kind: "boundary-record",
-    module: BASKET,
-    outsideParty: { kind: "runtime", facility: "clock" },
-    holding: { held: "stated", ports: ["clock-port"] },
-  },
-};
-
 const CHARGE = repoPathOf("src/charge.ts");
 
 const debtAt = (request: { readonly index: number; readonly file: RepoPath }): PlacedRecord => ({
@@ -95,9 +85,18 @@ const debtAt = (request: { readonly index: number; readonly file: RepoPath }): P
 
 describe("recordsFollowingRenames", () => {
   it("points each record named as moved at the path it moved to, leaving its place and every other record as it is", () => {
+    const zodDependency: PlacedRecord = {
+      place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
+      record: {
+        kind: "dependency-record",
+        dependency: "zod",
+        nativeWay: "hand-written parsing",
+        whyNotEnough: "Each adapter would repeat its checks.",
+      },
+    };
     expect(
       recordsFollowingRenames({
-        records: [DEBT_ON_BASKET, DEBT_ON_TOTAL, DEVIATION_ON_BASKET, BOUNDARY_ON_BASKET],
+        records: [DEBT_ON_BASKET, DEBT_ON_TOTAL, DEVIATION_ON_BASKET, zodDependency],
         moved: [
           { place: DEBT_ON_BASKET.place, file: MOVED_BASKET },
           { place: DEVIATION_ON_BASKET.place, file: MOVED_BASKET },
@@ -126,7 +125,7 @@ describe("recordsFollowingRenames", () => {
           ruleHolds: "the test still owns its double",
         },
       },
-      BOUNDARY_ON_BASKET,
+      zodDependency,
     ]);
   });
 });
@@ -146,11 +145,76 @@ const deviationAt = (request: {
   },
 });
 
+describe("recordsFollowingRenames, an authorised location bound to an outside party", () => {
+  it("points it at the path it moved to, keeping its check and party", () => {
+    const imports: Symptom = { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" };
+    const importCheck: Check = {
+      name: "import-or-require",
+      symptom: imports,
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: ["outside-party"],
+    };
+    const place = {
+      file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+      index: 0,
+    };
+    const holding: AuthorisedLocation["holding"] = {
+      held: "carried",
+      binding: {
+        binds: "check-file-and-outside-party",
+        outsideParty: { kind: "package", dependency: "zod" },
+      },
+      entry: { reason: "zod stays here." },
+      lacks: ["case", "owes", "whyChain"],
+      standing: "unjudged",
+    };
+    const located: PlacedRecord = {
+      place,
+      record: {
+        kind: "authorised-location",
+        symptom: imports,
+        reach: { reaches: "one-check", check: importCheck },
+        file: BASKET,
+        holding,
+      },
+    };
+
+    const followed = recordsFollowingRenames({
+      records: [located],
+      moved: [{ place, file: MOVED_BASKET }],
+    });
+
+    expect(followed).toEqual([
+      {
+        place,
+        record: {
+          kind: "authorised-location",
+          symptom: imports,
+          reach: { reaches: "one-check", check: importCheck },
+          file: MOVED_BASKET,
+          holding,
+        },
+      },
+    ]);
+  });
+});
+
 describe("recordsAtMovedPathsOf", () => {
   it("names each record the base held at a path git saw renamed, with the path to repoint it to", () => {
+    const zodDependency: PlacedRecord = {
+      place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
+      record: {
+        kind: "dependency-record",
+        dependency: "zod",
+        nativeWay: "hand-written parsing",
+        whyNotEnough: "Each adapter would repeat its checks.",
+      },
+    };
     expect(
       recordsAtMovedPathsOf({
-        records: [DEBT_ON_BASKET, DEBT_ON_TOTAL, DEVIATION_ON_BASKET, BOUNDARY_ON_BASKET],
+        records: [DEBT_ON_BASKET, DEBT_ON_TOTAL, DEVIATION_ON_BASKET, zodDependency],
         renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "edited" }]]),
         held: [DEBT_ON_BASKET.record, DEBT_ON_TOTAL.record, DEVIATION_ON_BASKET.record],
       }),

@@ -1,22 +1,17 @@
-import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
-import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
-import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type {
-  UpgradeDrop,
-  UpgradeRefusal,
-} from "../../../domain/records/upgrade/upgrade-refusal.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
-import type { ClauseSettingValues } from "../../../domain/runner/runner-module-types.ts";
-import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
-import { reportOutputOfVersionOne } from "../../../domain/settings/report-output.ts";
+import { checkAddressOf } from "../../language-layer/check-address.ts";
+import { type ClauseChecks, readChecksOfClause } from "../../language-layer/clause-checks.ts";
+import type { Check } from "../../language-layer/symptom-catalogue.ts";
+import type { Result } from "../../result.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress } from "../../rule-set/clause-address.ts";
+import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
+import { DEFAULT_CONVENTIONS } from "../../settings/conventions.ts";
+import type { ListedAddress } from "../../settings/listed-address.ts";
+import { reportOutputOfVersionOne } from "../../settings/report-output.ts";
 import type {
   ClauseChoice,
   ConsumerSelectionFile,
-} from "../../../domain/settings/selection/selection-file.ts";
+} from "../../settings/selection/selection-file.ts";
 import {
   type CheckState,
   eslintConfigLookupOf,
@@ -24,11 +19,12 @@ import {
   type ListedCheck,
   RENAMED_SETTINGS,
   type SettingsFile,
-} from "../../../domain/settings/settings-file.ts";
+} from "../../settings/settings-file.ts";
+import type { UpgradeDrop, UpgradeRefusal } from "./upgrade-refusal.ts";
 
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly clauseChecks: ClauseChecks;
   readonly notAdoptedClauses: readonly ClauseAddress[];
 };
 
@@ -98,11 +94,11 @@ const choiceCarriedOver = (request: {
     : request.choice;
 
 const listingOf = (request: {
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly clauseChecks: ClauseChecks;
   readonly clause: ClauseAddress;
   readonly choice: ClauseChoice;
 }): ClauseListing => {
-  const checks = checksOfClause(request);
+  const checks = readChecksOfClause(request);
   if (checks.length === 0) {
     return {
       clause: request.clause,
@@ -163,7 +159,7 @@ export const mappedSettings = (
   const { selection } = request;
   const listings = selection.clauses.map(([clause, choice]) =>
     listingOf({
-      catalogues: request.catalogues,
+      clauseChecks: request.clauseChecks,
       clause,
       choice: choiceCarriedOver({ clause, choice, notAdoptedClauses: request.notAdoptedClauses }),
     }),

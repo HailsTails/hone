@@ -15,10 +15,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/domain/records/hone-records/record-listings.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/hone-records/recorded-reach.ts"
     },
     {
@@ -56,10 +52,6 @@
     {
       "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/settings/test-files.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/infrastructure/engines/walker/runner/pieces/piece-check-settings.ts"
     }
   ]
 }

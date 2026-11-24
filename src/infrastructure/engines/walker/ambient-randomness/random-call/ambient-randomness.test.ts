@@ -1,11 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
 
-import type {
-  RecordKind,
-  Symptom,
-  SymptomCatalogue,
-} from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { holdsAt } from "../../../../../domain/records/answering/record-reach.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
@@ -18,7 +12,6 @@ import {
 import { check } from "./ambient-randomness.ts";
 
 const SOURCE_FILE = repoPathSchema.parse("src/choose-entry.ts");
-const ADAPTER_FILE = repoPathSchema.parse("src/adapters/randomness.ts");
 const BINDING: CheckBinding = {
   address: "ambient-randomness#random-call",
   ruleSet: "hone",
@@ -36,41 +29,6 @@ const parsed = await loadParsePort({
     installForm: "source",
   }),
 });
-
-const DEBT: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-const LOCATION: RecordKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
-const SYMPTOM: Symptom = {
-  ruleSet: "hone",
-  name: "ambient-randomness",
-  title: "Ambient randomness",
-  seen: "A unit calls a built-in randomness source.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-const CATALOGUE: SymptomCatalogue = {
-  principles: [],
-  rules: [],
-  cases: [],
-  recipes: [],
-  recordKinds: [DEBT, LOCATION],
-  engines: [],
-  symptoms: [SYMPTOM],
-  clauses: [],
-  checks: [],
-  namedBans: [],
-};
 
 describe("ambient randomness", () => {
   it("reports the three direct random calls", () => {
@@ -553,60 +511,5 @@ describe("ambient randomness", () => {
         snippet: "crypto.randomUUID",
       },
     ]);
-  });
-
-  it("lets a runtime random boundary record answer the finding in its adapter", () => {
-    const source = "crypto.randomUUID();";
-    assert(parsed.outcome === "ok");
-    const prepared = check.prepare({
-      bindings: [BINDING],
-      repository: {
-        files: [ADAPTER_FILE],
-        exists: () => "present",
-        disk: textsDisk({ root: "/repo", texts: {} }),
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      },
-      syntaxApi: parsed.value.syntaxApi,
-    });
-    assert(prepared.outcome === "ok");
-    const observed = observeWalkerFile({
-      file: { file: ADAPTER_FILE, readText: () => ({ outcome: "ok", value: source }) },
-      pieces: [
-        {
-          modulePath: "/install/walker/ambient-randomness/random-call/ambient-randomness.ts",
-          bindings: [BINDING],
-          check: prepared.value,
-        },
-      ],
-      parse: parsed.value,
-      escapes: [],
-    });
-    assert(observed.outcome === "ok");
-    expect(observed.value.hits).toEqual([
-      {
-        file: ADAPTER_FILE,
-        check: BINDING.address,
-        anchor: { line: 1, column: 0 },
-        snippet: "crypto.randomUUID",
-      },
-    ]);
-    expect(
-      holdsAt({
-        record: {
-          kind: "boundary-record",
-          module: ADAPTER_FILE,
-          outsideParty: { kind: "runtime", facility: "random" },
-          holding: { held: "stated", ports: ["Randomness"] },
-        },
-        site: {
-          file: ADAPTER_FILE,
-          symptom: { ruleSet: "hone", name: "ambient-randomness" },
-          recipes: [],
-          check: { found: "none" },
-          party: { reported: "not-reported" },
-        },
-        catalogue: CATALOGUE,
-      }),
-    ).toBe("holds");
   });
 });

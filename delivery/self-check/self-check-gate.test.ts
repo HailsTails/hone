@@ -18,6 +18,8 @@ import type {
 import type {
   RecordKind,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
@@ -69,14 +71,14 @@ const IGNORED_IN_A: AttributedCheckException = {
   mechanism: "eslint",
 };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",

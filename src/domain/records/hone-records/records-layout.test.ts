@@ -51,10 +51,6 @@ describe("recordsFileStandingOf", () => {
       },
     },
     {
-      file: repoPathOf("hone-records/boundary-records.json"),
-      standing: { standing: "single", kind: "boundary-records" },
-    },
-    {
       file: repoPathOf("hone-records/dependency-records.json"),
       standing: { standing: "single", kind: "dependency-records" },
     },
@@ -65,7 +61,7 @@ describe("recordsFileStandingOf", () => {
   it.each([
     {
       file: repoPathOf("hone-records/notes.md"),
-      why: "a file at the top that is not one of the two single files",
+      why: "a file at the top that is not the single file",
     },
     {
       file: repoPathOf("hone-records/debt/claimed-type.txt"),
@@ -93,7 +89,7 @@ describe("recordsFileStandingOf", () => {
       why: "a rule set folder named for a kind folder",
     },
     {
-      file: repoPathOf("hone-records/acme/boundary-records.json"),
+      file: repoPathOf("hone-records/acme/dependency-records.json"),
       why: "a single file inside a rule set folder, which holds only kind folders",
     },
     {

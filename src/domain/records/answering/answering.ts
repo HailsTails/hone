@@ -111,7 +111,6 @@ const debtStandingOf = (request: { readonly record: HoneRecord }): DebtStanding 
     case "deviation":
       return "answers-in-debts-place";
     case "authorised-location":
-    case "boundary-record":
       return record.holding.held === "carried" && record.holding.standing === "unjudged"
         ? "answers-beside-debt"
         : "answers-in-debts-place";

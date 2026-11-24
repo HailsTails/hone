@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  type BindingFault,
+  listDivergentBindings,
+  listUnreportedBindings,
+} from "../../../domain/language-layer/binding-invariants.ts";
 import { findCaseNameFaults } from "../../../domain/language-layer/case-name.ts";
 import { mapSymptomToAddress } from "../../../domain/language-layer/catalogue-address.ts";
 import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
@@ -9,24 +14,25 @@ import {
   findOwedPoint,
   type OwedPoint,
 } from "../../../domain/language-layer/owed-points.ts";
-import type {
-  Case,
-  CatalogueContent,
-  CataloguedClause,
-  CheckContent,
-  ClauseSight,
-  CorrectUse,
-  Engine,
-  FormSight,
-  Indication,
-  NamedBan,
-  Pointed,
-  Principle,
-  Recipe,
-  RecordKind,
-  Rule,
-  Symptom,
-  SymptomAddress,
+import {
+  type Case,
+  type CatalogueContent,
+  type CataloguedClause,
+  type CheckContent,
+  type ClauseSight,
+  mapSpecificsToBinding,
+  type CorrectUse,
+  type Engine,
+  type FormSight,
+  type Indication,
+  type NamedBan,
+  type Pointed,
+  type Principle,
+  type Recipe,
+  type RecordKind,
+  type Rule,
+  type Symptom,
+  type SymptomAddress,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
@@ -53,7 +59,6 @@ export const recordKindNameSchema = z.enum([
   "authorised-location",
   "deviation",
   "debt",
-  "boundary-record",
   "dependency-record",
 ]);
 
@@ -69,11 +74,23 @@ export const caseWireSchema = z.strictObject({
   owes: z.array(pointedWireSchema).min(1),
 });
 
-const correctUseWireSchema = z.strictObject({
-  situation: textSchema,
-  kind: recordKindNameSchema,
-  at: textSchema.optional(),
-});
+export const specificSchema = z.enum(["outside-party"]);
+
+const specificsSchema = z.array(specificSchema).min(1);
+
+const correctUseWireSchema = z.discriminatedUnion("kind", [
+  z.strictObject({
+    situation: textSchema,
+    kind: z.literal("authorised-location"),
+    at: textSchema.optional(),
+    binds: specificsSchema.optional(),
+  }),
+  z.strictObject({
+    situation: textSchema,
+    kind: recordKindNameSchema.exclude(["authorised-location"]),
+    at: textSchema.optional(),
+  }),
+]);
 
 export const seenBySchema = z.enum([
   "syntax",
@@ -137,6 +154,7 @@ export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema.optional(),
+  findingSpecifics: specificsSchema.optional(),
   flagsBeyondTheSymptom: textSchema.optional(),
   misses: textSchema.optional(),
   settingsTracedTo: textSchema.optional(),
@@ -461,7 +479,25 @@ const indicationOf = (request: {
   });
 };
 
-const correctUseOf = (request: {
+const mapWireToCorrectUse = (request: {
+  readonly use: CorrectUseWire;
+  readonly kind: RecordKind;
+}): CorrectUse => {
+  const { use, kind } = request;
+  const at = use.at === undefined ? {} : { at: use.at };
+  const { name } = kind;
+  if (name === "authorised-location") {
+    return {
+      situation: use.situation,
+      kind: { ...kind, name },
+      ...at,
+      binding: mapSpecificsToBinding({ specifics: "binds" in use ? (use.binds ?? []) : [] }),
+    };
+  }
+  return { situation: use.situation, kind: { ...kind, name }, ...at };
+};
+
+const resolveCorrectUse = (request: {
   readonly use: CorrectUseWire;
   readonly definitions: Definitions;
 }): Resolution<CorrectUse> =>
@@ -471,11 +507,18 @@ const correctUseOf = (request: {
       entries: request.definitions.recordKinds,
       name: request.use.kind,
     }),
-    to: (kind): CorrectUse =>
-      request.use.at === undefined
-        ? { situation: request.use.situation, kind }
-        : { situation: request.use.situation, kind, at: request.use.at },
+    to: (kind) => mapWireToCorrectUse({ use: request.use, kind }),
   });
+
+const mapBindingFaultToText = (request: { readonly fault: BindingFault }): string => {
+  const { fault } = request;
+  switch (fault.kind) {
+    case "divergent-bindings":
+      return `${fault.symptom} has authorised-location correct uses that bind differently`;
+    case "binding-not-reported":
+      return `${fault.symptom} binds outside-party, which its check ${fault.check} does not report`;
+  }
+};
 
 const symptomOf = (request: {
   readonly wire: SymptomWire;
@@ -494,7 +537,7 @@ const symptomOf = (request: {
     ),
   );
   const correctUses = allResolved(
-    wire.correctUses.map((use) => correctUseOf({ use, definitions })),
+    wire.correctUses.map((use) => resolveCorrectUse({ use, definitions })),
   );
   if (
     mayIndicate.outcome === "failed" ||
@@ -506,7 +549,7 @@ const symptomOf = (request: {
       error: [...faultsOf(mayIndicate), ...faultsOf(recipes), ...faultsOf(correctUses)],
     };
   }
-  return resolved({
+  const symptom: Symptom = {
     ruleSet: request.ruleSet,
     name: wire.name,
     title: wire.title,
@@ -515,7 +558,11 @@ const symptomOf = (request: {
     breachUsuallySits: wire.breachUsuallySits,
     recipes: recipes.value,
     correctUses: correctUses.value,
-  });
+  };
+  const divergent = listDivergentBindings({ symptom });
+  return divergent.length > 0
+    ? { outcome: "failed", error: divergent.map((fault) => mapBindingFaultToText({ fault })) }
+    : resolved(symptom);
 };
 
 type Sighting = { readonly symptoms: readonly Symptom[]; readonly recipes: readonly Recipe[] };
@@ -652,6 +699,7 @@ const sightedCheckOf = (request: {
         page: createCheckPage({ symptom: request.symptom, name: request.wire.name }),
         clause: request.clause.clause,
         forms: formsOf({ clause: request.clause, symptom: request.symptom }),
+        findingSpecifics: request.wire.findingSpecifics ?? [],
       })
     : {
         outcome: "failed",
@@ -678,6 +726,7 @@ const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<C
           symptom: symptom.value,
           page: createCheckPage({ symptom: symptom.value, name: wire.name }),
           forms: [],
+          findingSpecifics: wire.findingSpecifics ?? [],
         });
   }
   const clause = checkedClauseOf({ ...request, address: wire.clause });
@@ -711,7 +760,12 @@ const resolvedChecksOf = (
   const unchecked = request.clauses.flatMap((clause) =>
     uncheckedSightingsOf({ clause, checks: checks.value }),
   );
-  return unchecked.length > 0 ? { outcome: "failed", error: unchecked } : checks;
+  const unreported = listUnreportedBindings({
+    symptoms: request.symptoms,
+    checks: checks.value,
+  }).map((fault) => mapBindingFaultToText({ fault }));
+  const faults = [...unchecked, ...unreported];
+  return faults.length > 0 ? { outcome: "failed", error: faults } : checks;
 };
 
 const catalogueOf = (request: {

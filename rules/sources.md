@@ -99,7 +99,7 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 | [Authorised location](records.md#authorised-location) | Microsoft, [SuppressMessageAttribute.Justification](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute.justification): "the justification for suppressing the code analysis message". | SAME |
 | [Deviation](records.md#deviation) | EASA, [FAQ 19026](https://www.easa.europa.eu/en/faq/19026): an alternative means of compliance must show it meets "the intent of the IR". | STRICTER: a deviation must show the recipe's reason fails at this site; meeting the rule another way is not enough |
 | [Debt](records.md#debt) | ESLint, [bulk suppressions](https://eslint.org/docs/latest/use/suppressions): existing violations "will not be reported", new ones are. Martin, [The Boy Scout Rule](https://github.com/97-things/97-things-every-programmer-should-know/blob/master/en/thing_08/README.md): leave it "a little bit better". | STRICTER: touching the file forfeits the whole file's debt |
-| [Boundary record](records.md#boundary-record) | Evans 2013: an ACL presents a clean interface in the downstream model; the ACL-backed repository. | SAME |
+| [Authorised location for an outside party](records.md#authorised-location) | Evans 2013: an ACL presents a clean interface in the downstream model; the ACL-backed repository. | SAME |
 | [Dependency record](records.md#dependency-record) | Nygard 2011; NTIA SBOM. | SAME |
 
 ## The model

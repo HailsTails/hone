@@ -17,7 +17,9 @@ const SYMPTOM_FACTS = {
   seenBy: ["syntax"],
   reports: "seen",
   recipes: ["result-union"],
-  correctUses: [{ situation: "correct use", kind: "boundary-record", at: "on the clock adapter" }],
+  correctUses: [
+    { situation: "correct use", kind: "authorised-location", at: "on the clock adapter" },
+  ],
 };
 
 describe("itemFactsOf", () => {

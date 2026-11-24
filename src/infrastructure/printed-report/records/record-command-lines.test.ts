@@ -100,12 +100,13 @@ const DATE_USED_DIRECTLY: Symptom = {
     {
       situation: "correct use",
       kind: {
-        name: "boundary-record",
-        title: "Boundary record",
-        phrase: "a boundary record",
+        name: "authorised-location",
+        title: "Authorised location",
+        phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
       at: "on the clock adapter",
+      binding: "check-and-file",
     },
   ],
 };

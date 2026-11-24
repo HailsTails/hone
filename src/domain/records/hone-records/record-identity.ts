@@ -1,10 +1,11 @@
 import { sameOwnedName } from "../../rule-set/rule-set-identity.ts";
 import type {
+  AuthorisedBinding,
   AuthorisedLocation,
-  AuthorisedReach,
   Debt,
   HoneRecord,
   OutsideParty,
+  RecordReach,
 } from "./hone-record.ts";
 
 export type Sameness = "same" | "different";
@@ -23,14 +24,29 @@ const sameOutsideParty = (request: {
       return right.kind === "scheme-module" && right.specifier === left.specifier
         ? "same"
         : "different";
-    case "runtime":
-      return right.kind === "runtime" && right.facility === left.facility ? "same" : "different";
+    case "scheme":
+      return right.kind === "scheme" && right.scheme === left.scheme ? "same" : "different";
+  }
+};
+
+const sameBinding = (request: {
+  readonly left: AuthorisedBinding;
+  readonly right: AuthorisedBinding;
+}): Sameness => {
+  const { left, right } = request;
+  switch (left.binds) {
+    case "check-and-file":
+      return right.binds === "check-and-file" ? "same" : "different";
+    case "check-file-and-outside-party":
+      return right.binds === "check-file-and-outside-party"
+        ? sameOutsideParty({ left: left.outsideParty, right: right.outsideParty })
+        : "different";
   }
 };
 
 const sameReach = (request: {
-  readonly left: AuthorisedReach;
-  readonly right: AuthorisedReach;
+  readonly left: RecordReach;
+  readonly right: RecordReach;
 }): Sameness => {
   const { left, right } = request;
   switch (left.reaches) {
@@ -47,14 +63,24 @@ const sameReach = (request: {
 
 const sameSymptomSite = (request: {
   readonly left: Debt | AuthorisedLocation;
+  readonly right: Debt | AuthorisedLocation;
+}): Sameness => {
+  const { left, right } = request;
+  return sameOwnedName({ left: left.symptom, right: right.symptom }) === "same" &&
+    sameReach({ left: left.reach, right: right.reach }) === "same" &&
+    right.file === left.file
+    ? "same"
+    : "different";
+};
+
+const sameAuthorisedLocation = (request: {
+  readonly left: AuthorisedLocation;
   readonly right: HoneRecord;
 }): Sameness => {
   const { left, right } = request;
-  return (right.kind === "debt" || right.kind === "authorised-location") &&
-    right.kind === left.kind &&
-    sameOwnedName({ left: left.symptom, right: right.symptom }) === "same" &&
-    sameReach({ left: left.reach, right: right.reach }) === "same" &&
-    right.file === left.file
+  return right.kind === "authorised-location" &&
+    sameSymptomSite({ left, right }) === "same" &&
+    sameBinding({ left: left.holding.binding, right: right.holding.binding }) === "same"
     ? "same"
     : "different";
 };
@@ -66,18 +92,13 @@ export const sameRecordIdentity = (request: {
   const { left, right } = request;
   switch (left.kind) {
     case "debt":
+      return right.kind === "debt" ? sameSymptomSite({ left, right }) : "different";
     case "authorised-location":
-      return sameSymptomSite({ left, right });
+      return sameAuthorisedLocation({ left, right });
     case "deviation":
       return right.kind === "deviation" &&
         sameOwnedName({ left: left.recipe, right: right.recipe }) === "same" &&
         right.file === left.file
-        ? "same"
-        : "different";
-    case "boundary-record":
-      return right.kind === "boundary-record" &&
-        right.module === left.module &&
-        sameOutsideParty({ left: left.outsideParty, right: right.outsideParty }) === "same"
         ? "same"
         : "different";
     case "dependency-record":
@@ -94,8 +115,6 @@ export const identityPlaceOf = (request: { readonly record: HoneRecord }): strin
     case "authorised-location":
     case "deviation":
       return record.file;
-    case "boundary-record":
-      return record.module;
     case "dependency-record":
       return record.dependency;
   }

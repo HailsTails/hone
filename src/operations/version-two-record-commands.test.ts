@@ -15,6 +15,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
@@ -95,14 +97,14 @@ describe("versionTwoRecordDebtOf", () => {
   });
 });
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -199,6 +201,7 @@ const CAST_CHECK: Check = {
   page: "claimed-type/cast-expressions.md",
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const BASKET = repoPathOf("src/basket.ts");

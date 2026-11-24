@@ -51,6 +51,7 @@ const CAST_CHECK: Check = {
   page: "claimed-type/cast-expressions.md",
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const CAST_ENGINE_CHECK: EngineCheck = {

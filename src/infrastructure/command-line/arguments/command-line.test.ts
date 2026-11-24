@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { COMMANDS, REPO_OPTION, VERSION_ONE_REPO_OPTION, subcommandOf } from "./command-line.ts";
+import {
+  AUTHORISE_COMMAND_OPTIONS,
+  COMMANDS,
+  REPO_OPTION,
+  VERSION_ONE_REPO_OPTION,
+  subcommandOf,
+} from "./command-line.ts";
 
 describe("subcommandOf", () => {
   it.each([
@@ -25,6 +31,20 @@ describe("COMMANDS", () => {
       },
       { name: "--forfeiture", value: "<this-run|elsewhere>", need: "optional" },
     ]);
+  });
+
+  it("gives authorise --answers once and always, and --outside-party once when given", () => {
+    expect(AUTHORISE_COMMAND_OPTIONS).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "--answers", need: "required", occurrence: "once" }),
+        expect.objectContaining({
+          name: "--outside-party",
+          value: "<party>",
+          need: "optional",
+          occurrence: "once",
+        }),
+      ]),
+    );
   });
 
   it("gives project only --repo", () => {

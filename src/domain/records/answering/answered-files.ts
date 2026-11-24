@@ -1,19 +1,26 @@
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
-import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
+import type { HoneRecord, PlacedRecord, RecordReach } from "../hone-records/hone-record.ts";
 
 const answeredBy = (request: { readonly record: HoneRecord }): readonly AnsweredFile[] => {
   const { record } = request;
   switch (record.kind) {
     case "debt":
-    case "authorised-location":
       return reachedFilesOf({
         ruleSet: record.symptom.ruleSet,
         symptom: record.symptom.name,
         reach: record.reach,
         file: record.file,
       });
+    case "authorised-location":
+      return record.holding.binding.binds === "check-and-file"
+        ? reachedFilesOf({
+            ruleSet: record.symptom.ruleSet,
+            symptom: record.symptom.name,
+            reach: record.reach,
+            file: record.file,
+          })
+        : [];
     case "deviation":
-    case "boundary-record":
     case "dependency-record":
       return [];
   }
@@ -22,7 +29,7 @@ const answeredBy = (request: { readonly record: HoneRecord }): readonly Answered
 const reachedFilesOf = (request: {
   readonly ruleSet: AnsweredFile["ruleSet"];
   readonly symptom: string;
-  readonly reach: Extract<HoneRecord, { readonly kind: "debt" | "authorised-location" }>["reach"];
+  readonly reach: RecordReach;
   readonly file: AnsweredFile["file"];
 }): readonly AnsweredFile[] => {
   const { ruleSet, reach, symptom, file } = request;

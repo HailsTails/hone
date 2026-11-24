@@ -12,6 +12,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
@@ -182,21 +184,14 @@ const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -221,7 +216,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -259,7 +259,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -287,6 +293,7 @@ const CLOCK_CHECK: Check = {
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
@@ -296,6 +303,7 @@ const TEST_BODY_CHECK: Check = {
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
@@ -305,6 +313,7 @@ const CAST_CHECK: Check = {
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -318,7 +327,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -394,9 +403,10 @@ const NOTED_LOCATION: PlacedRecord = {
   record: {
     kind: "authorised-location",
     symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-    reach: WHOLE_SYMPTOM,
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: WEBHOOK_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "stated",
       owing: {
         matches: "not-the-catalogue",
@@ -509,7 +519,7 @@ const LINES = {
   answered: `claimed-type#cast-expressions eslint src/adapters/stripe-webhook.ts:4:9 body as Event answered by authorised-location ${NOTE}`,
   held: `claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by authorised-location ${NOTE}`,
   available: "date-used-directly#clock-sources",
-  stale: `claimed-type authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
+  stale: `claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
   forfeited: `claimed-type debt src/adapters/stripe-webhook.ts; this change touched its file, so it no longer answers: fix what it held, then run ${PRUNE_COMMAND} to remove it`,
   unrecorded: "claimed-type#cast-expressions eslint ignore src/adapters/stripe-webhook.ts",
   misnamed:

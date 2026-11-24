@@ -72,7 +72,7 @@ one of three buckets:
 
 - **justified.** The declaration is the single permitted authored class at its
   named site, OR it is a `new X(...)` for an external-library class in
-  the adapter for the party it reaches, with a boundary record, AND the instance
+  the adapter for the party it reaches, with an authorised location, AND the instance
   is held inside the closure and never re-exported as a class. Cite the carve-out; no replacement.
 - **closure-candidate.** The class carries genuine instance state that is
   *mutated* across method calls (counters, caches, accumulating buffers,
@@ -137,7 +137,7 @@ an event `forEach` handler by shape.
 
 Every raw outside-dependency import (runtime *or* type-only) and every `new X(...)`
 for an external-library class is a candidate. For each: is the importing or
-instantiating file the adapter for the party it reaches, with a boundary record?
+instantiating file the adapter for the party it reaches, with an authorised location?
 If yes → justified. If not, the import is in the wrong place — a function-first
 finding with a DI/port cross-reference (the raw import escaping its adapter is
 both a structural and a boundary-discipline defect; name the boundary lens as the

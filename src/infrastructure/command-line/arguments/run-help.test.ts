@@ -20,7 +20,7 @@ describe("the version 2 commands", () => {
 hone project --repo <dir>
 hone record-debt --repo <dir> --base-revision <revision> [--leave <path>]...
 hone prune-debt --repo <dir> [--base-revision <revision>] [--forfeiture <this-run|elsewhere>]
-hone authorise --repo <dir> --answers <address> --file <path> --case <case> --owes <principle> --why <question>... --because <answer>... --evidence <evidence>... --root-cause <text> --root-evidence <text> --readback <text> --owner <owner>
+hone authorise --repo <dir> --answers <address> --file <path> [--outside-party <party>] --case <case> --owes <principle> --why <question>... --because <answer>... --evidence <evidence>... --root-cause <text> --root-evidence <text> --readback <text> --owner <owner>
 hone upgrade --repo <dir>
 hone --help
 hone --version

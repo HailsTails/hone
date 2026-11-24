@@ -5,13 +5,15 @@ import type {
   Check,
   Principle,
   Recipe,
-  RecordKind,
   Rule,
   Symptom,
   SymptomAddress,
   SymptomCatalogue,
+  AuthorisedLocationKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
+  HeldAs,
+  OutsideParty,
   RecordsAtBase,
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
@@ -21,6 +23,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import { owedBy, recordOf } from "./record-resolution.ts";
 
 const THE_TYPE_CHECKER_PROVES_IT: Principle = {
@@ -82,18 +85,11 @@ const STUB_WITH_VIFN: Recipe = {
   },
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
 };
 
 const CLAIMED_TYPE: Symptom = {
@@ -107,7 +103,11 @@ const CLAIMED_TYPE: Symptom = {
   breachUsuallySits: "in the unit",
   recipes: [],
   correctUses: [
-    { situation: "an outside contract forces the type", kind: AUTHORISED_LOCATION_KIND },
+    {
+      situation: "an outside contract forces the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -124,7 +124,9 @@ const TEXT_PAST_ITS_READER: Symptom = {
   ],
   breachUsuallySits: "in the test",
   recipes: [],
-  correctUses: [{ situation: "one test site", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    { situation: "one test site", kind: AUTHORISED_LOCATION_KIND, binding: "check-and-file" },
+  ],
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
@@ -170,6 +172,7 @@ const CAST_CHECK: Check = {
   },
   engines: [],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
@@ -183,6 +186,7 @@ const TEST_BODY_CHECK: Check = {
   },
   engines: [],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 type DebtSymptomRow = { readonly symptom: SymptomAddress; readonly file: RepoPath };
@@ -190,19 +194,6 @@ type DebtSymptomRow = { readonly symptom: SymptomAddress; readonly file: RepoPat
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
 const ACME = { name: ruleSetNameOf("acme") };
-
-const CATALOGUE: SymptomCatalogue = {
-  principles: [THE_TYPE_CHECKER_PROVES_IT, TESTS_ARE_OURS],
-  rules: [DECLARED_NOT_ASSERTED, STRAIGHT_THROUGH_TESTS, WRITTEN_OUT_ANSWERS],
-  cases: [GIVES_A_VALUE_ITS_TYPE, STATES_WHAT_THE_UNIT_GIVES_BACK],
-  recipes: [STUB_WITH_VIFN],
-  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
-  engines: [],
-  symptoms: [CLAIMED_TYPE, TEXT_PAST_ITS_READER, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
-  clauses: [],
-  checks: [CAST_CHECK, TEST_BODY_CHECK],
-  namedBans: [{ outsideDependency: "lodash" }],
-};
 
 const WHY_CHAIN = {
   whys: [
@@ -251,14 +242,12 @@ const DEBT_FILE = repoPathOf("hone-records/debt/text-past-its-reader.json");
 
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
-
 const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/stub-with-vi-fn.json");
 
 const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
 const STATED_AUTHORISED_LOCATION = {
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   file: "src/adapters/stripe-webhook.ts",
   case: "gives-a-value-its-type",
   owes: "declared-not-asserted",
@@ -274,7 +263,7 @@ const CARRIED_ENTRY = {
 };
 
 const CARRIED_AUTHORISED_LOCATION = {
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   file: "src/adapters/stripe-webhook.ts",
   carried: CARRIED_ENTRY,
 };
@@ -288,20 +277,23 @@ const DEVIATION = {
   ruleHolds: "Each answer is still written out in the fake's table.",
 };
 
+type BoundPartyRow = { readonly outsideParty: string; readonly party: OutsideParty };
+
+type HeldEntryRow = { readonly held: HeldAs; readonly entry: ReadonlyJsonValue };
+
 describe("recordOf, a team's records in its rule set's folder", () => {
   const TEAM_TEXT_PAST_ITS_READER: Symptom = { ...TEXT_PAST_ITS_READER, ruleSet: ACME };
-
-  const TEAM_CATALOGUE: SymptomCatalogue = {
-    ...CATALOGUE,
-    symptoms: [...CATALOGUE.symptoms, TEAM_TEXT_PAST_ITS_READER],
-  };
 
   const TEAM_DEBT_FILE = repoPathOf("hone-records/acme/debt/text-past-its-reader.json");
 
   it("reads a team's debt as owed on the team's symptom, not Hone's of the same name", () => {
     expect(
       recordOf({
-        catalogue: TEAM_CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER, TEAM_TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: TEAM_DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: ACME },
@@ -322,7 +314,11 @@ describe("recordOf, a team's records in its rule set's folder", () => {
   it("refuses a team's debt on a symptom only Hone has, naming it unknown", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: TEAM_DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: ACME },
@@ -339,7 +335,11 @@ describe("recordOf, debt", () => {
   it("reads the plan's debt record, which states the symptom and the site and nothing more", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -360,7 +360,11 @@ describe("recordOf, debt", () => {
   it("keeps a debt record's optional note", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -403,7 +407,11 @@ describe("recordOf, debt", () => {
   ])("accepts debt on $symptom.name, since every symptom accepts debt", ({ symptom, file }) => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE, TEXT_PAST_ITS_READER, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -425,7 +433,11 @@ describe("recordOf, debt", () => {
     const file = repoPathOf("hone-records/debt/unheard-of.json");
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -440,7 +452,11 @@ describe("recordOf, debt", () => {
   it("refuses debt filed under another symptom's file, naming the file it belongs in", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -455,7 +471,11 @@ describe("recordOf, debt", () => {
   it("refuses debt that names no site, with the form's issues as values", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -477,7 +497,11 @@ describe("recordOf, authorised locations", () => {
   it("reads the plan's authorised location, resolving its case and the rule that case owes", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -488,9 +512,16 @@ describe("recordOf, authorised locations", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "the-catalogue",
@@ -503,44 +534,119 @@ describe("recordOf, authorised locations", () => {
     });
   });
 
-  it("accepts an authorised location on a symptom the catalogue gives no correct use, since a check is never assumed perfect", () => {
+  it("refuses a stated authorised location on a symptom the catalogue gives no authorised-location correct use", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [BRANCH_IN_A_TEST],
+        checks: [TEST_BODY_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"),
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
-          answers: "branch-in-a-test",
+          answers: "branch-in-a-test#test-body",
           case: "states-what-the-unit-gives-back-for-one-case-or-several",
           owes: "straight-through-tests",
         },
       }),
     ).toEqual({
+      outcome: "failed",
+      error: [{ kind: "no-authorised-correct-use", symptom: "branch-in-a-test" }],
+    });
+  });
+
+  it("reads a carried authorised location on a symptom the catalogue gives no authorised-location correct use as bound to its check and file", () => {
+    const resolved = recordOf({
+      symptoms: [BRANCH_IN_A_TEST],
+      checks: [TEST_BODY_CHECK],
+      recipes: [],
+      cases: [],
+      namedBans: [],
+      base: UNMEASURED,
+      file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"),
+      filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+      entry: { ...CARRIED_AUTHORISED_LOCATION, answers: "branch-in-a-test#test-body" },
+    });
+
+    expect(resolved).toEqual({
       outcome: "ok",
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "test-body",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
-          held: "stated",
-          owing: {
-            matches: "the-catalogue",
-            case: STATES_WHAT_THE_UNIT_GIVES_BACK,
-            owes: { kind: "rule", rule: STRAIGHT_THROUGH_TESTS },
-          },
-          whyChain: WHY_CHAIN,
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: CARRIED_ENTRY,
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
         },
       },
+    });
+  });
+
+  it.each<HeldEntryRow>([
+    { held: "stated", entry: { ...STATED_AUTHORISED_LOCATION, answers: "claimed-type" } },
+    { held: "carried", entry: { ...CARRIED_AUTHORISED_LOCATION, answers: "claimed-type" } },
+  ])(
+    "refuses an authorised location that names its symptom and no check, as a $held record",
+    ({ entry }) => {
+      const resolved = recordOf({
+        symptoms: [CLAIMED_TYPE],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
+        base: UNMEASURED,
+        file: AUTHORISED_FILE,
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+        entry,
+      });
+
+      expect(resolved).toEqual({
+        outcome: "failed",
+        error: [{ kind: "no-check-named", symptom: "claimed-type" }],
+      });
+    },
+  );
+
+  it("refuses an authorised location naming an outside party on a symptom that binds none", () => {
+    const resolved = recordOf({
+      symptoms: [CLAIMED_TYPE],
+      checks: [],
+      recipes: [],
+      cases: [],
+      namedBans: [],
+      base: UNMEASURED,
+      file: AUTHORISED_FILE,
+      filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+      entry: { ...STATED_AUTHORISED_LOCATION, outsideParty: "zod" },
+    });
+
+    expect(resolved).toEqual({
+      outcome: "failed",
+      error: [{ kind: "outside-party-not-bound", symptom: "claimed-type" }],
     });
   });
 
   it("accepts an authorised location naming a case the catalogue does not hold, noting the case for the report", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -551,9 +657,16 @@ describe("recordOf, authorised locations", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "not-the-catalogue",
@@ -568,7 +681,11 @@ describe("recordOf, authorised locations", () => {
   it("accepts an authorised location whose owes is not a rule or principle its case owes, noting the owes for the report", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -579,9 +696,16 @@ describe("recordOf, authorised locations", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "not-the-catalogue",
@@ -611,7 +735,11 @@ describe("recordOf, authorised locations", () => {
     ({ written, note }) => {
       expect(
         recordOf({
-          catalogue: CATALOGUE,
+          symptoms: [CLAIMED_TYPE],
+          checks: [CAST_CHECK],
+          recipes: [],
+          cases: [GIVES_A_VALUE_ITS_TYPE],
+          namedBans: [],
           base: UNMEASURED,
           file: AUTHORISED_FILE,
           filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -622,9 +750,16 @@ describe("recordOf, authorised locations", () => {
         value: {
           kind: "authorised-location",
           symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-          reach: WHOLE_SYMPTOM,
+          reach: {
+            reaches: "one-check",
+            check: {
+              name: "cast-expressions",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+            },
+          },
           file: "src/adapters/stripe-webhook.ts",
           holding: {
+            binding: { binds: "check-and-file" },
             held: "stated",
             owing: { matches: "not-the-catalogue", note },
             whyChain: WHY_CHAIN,
@@ -637,13 +772,17 @@ describe("recordOf, authorised locations", () => {
   it("OPEN TABLE, hone#206: accepts Text past its reader at one test site owing Written-out answers, which its indication points at but its case does not owe, with the note", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [STATES_WHAT_THE_UNIT_GIVES_BACK],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json"),
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
-          answers: "text-past-its-reader",
+          answers: "text-past-its-reader#json-parse",
           file: "src/orders/charge-order.test.ts",
           case: "states-what-the-unit-gives-back-for-one-case-or-several",
           owes: "written-out-answers",
@@ -654,9 +793,10 @@ describe("recordOf, authorised locations", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "text-past-its-reader" },
-        reach: WHOLE_SYMPTOM,
+        reach: { reaches: "unknown-check", check: "json-parse" },
         file: "src/orders/charge-order.test.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "not-the-catalogue",
@@ -675,7 +815,11 @@ describe("recordOf, authorised locations", () => {
   it("refuses an authorised location whose why-chain does not hold, with the chain's issues as values", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -704,7 +848,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("reads debt on <symptom>#<check> as reaching that check, filed in its symptom's file", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -731,7 +879,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("reads an authorised location on <symptom>#<check> as reaching that check, filed in its symptom's file", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -751,6 +903,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "the-catalogue",
@@ -766,7 +919,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("reads a carried authorised location on <symptom>#<check> as reaching that check", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -786,6 +943,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: CARRIED_ENTRY,
           lacks: ["case", "owes", "whyChain"],
@@ -805,7 +963,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   ])("refuses debt naming $name for its symptom", ({ answers, check }) => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK, TEST_BODY_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -820,7 +982,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("accepts an authorised location naming a check its symptom does not have, reaching that unknown check and no other", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -834,6 +1000,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         reach: { reaches: "unknown-check", check: "non-null-assertions" },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "the-catalogue",
@@ -849,7 +1016,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("accepts a carried authorised location naming another symptom's check, reaching that unknown check and no other", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [TEST_BODY_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -863,6 +1034,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         reach: { reaches: "unknown-check", check: "test-body" },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: CARRIED_ENTRY,
           lacks: ["case", "owes", "whyChain"],
@@ -875,7 +1047,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("refuses debt naming a check filed in another symptom's file, naming its symptom's file", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -890,7 +1066,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
   it("refuses debt naming a check of a symptom the catalogue does not hold by its symptom alone", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/debt/unheard-of.json"),
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -904,7 +1084,7 @@ describe("owedBy", () => {
   it("finds a rule the case owes", () => {
     expect(
       owedBy({
-        catalogue: CATALOGUE,
+        cases: [GIVES_A_VALUE_ITS_TYPE],
         case: "gives-a-value-its-type",
         owes: "declared-not-asserted",
       }),
@@ -918,7 +1098,7 @@ describe("owedBy", () => {
   it("finds a principle the case owes", () => {
     expect(
       owedBy({
-        catalogue: CATALOGUE,
+        cases: [GIVES_A_VALUE_ITS_TYPE],
         case: "gives-a-value-its-type",
         owes: "the-type-checker-proves-it",
       }),
@@ -932,7 +1112,7 @@ describe("owedBy", () => {
   it("notes a rule that a symptom's indication points at but the case does not owe", () => {
     expect(
       owedBy({
-        catalogue: CATALOGUE,
+        cases: [STATES_WHAT_THE_UNIT_GIVES_BACK],
         case: "states-what-the-unit-gives-back-for-one-case-or-several",
         owes: "written-out-answers",
       }),
@@ -948,7 +1128,11 @@ describe("owedBy", () => {
 
   it("notes a case the catalogue does not hold", () => {
     expect(
-      owedBy({ catalogue: CATALOGUE, case: "needs-it-here", owes: "declared-not-asserted" }),
+      owedBy({
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        case: "needs-it-here",
+        owes: "declared-not-asserted",
+      }),
     ).toEqual({
       matches: "not-the-catalogue",
       note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" },
@@ -960,7 +1144,11 @@ describe("recordOf, carried records", () => {
   it("lists a carried authorised location with what it lacks, unjudged when the base revision is not measured", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -971,9 +1159,16 @@ describe("recordOf, carried records", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: CARRIED_ENTRY,
           lacks: ["case", "owes", "whyChain"],
@@ -986,7 +1181,11 @@ describe("recordOf, carried records", () => {
   it("holds a carried record established when the base revision holds it word for word", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: {
           measured: "yes",
           documents: [
@@ -1005,9 +1204,16 @@ describe("recordOf, carried records", () => {
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/adapters/stripe-webhook.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: CARRIED_ENTRY,
           lacks: ["case", "owes", "whyChain"],
@@ -1020,7 +1226,11 @@ describe("recordOf, carried records", () => {
   it("refuses a carried record whose words changed since the base revision", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: {
           measured: "yes",
           documents: [
@@ -1040,32 +1250,6 @@ describe("recordOf, carried records", () => {
     ).toEqual({ outcome: "failed", error: [{ kind: "carried-changed-since-base" }] });
   });
 
-  it("lists a carried boundary record as lacking its ports", () => {
-    const entry = {
-      kind: "authorised-location",
-      clause: "CD-19#import-boundaries",
-      file: "src/adapters/ids.ts",
-      reason: "uuid stays at the ids adapter.",
-    };
-    expect(
-      recordOf({
-        catalogue: CATALOGUE,
-        base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
-        entry: { module: "src/adapters/ids.ts", outsideParty: "uuid", carried: entry },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        kind: "boundary-record",
-        module: "src/adapters/ids.ts",
-        outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
-        holding: { held: "carried", entry, lacks: ["ports"], standing: "unjudged" },
-      },
-    });
-  });
-
   it("holds a carried debt record as lacking nothing", () => {
     const entry = {
       kind: "file-carve-out",
@@ -1075,7 +1259,11 @@ describe("recordOf, carried records", () => {
     };
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [TEXT_PAST_ITS_READER],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -1098,230 +1286,373 @@ describe("recordOf, carried records", () => {
   });
 });
 
-describe("recordOf, boundary records", () => {
-  it("reads the plan's boundary record on a runtime facility", () => {
-    expect(
-      recordOf({
-        catalogue: CATALOGUE,
-        base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
-        entry: {
-          module: "src/adapters/system-clock.ts",
-          outsideParty: "runtime:clock",
-          ports: ["Clock"],
+describe("recordOf, an authorised location's outside party", () => {
+  it.each<BoundPartyRow>([
+    { outsideParty: "zod", party: { kind: "package", dependency: "zod" } },
+    { outsideParty: "@scope/pkg", party: { kind: "package", dependency: "@scope/pkg" } },
+    { outsideParty: "node:fs", party: { kind: "scheme-module", specifier: "node:fs" } },
+  ])("reads a stated record bound to $outsideParty", ({ outsideParty, party }) => {
+    const outsideImportPastABoundary: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      seen: "A package imported outside its adapter.",
+      mayIndicate: [],
+      breachUsuallySits: "in the importing file",
+      recipes: [],
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
         },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        kind: "boundary-record",
-        module: "src/adapters/system-clock.ts",
-        outsideParty: { kind: "runtime", facility: "clock" },
-        holding: { held: "stated", ports: ["Clock"] },
-      },
-    });
-  });
-
-  it("reads the plan's boundary record on a module specifier, over a folder", () => {
-    expect(
-      recordOf({
-        catalogue: CATALOGUE,
-        base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
-        entry: { module: "src/adapters/files", outsideParty: "node:fs", ports: ["FileReader"] },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        kind: "boundary-record",
-        module: "src/adapters/files",
-        outsideParty: { kind: "scheme-module", specifier: "node:fs" },
-        holding: { held: "stated", ports: ["FileReader"] },
-      },
-    });
-  });
-
-  it.each([
-    { outsideParty: "cloudflare:workers" },
-    { outsideParty: "bun:test" },
-    { outsideParty: "astro:content" },
-    { outsideParty: "node:fs/promises" },
-    { outsideParty: "https://esm.sh/preact@10" },
-  ])(
-    "reads $outsideParty as a module its scheme names, which no package provides",
-    ({ outsideParty }) => {
-      expect(
-        recordOf({
-          catalogue: CATALOGUE,
-          base: UNMEASURED,
-          file: BOUNDARIES_FILE,
-          filedUnder: { kind: "boundary-records" },
-          entry: { module: "src/adapters/platform.ts", outsideParty, ports: ["Platform"] },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          kind: "boundary-record",
-          module: "src/adapters/platform.ts",
-          outsideParty: { kind: "scheme-module", specifier: outsideParty },
-          holding: { held: "stated", ports: ["Platform"] },
-        },
-      });
-    },
-  );
-
-  it.each([
-    { outsideParty: "JSONStream", dependency: "JSONStream" },
-    { outsideParty: "npm:lodash", dependency: "lodash" },
-    { outsideParty: "npm:lodash@4/fp", dependency: "lodash" },
-    { outsideParty: "npm:@date-fns/tz@1.2.0/locale", dependency: "@date-fns/tz" },
-  ])("reads $outsideParty as the package $dependency", ({ outsideParty, dependency }) => {
-    expect(
-      recordOf({
-        catalogue: CATALOGUE,
-        base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
-        entry: { module: "src/adapters/streams.ts", outsideParty, ports: ["Stream"] },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        kind: "boundary-record",
-        module: "src/adapters/streams.ts",
-        outsideParty: { kind: "package", specifier: outsideParty, dependency },
-        holding: { held: "stated", ports: ["Stream"] },
-      },
-    });
-  });
-
-  it("keeps a conformist statement", () => {
-    const conformist = {
-      model: "Acme's Order",
-      why: "a persisted concept that pushes into other boundaries as the definitive thing",
+      ],
+    };
+    const importCheck: Check = {
+      name: "import-or-require",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: ["outside-party"],
     };
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [outsideImportPastABoundary],
+        checks: [importCheck],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
         base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
+        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
-          module: "src/adapters/orders",
-          outsideParty: "@acme/orders-schema",
-          ports: ["OrderStore"],
-          conformist,
+          ...STATED_AUTHORISED_LOCATION,
+          answers: "outside-import-past-a-boundary#import-or-require",
+          outsideParty,
         },
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-        kind: "boundary-record",
-        module: "src/adapters/orders",
-        outsideParty: {
-          kind: "package",
-          specifier: "@acme/orders-schema",
-          dependency: "@acme/orders-schema",
+        kind: "authorised-location",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+          },
         },
-        holding: { held: "stated", ports: ["OrderStore"], conformist },
+        file: "src/adapters/stripe-webhook.ts",
+        holding: {
+          binding: { binds: "check-file-and-outside-party", outsideParty: party },
+          held: "stated",
+          owing: {
+            matches: "the-catalogue",
+            case: GIVES_A_VALUE_ITS_TYPE,
+            owes: { kind: "rule", rule: DECLARED_NOT_ASSERTED },
+          },
+          whyChain: WHY_CHAIN,
+        },
       },
     });
   });
 
-  it("refuses a runtime facility Hone does not know", () => {
+  it("reads a carried record bound to a whole scheme", () => {
+    const outsideImportPastABoundary: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      seen: "A package imported outside its adapter.",
+      mayIndicate: [],
+      breachUsuallySits: "in the importing file",
+      recipes: [],
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const importCheck: Check = {
+      name: "import-or-require",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: ["outside-party"],
+    };
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [outsideImportPastABoundary],
+        checks: [importCheck],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
-        entry: { module: "src/adapters/env.ts", outsideParty: "runtime:env", ports: ["Settings"] },
+        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+        entry: {
+          ...CARRIED_AUTHORISED_LOCATION,
+          answers: "outside-import-past-a-boundary#import-or-require",
+          outsideParty: "node:",
+        },
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        kind: "authorised-location",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+          },
+        },
+        file: "src/adapters/stripe-webhook.ts",
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "scheme", scheme: "node:" },
+          },
+          held: "carried",
+          entry: CARRIED_ENTRY,
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    });
+  });
+
+  it("refuses a stated record bound to a whole scheme", () => {
+    const outsideImportPastABoundary: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      seen: "A package imported outside its adapter.",
+      mayIndicate: [],
+      breachUsuallySits: "in the importing file",
+      recipes: [],
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const importCheck: Check = {
+      name: "import-or-require",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: ["outside-party"],
+    };
+    expect(
+      recordOf({
+        symptoms: [outsideImportPastABoundary],
+        checks: [importCheck],
+        recipes: [],
+        cases: [],
+        namedBans: [],
+        base: UNMEASURED,
+        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+        entry: {
+          ...STATED_AUTHORISED_LOCATION,
+          answers: "outside-import-past-a-boundary#import-or-require",
+          outsideParty: "node:",
+        },
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "unknown-runtime-facility", outsideParty: "runtime:env" }],
+      error: [{ kind: "scheme-party-stated", outsideParty: "node:" }],
     });
   });
 
-  it("reads a subpath of a package as that package, the outside dependency it names", () => {
+  it.each<HeldEntryRow>([
+    {
+      held: "stated",
+      entry: {
+        ...STATED_AUTHORISED_LOCATION,
+        answers: "outside-import-past-a-boundary#import-or-require",
+      },
+    },
+    {
+      held: "carried",
+      entry: {
+        ...CARRIED_AUTHORISED_LOCATION,
+        answers: "outside-import-past-a-boundary#import-or-require",
+      },
+    },
+  ])(
+    "refuses a record that names no outside party on a symptom that binds one, as a $held record",
+    ({ entry }) => {
+      const outsideImportPastABoundary: Symptom = {
+        ruleSet: TOOL_RULE_SET,
+        name: "outside-import-past-a-boundary",
+        title: "Outside import past a boundary",
+        seen: "A package imported outside its adapter.",
+        mayIndicate: [],
+        breachUsuallySits: "in the importing file",
+        recipes: [],
+        correctUses: [
+          {
+            situation: "the adapter for that outside party",
+            kind: AUTHORISED_LOCATION_KIND,
+            binding: "check-file-and-outside-party",
+          },
+        ],
+      };
+      const importCheck: Check = {
+        name: "import-or-require",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+        page: "outside-import-past-a-boundary/import-or-require.md",
+        engines: [],
+        forms: [],
+        findingSpecifics: ["outside-party"],
+      };
+      const resolved = recordOf({
+        symptoms: [outsideImportPastABoundary],
+        checks: [importCheck],
+        recipes: [],
+        cases: [],
+        namedBans: [],
+        base: UNMEASURED,
+        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+        entry,
+      });
+
+      expect(resolved).toEqual({
+        outcome: "failed",
+        error: [{ kind: "outside-party-missing", symptom: "outside-import-past-a-boundary" }],
+      });
+    },
+  );
+
+  it("refuses an outside party that is no package, module or scheme", () => {
+    const outsideImportPastABoundary: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      seen: "A package imported outside its adapter.",
+      mayIndicate: [],
+      breachUsuallySits: "in the importing file",
+      recipes: [],
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const importCheck: Check = {
+      name: "import-or-require",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+      page: "outside-import-past-a-boundary/import-or-require.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: ["outside-party"],
+    };
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [outsideImportPastABoundary],
+        checks: [importCheck],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
-        file: BOUNDARIES_FILE,
-        filedUnder: { kind: "boundary-records" },
+        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
-          module: "src/adapters/dates.ts",
-          outsideParty: "@date-fns/tz/locale",
-          ports: ["Calendar"],
+          ...STATED_AUTHORISED_LOCATION,
+          answers: "outside-import-past-a-boundary#import-or-require",
+          outsideParty: "Not A Package",
+        },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: [
+        { kind: "form-refused", issues: [expect.objectContaining({ path: ["outsideParty"] })] },
+      ],
+    });
+  });
+
+  it("reads Hone's own record on git-port.test.ts as bound to its check and file", () => {
+    const nameOffItsCasing: Symptom = {
+      ruleSet: TOOL_RULE_SET,
+      name: "name-off-its-casing",
+      title: "Name off its casing",
+      seen: "A name in another casing.",
+      mayIndicate: [],
+      breachUsuallySits: "in the unit",
+      recipes: [],
+      correctUses: [
+        {
+          situation: "an outside contract names it",
+          kind: AUTHORISED_LOCATION_KIND,
+          binding: "check-and-file",
+        },
+      ],
+    };
+    const namingCheck: Check = {
+      name: "naming-convention",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "name-off-its-casing" },
+      page: "name-off-its-casing/naming-convention.md",
+      engines: [],
+      forms: [],
+      findingSpecifics: [],
+    };
+    expect(
+      recordOf({
+        symptoms: [nameOffItsCasing],
+        checks: [namingCheck],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [],
+        base: UNMEASURED,
+        file: repoPathOf("hone-records/authorised-locations/name-off-its-casing.json"),
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+        entry: {
+          answers: "name-off-its-casing#naming-convention",
+          file: "src/infrastructure/git/git-port.test.ts",
+          case: "gives-a-value-its-type",
+          owes: "declared-not-asserted",
+          whyChain: WHY_CHAIN,
         },
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-        kind: "boundary-record",
-        module: "src/adapters/dates.ts",
-        outsideParty: {
-          kind: "package",
-          specifier: "@date-fns/tz/locale",
-          dependency: "@date-fns/tz",
+        kind: "authorised-location",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "name-off-its-casing" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "naming-convention",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "name-off-its-casing" },
+          },
         },
-        holding: { held: "stated", ports: ["Calendar"] },
+        file: "src/infrastructure/git/git-port.test.ts",
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "stated",
+          owing: {
+            matches: "the-catalogue",
+            case: GIVES_A_VALUE_ITS_TYPE,
+            owes: { kind: "rule", rule: DECLARED_NOT_ASSERTED },
+          },
+          whyChain: WHY_CHAIN,
+        },
       },
     });
   });
-
-  it.each([{ outsideParty: "lodash" }, { outsideParty: "lodash/fp" }])(
-    "accepts a boundary record on $outsideParty, since a ban refuses only a deviation or a dependency record",
-    ({ outsideParty }) => {
-      expect(
-        recordOf({
-          catalogue: CATALOGUE,
-          base: UNMEASURED,
-          file: BOUNDARIES_FILE,
-          filedUnder: { kind: "boundary-records" },
-          entry: { module: "src/adapters/collections.ts", outsideParty, ports: ["Grouping"] },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          kind: "boundary-record",
-          module: "src/adapters/collections.ts",
-          outsideParty: { kind: "package", specifier: outsideParty, dependency: "lodash" },
-          holding: { held: "stated", ports: ["Grouping"] },
-        },
-      });
-    },
-  );
-
-  it.each([
-    { outsideParty: " runtime:clock" },
-    { outsideParty: "runtime:clock " },
-    { outsideParty: "lodash fp" },
-    { outsideParty: "./adapters/clock" },
-    { outsideParty: "/src/adapters/clock" },
-    { outsideParty: "npm:" },
-  ])(
-    "refuses an outside party written $outsideParty, which names no outside module or runtime facility",
-    ({ outsideParty }) => {
-      expect(
-        recordOf({
-          catalogue: CATALOGUE,
-          base: UNMEASURED,
-          file: BOUNDARIES_FILE,
-          filedUnder: { kind: "boundary-records" },
-          entry: { module: "src/adapters/collections.ts", outsideParty, ports: ["Grouping"] },
-        }),
-      ).toEqual({
-        outcome: "failed",
-        error: [
-          { kind: "form-refused", issues: [expect.objectContaining({ path: ["outsideParty"] })] },
-        ],
-      });
-    },
-  );
 });
 
 describe("recordOf, a record's own text never stops the reader", () => {
@@ -1333,7 +1664,11 @@ describe("recordOf, a record's own text never stops the reader", () => {
   ])("refuses debt whose address is written $answers as a form refusal", ({ answers }) => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEBT_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -1348,7 +1683,11 @@ describe("recordOf, a record's own text never stops the reader", () => {
   it("refuses a deviation whose recipe holds a line break as a form refusal", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
@@ -1365,7 +1704,11 @@ describe("recordOf, deviations", () => {
   it("reads the plan's deviation, whose recipe reason is the catalogue's sentence exactly", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
@@ -1388,7 +1731,11 @@ describe("recordOf, deviations", () => {
     const teamRecipe: Recipe = { ...STUB_WITH_VIFN, ruleSet: ACME };
     expect(
       recordOf({
-        catalogue: { ...CATALOGUE, recipes: [...CATALOGUE.recipes, teamRecipe] },
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN, teamRecipe],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/acme/deviations/stub-with-vi-fn.json"),
         filedUnder: { kind: "deviations", ruleSet: ACME },
@@ -1400,7 +1747,11 @@ describe("recordOf, deviations", () => {
   it("refuses a team's deviation from a recipe only Hone has", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/acme/deviations/stub-with-vi-fn.json"),
         filedUnder: { kind: "deviations", ruleSet: ACME },
@@ -1415,7 +1766,11 @@ describe("recordOf, deviations", () => {
   it("refuses a deviation whose recipe reason is not the catalogue's sentence", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
@@ -1436,7 +1791,11 @@ describe("recordOf, deviations", () => {
   it("refuses a deviation from a recipe the catalogue does not hold", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/deviations/hand-rolled-fakes.json"),
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
@@ -1451,7 +1810,11 @@ describe("recordOf, deviations", () => {
   it("refuses a deviation filed under another recipe's file", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [STUB_WITH_VIFN],
+        cases: [],
+        namedBans: [],
         base: UNMEASURED,
         file: repoPathOf("hone-records/deviations/whole-written-out-expectation.json"),
         filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
@@ -1468,7 +1831,11 @@ describe("recordOf, dependency records", () => {
   it("reads the plan's dependency record", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: DEPENDENCIES_FILE,
         filedUnder: { kind: "dependency-records" },
@@ -1492,7 +1859,11 @@ describe("recordOf, dependency records", () => {
   it("keeps a peer dependency's risk to whoever runs it", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: DEPENDENCIES_FILE,
         filedUnder: { kind: "dependency-records" },
@@ -1518,7 +1889,11 @@ describe("recordOf, dependency records", () => {
   it("refuses a dependency record that would make a named ban correct", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: DEPENDENCIES_FILE,
         filedUnder: { kind: "dependency-records" },
@@ -1536,7 +1911,11 @@ describe("recordOf, dependency records", () => {
     ({ dependency }) => {
       expect(
         recordOf({
-          catalogue: CATALOGUE,
+          symptoms: [],
+          checks: [],
+          recipes: [],
+          cases: [],
+          namedBans: [{ outsideDependency: "lodash" }],
           base: UNMEASURED,
           file: DEPENDENCIES_FILE,
           filedUnder: { kind: "dependency-records" },
@@ -1549,7 +1928,11 @@ describe("recordOf, dependency records", () => {
   it("reads a dependency record on a legacy package name with capitals", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: DEPENDENCIES_FILE,
         filedUnder: { kind: "dependency-records" },
@@ -1580,7 +1963,11 @@ describe("recordOf, dependency records", () => {
     ({ dependency }) => {
       expect(
         recordOf({
-          catalogue: CATALOGUE,
+          symptoms: [],
+          checks: [],
+          recipes: [],
+          cases: [],
+          namedBans: [{ outsideDependency: "lodash" }],
           base: UNMEASURED,
           file: DEPENDENCIES_FILE,
           filedUnder: { kind: "dependency-records" },
@@ -1598,7 +1985,11 @@ describe("recordOf, dependency records", () => {
   it("reads a scoped dependency by its full name", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: DEPENDENCIES_FILE,
         filedUnder: { kind: "dependency-records" },
@@ -1624,7 +2015,11 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
   it("accepts debt at a site that uses a named ban", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [],
+        recipes: [],
+        cases: [],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: repoPathOf("hone-records/debt/claimed-type.json"),
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
@@ -1645,7 +2040,11 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
   it("accepts an authorised location at a site that uses a named ban", () => {
     expect(
       recordOf({
-        catalogue: CATALOGUE,
+        symptoms: [CLAIMED_TYPE],
+        checks: [CAST_CHECK],
+        recipes: [],
+        cases: [GIVES_A_VALUE_ITS_TYPE],
+        namedBans: [{ outsideDependency: "lodash" }],
         base: UNMEASURED,
         file: AUTHORISED_FILE,
         filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
@@ -1656,9 +2055,16 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
       value: {
         kind: "authorised-location",
         symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-        reach: WHOLE_SYMPTOM,
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+          },
+        },
         file: "src/collections/lodash-grouping.ts",
         holding: {
+          binding: { binds: "check-and-file" },
           held: "stated",
           owing: {
             matches: "the-catalogue",

@@ -116,7 +116,8 @@ const recordLineOf = (request: { readonly record: RecordLine }): string => {
     return `reason ${clause}: ${record.reason.trim().split(SEPARATE_WORDS).join(" ")}`;
   }
   if ("file" in record) {
-    return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}`;
+    const party = record.outsideParty === undefined ? "" : ` for ${record.outsideParty}`;
+    return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}${party}`;
   }
   return `${record.recordKind} ${clause} -> ${record.newKind} ${checkAddressOf({ check: record.check })}`;
 };

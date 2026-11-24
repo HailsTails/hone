@@ -4,6 +4,8 @@ import type {
   Engine,
   RecordKind,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -26,14 +28,14 @@ const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",

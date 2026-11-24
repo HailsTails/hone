@@ -1,4 +1,3 @@
-import type { SymptomUnheld } from "../../../domain/language-layer/rule-content.ts";
 import type {
   RecordIssue,
   RecordsDocumentRefusal,
@@ -16,7 +15,6 @@ import type {
   NotReadyYet,
   RunLoadFailure,
 } from "../../../domain/report/run-load-failure.ts";
-import { ownedNameText } from "../../../domain/rule-set/rule-set-identity.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type {
   RunnerFailure,
@@ -32,6 +30,7 @@ import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requir
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";
 import { projectionMissingLine, projectionProblemLine } from "../run-state-lines.ts";
+import { symptomUnheldText } from "../symptoms/symptom-lines.ts";
 
 const LOAD_FAILURE_LEAD = "load failure:";
 
@@ -203,9 +202,6 @@ type RecordsFailure = Extract<
       | "symptom-unheld";
   }
 >;
-
-export const symptomUnheldText = (request: { readonly failure: SymptomUnheld }): string =>
-  `${ownedNameText(request.failure.symptom)}: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it`;
 
 const CONFIG_ROOT_REPAIR = `an eslintConfigRoots entry is a folder git tracks files under outside every excluded path, spelled exactly as git spells it; fix or remove it in ${SETTINGS_FILE_NAME}`;
 

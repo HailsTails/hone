@@ -45,6 +45,7 @@ const CATALOGUE: SymptomCatalogue = {
       symptom: { ruleSet: "hone", name: "loop-keyword" },
       page: "loop-keyword/for-of.md",
       forms: [],
+      findingSpecifics: [],
       engines: [{ name: "walker" }],
     },
   ],

@@ -30,6 +30,7 @@ describe("mapCheckToAddress", () => {
       symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
       page: "loop-keyword/for-of.md",
       forms: [],
+      findingSpecifics: [],
       engines: [{ name: "walker" }],
     };
 

@@ -43,10 +43,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/content-files/symptom-catalogues/record-reach-catalogue.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {

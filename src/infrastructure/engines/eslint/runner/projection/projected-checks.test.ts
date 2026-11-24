@@ -26,6 +26,7 @@ const SKIPPED_TESTS_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const NON_NULL_ASSERTIONS_CHECK: Check = {
@@ -39,6 +40,7 @@ const NON_NULL_ASSERTIONS_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const PARAMETER_COUNT_CHECK: Check = {
@@ -52,6 +54,7 @@ const PARAMETER_COUNT_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
@@ -65,6 +68,7 @@ const REBINDING_TEST_BODY: Check = {
   },
   engines: [WALKER_ENGINE],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const PLUGIN_CHECKS: readonly Check[] = [

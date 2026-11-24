@@ -231,7 +231,7 @@ describe("runLoadFailureLine, records that could not be read", () => {
     },
     {
       failure: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") },
-      line: "load failure: not-a-records-file hone-records/notes.md: a records file is boundary-records.json or dependency-records.json, or a .json file named for its symptom, or for its recipe in deviations, inside the folder authorised-locations, debt or deviations of hone-records; move this file to where its kind belongs, or out of hone-records if it holds no records",
+      line: "load failure: not-a-records-file hone-records/notes.md: a records file is dependency-records.json, or a .json file named for its symptom, or for its recipe in deviations, inside the folder authorised-locations, debt or deviations of hone-records; move this file to where its kind belongs, or out of hone-records if it holds no records",
     },
     {
       failure: {

@@ -9,6 +9,7 @@ export type AuthoriseOptionName =
   | "repo"
   | "answers"
   | "file"
+  | "outsideParty"
   | "case"
   | "owes"
   | "why"
@@ -23,6 +24,7 @@ export const AUTHORISE_OPTIONS: Readonly<Record<AuthoriseOptionName, string>> = 
   repo: "--repo",
   answers: "--answers",
   file: "--file",
+  outsideParty: "--outside-party",
   case: "--case",
   owes: "--owes",
   why: "--why",
@@ -82,6 +84,15 @@ const whysOf = (request: Reading): Read<readonly Why[]> => {
     });
   }
   return { outcome: "ok", value: whys };
+};
+
+const readOutsideParty = (request: Reading): Read<Pick<AuthoriseRequest, "outsideParty">> => {
+  const name = AUTHORISE_OPTIONS.outsideParty;
+  const [only, ...rest] = request.values.get(name) ?? [];
+  if (rest.length > 0) {
+    return invalid({ detail: `takes ${name} once` });
+  }
+  return { outcome: "ok", value: only === undefined ? {} : { outsideParty: only } };
 };
 
 const fileOf = (request: Reading): Read<RepoPath> => {
@@ -166,6 +177,7 @@ const rootOf = (request: Reading): Read<Root> => {
 export const authoriseRequestOf = (request: Reading): Read<AuthoriseRequest> => {
   const site = siteOf(request);
   const file = fileOf(request);
+  const outsideParty = readOutsideParty(request);
   const root = rootOf(request);
   const whys = whysOf(request);
   if (site.outcome === "failed") {
@@ -174,6 +186,9 @@ export const authoriseRequestOf = (request: Reading): Read<AuthoriseRequest> => 
   if (file.outcome === "failed") {
     return file;
   }
+  if (outsideParty.outcome === "failed") {
+    return outsideParty;
+  }
   if (root.outcome === "failed") {
     return root;
   }
@@ -181,6 +196,12 @@ export const authoriseRequestOf = (request: Reading): Read<AuthoriseRequest> => 
     ? whys
     : {
         outcome: "ok",
-        value: { ...site.value, ...root.value, file: file.value, whys: whys.value },
+        value: {
+          ...site.value,
+          ...root.value,
+          ...outsideParty.value,
+          file: file.value,
+          whys: whys.value,
+        },
       };
 };

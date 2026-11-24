@@ -1,35 +1,23 @@
 import { describe, expect, it } from "vitest";
 
+import type { ClauseChecks } from "../../language-layer/clause-checks.ts";
+import { createRuleContent } from "../../language-layer/rule-content.ts";
 import type {
   Check,
   Engine,
-  Principle,
-  RecordKind,
   Symptom,
-  SymptomCatalogue,
+  AuthorisedLocationKind,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
-import type { Result } from "../../result.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
-import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
 import { clausesCarriedAsNotAdopted, mappedRecords } from "./records-mapping.ts";
-import type { UpgradeRefusal } from "./upgrade-refusal.ts";
 
-const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
-
-const DEBT: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -52,6 +40,8 @@ const LOOP_KEYWORD: Symptom = {
 };
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
+
+const CONTENT = createRuleContent({ catalogues: [{ symptoms: [LOOP_KEYWORD, REBINDING] }] });
 
 const LOOPS_CLAUSE: ClauseAddress = {
   ruleSet: TOOL_RULE_SET,
@@ -78,6 +68,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT],
   forms: [],
+  findingSpecifics: [],
 };
 
 const CATALOGUE_LOOP_KEYWORD_TEST_BODY: Check = {
@@ -87,6 +78,7 @@ const CATALOGUE_LOOP_KEYWORD_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const CATALOGUE_REBINDING_TEST_BODY: Check = {
@@ -96,37 +88,13 @@ const CATALOGUE_REBINDING_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
-const SETTINGS_CATALOGUE: SymptomCatalogue = {
-  principles: [NO_HIDDEN_EFFECTS],
-  rules: [],
-  cases: [],
-  recipes: [],
-  recordKinds: [AUTHORISED_LOCATION, DEBT],
-  engines: [WALKER, ESLINT],
-  symptoms: [LOOP_KEYWORD, REBINDING],
-  clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
-    {
-      clause: TEST_BODY_CLAUSE,
-      sight: {
-        kind: "symptom-by-form",
-        forms: [
-          { form: "a-for-loop", symptom: LOOP_KEYWORD },
-          { form: "a-let", symptom: REBINDING },
-        ],
-      },
-    },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
-  ],
-  checks: [LOOP_KEYWORD_LOOPS, CATALOGUE_LOOP_KEYWORD_TEST_BODY, CATALOGUE_REBINDING_TEST_BODY],
-  namedBans: [],
-};
-
-const CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: "hone", catalogue: SETTINGS_CATALOGUE },
-];
+const CLAUSE_CHECKS: ClauseChecks = new Map([
+  ["CD-15#loops", [LOOP_KEYWORD_LOOPS]],
+  ["CD-27#test-body-logic", [CATALOGUE_LOOP_KEYWORD_TEST_BODY, CATALOGUE_REBINDING_TEST_BODY]],
+]);
 
 const AUDIT = "walker" as const;
 
@@ -173,7 +141,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
   it("writes a debt at the check the carve-out answered in the file, its reason as the note", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -215,7 +185,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
     };
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -245,7 +217,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
   it("writes no note for a carve-out that gave no reason", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -272,7 +246,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
   it("writes the debt record for the check of a suppression a file carve-out held up, and lists it as a debt", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -326,7 +302,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
   it("writes one debt for a check that answered the carve-out twice", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -364,7 +342,9 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
   it("writes a debt for each distinct check the carve-out answered, in the file of that check's symptom", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -409,7 +389,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   it("carries a file carve-out with a why chain word for word", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -461,7 +443,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   it("carries an inherited-debt carve-out, its provenance kept in the entry", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -516,7 +500,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -554,7 +540,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -587,7 +575,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -620,7 +610,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -660,7 +652,9 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -693,6 +687,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -701,6 +696,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -709,6 +705,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -717,6 +714,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -725,6 +723,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -733,21 +732,13 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
 ];
 
-const SIX_CHECK_CATALOGUES: readonly RuleSetCatalogue[] = [
-  {
-    ruleSet: "hone",
-    catalogue: {
-      ...SETTINGS_CATALOGUE,
-      clauses: [
-        { clause: TEST_BODY_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
-      ],
-      checks: SIX_TEST_BODY_CHECKS,
-    },
-  },
-];
+const SIX_CHECK_CLAUSE_CHECKS: ClauseChecks = new Map([
+  ["CD-27#test-body-logic", SIX_TEST_BODY_CHECKS],
+]);
 
 const CLAUSE_WIDE_ON_LOOPS = {
   kind: "clause-wide-carve-out",
@@ -771,20 +762,273 @@ const CLAUSE_WIDE_ON_TEST_BODY = {
   },
 } as const;
 
+describe("mappedRecords carrying an authorised location on outside imports", () => {
+  const OUTSIDE_IMPORT_PAST_A_BOUNDARY: Symptom = {
+    ...LOOP_KEYWORD,
+    name: "outside-import-past-a-boundary",
+    title: "Outside import past a boundary",
+    correctUses: [
+      {
+        situation: "the adapter for that outside party",
+        kind: AUTHORISED_LOCATION,
+        binding: "check-file-and-outside-party",
+      },
+    ],
+  };
+  const IMPORT_CONTENT = createRuleContent({
+    catalogues: [{ symptoms: [OUTSIDE_IMPORT_PAST_A_BOUNDARY] }],
+  });
+  const IMPORTS_CLAUSE: ClauseAddress = {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-19"),
+    clause: clauseIdOf("import-or-require"),
+  };
+  const IMPORT_CHECK: Check = {
+    name: "import-or-require",
+    symptom: OUTSIDE_IMPORT_PAST_A_BOUNDARY,
+    page: "outside-import-past-a-boundary/import-or-require.md",
+    clause: IMPORTS_CLAUSE,
+    engines: [ESLINT],
+    forms: [],
+    findingSpecifics: ["outside-party"],
+  };
+  it("carries one record for each confined package, in the order configured, then one for node modules", () => {
+    const clauseChecks: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-19#import-or-require",
+      file: "src/adapters/ids.ts",
+      reason: "the ids adapter",
+    } as const;
+    const input = {
+      kind: "authorised-location",
+      record: { clause: IMPORTS_CLAUSE, file: repoPathOf("src/adapters/ids.ts") },
+      entry,
+      answer: WHOLE_CLAUSE,
+    } as const;
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: ["uuid", "zod"],
+      clauseChecks,
+      content: IMPORT_CONTENT,
+      inputs: [input],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "ok",
+      value: {
+        documents: [
+          {
+            file: "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+            version: 2,
+            records: [
+              {
+                answers: "outside-import-past-a-boundary#import-or-require",
+                file: "src/adapters/ids.ts",
+                outsideParty: "uuid",
+                carried: entry,
+              },
+              {
+                answers: "outside-import-past-a-boundary#import-or-require",
+                file: "src/adapters/ids.ts",
+                outsideParty: "zod",
+                carried: entry,
+              },
+              {
+                answers: "outside-import-past-a-boundary#import-or-require",
+                file: "src/adapters/ids.ts",
+                outsideParty: "node:",
+                carried: entry,
+              },
+            ],
+          },
+        ],
+        lines: [
+          {
+            recordKind: "authorised-location",
+            clause: IMPORTS_CLAUSE,
+            file: "src/adapters/ids.ts",
+            newKind: "authorised-location",
+            check: IMPORT_CHECK,
+            holding: "carried",
+            outsideParty: "uuid",
+          },
+          {
+            recordKind: "authorised-location",
+            clause: IMPORTS_CLAUSE,
+            file: "src/adapters/ids.ts",
+            newKind: "authorised-location",
+            check: IMPORT_CHECK,
+            holding: "carried",
+            outsideParty: "zod",
+          },
+          {
+            recordKind: "authorised-location",
+            clause: IMPORTS_CLAUSE,
+            file: "src/adapters/ids.ts",
+            newKind: "authorised-location",
+            check: IMPORT_CHECK,
+            holding: "carried",
+            outsideParty: "node:",
+          },
+        ],
+      },
+    });
+  });
+
+  it("carries one record for node modules alone when no package is confined", () => {
+    const clauseChecks: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-19#import-or-require",
+      file: "src/adapters/ids.ts",
+      reason: "the ids adapter",
+    } as const;
+    const input = {
+      kind: "authorised-location",
+      record: { clause: IMPORTS_CLAUSE, file: repoPathOf("src/adapters/ids.ts") },
+      entry,
+      answer: WHOLE_CLAUSE,
+    } as const;
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: [],
+      clauseChecks,
+      content: IMPORT_CONTENT,
+      inputs: [input],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "ok",
+      value: {
+        documents: [
+          {
+            file: "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+            version: 2,
+            records: [
+              {
+                answers: "outside-import-past-a-boundary#import-or-require",
+                file: "src/adapters/ids.ts",
+                outsideParty: "node:",
+                carried: entry,
+              },
+            ],
+          },
+        ],
+        lines: [
+          {
+            recordKind: "authorised-location",
+            clause: IMPORTS_CLAUSE,
+            file: "src/adapters/ids.ts",
+            newKind: "authorised-location",
+            check: IMPORT_CHECK,
+            holding: "carried",
+            outsideParty: "node:",
+          },
+        ],
+      },
+    });
+  });
+
+  it("names no outside party on an authorised location whose symptom binds none, whatever is confined", () => {
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-15#loops",
+      file: "src/a.ts",
+      reason: "ported",
+    } as const;
+
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: ["uuid"],
+      clauseChecks: CLAUSE_CHECKS,
+      content: CONTENT,
+      inputs: [
+        {
+          kind: "authorised-location",
+          record: { clause: LOOPS_CLAUSE, file: SRC_A },
+          entry,
+          answer: WHOLE_CLAUSE,
+        },
+      ],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "ok",
+      value: {
+        documents: [
+          {
+            file: "hone-records/authorised-locations/loop-keyword.json",
+            version: 2,
+            records: [{ answers: "loop-keyword#loops", file: "src/a.ts", carried: entry }],
+          },
+        ],
+        lines: [
+          {
+            recordKind: "authorised-location",
+            clause: LOOPS_CLAUSE,
+            file: SRC_A,
+            newKind: "authorised-location",
+            check: LOOP_KEYWORD_LOOPS,
+            holding: "carried",
+          },
+        ],
+      },
+    });
+  });
+
+  it("refuses an authorised location on CD-14, whose clause has no check, whatever is confined", () => {
+    const clauseChecks: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
+    const noCheckClause: ClauseAddress = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-14"),
+      clause: clauseIdOf("value-objects"),
+    };
+
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: ["uuid"],
+      clauseChecks,
+      content: IMPORT_CONTENT,
+      inputs: [
+        {
+          kind: "authorised-location",
+          record: { clause: noCheckClause, file: SRC_A },
+          entry: {
+            kind: "authorised-location",
+            clause: "CD-14#value-objects",
+            file: "src/a.ts",
+            reason: "ported",
+          },
+          answer: WHOLE_CLAUSE,
+        },
+      ],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "failed",
+      error: [{ kind: "clause-without-check", clause: "CD-14#value-objects" }],
+    });
+  });
+});
+
 describe("mappedRecords carrying a clause-wide carve-out as a choice, not a record", () => {
   it("writes no record for it", () => {
-    expect(mappedRecords({ catalogues: CATALOGUES, inputs: [CLAUSE_WIDE_ON_LOOPS] })).toMatchObject(
-      {
-        outcome: "ok",
-        value: { documents: [] },
-      },
-    );
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: [],
+      clauseChecks: CLAUSE_CHECKS,
+      content: CONTENT,
+      inputs: [CLAUSE_WIDE_ON_LOOPS],
+    });
+
+    expect(mapped).toMatchObject({
+      outcome: "ok",
+      value: { documents: [] },
+    });
   });
 
   it("refuses a clause that has no check to not adopt, naming the clause", () => {
     expect(
       mappedRecords({
-        catalogues: [],
+        confinedOutsideDependencies: [],
+        clauseChecks: new Map(),
+        content: CONTENT,
         inputs: [CLAUSE_WIDE_ON_LOOPS],
       }),
     ).toEqual({
@@ -799,13 +1043,9 @@ describe("clausesCarriedAsNotAdopted", () => {
     expect(
       clausesCarriedAsNotAdopted({
         inputs: [
-          CLAUSE_WIDE_ON_LOOPS,
-          {
-            kind: "authorised-location",
-            record: { clause: TEST_BODY_CLAUSE, file: SRC_A },
-            entry: {},
-            answer: WHOLE_CLAUSE,
-          },
+          { kind: "clause-wide-carve-out", record: { clause: LOOPS_CLAUSE } },
+          { kind: "authorised-location", record: { clause: TEST_BODY_CLAUSE } },
+          { kind: "file-carve-out", record: { clause: LAYERING_CLAUSE } },
         ],
       }),
     ).toEqual([LOOPS_CLAUSE]);
@@ -816,7 +1056,9 @@ describe("mappedRecords refusing what carries over to nothing", () => {
   it("refuses a stale file carve-out, naming the clause and the file", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -853,7 +1095,9 @@ describe("mappedRecords refusing what carries over to nothing", () => {
   it("refuses a file carve-out credited only by a suppression no record can hold", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -890,7 +1134,9 @@ describe("mappedRecords refusing what carries over to nothing", () => {
   it("refuses an authorised location whose clause has no check", () => {
     expect(
       mappedRecords({
-        catalogues: [],
+        confinedOutsideDependencies: [],
+        clauseChecks: new Map(),
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -918,9 +1164,14 @@ describe("mappedRecords refusing a symptom name that cannot name a records file"
       ...LOOP_KEYWORD_LOOPS,
       symptom: { ...LOOP_KEYWORD_LOOPS.symptom, name: "Bad Name" },
     };
+    const content = createRuleContent({
+      catalogues: [{ symptoms: [{ ...LOOP_KEYWORD, name: "Bad Name" }] }],
+    });
     expect(
       mappedRecords({
-        catalogues: [{ ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: [check] } }],
+        confinedOutsideDependencies: [],
+        clauseChecks: new Map([["CD-15#loops", [check]]]),
+        content,
         inputs: [
           {
             kind: "authorised-location",
@@ -939,11 +1190,47 @@ describe("mappedRecords refusing a symptom name that cannot name a records file"
   });
 });
 
+describe("mappedRecords refusing a check whose symptom no catalogue holds", () => {
+  it("refuses an authorised location at a check whose symptom the content does not hold, naming the symptom", () => {
+    const loops: Check = {
+      ...LOOP_KEYWORD_LOOPS,
+      symptom: { ruleSet: "hone", name: "loop-keyword" },
+    };
+    const content = createRuleContent({ catalogues: [{ symptoms: [REBINDING] }] });
+
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: [],
+      clauseChecks: new Map([["CD-15#loops", [loops]]]),
+      content,
+      inputs: [
+        {
+          kind: "authorised-location",
+          record: { clause: LOOPS_CLAUSE, file: SRC_A },
+          entry: {
+            kind: "authorised-location",
+            clause: "CD-15#loops",
+            file: "src/a.ts",
+            reason: "ported",
+          },
+          answer: WHOLE_CLAUSE,
+        },
+      ],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "failed",
+      error: [{ kind: "symptom-unheld", symptom: { ruleSet: "hone", name: "loop-keyword" } }],
+    });
+  });
+});
+
 describe("mappedRecords ordering", () => {
   it("sorts the documents by file and keeps the records of a file in the order they came", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -997,7 +1284,9 @@ describe("mappedRecords lines", () => {
   it("names a stated debt by the kind and clause it came from, the file it covers and the symptom it now answers", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "file-carve-out",
@@ -1044,7 +1333,9 @@ describe("mappedRecords lines", () => {
     } as const;
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
+        confinedOutsideDependencies: [],
+        clauseChecks: CLAUSE_CHECKS,
+        content: CONTENT,
         inputs: [
           {
             kind: "authorised-location",
@@ -1080,28 +1371,38 @@ describe("mappedRecords lines", () => {
   });
 
   it("gives a clause-wide carve-out its reason, then one not-adopted line for the check of its clause", () => {
-    expect(mappedRecords({ catalogues: CATALOGUES, inputs: [CLAUSE_WIDE_ON_LOOPS] })).toMatchObject(
-      {
-        outcome: "ok",
-        value: {
-          documents: [],
-          lines: [
-            { recordKind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, reason: "generated code" },
-            {
-              recordKind: "clause-wide-carve-out",
-              clause: LOOPS_CLAUSE,
-              newKind: "not-adopted",
-              check: LOOP_KEYWORD_LOOPS,
-            },
-          ],
-        },
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: [],
+      clauseChecks: CLAUSE_CHECKS,
+      content: CONTENT,
+      inputs: [CLAUSE_WIDE_ON_LOOPS],
+    });
+
+    expect(mapped).toMatchObject({
+      outcome: "ok",
+      value: {
+        documents: [],
+        lines: [
+          { recordKind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, reason: "generated code" },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: LOOPS_CLAUSE,
+            newKind: "not-adopted",
+            check: LOOP_KEYWORD_LOOPS,
+          },
+        ],
       },
-    );
+    });
   });
 
   it("gives a clause-wide carve-out on CD-27 one not-adopted line at each of its six checks", () => {
     expect(
-      mappedRecords({ catalogues: SIX_CHECK_CATALOGUES, inputs: [CLAUSE_WIDE_ON_TEST_BODY] }),
+      mappedRecords({
+        confinedOutsideDependencies: [],
+        clauseChecks: SIX_CHECK_CLAUSE_CHECKS,
+        content: CONTENT,
+        inputs: [CLAUSE_WIDE_ON_TEST_BODY],
+      }),
     ).toMatchObject({
       outcome: "ok",
       value: {
