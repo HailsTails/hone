@@ -1,36 +1,36 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import { checkConformanceOf } from "../../../../../application/conformance/check-conformance.ts";
-import type { NamedConformancePort } from "../../../../../application/ports/engine/engine-port.ts";
-import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createNamedCheckExamplesRepository } from "../../../../content-files/rule-sets/named-check-examples.ts";
-import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { loadFailureDetail } from "../../../../printed-report/load-failures/load-failure-text.ts";
-import { namedChecksRunnerModuleSchema } from "../../../protocol/checks/checks-runner-module-schema.ts";
-import { namedCheckConformance } from "../../../protocol/conformance.ts";
-import { loadedNamedRunnerOver } from "../../../protocol/engine-run/engine-run.ts";
-import { runnerModuleAt } from "../../../protocol/runner-module/runner-module-at.ts";
-import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { createChecksRunner } from "../checks-runner/checks-runner.ts";
-import { ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
+import { checkConformanceOf } from "../application/conformance/check-conformance.ts";
+import type { NamedConformancePort } from "../application/ports/engine/engine-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { CheckAddressText } from "../domain/language-layer/check-address-text.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import { createNamedCheckExamplesRepository } from "../infrastructure/content-files/rule-sets/named-check-examples.ts";
+import { createChecksRunner } from "../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { ESLINT_PROJECTED_KINDS } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
-} from "../toolchain/eslint-9/eslint-9-engine.ts";
-import { createEslintPort } from "../toolchain/eslint-instance.ts";
+} from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
+} from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { namedChecksRunnerModuleSchema } from "../infrastructure/engines/protocol/checks/checks-runner-module-schema.ts";
+import { namedCheckConformance } from "../infrastructure/engines/protocol/conformance.ts";
+import { loadedNamedRunnerOver } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import { runnerModuleAt } from "../infrastructure/engines/protocol/runner-module/runner-module-at.ts";
+import { toolchainBoundNamedChecksRunner } from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { loadFailureDetail } from "../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
+const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
 const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({
   installRoot: INSTALL_ROOT,

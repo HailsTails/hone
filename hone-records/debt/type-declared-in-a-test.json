@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {

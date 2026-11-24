@@ -111,10 +111,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
     },
     {

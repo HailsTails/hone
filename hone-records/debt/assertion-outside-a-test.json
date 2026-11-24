@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
