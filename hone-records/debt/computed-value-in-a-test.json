@@ -75,10 +75,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
     },
     {
@@ -99,10 +95,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
@@ -119,10 +111,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
     },
     {
@@ -132,14 +120,6 @@
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",
@@ -180,14 +160,6 @@
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "src/application/upgrade/team-layout/team-layout-plan.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/projection-pair.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/settings-pair.integration.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",

@@ -23,19 +23,11 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
@@ -48,10 +40,6 @@
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
     }
   ]
 }

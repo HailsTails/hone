@@ -9,6 +9,7 @@ import type { ModuleLoaderPort } from "../application/ports/host/module-loader-p
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
@@ -448,6 +449,7 @@ const ranWith = async (request: {
         create: vi.fn<DirectoryPort["create"]>(),
       },
       recordsSourceOf: vi.fn<RecordsSourceOf>(),
+      settingsSourcesOf: vi.fn<SettingsSourcesOf>(),
       stagesOver: request.stagesOver,
     },
     command: commandWith({ process: processPort, moduleUrl: request.moduleUrl }),

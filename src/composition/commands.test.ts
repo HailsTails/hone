@@ -42,6 +42,7 @@ import type { CheckHit, CheckNativeException } from "../domain/runner/check-obse
 import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
@@ -648,6 +649,7 @@ const ranWith = async (request: {
     directory: held.directory,
     fileRemoval: held.fileRemoval,
     recordsSourceOf: createRecordsFolder,
+    settingsSourcesOf: createSettingsSources,
     stagesOver,
     recordsReader,
     recordsEditor,

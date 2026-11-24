@@ -6,6 +6,7 @@ import type { GitTreePort } from "../application/ports/git-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
@@ -135,6 +136,7 @@ describe("stagesOverRepository", () => {
         gitTree,
         directory: memory.directory,
         recordsSourceOf,
+        settingsSourcesOf: vi.fn<SettingsSourcesOf>(),
         stagesOver,
       },
       moduleUrl: MODULE_URL,

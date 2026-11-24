@@ -59,10 +59,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
     },
     {
@@ -72,10 +68,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -91,10 +83,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
     },
     {
@@ -104,14 +92,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -191,15 +171,7 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/settings-pair.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/piece-engines.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/engine-run/engine-run.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",

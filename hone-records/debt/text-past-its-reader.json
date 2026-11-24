@@ -39,10 +39,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/composition/single-mechanism.integration.test.ts"
     },
     {

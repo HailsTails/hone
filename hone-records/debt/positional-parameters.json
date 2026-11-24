@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "records": [
-    {
-      "answers": "positional-parameters#parameter-count",
-      "file": "src/composition/settings-pair.integration.test.ts"
-    }
-  ]
-}

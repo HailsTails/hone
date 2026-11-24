@@ -27,10 +27,6 @@
     },
     {
       "answers": "wide-input#unread-parameter",
-      "file": "src/infrastructure/engines/protocol/engine-port.ts"
-    },
-    {
-      "answers": "wide-input#unread-parameter",
       "file": "src/infrastructure/hone-config-file/settings-sources.ts"
     },
     {

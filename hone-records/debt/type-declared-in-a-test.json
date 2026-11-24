@@ -7,10 +7,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
@@ -24,14 +20,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -100,10 +88,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/composed-command.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/composition/projection-pair.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -183,10 +167,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
     },
     {
@@ -200,10 +180,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/checks-queried-files.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

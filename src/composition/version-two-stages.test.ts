@@ -4,6 +4,7 @@ import type { DirectoryPort } from "../application/ports/file-system/directory-p
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { SettingsSources, SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type {
   Case,
@@ -24,6 +25,7 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
@@ -320,6 +322,7 @@ const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
   directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
   recordsSourceOf: createRecordsFolder,
+  settingsSourcesOf: createSettingsSources,
 });
 
 const GIT_LISTING_NOTHING = gitListing({
@@ -375,6 +378,40 @@ describe("versionTwoStagesOver", () => {
     ).toEqual({
       outcome: "failed",
       error: { kind: "config-absent", repo: "/repo" },
+    });
+  });
+
+  it("reads the settings through the settings sources it is handed, over the repository and install", () => {
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const settingsSourcesOf = vi.fn<SettingsSourcesOf>().mockReturnValue({
+      settingsFile: vi.fn<SettingsSources["settingsFile"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "selection-absent", repo: "/repo" },
+      }),
+      ruleSetRoot: vi.fn<SettingsSources["ruleSetRoot"]>(),
+      catalogue: vi.fn<SettingsSources["catalogue"]>(),
+    });
+    const stages = versionTwoStagesOver({
+      ports: { ...ports, settingsSourcesOf },
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
+    });
+    expect(stages.settings({ catalogue: REPORT_CATALOGUE })).toEqual({
+      outcome: "failed",
+      error: { kind: "config-absent", repo: "/repo" },
+    });
+    expect(settingsSourcesOf).toHaveBeenCalledExactlyOnceWith({
+      fileText: ports.fileText,
+      directory: ports.directory,
+      path: ports.path,
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      toolRecordKinds: REPORT_CATALOGUE.recordKinds,
     });
   });
 

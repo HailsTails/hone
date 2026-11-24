@@ -34,7 +34,6 @@ import {
   namedChecksRunResultSchema,
   namedChecksRunnerModuleSchema,
 } from "../checks/checks-runner-module-schema.ts";
-import { runnerModuleAt } from "../runner-module/runner-module-at.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 type NamedOutcome<Value> = Result<Value, NamedEngineFailure>;
 
@@ -199,9 +198,3 @@ export const measureVersionOneProjectionOver =
   (ports: RunnerModulePorts): MeasureVersionOneProjection =>
   (measurement) =>
     measuredVersionOne({ ...ports, ...measurement });
-
-export const loadedNamedRunnerOf = loadedNamedRunnerOver({ runnerModuleOf: runnerModuleAt });
-
-export const measureVersionOneProjection = measureVersionOneProjectionOver({
-  runnerModuleOf: runnerModuleAt,
-});

@@ -19,10 +19,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "delivery/packaging/building/package-build.test.ts"
     },
     {

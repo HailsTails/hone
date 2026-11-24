@@ -13,7 +13,6 @@ import {
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { runnerModuleAt } from "../runner-module/runner-module-at.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 import {
   projectionWriteSchema,
@@ -105,7 +104,3 @@ export const versionOneProjectionPortOver =
         projectionCall({ methods, method: "prepare", projection, output: preparationResult }),
     };
   };
-
-export const loadVersionOneProjectionOver = versionOneProjectionPortOver({
-  runnerModuleOf: runnerModuleAt,
-});

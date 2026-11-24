@@ -51,10 +51,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/infrastructure/engines/protocol/engine-port.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/composition/check-command.ts"
     },
     {

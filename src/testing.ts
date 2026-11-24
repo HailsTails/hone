@@ -9,9 +9,11 @@ import type {
   RepoPathOf,
 } from "./application/conformance/conformance-testing-types.ts";
 import { moduleExtensionOf } from "./application/ports/host/module-extension.ts";
+import { runnerEnginesOver } from "./composition/runner-engines.ts";
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
 import { createNamedCheckExamplesRepository } from "./infrastructure/content-files/rule-sets/named-check-examples.ts";
-import { createNamedConformancePort } from "./infrastructure/engines/protocol/engine-port.ts";
+import { namedCheckConformance } from "./infrastructure/engines/protocol/conformance.ts";
+import { runnerModuleAt } from "./infrastructure/engines/protocol/runner-module/runner-module-at.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
@@ -36,6 +38,7 @@ const installRoot = installRootOfApiEntry({ path, moduleUrl });
 const fileText = createDefaultFileTextPort({});
 const modules = createDefaultModuleLoaderPort({});
 const examples = createNamedCheckExamplesRepository({ fileText, path });
+const { namedEngine } = runnerEnginesOver({ runnerModuleOf: runnerModuleAt });
 
 export const repoPathOf: RepoPathOf = checkedRepoPath;
 
@@ -72,6 +75,6 @@ export const checkConformanceOf: CheckConformanceOf = (request) =>
         loadFailureDetail,
         path,
         modules,
-        enginePort: createNamedConformancePort({}),
+        enginePort: { load: namedEngine.load, conform: namedCheckConformance },
         moduleExtension: moduleExtensionOf({ moduleUrl }),
       });
