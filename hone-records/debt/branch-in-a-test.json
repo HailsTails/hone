@@ -216,10 +216,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/runner/pieces/vitest-import.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/walker/type-declared-in-a-test/test-type-declaration/test-type-declaration.test.ts"
     }
   ]
 }
