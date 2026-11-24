@@ -1052,8 +1052,8 @@ describe("clausesCarriedAsNotAdopted", () => {
   });
 });
 
-describe("mappedRecords refusing what carries over to nothing", () => {
-  it("refuses a stale file carve-out, naming the clause and the file", () => {
+describe("mappedRecords carrying nothing for a carve-out that answers nothing", () => {
+  it("writes no record for a stale file carve-out and names it as not carried", () => {
     expect(
       mappedRecords({
         confinedOutsideDependencies: [],
@@ -1080,19 +1080,22 @@ describe("mappedRecords refusing what carries over to nothing", () => {
         ],
       }),
     ).toEqual({
-      outcome: "failed",
-      error: [
-        {
-          kind: "record-answers-nothing",
-          clause: "CD-15#loops",
-          file: "src/a.ts",
-          credited: "nothing",
-        },
-      ],
+      outcome: "ok",
+      value: {
+        documents: [],
+        lines: [
+          {
+            recordKind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            file: SRC_A,
+            newKind: "not-carried",
+          },
+        ],
+      },
     });
   });
 
-  it("refuses a file carve-out credited only by a suppression no record can hold", () => {
+  it("writes no record for a file carve-out credited only by a suppression no record can hold, and names it as not carried", () => {
     expect(
       mappedRecords({
         confinedOutsideDependencies: [],
@@ -1119,18 +1122,23 @@ describe("mappedRecords refusing what carries over to nothing", () => {
         ],
       }),
     ).toEqual({
-      outcome: "failed",
-      error: [
-        {
-          kind: "record-answers-nothing",
-          clause: "CD-15#loops",
-          file: "src/a.ts",
-          credited: "suppression-only",
-        },
-      ],
+      outcome: "ok",
+      value: {
+        documents: [],
+        lines: [
+          {
+            recordKind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            file: SRC_A,
+            newKind: "not-carried",
+          },
+        ],
+      },
     });
   });
+});
 
+describe("mappedRecords refusing what carries over to nothing", () => {
   it("refuses an authorised location whose clause has no check", () => {
     expect(
       mappedRecords({

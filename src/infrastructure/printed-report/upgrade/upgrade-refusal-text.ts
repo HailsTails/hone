@@ -14,6 +14,10 @@ import type {
   Unrestored,
 } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
+import type {
+  SmoothingFailure,
+  SmoothingStep,
+} from "../../../application/ports/upgrade/smoothing-commands.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
@@ -27,6 +31,7 @@ import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
 import { replacementText } from "../misnamed-lines.ts";
+import { unmeasuredLine } from "../run-state-lines.ts";
 import {
   FAULT_IN_HONE,
   mapMappingRefusalToLine,
@@ -38,6 +43,8 @@ export type UpgradeFailureCode = 1 | 2 | 3;
 export type UpgradeFailureOutcome = { readonly code: UpgradeFailureCode; readonly text: string };
 
 const NOTHING_CHANGED = "Nothing was changed.";
+
+const PROJECT_COMMAND = "hone project";
 
 const VERSION_ONE_PROJECT_MAY_HAVE_CHANGED =
   "version 1's own project may have changed files before it failed; check version control for what it changed.";
@@ -241,6 +248,8 @@ const writeLineOf = (request: { readonly failure: ProofWriteFailure }): string =
       return `${failure.path} already exists. Move it aside, then run the upgrade again.`;
     case "replaced-file-unreadable":
       return `${failure.path} could not be read to be replaced (${failure.detail}). Make it readable, then run the upgrade again.`;
+    case "removed-file-unreadable":
+      return `${failure.path} could not be read to be removed (${failure.detail}). Make it readable, then run the upgrade again.`;
     case "directory-uncreatable":
       return `${failure.path} could not be created (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
     case "unwritable":
@@ -297,22 +306,6 @@ const removalLineOf = (request: {
     ? `${request.failure.path} could not be removed (${request.failure.detail})`
     : `${request.failure.path} is outside ${request.failure.root}`;
 
-const differenceCauseLineOf = (request: {
-  readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
-}): string =>
-  request.failure.writtenReported.length === 0
-    ? `Nothing in the two runs shows the cause. Check whether something in your repository explains it; if nothing does, report it at ${UPGRADE_ISSUES_URL}, with this output.`
-    : `version 2 reports files the upgrade writes: ${request.failure.writtenReported.join(", ")}. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.`;
-
-const differenceLinesOf = (request: {
-  readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
-}): readonly string[] =>
-  request.failure.differences.flatMap(({ section, onlyBefore, onlyAfter }) => [
-    `  ${section}:`,
-    ...onlyBefore.map((line) => `    only before: ${line}`),
-    ...onlyAfter.map((line) => `    only after: ${line}`),
-  ]);
-
 type DirectiveBlock<Directive> = {
   readonly directives: readonly Directive[];
   readonly header: string;
@@ -350,6 +343,28 @@ const directiveLinesOf = (request: {
 const uncoveredLineOf = (request: { readonly clauses: readonly ClauseAddress[] }): string =>
   `version 1 already reports ${request.clauses.map((address) => clauseAddressText({ address })).join(", ")} as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.`;
 
+const mapSmoothingFailureToLines = (request: {
+  readonly step: SmoothingStep;
+  readonly failure: SmoothingFailure;
+}): readonly string[] => {
+  const { step, failure } = request;
+  switch (failure.kind) {
+    case "run-failed":
+      return [
+        `the upgrade's ${step} step failed (${runLoadFailureLine({ failure: failure.failure, upgradeCommand: undefined })}). Fix what it names, then run the upgrade again.`,
+      ];
+    case "run-unmeasured":
+      return [
+        `the upgrade's ${step} step could not judge which carried records answer nothing, because version 2 left this unmeasured:`,
+        ...failure.unmeasured.map(
+          (unmeasured) =>
+            `  ${unmeasuredLine({ unmeasured, problems: [], projectCommand: PROJECT_COMMAND })}`,
+        ),
+        "Fix what it names, then run the upgrade again.",
+      ];
+  }
+};
+
 type VersionTwoRefusal = Extract<
   ProofRefusal,
   {
@@ -357,7 +372,8 @@ type VersionTwoRefusal = Extract<
       | "team-layout-unreadable"
       | "version-two-run-failed"
       | "directives-name-no-check"
-      | "differences"
+      | "smoothing-failed"
+      | "check-failed"
       | "removal-failed";
   }
 >;
@@ -489,13 +505,21 @@ const mapVersionTwoRefusalToLines = (request: {
           ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
-    case "differences":
+    case "smoothing-failed":
       return {
         code: 1,
         lines: [
-          "version 2 does not report what version 1 reported:",
-          ...differenceLinesOf({ failure }),
-          differenceCauseLineOf({ failure }),
+          ...mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure }),
+          ...unrestoredLinesOf({ ...failure, placement }),
+        ],
+      };
+    case "check-failed":
+      return {
+        code: 1,
+        lines: [
+          "version 2's check fails on the upgraded repository:",
+          ...failure.failing.map((line) => `  ${line}`),
+          "Fix what it reports, then run the upgrade again.",
           ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
@@ -520,7 +544,8 @@ const proofLinesOf = (request: {
     case "team-layout-unreadable":
     case "version-two-run-failed":
     case "directives-name-no-check":
-    case "differences":
+    case "smoothing-failed":
+    case "check-failed":
     case "removal-failed":
       return mapVersionTwoRefusalToLines({ failure, placement });
     case "oracle-failed":

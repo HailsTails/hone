@@ -5,6 +5,8 @@ import type { EntryKindPort } from "../../application/ports/file-system/entry-ki
 import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
+import type { RecordsEditor } from "../../application/ports/records/records-editor.ts";
+import type { RecordsReader } from "../../application/ports/records/records-reader.ts";
 import type {
   RecordsOnDiskOf,
   VersionOneRead,
@@ -17,7 +19,12 @@ import type {
   ProofCarriedOver,
   ProofRefusal,
 } from "../../application/ports/upgrade/proof-outcome.ts";
-import type { ProofRunsOf, ProofWritten } from "../../application/ports/upgrade/proof-runs.ts";
+import type {
+  CheckReportPointers,
+  ProofRunsOf,
+  ProofWritten,
+} from "../../application/ports/upgrade/proof-runs.ts";
+import type { SmoothingCommands } from "../../application/ports/upgrade/smoothing-commands.ts";
 import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-carried-over.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
@@ -30,16 +37,13 @@ import type {
   VersionOneTeamLayoutsOf,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
-import {
-  type VersionTwoRun,
-  type VersionTwoStages,
-  versionTwoRunOver,
-} from "../../application/run/version-two-run.ts";
+import { type VersionTwoRun, versionTwoRunOver } from "../../application/run/version-two-run.ts";
 import {
   type PlannedProjectionPorts,
   plannedProjectionOf,
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
+import type { FoundTreeChanges } from "../../application/upgrade/found-tree/found-tree-git.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import { proofEffectsOver } from "../../application/upgrade/proof-writes/applied-effects.ts";
 import type { ProofQueries } from "../../application/upgrade/proof-writes/proof-writes.ts";
@@ -66,6 +70,11 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
+import {
+  createSmoothingCommands,
+  type FoundTreeReach,
+  type SmoothingCommandsRequest,
+} from "./smoothing-commands.ts";
 
 export type UpgradePorts = PlannedProjectionPorts & {
   readonly directory: DirectoryPort;
@@ -75,6 +84,8 @@ export type UpgradePorts = PlannedProjectionPorts & {
   readonly entryKind: EntryKindPort;
   readonly loadFailureDetail: LoadFailureDetail;
   readonly versionOneProjectionOf: VersionOneProjectionPortOf;
+  readonly recordsReader: RecordsReader;
+  readonly recordsEditor: RecordsEditor;
 };
 
 export type UpgradeInput = {
@@ -96,7 +107,8 @@ export type UpgradeInput = {
   readonly proofOf: (
     request: UpgradeProofRequest,
   ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
-  readonly foundTreeStages: (request: ProofWritten) => VersionTwoStages;
+  readonly foundTreeReach: (request: FoundTreeChanges) => FoundTreeReach;
+  readonly pointers: CheckReportPointers;
 };
 
 type Prepared = {
@@ -223,11 +235,11 @@ const projectionFilesFor = (request: UpgradeInput): ProjectionFilesOf =>
   });
 
 const versionTwoRunFor = (request: {
-  readonly foundTreeStages: UpgradeInput["foundTreeStages"];
+  readonly reach: SmoothingCommandsRequest["reach"];
   readonly proofWritten: ProofWritten;
 }): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
   versionTwoRunOver({
-    stages: request.foundTreeStages(request.proofWritten),
+    stages: request.reach(request.proofWritten).stages,
     arguments: {
       forfeiture: undefined,
       reportOutput: undefined,
@@ -235,13 +247,42 @@ const versionTwoRunFor = (request: {
     },
   });
 
+const createReachOverLayout =
+  (
+    request: Pick<UpgradeInput, "foundTreeReach"> & {
+      readonly layout: Pick<TeamLayoutPlan, "files" | "removed">;
+    },
+  ): SmoothingCommandsRequest["reach"] =>
+  ({ written }) =>
+    request.foundTreeReach({
+      written: [...request.layout.files.map(({ file }) => file), ...written],
+      removed: request.layout.removed,
+    });
+
+const createUpgradeSmoothing = (
+  request: Pick<UpgradeInput, "located" | "ports" | "pointers"> &
+    Pick<SmoothingCommandsRequest, "reach">,
+): SmoothingCommands =>
+  createSmoothingCommands({
+    reach: request.reach,
+    repoRoot: request.located.repoRoot,
+    recordsReader: request.ports.recordsReader,
+    recordsEditor: request.ports.recordsEditor,
+    projectCommand: request.pointers.projectCommand,
+  });
+
 const proofRequestOf = (
   request: UpgradeInput & {
     readonly prepared: Prepared;
     readonly ruleSetLayout: RuleSetLayoutRemoval;
+    readonly layoutFiles: TeamLayoutPlan["files"];
   },
 ): UpgradeProofRequest => {
-  const { ports, command, located, prepared } = request;
+  const { ports, command, located, prepared, ruleSetLayout, layoutFiles } = request;
+  const reach = createReachOverLayout({
+    foundTreeReach: request.foundTreeReach,
+    layout: { files: layoutFiles, removed: ruleSetLayout.removed },
+  });
   const at = {
     fileText: command.fileText,
     fileRemoval: ports.fileRemoval,
@@ -272,12 +313,13 @@ const proofRequestOf = (
     }),
     runs: request.proofRunsOf({
       versionOne: before.report,
-      versionTwo: (proofWritten) =>
-        versionTwoRunFor({ foundTreeStages: request.foundTreeStages, proofWritten }),
+      versionTwo: (proofWritten) => versionTwoRunFor({ reach, proofWritten }),
+      pointers: request.pointers,
     }),
+    smoothing: createUpgradeSmoothing({ ...request, reach }),
     reading: prepared.read.reading,
     versionOneFiles: prepared.read.versionOneFiles,
-    ruleSetLayout: request.ruleSetLayout,
+    ruleSetLayout,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
     trackedPaths: prepared.trackedPaths,
@@ -381,6 +423,7 @@ export const upgradeOf = async (
           ...request,
           prepared: { ...prepared.value, catalogues },
           ruleSetLayout: { removed: plan.value.removed, folders: plan.value.folders },
+          layoutFiles: plan.value.files,
         }),
       ),
   });

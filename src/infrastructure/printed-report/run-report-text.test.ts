@@ -26,6 +26,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
   assessmentScopeOf,
+  mapRunReportToFailingLines,
   renderRunReportText,
   renderRunSectionsText,
 } from "./run-report-text.ts";
@@ -556,6 +557,67 @@ const rendered = (request: {
     projectCommand: PROJECT_COMMAND,
     pruneCommand: PRUNE_COMMAND,
   });
+
+describe("mapRunReportToFailingLines", () => {
+  it("gives each failing section's heading and lines, in report order, and nothing of the rest", () => {
+    const report = EVERY_SECTION;
+
+    const lines = mapRunReportToFailingLines({
+      report,
+      catalogue: REPORT_CATALOGUE,
+      content: {
+        symptoms: new Map([
+          ["date-used-directly", DATE_USED_DIRECTLY],
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["claimed-type", CLAIMED_TYPE],
+        ]),
+      },
+      symptomPage: SYMPTOM_PAGE,
+      projectCommand: PROJECT_COMMAND,
+      pruneCommand: PRUNE_COMMAND,
+    });
+
+    expect(lines).toEqual([
+      "findings (1)",
+      LINES.findings,
+      "stale (1)",
+      LINES.stale,
+      "forfeited (1)",
+      LINES.forfeited,
+      "unrecorded (1)",
+      LINES.unrecorded,
+      "misnamed (1)",
+      LINES.misnamed,
+      "refused (1)",
+      LINES.refused,
+      "unmeasured (1)",
+      LINES.unmeasured,
+      "projection-problems (1)",
+      LINES.projectionProblems,
+    ]);
+  });
+
+  it("gives no lines for a run that passes", () => {
+    const report = { ...EMPTY_REPORT, paid: EVERY_SECTION.paid };
+
+    const lines = mapRunReportToFailingLines({
+      report,
+      catalogue: REPORT_CATALOGUE,
+      content: {
+        symptoms: new Map([
+          ["date-used-directly", DATE_USED_DIRECTLY],
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["claimed-type", CLAIMED_TYPE],
+        ]),
+      },
+      symptomPage: SYMPTOM_PAGE,
+      projectCommand: PROJECT_COMMAND,
+      pruneCommand: PRUNE_COMMAND,
+    });
+
+    expect(lines).toEqual([]);
+  });
+});
 
 describe("renderRunReportText", () => {
   it("prints only the verdict for a run with nothing to report", () => {

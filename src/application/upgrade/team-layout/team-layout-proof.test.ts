@@ -27,7 +27,7 @@ const CARRIED: ProofCarriedOver = {
   replaced: [],
   removed: { files: [], folders: [] },
   records: [],
-  findings: 0,
+  smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
 };
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [];
@@ -169,14 +169,22 @@ describe("provenWithTeamLayout", () => {
         cataloguesAfterWriting: () => ({ outcome: "ok", value: CATALOGUES }),
         proofOf: vi.fn<TeamLayoutProofRequest["proofOf"]>().mockResolvedValue({
           outcome: "failed",
-          error: { kind: "version-one-uncovered", clauses: [], removedByVersionOne: [] },
+          error: {
+            kind: "unplaceable-path",
+            file: repoPathOf("hone.config.json"),
+            removedByVersionOne: [],
+          },
         }),
       }),
     ).toEqual({
       outcome: "failed",
       error: {
         stopped: "refused",
-        failure: { kind: "version-one-uncovered", clauses: [], removedByVersionOne: [] },
+        failure: {
+          kind: "unplaceable-path",
+          file: repoPathOf("hone.config.json"),
+          removedByVersionOne: [],
+        },
       },
     });
     expect(undo.mock.calls).toEqual([[{ writes: [{ kind: "file-created", path: WRITTEN }] }]]);

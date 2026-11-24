@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { NamedEngineRun } from "../../../../application/ports/engine/engine-run.ts";
 import type { ReplyPort } from "../../../../application/ports/host/reply-port.ts";
+import type { RequestPort } from "../../../../application/ports/host/request-port.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import {
   createMeasurementArguments,
+  createMeasurementInput,
   decodeMeasuredRuns,
   type MeasureEngines,
   runEnginesMeasurement,
@@ -33,8 +35,23 @@ describe("createMeasurementArguments", () => {
   });
 });
 
+describe("createMeasurementInput", () => {
+  it("writes the tree as JSON", () => {
+    const input = createMeasurementInput({
+      tree: {
+        tracked: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+        declaredConfigRoots: [repoPathOf("packages/a")],
+      },
+    });
+
+    expect(input).toBe(
+      '{"tracked":["src/a.ts","hone.eslint.d.mts"],"declaredConfigRoots":["packages/a"]}',
+    );
+  });
+});
+
 describe("runEnginesMeasurement", () => {
-  it("measures over the roots and base revision it was given, replying with each engine's run", async () => {
+  it("measures over the roots, base revision and tree it was given, files the repository does not track included, replying with each engine's run", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({
       outcome: "ok",
       value: [
@@ -58,10 +75,18 @@ describe("runEnginesMeasurement", () => {
         },
       ],
     });
+    const request: RequestPort = {
+      read: vi
+        .fn<RequestPort["read"]>()
+        .mockReturnValue(
+          '{"tracked":["src/a.ts","hone.eslint.d.mts"],"declaredConfigRoots":["packages/a"]}',
+        ),
+    };
     const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
     await runEnginesMeasurement({
       process: { arguments: ["/install", "/repo", "origin/main"] },
+      request,
       reply,
       measure,
     });
@@ -76,6 +101,10 @@ describe("runEnginesMeasurement", () => {
             installRoot: absoluteRootOf("/install"),
             repoRoot: absoluteRootOf("/repo"),
             baseRevision: "origin/main",
+            tree: {
+              tracked: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+              declaredConfigRoots: [repoPathOf("packages/a")],
+            },
           },
         ],
       ],
@@ -91,9 +120,17 @@ describe("runEnginesMeasurement", () => {
 
   it("measures over the roots alone when no base revision was given", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({ outcome: "ok", value: [] });
+    const request: RequestPort = {
+      read: vi.fn<RequestPort["read"]>().mockReturnValue('{"tracked":[],"declaredConfigRoots":[]}'),
+    };
     const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "/repo"] },
+      request,
+      reply,
+      measure,
+    });
 
     expect({
       measuring: measure.mock.calls,
@@ -105,6 +142,7 @@ describe("runEnginesMeasurement", () => {
             installRoot: absoluteRootOf("/install"),
             repoRoot: absoluteRootOf("/repo"),
             baseRevision: undefined,
+            tree: { tracked: [], declaredConfigRoots: [] },
           },
         ],
       ],
@@ -121,9 +159,17 @@ describe("runEnginesMeasurement", () => {
         failure: { kind: "team-config-unloadable", detail: "eslint.config.mjs threw" },
       },
     });
+    const request: RequestPort = {
+      read: vi.fn<RequestPort["read"]>().mockReturnValue('{"tracked":[],"declaredConfigRoots":[]}'),
+    };
     const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "/repo"] },
+      request,
+      reply,
+      measure,
+    });
 
     expect(vi.mocked(reply.write).mock.calls).toEqual([
       [
@@ -136,9 +182,51 @@ describe("runEnginesMeasurement", () => {
 
   it("replies with invalid arguments as the run's load failure, and measures nothing", async () => {
     const measure = vi.fn<MeasureEngines>();
+    const request: RequestPort = {
+      read: vi.fn<RequestPort["read"]>().mockReturnValue('{"tracked":[],"declaredConfigRoots":[]}'),
+    };
     const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process: { arguments: ["/install", "repo"] }, reply, measure });
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "repo"] },
+      request,
+      reply,
+      measure,
+    });
+
+    expect({
+      measuring: measure.mock.calls,
+      replied: vi.mocked(reply.write).mock.calls,
+    }).toEqual({
+      measuring: [],
+      replied: [
+        [
+          {
+            text: expect.stringMatching(
+              /^\{"outcome":"not-loaded","failure":\{"kind":"arguments-invalid","detail":".+"\}\}$/,
+            ),
+          },
+        ],
+      ],
+    });
+  });
+});
+
+describe("runEnginesMeasurement over a tree that does not parse", () => {
+  it.each([
+    { name: "it is not JSON", input: "" },
+    { name: "it is no tree", input: '{"tracked":["../outside.ts"],"declaredConfigRoots":[]}' },
+  ])("replies with invalid arguments, and measures nothing, when $name", async ({ input }) => {
+    const measure = vi.fn<MeasureEngines>();
+    const request: RequestPort = { read: vi.fn<RequestPort["read"]>().mockReturnValue(input) };
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
+
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "/repo"] },
+      request,
+      reply,
+      measure,
+    });
 
     expect({
       measuring: measure.mock.calls,
@@ -220,9 +308,17 @@ describe("decodeMeasuredRuns", () => {
     const measure = vi
       .fn<MeasureEngines>()
       .mockResolvedValue({ outcome: "ok", value: [eslintRun, walkerRun] });
+    const request: RequestPort = {
+      read: vi.fn<RequestPort["read"]>().mockReturnValue('{"tracked":[],"declaredConfigRoots":[]}'),
+    };
     const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "/repo"] },
+      request,
+      reply,
+      measure,
+    });
 
     expect(vi.mocked(reply.write).mock.calls).toEqual([
       [

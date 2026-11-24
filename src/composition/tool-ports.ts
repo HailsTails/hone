@@ -36,6 +36,7 @@ export type ToolPorts = VersionOneToolPorts & {
   readonly namedEngine: NamedEnginePort;
   readonly directory: DirectoryPort;
   readonly stagesOver: StagesOver;
+  readonly childMeasuredStagesOver: StagesOver;
   readonly recordsSourceOf: RecordsSourceOf;
   readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
   readonly recordsReader: RecordsReader;

@@ -254,9 +254,10 @@ const FOUND_RECORDS_SOURCE: RecordsSource = {
 };
 
 describe("foundTreeRunReachOf", () => {
-  it("gives a version 2 run the tree the upgrade found as its base revision, and git that tracks the files the upgrade wrote", () => {
+  it("gives a version 2 run the tree the upgrade found as its base revision, and git that tracks the files the upgrade wrote and not those it removes", () => {
     const reach = foundTreeRunReachOf({
       written: [WRITTEN],
+      removed: [TRACKED],
       recordsSourceOf: vi.fn<RecordsSourceOf>(),
       foundTreeRecordsSourceOf: vi.fn<FoundTreeRecordsSourceOf>(),
       loadFailureDetail,
@@ -280,7 +281,7 @@ describe("foundTreeRunReachOf", () => {
     expect(given).toEqual({
       baseRevision: FOUND_TREE_REVISION,
       changedSince: { outcome: "ok", value: [] },
-      tracked: { outcome: "ok", value: [TRACKED, WRITTEN] },
+      tracked: { outcome: "ok", value: [WRITTEN] },
     });
   });
 
@@ -297,6 +298,7 @@ describe("foundTreeRunReachOf", () => {
       .mockReturnValue(() => FOUND_RECORDS_SOURCE);
     const reach = foundTreeRunReachOf({
       written: [WRITTEN],
+      removed: [],
       recordsSourceOf,
       foundTreeRecordsSourceOf,
       loadFailureDetail,

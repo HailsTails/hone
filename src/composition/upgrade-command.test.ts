@@ -5,11 +5,12 @@ import type { GitPort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { commandOf } from "./composed-command.ts";
-import { foundTreeStagesOf, UPGRADE, type UpgradeCommandPorts } from "./upgrade-command.ts";
+import { createFoundTreeReach, UPGRADE, type UpgradeCommandPorts } from "./upgrade-command.ts";
 
 const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "walker" } }';
 
@@ -18,6 +19,7 @@ const PORTS = {
   directory: { list: vi.fn(), create: vi.fn() },
   recordsSourceOf: vi.fn(),
   stagesOver: vi.fn(),
+  childMeasuredStagesOver: vi.fn(),
   fileCreation: { createNew: vi.fn() },
   fileRemoval: { remove: vi.fn() },
   directoryRemoval: { removeEmpty: vi.fn() },
@@ -25,6 +27,12 @@ const PORTS = {
   foundTreeRecordsSourceOf: vi.fn(),
   loadFailureDetail: vi.fn(),
   recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+  recordsEditor: {
+    documentsWithAdded: vi.fn(),
+    placeOfAddition: vi.fn(),
+    documentsWithRepointed: vi.fn(),
+    documentsWithRemoved: vi.fn(),
+  },
   boundCatalogueOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn(), renameKeys: vi.fn() },
   settingsSourcesOf: vi.fn(),
@@ -32,6 +40,19 @@ const PORTS = {
   namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
   versionOneProjectionOf: vi.fn(),
   measureVersionOne: vi.fn(),
+};
+
+const CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [],
+  engines: [],
+  symptoms: [],
+  clauses: [],
+  namedBans: [],
+  checks: [],
 };
 
 const GIT_FAILED = {
@@ -102,23 +123,61 @@ describe("the upgrade command", () => {
   });
 });
 
-describe("foundTreeStagesOf", () => {
-  it("builds the version 2 stages over git that counts the files the upgrade wrote as tracked", () => {
+describe("createFoundTreeReach", () => {
+  it("measures in a child process, over git that counts the files the upgrade wrote as tracked and not those it removes", () => {
     const command = commandWith({
       arguments: [],
       git: gitListing({ outcome: "ok", value: [repoPathOf("src/a.ts")] }),
     });
-    const stagesOver = vi.fn<UpgradeCommandPorts["stagesOver"]>();
-    foundTreeStagesOf({
-      ports: { ...command, ...PORTS, stagesOver },
+    const childMeasuredStagesOver = vi.fn<UpgradeCommandPorts["childMeasuredStagesOver"]>();
+
+    createFoundTreeReach({
+      ports: { ...command, ...PORTS, childMeasuredStagesOver },
       command,
       located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       written: [repoPathOf("hone.eslint.d.mts")],
+      removed: [repoPathOf("src/a.ts")],
     });
-    const [[handed]] = stagesOver.mock.calls;
+
+    const [[handed]] = childMeasuredStagesOver.mock.calls;
     expect(handed.ports.git.trackedPaths({ repoRoot: absoluteRootOf("/repo") })).toEqual({
       outcome: "ok",
-      value: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+      value: [repoPathOf("hone.eslint.d.mts")],
+    });
+  });
+
+  it("reads records through the found tree's records source, over git that reads the base from the tree the upgrade found", () => {
+    const command = commandWith({
+      arguments: [],
+      git: gitListing({ outcome: "ok", value: [repoPathOf("src/a.ts")] }),
+    });
+    const foundSource = vi.fn<UpgradeCommandPorts["recordsSourceOf"]>();
+    const foundTreeRecordsSourceOf = vi
+      .fn<UpgradeCommandPorts["foundTreeRecordsSourceOf"]>()
+      .mockReturnValue(foundSource);
+    const reach = createFoundTreeReach({
+      ports: { ...command, ...PORTS, foundTreeRecordsSourceOf },
+      command,
+      located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
+      written: [repoPathOf("hone-records/debt/loop-keyword.json")],
+      removed: [],
+    });
+
+    reach.recordsSourceFor({ catalogue: CATALOGUE });
+
+    const [[handed]] = foundSource.mock.calls;
+    expect({
+      repoRoot: handed.repoRoot,
+      catalogue: handed.catalogue,
+      textInBase: handed.git.textInBase({
+        repoRoot: absoluteRootOf("/repo"),
+        baseRevision: "the tree the upgrade found",
+        file: repoPathOf("hone-records/debt/loop-keyword.json"),
+      }),
+    }).toEqual({
+      repoRoot: absoluteRootOf("/repo"),
+      catalogue: CATALOGUE,
+      textInBase: { outcome: "ok", value: { presence: "absent-from-base" } },
     });
   });
 });

@@ -6,6 +6,7 @@ import type {
 import type { Result } from "../../domain/result.ts";
 import { runLoadFailureLine } from "../printed-report/load-failures/load-failure-lines.ts";
 import { loadFailureDetail } from "../printed-report/load-failures/load-failure-text.ts";
+import { mapRunReportToFailingLines } from "../printed-report/run-report-text.ts";
 
 const failedWith = (request: { readonly detail: string }): Result<never, ProofRunFailure> => ({
   outcome: "failed",
@@ -25,6 +26,17 @@ export const proofRunsOf = (request: ProofRunSources): ProofRuns => ({
       ? failedWith({
           detail: runLoadFailureLine({ failure: run.error, upgradeCommand: undefined }),
         })
-      : { outcome: "ok", value: run.value.report };
+      : {
+          outcome: "ok",
+          value: {
+            report: run.value.report,
+            failing: mapRunReportToFailingLines({
+              ...request.pointers,
+              report: run.value.report,
+              catalogue: run.value.catalogue,
+              content: run.value.content,
+            }),
+          },
+        };
   },
 });

@@ -1,9 +1,13 @@
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import type { RunnerModuleOf } from "../../src/application/ports/engine/runner-location.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
-import { INSTALLED_PORTS, toolSubcommandsOf } from "../../src/composition/run-tool-command.ts";
+import {
+  INSTALLED_PORTS,
+  runToolCommand,
+  toolSubcommandsOf,
+} from "../../src/composition/run-tool-command.ts";
 import { type RunnerEngines, runnerEnginesOver } from "../../src/composition/runner-engines.ts";
 import type { Subcommand } from "../../src/infrastructure/command-line/arguments/command-line.ts";
 import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
@@ -125,22 +129,22 @@ const PACKAGE_PROJECTION =
   'import piece0 from "../../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n];\n';
 
 const UPGRADED_ROOT =
-  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
 const CHECKED_ROOT =
   "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
 
 const REFUSED_IGNORED_DECLARATIONS =
-  "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\n    only after: eslint ignore CD-14#static-only-class hone.eslint.d.mts\n  verdict:\n    only before: pass\n    only after: fail\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n";
+  "upgrade refused:\nversion 2's check fails on the upgraded repository:\n  unrecorded (2)\n  authored-class-or-this#class-keyword eslint ignore hone.eslint.d.mts\n  authored-class-or-this#static-members-only eslint ignore hone.eslint.d.mts\nFix what it reports, then run the upgrade again.\nNothing was changed.\n";
 
 const UPGRADED_PACKAGE =
-  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
 const CHECKED_PACKAGE =
   "answered (1)\nauthored-class-or-this#class-keyword eslint packages/a/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
 
 const UPGRADED_DECLARED =
-  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
 const CHECKED_DECLARED =
   "answered (1)\nauthored-class-or-this#class-keyword eslint kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
@@ -312,6 +316,70 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
       { writes: [[{ text: NOTHING_TO_UPGRADE }]], exits: [[{ code: 0 }]] },
     ]);
+  });
+
+  it("keeps the party record a file answers with, names the ones it removed, and leaves a check that passes", async () => {
+    const repo = absolutePathSchema.parse(`${INSTALL_ROOT}/artefacts/upgrade-command-parties`);
+    const upgrading: ProcessPort = {
+      arguments: ["upgrade", "--repo", repo],
+      writeOut: vi.fn<ProcessPort["writeOut"]>(),
+      writeError: vi.fn<ProcessPort["writeError"]>(),
+      exitWith: vi.fn<ProcessPort["exitWith"]>(),
+    };
+    const checking: ProcessPort = {
+      arguments: ["check", "--repo", repo, "--base-revision", "HEAD"],
+      writeOut: vi.fn<ProcessPort["writeOut"]>(),
+      writeError: vi.fn<ProcessPort["writeError"]>(),
+      exitWith: vi.fn<ProcessPort["exitWith"]>(),
+    };
+    onTestFinished(() => {
+      scratch.removeTree({ path: repo });
+    });
+    scratch.removeTree({ path: repo });
+    scratch.makeDirectory({ path: `${repo}/src` });
+    fileText.write({
+      path: `${repo}/disciplines.json`,
+      text: '{ "version": 1, "ruleSets": {}, "clauses": { "CD-19#import-boundaries": "walker" }, "clauseSettings": { "CD-19#import-boundaries": { "confinedPackages": ["uuid", "winston"] } } }',
+    });
+    fileText.write({
+      path: `${repo}/discipline-exceptions.json`,
+      text: '{ "version": 1, "exceptions": [{ "kind": "authorised-location", "clause": "CD-19#import-boundaries", "file": "src/ids.ts", "reason": "the uuid adapter", "whyChain": { "whys": [{ "why": "Why import it?", "because": "it is the adapter", "evidence": "src/ids.ts:1" }, { "why": "Why an adapter?", "because": "the port needs one", "evidence": "src/ids.ts:1" }, { "why": "Why one?", "because": "each party has one wrapper", "evidence": "src/ids.ts:1" }, { "why": "Why one wrapper?", "because": "a swap touches one file", "evidence": "src/ids.ts:1" }, { "why": "Why swap?", "because": "parties change on their own", "evidence": "src/ids.ts:1" }], "rootCause": "an outside party needs exactly one adapter", "owner": "ids-team" } }] }',
+    });
+    fileText.write({
+      path: `${repo}/src/ids.ts`,
+      text: 'import { v4 } from "uuid";\n\nexport const createId = v4;\n',
+    });
+    commands.run({ command: "git", arguments: GIT_INIT, directory: repo });
+    commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo });
+
+    await runToolCommand({ process: upgrading, moduleUrl: ENTRY_URL });
+    const records = fileText.read({
+      path: `${repo}/hone-records/authorised-locations/outside-import-past-a-boundary.json`,
+    });
+    await runToolCommand({ process: checking, moduleUrl: ENTRY_URL });
+
+    expect({
+      upgraded: vi.mocked(upgrading.writeOut).mock.calls,
+      upgradeExits: vi.mocked(upgrading.exitWith).mock.calls,
+      records,
+      checkExits: vi.mocked(checking.exitWith).mock.calls,
+    }).toEqual({
+      upgraded: [
+        [
+          {
+            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/authorised-locations/outside-import-past-a-boundary.json\nremoved discipline-exceptions.json\nremoved disciplines.json\nauthorised-location CD-19#import-boundaries src/ids.ts -> authorised-location outside-import-past-a-boundary#import-or-require for uuid\nauthorised-location CD-19#import-boundaries src/ids.ts -> authorised-location outside-import-past-a-boundary#import-or-require for winston\nauthorised-location CD-19#import-boundaries src/ids.ts -> authorised-location outside-import-past-a-boundary#import-or-require for node:\ncarried outside-import-past-a-boundary#import-or-require src/ids.ts\ncarried outside-import-past-a-boundary#import-or-require src/ids.ts\ncarried outside-import-past-a-boundary#import-or-require src/ids.ts\nremoved outside-import-past-a-boundary#import-or-require authorised-location src/ids.ts for winston carried: it answers nothing\nremoved outside-import-past-a-boundary#import-or-require authorised-location src/ids.ts for node: carried: it answers nothing\nupgrade: records written 3, carried records removed 2, debt recorded 0, debt pruned 0; version 2's check passes\n",
+          },
+        ],
+      ],
+      upgradeExits: [[{ code: 0 }]],
+      records: {
+        outcome: "ok",
+        value:
+          '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "outside-import-past-a-boundary#import-or-require",\n      "file": "src/ids.ts",\n      "outsideParty": "uuid",\n      "carried": {\n        "kind": "authorised-location",\n        "clause": "CD-19#import-boundaries",\n        "file": "src/ids.ts",\n        "reason": "the uuid adapter",\n        "whyChain": {\n          "whys": [\n            {\n              "why": "Why import it?",\n              "because": "it is the adapter",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why an adapter?",\n              "because": "the port needs one",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why one?",\n              "because": "each party has one wrapper",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why one wrapper?",\n              "because": "a swap touches one file",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why swap?",\n              "because": "parties change on their own",\n              "evidence": "src/ids.ts:1"\n            }\n          ],\n          "rootCause": "an outside party needs exactly one adapter",\n          "owner": "ids-team"\n        }\n      }\n    }\n  ]\n}\n',
+      },
+      checkExits: [[{ code: 0 }]],
+    });
   });
 
   it("refuses when the team config ignores a file the upgrade writes, as checking the committed upgrade would, and changes nothing", async () => {

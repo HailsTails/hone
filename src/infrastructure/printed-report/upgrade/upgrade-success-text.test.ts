@@ -39,7 +39,7 @@ const REBINDING_LOOPS: Check = {
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
 describe("upgradeSuccessOutcomeOf", () => {
-  it("lists what was written, what was rewritten and what was removed, relative to the repository", () => {
+  it("lists what was written, rewritten and removed, relative to the repository, then what the smoothing removed, recorded, pruned and projected, with their counts", () => {
     expect(
       upgradeSuccessOutcomeOf({
         repoRoot: REPO,
@@ -75,7 +75,58 @@ describe("upgradeSuccessOutcomeOf", () => {
               holding: "carried",
             },
           ],
-          findings: 3,
+          smoothed: {
+            removedCarried: [
+              {
+                place: {
+                  file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
+                  index: 0,
+                },
+                record: {
+                  kind: "authorised-location",
+                  symptom: LOOP_KEYWORD_LOOPS.symptom,
+                  reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+                  file: repoPathOf("src/b.ts"),
+                  holding: {
+                    held: "carried",
+                    entry: {},
+                    lacks: ["case"],
+                    standing: "unjudged",
+                    binding: { binds: "check-and-file" },
+                  },
+                },
+              },
+            ],
+            recordedDebt: [
+              {
+                address: "loop-keyword#loops",
+                file: repoPathOf("src/c.ts"),
+                ruleSet: TOOL_RULE_SET,
+                effect: "recorded",
+              },
+              {
+                address: "loop-keyword#loops",
+                file: repoPathOf("src/a.ts"),
+                ruleSet: TOOL_RULE_SET,
+                effect: "already-recorded",
+                heldIn: repoPathOf("hone-records/debt/loop-keyword.json"),
+              },
+            ],
+            prunedDebt: [
+              {
+                place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 },
+                debt: {
+                  kind: "debt",
+                  symptom: LOOP_KEYWORD_LOOPS.symptom,
+                  reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+                  file: repoPathOf("src/gone.ts"),
+                  holding: { held: "stated" },
+                },
+                reason: "file-gone",
+              },
+            ],
+            projected: [repoPathOf("hone.eslint.mjs")],
+          },
           mentions: [
             { file: repoPathOf(".github/workflows/ci.yml"), line: 12 },
             { file: repoPathOf("package.json"), line: 4 },
@@ -87,7 +138,7 @@ describe("upgradeSuccessOutcomeOf", () => {
       }),
     ).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/loop-keyword.json\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions/cd-15.json\nremoved disciplines.json\nremoved discipline-exceptions\nfile-carve-out CD-15#loops src/a.ts -> debt loop-keyword#loops\nauthorised-location CD-15#loops src/b.ts -> authorised-location loop-keyword#loops\ncarried loop-keyword#loops src/b.ts\nmention .github/workflows/ci.yml:12\nmention package.json:4\nmention-unread vendor/lib EISDIR: illegal operation on a directory\nupgrade: same findings (3) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/loop-keyword.json\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions/cd-15.json\nremoved disciplines.json\nremoved discipline-exceptions\nfile-carve-out CD-15#loops src/a.ts -> debt loop-keyword#loops\nauthorised-location CD-15#loops src/b.ts -> authorised-location loop-keyword#loops\ncarried loop-keyword#loops src/b.ts\nmention .github/workflows/ci.yml:12\nmention package.json:4\nmention-unread vendor/lib EISDIR: illegal operation on a directory\nremoved loop-keyword#loops authorised-location src/b.ts carried: it answers nothing\nloop-keyword#loops recorded src/c.ts\nloop-keyword#loops removed src/gone.ts: stale, its file is no longer in the repository\nprojected hone.eslint.mjs\nupgrade: records written 2, carried records removed 1, debt recorded 1, debt pruned 1; version 2's check passes\n",
     });
   });
 
@@ -110,7 +161,7 @@ describe("upgradeSuccessOutcomeOf", () => {
             outsideParty: "uuid",
           },
         ],
-        findings: 0,
+        smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
         mentions: [],
         unread: [],
       },
@@ -118,7 +169,7 @@ describe("upgradeSuccessOutcomeOf", () => {
 
     expect(outcome).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nauthorised-location CD-15#loops src/adapters/ids.ts -> authorised-location loop-keyword#loops for uuid\ncarried loop-keyword#loops src/adapters/ids.ts\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nauthorised-location CD-15#loops src/adapters/ids.ts -> authorised-location loop-keyword#loops for uuid\ncarried loop-keyword#loops src/adapters/ids.ts\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
     });
   });
 
@@ -132,14 +183,14 @@ describe("upgradeSuccessOutcomeOf", () => {
           replaced: [],
           removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
           records: [],
-          findings: 0,
+          smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
           mentions: [],
           unread: [],
         },
       }),
     ).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
     });
   });
 
@@ -171,14 +222,42 @@ describe("upgradeSuccessOutcomeOf", () => {
               check: LOOP_KEYWORD_LOOPS,
             },
           ],
-          findings: 0,
+          smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
           mentions: [],
           unread: [],
         },
       }),
     ).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nreason CD-15#loops: the tests are generated by a tool\nclause-wide-carve-out CD-15#loops -> not-adopted rebinding#loops\nclause-wide-carve-out CD-15#loops -> not-adopted loop-keyword#loops\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nreason CD-15#loops: the tests are generated by a tool\nclause-wide-carve-out CD-15#loops -> not-adopted rebinding#loops\nclause-wide-carve-out CD-15#loops -> not-adopted loop-keyword#loops\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
+    });
+  });
+
+  it("names a file carve-out that answers nothing as not carried, counting no record written for it", () => {
+    expect(
+      upgradeSuccessOutcomeOf({
+        repoRoot: REPO,
+        path: PATH,
+        carried: {
+          written: [repoPathOf("hone.config.json")],
+          replaced: [],
+          removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
+          records: [
+            {
+              recordKind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              file: repoPathOf("src/a.ts"),
+              newKind: "not-carried",
+            },
+          ],
+          smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
+          mentions: [],
+          unread: [],
+        },
+      }),
+    ).toEqual({
+      code: 0,
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nfile-carve-out CD-15#loops src/a.ts -> nothing it answers; not carried\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
     });
   });
 });

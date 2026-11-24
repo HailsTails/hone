@@ -1,4 +1,3 @@
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type {
   FoundTreeRecordsSourceOf,
@@ -8,7 +7,7 @@ import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.t
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { VersionOneCheckInput } from "../record-answers/version-one-check-input.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
-import { foundTreeGitOf } from "./found-tree-git.ts";
+import { type FoundTreeChanges, foundTreeGitOf } from "./found-tree-git.ts";
 
 export const FOUND_TREE_REVISION = "the tree the upgrade found";
 
@@ -22,6 +21,7 @@ export const foundTreeCheckReachOf = (request: {
     fileText: request.check.fileText,
     path: request.check.path,
     written: [],
+    removed: [],
   }),
   exceptionRepository: foundTreeExceptionsOf({
     repository: request.check.exceptionRepository,
@@ -29,15 +29,16 @@ export const foundTreeCheckReachOf = (request: {
   }),
 });
 
-export const foundTreeRunReachOf = (request: {
-  readonly written: readonly RepoPath[];
-  readonly recordsSourceOf: RecordsSourceOf;
-  readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
-  readonly loadFailureDetail: LoadFailureDetail;
-  readonly command: Pick<VersionOneCommandRequest, "git" | "path" | "exceptionRepositoryOf"> & {
-    readonly fileText: Pick<FileTextPort, "read" | "exists">;
-  };
-}): {
+export const foundTreeRunReachOf = (
+  request: FoundTreeChanges & {
+    readonly recordsSourceOf: RecordsSourceOf;
+    readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
+    readonly loadFailureDetail: LoadFailureDetail;
+    readonly command: Pick<VersionOneCommandRequest, "git" | "path" | "exceptionRepositoryOf"> & {
+      readonly fileText: Pick<FileTextPort, "read" | "exists">;
+    };
+  },
+): {
   readonly baseRevision: string;
   readonly git: VersionOneCommandRequest["git"];
   readonly recordsSourceOf: RecordsSourceOf;
@@ -48,6 +49,7 @@ export const foundTreeRunReachOf = (request: {
     fileText: request.command.fileText,
     path: request.command.path,
     written: request.written,
+    removed: request.removed,
   }),
   recordsSourceOf: request.foundTreeRecordsSourceOf({
     recordsSourceOf: request.recordsSourceOf,

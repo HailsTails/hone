@@ -2,6 +2,7 @@ import type { CheckAddressText } from "../../../domain/language-layer/check-addr
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
@@ -16,7 +17,7 @@ import type { ProjectionRequest } from "../../ports/engine/runner-module.ts";
 import type { EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 import type { CheckedVersionOneProjection } from "../../ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPort } from "../../ports/upgrade/version-one-projection-port.ts";
-import { checkedTreeOf, type CheckedTree } from "../../run/checked-tree-of.ts";
+import { checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { foundTreeCheckReachOf } from "../found-tree/found-tree-reach.ts";
 import {
   exceptionBaselineOf,

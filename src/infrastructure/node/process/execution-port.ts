@@ -51,6 +51,7 @@ export type ExecutionFailure = {
 export type ExecutionRequest = {
   readonly arguments: readonly string[];
   readonly cwd?: AbsolutePath;
+  readonly input?: string;
 };
 
 export type ExecutionPort<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = {
@@ -77,6 +78,7 @@ type ExecutionSpawnRequest<Stdout extends ExecutionStdout, ReplyPipe extends Exe
   readonly executable: string;
   readonly arguments: readonly string[];
   readonly cwd?: AbsolutePath;
+  readonly input?: string;
   readonly environment: ExecutionEnvironment;
   readonly timeoutMilliseconds: number | undefined;
   readonly maximumOutputBytes: number;
@@ -237,6 +239,7 @@ export const createExecutionSpawn =
           options: {
             encoding: "utf8",
             ...(request.cwd === undefined ? {} : { cwd: request.cwd }),
+            ...(request.input === undefined ? {} : { input: request.input }),
             env: request.environment,
             stdio: createStdio(request),
             windowsHide: true,
@@ -264,7 +267,7 @@ export const createExecutionSpawn =
 
 type BoundPolicy<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = Omit<
   ExecutionSpawnRequest<Stdout, ReplyPipe>,
-  "arguments" | "cwd" | "timeoutMilliseconds"
+  "arguments" | "cwd" | "input" | "timeoutMilliseconds"
 > & { readonly timeoutMilliseconds?: number };
 
 const bindPolicy = <Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe>(options: {
@@ -325,6 +328,7 @@ export const createExecutionPort = <
             timeoutMilliseconds: bound.value.timeoutMilliseconds,
             arguments: [...request.arguments],
             ...(request.cwd === undefined ? {} : { cwd: request.cwd }),
+            ...(request.input === undefined ? {} : { input: request.input }),
           }),
   };
 };

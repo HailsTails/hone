@@ -5,6 +5,11 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { BaseFileText, GitContentQuery, GitPort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 
+export type FoundTreeChanges = {
+  readonly written: readonly RepoPath[];
+  readonly removed: readonly RepoPath[];
+};
+
 type TreeReach = {
   readonly fileText: Pick<FileTextPort, "read" | "exists">;
   readonly path: PathPort;
@@ -33,22 +38,27 @@ const textInTreeOf = (
       };
 };
 
-const trackedWithWrittenOf = (request: {
-  readonly tracked: Result<readonly RepoPath[], GitFailure>;
-  readonly written: readonly RepoPath[];
-}): Result<readonly RepoPath[], GitFailure> =>
-  request.tracked.outcome === "failed"
-    ? request.tracked
-    : { outcome: "ok", value: [...new Set([...request.tracked.value, ...request.written])] };
+const mapTrackedToUpgraded = (
+  request: FoundTreeChanges & {
+    readonly tracked: Result<readonly RepoPath[], GitFailure>;
+  },
+): Result<readonly RepoPath[], GitFailure> => {
+  if (request.tracked.outcome === "failed") {
+    return request.tracked;
+  }
+  const kept = request.tracked.value.filter((path) => !request.removed.includes(path));
+  return { outcome: "ok", value: [...new Set([...kept, ...request.written])] };
+};
 
 export const foundTreeGitOf = (
-  request: {
-    readonly git: GitPort;
-    readonly written: readonly RepoPath[];
-  } & TreeReach,
+  request: { readonly git: GitPort } & FoundTreeChanges & TreeReach,
 ): GitPort => ({
   trackedPaths: (query) =>
-    trackedWithWrittenOf({ tracked: request.git.trackedPaths(query), written: request.written }),
+    mapTrackedToUpgraded({
+      tracked: request.git.trackedPaths(query),
+      written: request.written,
+      removed: request.removed,
+    }),
   changedSince: () => ({ outcome: "ok", value: [] }),
   contentInBase: (query) => ({
     outcome: "ok",

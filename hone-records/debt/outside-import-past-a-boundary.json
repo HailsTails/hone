@@ -40,6 +40,10 @@
     {
       "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/infrastructure/node/process/reply-port.ts"
+    },
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/process/request-port.ts"
     }
   ]
 }

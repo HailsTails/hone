@@ -1,33 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { mapMappingRefusalToLine } from "./mapping-refusal-text.ts";
 
 type LineRow = { readonly name: string; readonly refusal: UpgradeRefusal; readonly line: string };
 
 describe("mapMappingRefusalToLine", () => {
   it.each<LineRow>([
-    {
-      name: "a file carve-out that answers no finding",
-      refusal: {
-        kind: "record-answers-nothing",
-        clause: "CD-15#loops",
-        file: repoPathOf("src/a.ts"),
-        credited: "nothing",
-      },
-      line: "the file carve-out for CD-15#loops in src/a.ts answers no finding. Remove it, or fix the file it names, then run the upgrade again.",
-    },
-    {
-      name: "a file carve-out that held up only a suppression no record can hold",
-      refusal: {
-        kind: "record-answers-nothing",
-        clause: "CD-15#loops",
-        file: repoPathOf("src/a.ts"),
-        credited: "suppression-only",
-      },
-      line: "the file carve-out for CD-15#loops in src/a.ts answers only a suppression no version 2 record can hold. Remove it, or fix the file it names, then run the upgrade again.",
-    },
     {
       name: "a project clause with no version 2 check",
       refusal: { kind: "clause-without-check", clause: "acme/CD-1#thing" },

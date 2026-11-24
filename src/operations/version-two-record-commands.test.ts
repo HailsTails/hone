@@ -353,11 +353,46 @@ describe("versionTwoPruneDebtOf", () => {
   it("gives the run's load failure and opens no records store", async () => {
     const input = inputFailingCatalogue();
 
-    expect(await versionTwoPruneDebtOf({ ...input, forfeiture: undefined })).toEqual({
+    expect(
+      await versionTwoPruneDebtOf({
+        ...input,
+        forfeiture: undefined,
+        projectCommand: PROJECT_COMMAND,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
     });
     expect(input.recordsStoreOf).not.toHaveBeenCalled();
+  });
+});
+
+describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
+  it("refuses with projection-stale naming the project command and writes no records", async () => {
+    const input = inputWithOutOfDateProjection();
+
+    const pruned = await versionTwoPruneDebtOf({
+      ...input,
+      forfeiture: undefined,
+      projectCommand: PROJECT_COMMAND,
+    });
+
+    expect({
+      pruned,
+      storesOpened: vi.mocked(input.recordsStoreOf).mock.calls,
+      sourcesOpened: vi.mocked(input.recordsSourceFor).mock.calls,
+    }).toEqual({
+      pruned: {
+        outcome: "failed",
+        error: {
+          kind: "projection-stale",
+          problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+          projectCommand: PROJECT_COMMAND,
+        },
+      },
+      storesOpened: [],
+      sourcesOpened: [],
+    });
   });
 });
 

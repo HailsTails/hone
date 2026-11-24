@@ -41,9 +41,20 @@ describe("an engines stage measured in a child process", () => {
     const located = { installRoot, repoRoot: repo, baseRevision: undefined };
     const engines = createDefaultChildEnginesStage({ ...located, path, moduleExtension: ".ts" });
 
-    const before = await engines();
+    const tree = {
+      tracked: [
+        repoPathOf("a.ts"),
+        repoPathOf("eslint.config.mjs"),
+        repoPathOf("hone.config.json"),
+        repoPathOf("hone.eslint.d.mts"),
+        repoPathOf("hone.eslint.mjs"),
+      ],
+      declaredConfigRoots: [],
+    };
+
+    const before = await engines({ tree });
     fileText.write({ path: `${repo}/hone.eslint.mjs`, text: "export default [];" });
-    const after = await engines();
+    const after = await engines({ tree });
 
     assert(before.outcome === "ok", "the projection as written is measured");
     assert(after.outcome === "ok", "the rewritten projection is measured");
@@ -92,7 +103,18 @@ describe("an engines stage measured in a child process", () => {
     const located = { installRoot, repoRoot: repo, baseRevision: undefined };
     const engines = createDefaultChildEnginesStage({ ...located, path, moduleExtension: ".ts" });
 
-    const measured = await engines();
+    const measured = await engines({
+      tree: {
+        tracked: [
+          repoPathOf("a.ts"),
+          repoPathOf("eslint.config.mjs"),
+          repoPathOf("hone.config.json"),
+          repoPathOf("hone.eslint.d.mts"),
+          repoPathOf("hone.eslint.mjs"),
+        ],
+        declaredConfigRoots: [],
+      },
+    });
 
     expect(measured).toEqual({
       outcome: "ok",

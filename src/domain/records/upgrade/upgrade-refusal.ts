@@ -1,8 +1,5 @@
 import type { SymptomUnheld } from "../../language-layer/rule-content.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-
-export type UnansweredCredit = "nothing" | "suppression-only";
 
 export type UpgradeRefusal =
   | { readonly kind: "clause-without-check"; readonly clause: string }
@@ -16,12 +13,6 @@ export type UpgradeRefusal =
       readonly check: string;
       readonly mechanism: EngineId;
       readonly engines: readonly string[];
-    }
-  | {
-      readonly kind: "record-answers-nothing";
-      readonly clause: string;
-      readonly file: RepoPath;
-      readonly credited: UnansweredCredit;
     }
   | { readonly kind: "records-name-refused"; readonly name: string }
   | { readonly kind: "confined-packages-unreadable"; readonly clause: string }

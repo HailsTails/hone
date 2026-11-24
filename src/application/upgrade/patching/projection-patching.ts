@@ -115,7 +115,8 @@ const withUnrestored = (request: {
     case "team-layout-unreadable":
     case "version-two-run-failed":
     case "directives-name-no-check":
-    case "differences":
+    case "smoothing-failed":
+    case "check-failed":
       return { ...refusal, unrestored: [...refusal.unrestored, ...unrestored] };
     case "write-refused":
       return {

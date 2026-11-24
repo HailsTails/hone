@@ -29,7 +29,7 @@ import type { SettingsFileFormat } from "../../ports/settings/settings-file-form
 import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
-import { reachBeyondEntriesOf } from "../proof-comparison/written-reach.ts";
+import { reachBeyondEntriesOf } from "../mapping/written-reach.ts";
 import { recordInputsOf } from "../record-answers/record-inputs.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 

@@ -1,5 +1,6 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
@@ -16,7 +17,7 @@ import type {
   NamedEngineRunRequest,
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
-import { type CheckedTree, typescriptFilesOf } from "../checked-tree-of.ts";
+import { typescriptFilesOf } from "../checked-tree-of.ts";
 
 export type EngineSettings = {
   readonly selection: { readonly selected: readonly { readonly binding: CheckBinding }[] };

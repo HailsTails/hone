@@ -32,7 +32,11 @@ const PROJECTION_PATH = absoluteRootOf("/repo/disciplines.eslint.mjs");
 
 const CREATED = absoluteRootOf("/repo/acme/rules/principles/acme.md");
 
-const UNCOVERED = { kind: "version-one-uncovered", clauses: [], removedByVersionOne: [] } as const;
+const UNPLACEABLE = {
+  kind: "unplaceable-path",
+  file: PROJECTION,
+  removedByVersionOne: [],
+} as const;
 
 describe("patchedProjectionsOf", () => {
   it("rewrites the version 1 plugin import of a tracked version 1 projection, reading it again for the original it keeps, and reads no other file", () => {
@@ -143,9 +147,9 @@ describe("restoredOriginalProjections", () => {
         effects: { undo },
         repoRoot: REPO,
         patches: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
-        refusal: UNCOVERED,
+        refusal: UNPLACEABLE,
       }),
-    ).toEqual(UNCOVERED);
+    ).toEqual(UNPLACEABLE);
     expect(undo.mock.calls).toEqual([
       [{ writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }] }],
     ]);
@@ -187,21 +191,43 @@ describe("restoredAfterRefusal", () => {
         effects: { undo },
         writes: [{ kind: "file-created", path: CREATED }],
         refusal: {
-          kind: "differences",
-          differences: [],
-          writtenReported: [],
+          kind: "check-failed",
+          failing: ["findings (1)"],
           unrestored: [],
           removedByVersionOne: [],
         },
       }),
     ).toEqual({
-      kind: "differences",
-      differences: [],
-      writtenReported: [],
+      kind: "check-failed",
+      failing: ["findings (1)"],
       unrestored: [{ written: "file-created", path: CREATED, detail: "EBUSY" }],
       removedByVersionOne: [],
     });
     expect(undo.mock.calls).toEqual([[{ writes: [{ kind: "file-created", path: CREATED }] }]]);
+  });
+
+  it("adds what it could not restore to a smoothing step's refusal", () => {
+    const undo = vi
+      .fn<ProofEffects["undo"]>()
+      .mockReturnValueOnce([{ written: "file-created", path: CREATED, detail: "EBUSY" }]);
+    const refusal = {
+      kind: "smoothing-failed",
+      step: "prune-debt",
+      failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+      unrestored: [],
+      removedByVersionOne: [],
+    } as const;
+
+    const restored = restoredAfterRefusal({
+      effects: { undo },
+      writes: [{ kind: "file-created", path: CREATED }],
+      refusal,
+    });
+
+    expect(restored).toEqual({
+      ...refusal,
+      unrestored: [{ written: "file-created", path: CREATED, detail: "EBUSY" }],
+    });
   });
 
   it("restores nothing after a removal failed, since the proof had already passed", () => {
