@@ -379,10 +379,6 @@
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/type-declared-in-a-test/test-type-declaration/test-type-declaration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "src/infrastructure/engines/walker/type-derived-from-code/factory-return-types/factory-return-types.test.ts"
     },
     {

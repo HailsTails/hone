@@ -13,6 +13,6 @@
 }
 ```
 
-- **Method:** Several cases of one behaviour are one `it.each<Row>([...])`. `Row` is a declared type. Each row writes out its input and its expected output.
+- **Method:** Several cases of one behaviour are one `it.each<Row>([...])`. `Row` is a declared type whose members are primitives, types imported from non-test modules, or readonly lists of imported types. Each row writes out its input and its expected output.
 - **You can tell because:** Every row is a literal. No row is built, mapped or picked.
 - **Industry name:** Parameterized Test (Meszaros), with rows typed and written out.

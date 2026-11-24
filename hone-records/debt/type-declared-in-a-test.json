@@ -31,10 +31,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/packaging/shipped-files/shipped-data.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
@@ -107,10 +103,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/report/run-load-failure.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/domain/settings/check-choices.test.ts"
     },
     {
@@ -120,10 +112,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/domain/settings/every-ok.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/settings/json-values/json-kind.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -284,10 +272,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/hone-config-file/settings-file.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/printed-report/load-failures/load-failure-lines.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

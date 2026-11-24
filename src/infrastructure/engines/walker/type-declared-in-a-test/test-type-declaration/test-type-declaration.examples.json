@@ -1,23 +1,35 @@
 {
   "flag": [
     {
-      "name": "types defined inside a test file",
+      "name": "type alias, interface and enum declared in a test",
       "fileName": "src/order.test.ts",
       "source": "type Amount = number;\ninterface Item { amount: Amount }\nenum State { Written }",
       "expectedLines": [1, 2, 3]
+    },
+    {
+      "name": "row with a literal-type member",
+      "fileName": "src/order.test.ts",
+      "source": "import type { Amount } from \"./order.ts\";\ntype Row = { readonly amount: Amount; readonly state: \"written\" };\nit.each<Row>([])(\"writes $amount\", () => {});",
+      "expectedLines": [2]
     }
   ],
   "allow": [
     {
-      "name": "types are imported from their owner",
+      "name": "type imported by name and used inline",
       "fileName": "src/order.test.ts",
       "source": "import type { Amount } from \"./order.ts\";\nconst input: Amount = 1;",
       "expectedLines": []
     },
     {
-      "name": "inline type literal",
+      "name": "inline type literal in a satisfies clause",
       "fileName": "src/order.test.ts",
       "source": "const input = { amount: 1 } satisfies { amount: number };",
+      "expectedLines": []
+    },
+    {
+      "name": "row of an imported type and a primitive",
+      "fileName": "src/order.test.ts",
+      "source": "import type { Amount } from \"./order.ts\";\ntype Row = { readonly amount: Amount; readonly label: string };\nit.each<Row>([])(\"writes $label\", () => {});",
       "expectedLines": []
     }
   ]
