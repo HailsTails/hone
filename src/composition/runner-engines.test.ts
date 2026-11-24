@@ -1,19 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { ParsedNamedRunner } from "../application/ports/engine/engine-run.ts";
 import type { RunnerModuleOf } from "../application/ports/engine/runner-location.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { runnerEnginesOver } from "./runner-engines.ts";
-
-const LOCATION = {
-  installRoot: absoluteRootOf("/install"),
-  moduleExtension: ".ts",
-  modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-  mechanism: "eslint",
-} as const;
 
 const UNLOADABLE = {
   outcome: "failed",
@@ -23,28 +18,41 @@ const UNLOADABLE = {
 describe("runnerEnginesOver", () => {
   it("loads the named runner through the runner module it is given", async () => {
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue(UNLOADABLE);
-    await expect(runnerEnginesOver({ runnerModuleOf }).namedEngine.load(LOCATION)).resolves.toEqual(
+    const location = {
+      installRoot: absoluteRootOf("/install"),
+      moduleExtension: ".ts",
+      modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+      mechanism: "eslint",
+    } as const;
+    await expect(runnerEnginesOver({ runnerModuleOf }).namedEngine.load(location)).resolves.toEqual(
       {
         outcome: "failed",
         error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
       },
     );
-    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(location);
   });
 
   it("reads the version 1 projection through the runner module it is given", async () => {
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue(UNLOADABLE);
+    const modules = { load: vi.fn<ModuleLoaderPort["load"]>() };
+    const path = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
     const projection = runnerEnginesOver({ runnerModuleOf }).versionOneProjectionOf({
-      installRoot: LOCATION.installRoot,
-      modules: LOCATION.modules,
-      path: LOCATION.path,
+      installRoot: absoluteRootOf("/install"),
+      modules,
+      path,
       moduleExtension: ".ts",
-      fileText: { read: vi.fn(), exists: vi.fn(), write: vi.fn() },
-      fileRemoval: { remove: vi.fn() },
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>(),
+        exists: vi.fn<FileTextPort["exists"]>(),
+        write: vi.fn<FileTextPort["write"]>(),
+      },
+      fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
     });
     await expect(
       projection.inspect({
-        installRoot: LOCATION.installRoot,
+        installRoot: absoluteRootOf("/install"),
         repoRoot: absoluteRootOf("/repo"),
         trackedPaths: [repoPathOf("src/a.ts")],
         declaredConfigRoots: [],
@@ -55,11 +63,24 @@ describe("runnerEnginesOver", () => {
       outcome: "failed",
       error: { kind: "runner-invalid-output", detail: "missing" },
     });
-    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith({
+      installRoot: absoluteRootOf("/install"),
+      moduleExtension: ".ts",
+      modules,
+      path,
+      mechanism: "eslint",
+    });
   });
 
   it("measures version 1 through the runner module it is given", async () => {
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue(UNLOADABLE);
+    const location = {
+      installRoot: absoluteRootOf("/install"),
+      moduleExtension: ".ts",
+      modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+      mechanism: "eslint",
+    } as const;
     await expect(
       runnerEnginesOver({ runnerModuleOf }).measureVersionOne({
         call: {
@@ -67,13 +88,13 @@ describe("runnerEnginesOver", () => {
           runner: {
             fileScope: "typescript",
             projectedKinds: [],
-            run: vi.fn(),
-            conform: vi.fn(),
-            project: vi.fn(),
+            run: vi.fn<ParsedNamedRunner["run"]>(),
+            conform: vi.fn<ParsedNamedRunner["conform"]>(),
+            project: vi.fn<ParsedNamedRunner["project"]>(),
           },
           request: {
             repoRoot: absoluteRootOf("/repo"),
-            installRoot: LOCATION.installRoot,
+            installRoot: absoluteRootOf("/install"),
             files: [],
             trackedPaths: [],
             answered: [],
@@ -83,7 +104,7 @@ describe("runnerEnginesOver", () => {
             bindings: [],
           },
         },
-        location: LOCATION,
+        location,
         projection: {
           settingsFile: "disciplines.json",
           projectionFile: repoPathOf("disciplines.eslint.mjs"),
@@ -95,6 +116,6 @@ describe("runnerEnginesOver", () => {
       outcome: "failed",
       error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
     });
-    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(location);
   });
 });

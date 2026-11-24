@@ -199,7 +199,14 @@ describe("repointing records at the path their file moved to", () => {
           {
             kind: "document-refused",
             file: DEBT_FILE,
-            issues: [expect.objectContaining({ path: ["version"] })],
+            issues: [
+              {
+                code: "invalid_value",
+                values: [2],
+                path: ["version"],
+                message: "Invalid input: expected 2",
+              },
+            ],
           },
         ],
       },
