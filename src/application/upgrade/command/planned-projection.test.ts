@@ -110,4 +110,70 @@ describe("plannedProjectionOf", () => {
     });
     expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
   });
+
+  it("fails naming the symptom a check names and no catalogue holds, and projects nothing", async () => {
+    const project = vi.fn();
+    const plan = plannedProjectionOf({
+      command: EMPTY_REPOSITORY_COMMAND,
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
+      directory: { list: vi.fn(), create: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
+      boundCatalogueOf: () => ({
+        outcome: "ok",
+        value: {
+          held: "catalogue",
+          catalogue: {
+            principles: [],
+            rules: [],
+            cases: [],
+            recipes: [],
+            recordKinds: [],
+            engines: [{ name: "walker" }],
+            symptoms: [],
+            clauses: [],
+            checks: [
+              {
+                name: "loops",
+                symptom: { ruleSet: "hone", name: "loop-keyword" },
+                page: "loop-keyword/loops.md",
+                engines: [{ name: "walker" }],
+                forms: [],
+              },
+            ],
+            namedBans: [],
+          },
+        },
+      }),
+      settingsFormat: {
+        fileOf: vi.fn(),
+        documentOf: vi.fn(),
+        textOf: vi.fn(),
+        renameKeys: vi.fn(),
+      },
+      settingsSourcesOf: vi.fn().mockReturnValue({
+        settingsFile: vi.fn(),
+        ruleSetRoot: vi.fn(),
+        catalogue: vi.fn(),
+      }),
+      checkPieceSourceOf: vi.fn(),
+      namedEngine: { load: vi.fn(), run: vi.fn(), project },
+    });
+
+    const projected = await plan({ settings: SETTINGS, documents: [] });
+
+    expect({ projected, project: project.mock.calls }).toEqual({
+      projected: {
+        outcome: "failed",
+        error: {
+          kind: "projection-failed",
+          failure: {
+            kind: "symptom-unheld",
+            symptom: { ruleSet: "hone", name: "loop-keyword" },
+          },
+        },
+      },
+      project: [],
+    });
+  });
 });

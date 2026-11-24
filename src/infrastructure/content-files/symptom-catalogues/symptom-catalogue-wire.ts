@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { findCaseNameFaults } from "../../../domain/language-layer/case-name.ts";
+import { mapSymptomToAddress } from "../../../domain/language-layer/catalogue-address.ts";
 import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
 import {
@@ -25,6 +26,7 @@ import type {
   RecordKind,
   Rule,
   Symptom,
+  SymptomAddress,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
@@ -518,8 +520,17 @@ const symptomOf = (request: {
 
 type Sighting = { readonly symptoms: readonly Symptom[]; readonly recipes: readonly Recipe[] };
 
-const sightedSymptomOf = (request: Sighting & { readonly name: string }): Resolution<Symptom> =>
-  heldEntryNamed({ listing: "clauses", entries: request.symptoms, name: request.name });
+const sightedSymptomOf = (
+  request: Sighting & { readonly name: string },
+): Resolution<SymptomAddress> =>
+  mapped({
+    resolution: heldEntryNamed({
+      listing: "clauses",
+      entries: request.symptoms,
+      name: request.name,
+    }),
+    to: (symptom) => mapSymptomToAddress({ symptom }),
+  });
 
 const methodSightOf = (
   request: Sighting & { readonly sight: Extract<SightWire, { readonly kind: "method" }> },
@@ -572,7 +583,7 @@ const clauseOf = (
     to: (sight) => ({ clause: request.wire.clause, sight }),
   });
 
-const sightedSymptomsOf = (request: { readonly sight: ClauseSight }): readonly Symptom[] => {
+const sightedSymptomsOf = (request: { readonly sight: ClauseSight }): readonly SymptomAddress[] => {
   switch (request.sight.kind) {
     case "one-symptom":
       return [request.sight.symptom];
@@ -590,7 +601,7 @@ const sightedNamesOf = (request: { readonly clause: CataloguedClause }): readonl
 
 const formsOf = (request: {
   readonly clause: CataloguedClause;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
 }): readonly string[] =>
   request.clause.sight.kind === "symptom-by-form"
     ? request.clause.sight.forms
@@ -624,12 +635,14 @@ const checkedClauseOf = (
 
 const CHECK_PAGE_EXTENSION = ".md";
 
-const createCheckPage = (request: { readonly symptom: Symptom; readonly name: string }): string =>
-  `${request.symptom.name}/${request.name}${CHECK_PAGE_EXTENSION}`;
+const createCheckPage = (request: {
+  readonly symptom: SymptomAddress;
+  readonly name: string;
+}): string => `${request.symptom.name}/${request.name}${CHECK_PAGE_EXTENSION}`;
 
 const sightedCheckOf = (request: {
   readonly wire: CheckWire;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly clause: CataloguedClause;
 }): Resolution<CheckContent> =>
   sightedNamesOf({ clause: request.clause }).includes(request.symptom.name)
@@ -649,10 +662,13 @@ const sightedCheckOf = (request: {
 
 const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CheckContent> => {
   const { wire } = request;
-  const symptom = heldEntryNamed({
-    listing: "checks",
-    entries: request.symptoms,
-    name: wire.symptom,
+  const symptom = mapped({
+    resolution: heldEntryNamed({
+      listing: "checks",
+      entries: request.symptoms,
+      name: wire.symptom,
+    }),
+    to: (held) => mapSymptomToAddress({ symptom: held }),
   });
   if (wire.clause === undefined) {
     return symptom.outcome === "failed"

@@ -87,7 +87,7 @@ const LAYERING_CLAUSE: ClauseAddress = {
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
   page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
@@ -96,7 +96,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
   page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
@@ -105,7 +105,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
   page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
@@ -121,18 +121,24 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: LOOPS_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+    },
     {
       clause: TEST_BODY_CLAUSE,
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { form: "a-for-loop", symptom: LOOP_KEYWORD },
-          { form: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+    {
+      clause: LAYERING_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
+    },
   ],
   checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
   namedBans: [],
@@ -469,7 +475,7 @@ describe("readNamedSettings", () => {
             checks: [
               {
                 name: "loops",
-                symptom: teamLoop,
+                symptom: { ruleSet: acme, name: "team-loop" },
                 page: "team-loop/loops.md",
                 engines: [WALKER],
                 forms: [],
@@ -528,7 +534,7 @@ describe("readNamedSettings", () => {
             checks: [
               {
                 name: "loops",
-                symptom: teamLoop,
+                symptom: { ruleSet: acme, name: "team-loop" },
                 page: "rules/typescript/symptoms/team-loop/loops.md",
                 engines: [WALKER],
                 forms: [],
@@ -569,7 +575,12 @@ describe("readNamedSettings", () => {
             ruleSet: acme,
             catalogue: {
               symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
-              checks: [{ page: "team-rules/rules/typescript/symptoms/team-loop/loops.md" }],
+              checks: [
+                {
+                  symptom: { ruleSet: acme, name: "team-loop" },
+                  page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
+                },
+              ],
             },
           },
         ],
@@ -600,7 +611,7 @@ describe("readNamedSettings", () => {
               checks: [
                 {
                   name: "team-loops",
-                  symptom: teamLoopKeyword,
+                  symptom: { ruleSet: acme, name: "loop-keyword" },
                   page: "loop-keyword/team-loops.md",
                   engines: [WALKER],
                   forms: [],
@@ -669,7 +680,7 @@ describe("readNamedSettings", () => {
               checks: [
                 {
                   name: "loops",
-                  symptom: teamLoopKeyword,
+                  symptom: { ruleSet: acme, name: "loop-keyword" },
                   page: "loop-keyword/loops.md",
                   engines: [WALKER],
                   forms: [],
@@ -720,7 +731,7 @@ describe("readNamedSettings", () => {
       checks: [
         {
           name: "new-loop-check",
-          symptom: LOOP_KEYWORD,
+          symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
           page: "loop-keyword/new-loop-check.md",
           engines: [{ name: "walker" }],
           forms: [],

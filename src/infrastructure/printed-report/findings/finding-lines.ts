@@ -7,6 +7,10 @@ import {
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
 import { qualifiedCheckAddressOf } from "../../../domain/language-layer/check-address.ts";
 import {
+  mapAddressToSymptom,
+  type RuleContent,
+} from "../../../domain/language-layer/rule-content.ts";
+import {
   type Check,
   indicatedNamesOf,
   type SymptomCatalogue,
@@ -17,6 +21,7 @@ import type {
 } from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
 import type { Remedy, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import { symptomUnheldText } from "../load-failures/load-failure-lines.ts";
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
@@ -30,12 +35,20 @@ const locatedText = (request: {
 }): string =>
   `${checkSiteText(request)} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${onOneLine({ text: request.finding.snippet })}`;
 
+export type NotedContent = RuleContent<"name" | "sourceFile" | "mayIndicate">;
+
 const symptomNote = (request: {
   readonly site: CheckSite;
   readonly symptomPage: string;
+  readonly content: NotedContent;
 }): string => {
   if (request.site.sited !== "check") return "";
-  const { symptom } = request.site.check;
+  const found = mapAddressToSymptom({
+    content: request.content,
+    symptom: request.site.check.symptom,
+  });
+  if (found.outcome === "failed") return ` ${symptomUnheldText({ failure: found.error })}`;
+  const symptom = found.value;
   const source = symptomSourceOf({ symptom, page: request.symptomPage });
   const indicated = indicatedNamesOf({ symptom }).join(", ");
   return ` symptom: ${symptom.name} (${source}) may indicate: ${indicated}`;
@@ -50,10 +63,14 @@ const fixNote = (request: { readonly site: CheckSite; readonly finding: CheckFin
     : "";
 
 export const findingLine = (
-  request: CatalogueRequest & { readonly finding: CheckFinding; readonly symptomPage: string },
+  request: CatalogueRequest & {
+    readonly finding: CheckFinding;
+    readonly symptomPage: string;
+    readonly content: NotedContent;
+  },
 ): string => {
   const site = findingSiteOf(request);
-  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage })}${fixNote({ site, finding: request.finding })}`;
+  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage, content: request.content })}${fixNote({ site, finding: request.finding })}`;
 };
 
 export const answeredLine = (

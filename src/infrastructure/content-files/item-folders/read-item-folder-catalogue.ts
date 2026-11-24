@@ -119,10 +119,8 @@ const addSourceFiles = (request: {
     const sourceFile = symptomFiles.get(symptom.name);
     return sourceFile === undefined ? symptom : { ...symptom, sourceFile };
   });
-  const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
   const checks = request.content.checks.map((check) => ({
     ...check,
-    symptom: byName.get(check.symptom.name) ?? check.symptom,
     page: checkFiles.get(checkAddressTextOf({ check })) ?? check.page,
   }));
   return { ...request.content, symptoms, checks };

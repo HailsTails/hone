@@ -382,6 +382,11 @@ describe("runLoadFailureOf, failures version 2 names first", () => {
         listings: ["checks"],
       },
     },
+    {
+      name: "a symptom no catalogue holds",
+      source: { kind: "symptom-unheld", symptom: { ruleSet: "hone", name: "loop-keyword" } },
+      failure: { kind: "symptom-unheld", symptom: { ruleSet: "hone", name: "loop-keyword" } },
+    },
   ])("keeps $name", ({ source, failure }) => {
     expect(runLoadFailureOf({ source, engines: ENGINES })).toEqual(failure);
   });

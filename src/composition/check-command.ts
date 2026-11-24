@@ -84,10 +84,11 @@ export const versionTwoReportRequestOf = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
   readonly produced: VersionTwoCheckRun;
 }): RunReportRequest => {
-  const { report, catalogue, output } = request.produced.run;
+  const { report, catalogue, content, output } = request.produced.run;
   return {
     report,
     catalogue,
+    content,
     output,
     symptomPage: symptomPageOf({ ports: request.ports, located: request.produced.located }),
     ...request.produced.commands,

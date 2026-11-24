@@ -1,10 +1,14 @@
 import type { z } from "zod";
 
 import {
+  mapCheckToAddress,
+  mapSymptomToAddress,
+} from "../../../domain/language-layer/catalogue-address.ts";
+import {
   type Case,
   pointedNameOf,
   type Recipe,
-  type Symptom,
+  type SymptomAddress,
   type SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import {
@@ -51,9 +55,9 @@ import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 
 type Resolution<Value> = Result<Value, readonly RecordRefusal[]>;
 
-type RecordedSymptom = { readonly symptom: Symptom; readonly reach: AuthorisedReach };
+type RecordedSymptom = { readonly symptom: SymptomAddress; readonly reach: AuthorisedReach };
 
-type DebtSymptom = { readonly symptom: Symptom; readonly reach: SymptomReach };
+type DebtSymptom = { readonly symptom: SymptomAddress; readonly reach: SymptomReach };
 
 export type Resolving = {
   readonly catalogue: SymptomCatalogue;
@@ -104,13 +108,13 @@ const symptomNamed = (request: {
   readonly catalogue: SymptomCatalogue;
   readonly ruleSet: RuleSetIdentity;
   readonly name: string;
-}): Resolution<Symptom> => {
+}): Resolution<SymptomAddress> => {
   const symptom = request.catalogue.symptoms.find(
     (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
   );
   return symptom === undefined
     ? refusedWith({ kind: "unknown-symptom", symptom: request.name })
-    : resolved(symptom);
+    : resolved(mapSymptomToAddress({ symptom }));
 };
 
 const recipeNamed = (request: {
@@ -201,7 +205,7 @@ const outsidePartyOf = (request: { readonly text: string }): Resolution<OutsideP
 
 const checkReachOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly check: string;
 }): AuthorisedReach => {
   const check = request.catalogue.checks.find(
@@ -211,12 +215,12 @@ const checkReachOf = (request: {
   );
   return check === undefined
     ? { reaches: "unknown-check", check: request.check }
-    : { reaches: "one-check", check };
+    : { reaches: "one-check", check: mapCheckToAddress({ check }) };
 };
 
 const reachOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly recorded: RecordedReach;
 }): AuthorisedReach => {
   const { recorded } = request;
@@ -233,7 +237,7 @@ const reachOf = (request: {
 };
 
 const debtReachOf = (request: {
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly reach: AuthorisedReach;
 }): Resolution<SymptomReach> => {
   const { reach } = request;

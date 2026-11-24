@@ -299,18 +299,25 @@ describe("catalogueContentOf", () => {
         clauses: [
           {
             clause: LOOPS_CLAUSE,
-            sight: { kind: "one-symptom", symptom: LOOP_KEYWORD },
+            sight: {
+              kind: "one-symptom",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+            },
           },
           {
             clause: TEST_BODY_LOGIC_CLAUSE,
             sight: {
               kind: "symptom-by-form",
-              forms: [{ form: "a-let", symptom: LOOP_KEYWORD }],
+              forms: [{ form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } }],
             },
           },
           {
             clause: RESULT_FAILURES_CLAUSE,
-            sight: { kind: "method", recipe: FUNCTIONAL_ITERATION, outcomeSeenBy: [LOOP_KEYWORD] },
+            sight: {
+              kind: "method",
+              recipe: FUNCTIONAL_ITERATION,
+              outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "loop-keyword" }],
+            },
           },
           {
             clause: PII_REDACTION_CLAUSE,
@@ -320,14 +327,14 @@ describe("catalogueContentOf", () => {
         checks: [
           {
             name: "loops",
-            symptom: LOOP_KEYWORD,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
             page: "loop-keyword/loops.md",
             clause: LOOPS_CLAUSE,
             forms: [],
           },
           {
             name: "test-body",
-            symptom: LOOP_KEYWORD,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
             page: "loop-keyword/test-body.md",
             clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],
@@ -373,14 +380,14 @@ describe("catalogueContentOf", () => {
         checks: [
           {
             name: "loops",
-            symptom: LOOP_KEYWORD,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
             page: "loop-keyword/loops.md",
             clause: LOOPS_CLAUSE,
             forms: [],
           },
           {
             name: "test-body",
-            symptom: LOOP_KEYWORD,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
             page: "loop-keyword/test-body.md",
             clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],

@@ -6,7 +6,7 @@ import type {
   Check,
   Recipe,
   RecordKind,
-  Symptom,
+  SymptomAddress,
   SymptomCatalogue,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
@@ -98,49 +98,38 @@ const STUB_WITH_VIFN: Recipe = {
   reason: { text: "A stub states its answer.", standing: "accepted" },
 };
 
-const symptomOf = (request: {
-  readonly name: string;
-  readonly recipes: readonly Recipe[];
-}): Symptom => ({
+const DATE_USED_DIRECTLY: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "date-used-directly" };
+
+const AMBIENT_RANDOMNESS: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "ambient-randomness" };
+
+const PROCESS_GLOBAL: SymptomAddress = {
   ruleSet: TOOL_RULE_SET,
-  name: request.name,
-  title: request.name,
-  seen: "Seen.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: request.recipes,
-  correctUses: [],
-});
+  name: "process-global-used-in-place",
+};
 
-const DATE_USED_DIRECTLY = symptomOf({ name: "date-used-directly", recipes: [] });
-
-const AMBIENT_RANDOMNESS = symptomOf({ name: "ambient-randomness", recipes: [] });
-
-const PROCESS_GLOBAL = symptomOf({ name: "process-global-used-in-place", recipes: [] });
-
-const TEXT_PAST_ITS_READER = symptomOf({
+const TEXT_PAST_ITS_READER: SymptomAddress = {
+  ruleSet: TOOL_RULE_SET,
   name: "text-past-its-reader",
-  recipes: [ADAPTER_PER_OUTSIDE_PARTY],
-});
+};
 
-const OUTSIDE_IMPORT = symptomOf({
+const OUTSIDE_IMPORT: SymptomAddress = {
+  ruleSet: TOOL_RULE_SET,
   name: "outside-import-past-a-boundary",
-  recipes: [ADAPTER_PER_OUTSIDE_PARTY],
-});
+};
 
-const LIBRARY_CLASS = symptomOf({
+const LIBRARY_CLASS: SymptomAddress = {
+  ruleSet: TOOL_RULE_SET,
   name: "library-class-built-in-place",
-  recipes: [ADAPTER_PER_OUTSIDE_PARTY],
-});
+};
 
-const OUTSIDE_TYPE = symptomOf({
+const OUTSIDE_TYPE: SymptomAddress = {
+  ruleSet: TOOL_RULE_SET,
   name: "outside-type-in-a-signature",
-  recipes: [ADAPTER_PER_OUTSIDE_PARTY],
-});
+};
 
-const CLAIMED_TYPE = symptomOf({ name: "claimed-type", recipes: [] });
+const CLAIMED_TYPE: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "claimed-type" };
 
-const DOUBLE_WITH_A_BODY = symptomOf({ name: "double-with-a-body", recipes: [STUB_WITH_VIFN] });
+const DOUBLE_WITH_A_BODY: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "double-with-a-body" };
 
 const GIVES_A_VALUE_ITS_TYPE: Case = {
   name: "gives-a-value-its-type",
@@ -156,17 +145,7 @@ const CATALOGUE: SymptomCatalogue = {
   recipes: [ADAPTER_PER_OUTSIDE_PARTY, STUB_WITH_VIFN],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [],
-  symptoms: [
-    DATE_USED_DIRECTLY,
-    AMBIENT_RANDOMNESS,
-    PROCESS_GLOBAL,
-    TEXT_PAST_ITS_READER,
-    OUTSIDE_IMPORT,
-    LIBRARY_CLASS,
-    OUTSIDE_TYPE,
-    CLAIMED_TYPE,
-    DOUBLE_WITH_A_BODY,
-  ],
+  symptoms: [],
   clauses: [],
   checks: [],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -180,13 +159,15 @@ const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
 const reportedAs = (specifier: string): PartyReport => ({ reported: "specifier", specifier });
 
-const RUNTIME_REACH: readonly { readonly facility: RuntimeFacility; readonly symptom: Symptom }[] =
-  [
-    { facility: "clock", symptom: DATE_USED_DIRECTLY },
-    { facility: "random", symptom: AMBIENT_RANDOMNESS },
-    { facility: "process", symptom: PROCESS_GLOBAL },
-    { facility: "json", symptom: TEXT_PAST_ITS_READER },
-  ];
+const RUNTIME_REACH: readonly {
+  readonly facility: RuntimeFacility;
+  readonly symptom: SymptomAddress;
+}[] = [
+  { facility: "clock", symptom: DATE_USED_DIRECTLY },
+  { facility: "random", symptom: AMBIENT_RANDOMNESS },
+  { facility: "process", symptom: PROCESS_GLOBAL },
+  { facility: "json", symptom: TEXT_PAST_ITS_READER },
+];
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -325,7 +306,13 @@ describe("holdsAt, debt and authorised locations", () => {
       expect(
         holdsAt({
           record,
-          site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+          site: {
+            check: UNCHECKED,
+            symptom: CLAIMED_TYPE,
+            file: ADAPTER,
+            party: NOT_REPORTED,
+            recipes: [],
+          },
           catalogue: CATALOGUE,
         }),
       ).toBe("holds");
@@ -347,6 +334,7 @@ describe("holdsAt, debt and authorised locations", () => {
             symptom: OUTSIDE_IMPORT,
             file: ADAPTER,
             party: reportedAs("lodash"),
+            recipes: [ADAPTER_PER_OUTSIDE_PARTY],
           },
           catalogue: CATALOGUE,
         }),
@@ -365,6 +353,7 @@ describe("holdsAt, debt and authorised locations", () => {
             symptom: DOUBLE_WITH_A_BODY,
             file: ADAPTER,
             party: NOT_REPORTED,
+            recipes: [STUB_WITH_VIFN],
           },
           catalogue: CATALOGUE,
         }),
@@ -383,7 +372,7 @@ describe("holdsAt, debt and authorised locations", () => {
       expect(
         holdsAt({
           record,
-          site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file, party: NOT_REPORTED },
+          site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file, party: NOT_REPORTED, recipes: [] },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -403,6 +392,7 @@ describe("holdsAt, a team's symptom sharing a name with one of Hone's", () => {
           symptom: { ...CLAIMED_TYPE, ruleSet: ACME },
           file: ADAPTER,
           party: NOT_REPORTED,
+          recipes: [],
         },
         catalogue: CATALOGUE,
       }),
@@ -414,7 +404,7 @@ describe("holdsAt, a team's symptom sharing a name with one of Hone's", () => {
     expect(
       holdsAt({
         record: { ...DEBT, symptom },
-        site: { check: UNCHECKED, symptom, file: ADAPTER, party: NOT_REPORTED },
+        site: { check: UNCHECKED, symptom, file: ADAPTER, party: NOT_REPORTED, recipes: [] },
         catalogue: CATALOGUE,
       }),
     ).toBe("holds");
@@ -429,6 +419,7 @@ describe("holdsAt, a team's symptom sharing a name with one of Hone's", () => {
           symptom: { ...OUTSIDE_IMPORT, ruleSet: ACME },
           file: IDS_FILE,
           party: reportedAs("uuid"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -441,7 +432,13 @@ describe("holdsAt, deviations", () => {
     expect(
       holdsAt({
         record: DEVIATION,
-        site: { check: UNCHECKED, symptom: DOUBLE_WITH_A_BODY, file: ADAPTER, party: NOT_REPORTED },
+        site: {
+          check: UNCHECKED,
+          symptom: DOUBLE_WITH_A_BODY,
+          file: ADAPTER,
+          party: NOT_REPORTED,
+          recipes: [STUB_WITH_VIFN],
+        },
         catalogue: CATALOGUE,
       }),
     ).toBe("holds");
@@ -451,7 +448,13 @@ describe("holdsAt, deviations", () => {
     expect(
       holdsAt({
         record: DEVIATION,
-        site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+        site: {
+          check: UNCHECKED,
+          symptom: CLAIMED_TYPE,
+          file: ADAPTER,
+          party: NOT_REPORTED,
+          recipes: [],
+        },
         catalogue: CATALOGUE,
       }),
     ).toBe("does-not-hold");
@@ -464,13 +467,10 @@ describe("holdsAt, deviations", () => {
         record: DEVIATION,
         site: {
           check: UNCHECKED,
-          symptom: {
-            ...DOUBLE_WITH_A_BODY,
-            ruleSet: acme,
-            recipes: [{ ...STUB_WITH_VIFN, ruleSet: acme }],
-          },
+          symptom: { ruleSet: acme, name: "double-with-a-body" },
           file: ADAPTER,
           party: NOT_REPORTED,
+          recipes: [{ ...STUB_WITH_VIFN, ruleSet: acme }],
         },
         catalogue: CATALOGUE,
       }),
@@ -486,6 +486,7 @@ describe("holdsAt, deviations", () => {
           symptom: DOUBLE_WITH_A_BODY,
           file: OTHER_FILE,
           party: NOT_REPORTED,
+          recipes: [STUB_WITH_VIFN],
         },
         catalogue: CATALOGUE,
       }),
@@ -501,6 +502,7 @@ describe("holdsAt, deviations", () => {
           symptom: OUTSIDE_IMPORT,
           file: ADAPTER,
           party: reportedAs("uuid"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -523,6 +525,7 @@ describe("holdsAt, deviations", () => {
             symptom: OUTSIDE_IMPORT,
             file: ADAPTER,
             party: reportedAs(specifier),
+            recipes: [ADAPTER_PER_OUTSIDE_PARTY],
           },
           catalogue: CATALOGUE,
         }),
@@ -530,13 +533,17 @@ describe("holdsAt, deviations", () => {
     },
   );
 
-  it.each([{ symptom: OUTSIDE_IMPORT }, { symptom: LIBRARY_CLASS }, { symptom: OUTSIDE_TYPE }])(
+  it.each([
+    { symptom: OUTSIDE_IMPORT, recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
+    { symptom: LIBRARY_CLASS, recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
+    { symptom: OUTSIDE_TYPE, recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
+  ])(
     "does not hold a deviation over $symptom.name when the finding does not report its outside party, since it may be a named ban",
-    ({ symptom }) => {
+    ({ symptom, recipes }) => {
       expect(
         holdsAt({
           record: ADAPTER_DEVIATION,
-          site: { check: UNCHECKED, symptom, file: ADAPTER, party: NOT_REPORTED },
+          site: { check: UNCHECKED, symptom, file: ADAPTER, party: NOT_REPORTED, recipes },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -546,16 +553,22 @@ describe("holdsAt, deviations", () => {
 
 describe("holdsAt, boundary records", () => {
   it.each([
-    { symptom: OUTSIDE_IMPORT, specifier: "uuid" },
-    { symptom: LIBRARY_CLASS, specifier: "uuid" },
-    { symptom: OUTSIDE_TYPE, specifier: "uuid/v4" },
+    { symptom: OUTSIDE_IMPORT, specifier: "uuid", recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
+    { symptom: LIBRARY_CLASS, specifier: "uuid", recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
+    { symptom: OUTSIDE_TYPE, specifier: "uuid/v4", recipes: [ADAPTER_PER_OUTSIDE_PARTY] },
   ])(
     "holds a boundary record on a package over $symptom.name of $specifier in its module",
-    ({ symptom, specifier }) => {
+    ({ symptom, specifier, recipes }) => {
       expect(
         holdsAt({
           record: UUID_BOUNDARY,
-          site: { check: UNCHECKED, symptom, file: IDS_FILE, party: reportedAs(specifier) },
+          site: {
+            check: UNCHECKED,
+            symptom,
+            file: IDS_FILE,
+            party: reportedAs(specifier),
+            recipes,
+          },
           catalogue: CATALOGUE,
         }),
       ).toBe("holds");
@@ -571,6 +584,7 @@ describe("holdsAt, boundary records", () => {
           symptom: OUTSIDE_IMPORT,
           file: READ_TEXT_FILE,
           party: reportedAs("node:fs"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -587,7 +601,13 @@ describe("holdsAt, boundary records", () => {
       expect(
         holdsAt({
           record,
-          site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file, party: reportedAs(specifier) },
+          site: {
+            check: UNCHECKED,
+            symptom: OUTSIDE_IMPORT,
+            file,
+            party: reportedAs(specifier),
+            recipes: [ADAPTER_PER_OUTSIDE_PARTY],
+          },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -603,7 +623,13 @@ describe("holdsAt, boundary records", () => {
       expect(
         holdsAt({
           record,
-          site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file, party: NOT_REPORTED },
+          site: {
+            check: UNCHECKED,
+            symptom: OUTSIDE_IMPORT,
+            file,
+            party: NOT_REPORTED,
+            recipes: [ADAPTER_PER_OUTSIDE_PARTY],
+          },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -619,6 +645,7 @@ describe("holdsAt, boundary records", () => {
           symptom: OUTSIDE_IMPORT,
           file: repoPathOf("src/adapters/files-old.ts"),
           party: reportedAs("node:fs"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -639,6 +666,7 @@ describe("holdsAt, boundary records", () => {
             symptom,
             file: repoPathOf("src/adapters/world.ts"),
             party: NOT_REPORTED,
+            recipes: [],
           },
           catalogue: CATALOGUE,
         }),
@@ -660,6 +688,7 @@ describe("holdsAt, boundary records", () => {
             symptom: OUTSIDE_IMPORT,
             file: repoPathOf("src/adapters/world.ts"),
             party: reportedAs("uuid"),
+            recipes: [ADAPTER_PER_OUTSIDE_PARTY],
           },
           catalogue: CATALOGUE,
         }),
@@ -679,6 +708,7 @@ describe("holdsAt, boundary records", () => {
           symptom: DATE_USED_DIRECTLY,
           file: repoPathOf("src/adapters/json.ts"),
           party: NOT_REPORTED,
+          recipes: [],
         },
         catalogue: CATALOGUE,
       }),
@@ -697,6 +727,7 @@ describe("holdsAt, boundary records", () => {
           symptom: CLAIMED_TYPE,
           file: ADAPTER,
           party: reportedAs("stripe"),
+          recipes: [],
         },
         catalogue: CATALOGUE,
       }),
@@ -715,6 +746,7 @@ describe("holdsAt, boundary records", () => {
           symptom: OUTSIDE_IMPORT,
           file: repoPathOf("src/adapters/collections.ts"),
           party: reportedAs("lodash/fp"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -737,6 +769,7 @@ describe("holdsAt, dependency records", () => {
           symptom: OUTSIDE_IMPORT,
           file: ADAPTER,
           party: reportedAs("zod"),
+          recipes: [ADAPTER_PER_OUTSIDE_PARTY],
         },
         catalogue: CATALOGUE,
       }),
@@ -751,7 +784,13 @@ describe("holdsAt, a record that names one check of its symptom", () => {
       expect(
         holdsAt({
           record,
-          site: { check: AT_CAST, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+          site: {
+            check: AT_CAST,
+            symptom: CLAIMED_TYPE,
+            file: ADAPTER,
+            party: NOT_REPORTED,
+            recipes: [],
+          },
           catalogue: CATALOGUE,
         }),
       ).toBe("holds");
@@ -769,7 +808,7 @@ describe("holdsAt, a record that names one check of its symptom", () => {
       expect(
         holdsAt({
           record,
-          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED, recipes: [] },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -789,7 +828,7 @@ describe("holdsAt, a record that names one check of its symptom", () => {
       expect(
         holdsAt({
           record,
-          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED, recipes: [] },
           catalogue: CATALOGUE,
         }),
       ).toBe("holds");
@@ -804,7 +843,7 @@ describe("holdsAt, an authorised location naming a check its symptom does not ha
       expect(
         holdsAt({
           record: UNKNOWN_CHECK_LOCATION,
-          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+          site: { check, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED, recipes: [] },
           catalogue: CATALOGUE,
         }),
       ).toBe("does-not-hold");
@@ -832,28 +871,85 @@ const CATALOGUE_WITH_CHECKS: SymptomCatalogue = {
 
 describe("placesReachedBy", () => {
   it("places a debt on a whole symptom at its file for every check of the symptom", () => {
-    expect(placesReachedBy({ record: DEBT, catalogue: CATALOGUE_WITH_CHECKS })).toEqual([
-      { check: CAST_CHECK, place: { at: "file", file: ADAPTER } },
-      { check: NON_NULL_CHECK, place: { at: "file", file: ADAPTER } },
-    ]);
+    const content = { symptoms: new Map<string, { readonly recipes: readonly Recipe[] }>() };
+
+    const places = placesReachedBy({ record: DEBT, catalogue: CATALOGUE_WITH_CHECKS, content });
+
+    expect(places).toEqual({
+      outcome: "ok",
+      value: [
+        { check: CAST_CHECK, place: { at: "file", file: ADAPTER } },
+        { check: NON_NULL_CHECK, place: { at: "file", file: ADAPTER } },
+      ],
+    });
   });
 
   it("places a debt that names one check at its file for that check alone", () => {
-    expect(placesReachedBy({ record: CAST_DEBT, catalogue: CATALOGUE_WITH_CHECKS })).toEqual([
-      { check: CAST_CHECK, place: { at: "file", file: ADAPTER } },
-    ]);
+    const content = { symptoms: new Map<string, { readonly recipes: readonly Recipe[] }>() };
+
+    const places = placesReachedBy({
+      record: CAST_DEBT,
+      catalogue: CATALOGUE_WITH_CHECKS,
+      content,
+    });
+
+    expect(places).toEqual({
+      outcome: "ok",
+      value: [{ check: CAST_CHECK, place: { at: "file", file: ADAPTER } }],
+    });
   });
 
   it("places a deviation at its file for the checks of every symptom that has its recipe, imported-party symptoms included", () => {
-    expect(
-      placesReachedBy({ record: ADAPTER_DEVIATION, catalogue: CATALOGUE_WITH_CHECKS }),
-    ).toEqual([{ check: IMPORT_CHECK, place: { at: "file", file: ADAPTER } }]);
+    const content = {
+      symptoms: new Map([
+        ["claimed-type", { recipes: [] }],
+        ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+      ]),
+    };
+
+    const places = placesReachedBy({
+      record: ADAPTER_DEVIATION,
+      catalogue: CATALOGUE_WITH_CHECKS,
+      content,
+    });
+
+    expect(places).toEqual({
+      outcome: "ok",
+      value: [{ check: IMPORT_CHECK, place: { at: "file", file: ADAPTER } }],
+    });
+  });
+
+  it("refuses to place a deviation when a check names a symptom the content does not hold", () => {
+    const content = { symptoms: new Map([["claimed-type", { recipes: [] }]]) };
+
+    const places = placesReachedBy({
+      record: ADAPTER_DEVIATION,
+      catalogue: CATALOGUE_WITH_CHECKS,
+      content,
+    });
+
+    expect(places).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+      },
+    });
   });
 
   it("places a boundary record at its module for the checks of the symptoms its outside party reaches", () => {
-    expect(placesReachedBy({ record: UUID_BOUNDARY, catalogue: CATALOGUE_WITH_CHECKS })).toEqual([
-      { check: IMPORT_CHECK, place: { at: "module", module: IDS_FILE } },
-    ]);
+    const content = { symptoms: new Map<string, { readonly recipes: readonly Recipe[] }>() };
+
+    const places = placesReachedBy({
+      record: UUID_BOUNDARY,
+      catalogue: CATALOGUE_WITH_CHECKS,
+      content,
+    });
+
+    expect(places).toEqual({
+      outcome: "ok",
+      value: [{ check: IMPORT_CHECK, place: { at: "module", module: IDS_FILE } }],
+    });
   });
 
   it("places a dependency record nowhere", () => {
@@ -863,6 +959,14 @@ describe("placesReachedBy", () => {
       nativeWay: "by hand",
       whyNotEnough: "Each adapter would repeat its checks.",
     };
-    expect(placesReachedBy({ record: dependency, catalogue: CATALOGUE_WITH_CHECKS })).toEqual([]);
+    const content = { symptoms: new Map<string, { readonly recipes: readonly Recipe[] }>() };
+
+    const places = placesReachedBy({
+      record: dependency,
+      catalogue: CATALOGUE_WITH_CHECKS,
+      content,
+    });
+
+    expect(places).toEqual({ outcome: "ok", value: [] });
   });
 });

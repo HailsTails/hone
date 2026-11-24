@@ -136,7 +136,7 @@ const enginesRequestOf = (
   path: request.ports.path,
   modules: request.ports.modules,
   engine: request.ports.namedEngine,
-  checks: request.stage.catalogue.checks,
+  checks: request.stage.checks,
   answered: answeredFilesOf({ records: request.stage.records.records }),
 });
 

@@ -164,10 +164,8 @@ const withNamedSource = (request: {
       ? { ...symptom, sourceFile: `${folder}/${symptom.sourceFile}` }
       : symptom,
   );
-  const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
   const checks = catalogue.checks.map((check) => ({
     ...check,
-    symptom: byName.get(check.symptom.name) ?? check.symptom,
     page: folder === undefined ? check.page : `${folder}/${check.page}`,
   }));
   return { ruleSet, catalogue: { ...catalogue, symptoms, checks } };

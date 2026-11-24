@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Check, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
-import type { NamedEngineRun, ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
+import type {
+  EngineCheck,
+  NamedEngineRun,
+  ParsedNamedRunner,
+} from "../../ports/engine/engine-run.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { namedEngineRunsOf } from "./named-engines-run.ts";
 
@@ -17,22 +20,10 @@ const TYPESCRIPT = repoPathOf("src/source.ts");
 const MANIFEST = repoPathOf("package.json");
 const FIRST_EDITION = editionOf("1");
 
-const SYMPTOM: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "held-value",
-  title: "Held value",
-  seen: "A value is held.",
-  mayIndicate: [],
-  breachUsuallySits: "at the holder",
-  recipes: [],
-  correctUses: [],
-};
-const CHECK: Check = {
+const CHECK: EngineCheck = {
   name: "named-check",
-  symptom: SYMPTOM,
-  page: "held-value/named-check.md",
+  symptom: { ruleSet: TOOL_RULE_SET, name: "held-value", title: "Held value" },
   engines: [{ name: "walker" }],
-  forms: [],
 };
 const BINDING: CheckBinding = {
   address: "held-value#named-check",

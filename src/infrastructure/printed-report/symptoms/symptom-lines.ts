@@ -33,7 +33,7 @@ const recipeSentence = (request: { readonly recipes: readonly Recipe[] }): strin
 };
 
 export const symptomSourceOf = (request: {
-  readonly symptom: Symptom;
+  readonly symptom: Pick<Symptom, "name" | "sourceFile">;
   readonly page: string;
 }): string => request.symptom.sourceFile ?? `${request.page}#${request.symptom.name}`;
 

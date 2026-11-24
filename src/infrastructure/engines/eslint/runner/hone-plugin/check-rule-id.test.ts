@@ -1,20 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { checkAddressOf } from "../../../../../domain/language-layer/check-address.ts";
-import type {
-  Check,
-  Engine,
-  Symptom,
-} from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import type { Engine } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import {
   CHECKS_PLUGIN_NAMESPACE,
   checkOfRuleId,
   checkRuleIdOf,
   checkRuleNameOf,
   eslintRuleIdsOf,
+  type PluginCheck,
   runsOnEslint,
 } from "./check-rule-id.ts";
 
@@ -22,165 +16,46 @@ const WALKER: Engine = { name: "walker" };
 
 const ESLINT: Engine = { name: "eslint" };
 
-const LOOP_KEYWORD: Symptom = {
-  ruleSet: "hone",
-  name: "loop-keyword",
-  title: "Loop keyword",
-  seen: "`for` or `while`.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const SETTINGS_REBINDING: Symptom = {
-  ruleSet: "hone",
-  name: "rebinding",
-  title: "Rebinding",
-  seen: "`for` or `while`.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const LOOP_KEYWORD_LOOPS: Check = {
+const LOOP_KEYWORD_LOOPS: PluginCheck = {
   name: "loops",
-  symptom: LOOP_KEYWORD,
-  page: "loop-keyword/loops.md",
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-15"),
-    clause: clauseIdOf("loops"),
-  },
+  symptom: { ruleSet: "hone", name: "loop-keyword", title: "Loop keyword" },
   engines: [WALKER, ESLINT],
-  forms: [],
 };
 
-const LOOP_KEYWORD_TEST_BODY: Check = {
-  name: "test-body",
-  symptom: LOOP_KEYWORD,
-  page: "loop-keyword/test-body.md",
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("test-body-logic"),
-  },
-  engines: [WALKER],
-  forms: ["a-for-loop"],
-};
-
-const SETTINGS_REBINDING_TEST_BODY: Check = {
-  name: "test-body",
-  symptom: SETTINGS_REBINDING,
-  page: "rebinding/test-body.md",
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("test-body-logic"),
-  },
-  engines: [WALKER],
-  forms: ["a-let"],
-};
-
-const SETTINGS_CHECKS: readonly Check[] = [
+const SETTINGS_CHECKS: readonly PluginCheck[] = [
   LOOP_KEYWORD_LOOPS,
-  LOOP_KEYWORD_TEST_BODY,
-  SETTINGS_REBINDING_TEST_BODY,
-];
-
-const TEST_SWITCHED_OFF: Symptom = {
-  ruleSet: "hone",
-  name: "test-switched-off",
-  title: "Test switched off",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const POSITIONAL_PARAMETERS: Symptom = {
-  ruleSet: "hone",
-  name: "positional-parameters",
-  title: "Positional parameters",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const PLUGIN_REBINDING: Symptom = {
-  ruleSet: "hone",
-  name: "rebinding",
-  title: "Rebinding",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const PLUGIN_CHECKS: readonly Check[] = [
   {
-    name: "skipped-tests",
-    symptom: TEST_SWITCHED_OFF,
-    page: "test-switched-off/skipped-tests.md",
-    clause: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-27"),
-      clause: clauseIdOf("skipped-tests"),
-    },
-    engines: [ESLINT],
-    forms: [],
-  },
-  {
-    name: "non-null-assertions",
-    symptom: CLAIMED_TYPE,
-    page: "claimed-type/non-null-assertions.md",
-    clause: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-2"),
-      clause: clauseIdOf("non-null-assertions"),
-    },
-    engines: [ESLINT],
-    forms: [],
-  },
-  {
-    name: "parameter-count",
-    symptom: POSITIONAL_PARAMETERS,
-    page: "positional-parameters/parameter-count.md",
-    clause: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-40"),
-      clause: clauseIdOf("parameter-count"),
-    },
-    engines: [ESLINT],
-    forms: [],
+    name: "test-body",
+    symptom: { ruleSet: "hone", name: "loop-keyword", title: "Loop keyword" },
+    engines: [WALKER],
   },
   {
     name: "test-body",
-    symptom: PLUGIN_REBINDING,
-    page: "rebinding/test-body.md",
-    clause: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-27"),
-      clause: clauseIdOf("test-body-logic"),
-    },
+    symptom: { ruleSet: "hone", name: "rebinding", title: "Rebinding" },
     engines: [WALKER],
-    forms: ["a-let"],
+  },
+];
+
+const PLUGIN_CHECKS: readonly PluginCheck[] = [
+  {
+    name: "skipped-tests",
+    symptom: { ruleSet: "hone", name: "test-switched-off", title: "Test switched off" },
+    engines: [ESLINT],
+  },
+  {
+    name: "non-null-assertions",
+    symptom: { ruleSet: "hone", name: "claimed-type", title: "Claimed type" },
+    engines: [ESLINT],
+  },
+  {
+    name: "parameter-count",
+    symptom: { ruleSet: "hone", name: "positional-parameters", title: "Positional parameters" },
+    engines: [ESLINT],
+  },
+  {
+    name: "test-body",
+    symptom: { ruleSet: "hone", name: "rebinding", title: "Rebinding" },
+    engines: [WALKER],
   },
 ];
 

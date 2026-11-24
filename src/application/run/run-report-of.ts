@@ -1,8 +1,15 @@
 import { findingSiteOf } from "../../domain/finding/check-site.ts";
 import type { CheckFinding } from "../../domain/finding/governance.ts";
+import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
+import {
+  mapAddressToSymptom,
+  type RuleContent,
+  type SymptomUnheld,
+} from "../../domain/language-layer/rule-content.ts";
 import type {
   Check,
   Symptom,
+  SymptomAddress,
   SymptomCatalogue,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import {
@@ -24,6 +31,7 @@ import type {
 } from "../../domain/report/run-report.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
+import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
@@ -36,6 +44,7 @@ import type { NamedSettingsReading } from "./settings/read-settings.ts";
 
 type ReportInputs = {
   readonly catalogue: SymptomCatalogue;
+  readonly content: RuleContent;
   readonly excluded: readonly RepoPath[];
   readonly notes: readonly SettingsNote[];
   readonly records: RecordsReading;
@@ -51,17 +60,26 @@ const partyOf = (request: { readonly finding: CheckFinding }): PartyReport =>
 
 const symptomsOf = (request: {
   readonly catalogue: SymptomCatalogue;
+  readonly content: RuleContent;
   readonly findings: readonly CheckFinding[];
-}): readonly Symptom[] => {
-  const named = request.findings.flatMap((finding) => {
+}): Result<readonly Symptom[], SymptomUnheld> => {
+  const named = request.findings.flatMap((finding): readonly SymptomAddress[] => {
     const site = findingSiteOf({ catalogue: request.catalogue, finding });
     return site.sited === "check" ? [site.check.symptom] : [];
   });
-  return named.filter(
-    (symptom, index) =>
-      named.findIndex((earlier) => sameOwnedName({ left: earlier, right: symptom }) === "same") ===
-      index,
-  );
+  return gatheredOutcomes({
+    outcomes: named
+      .filter(
+        (symptom, index) =>
+          named.findIndex(
+            (earlier) => sameOwnedName({ left: earlier, right: symptom }) === "same",
+          ) === index,
+      )
+      .map((symptom): Result<readonly Symptom[], SymptomUnheld> => {
+        const found = mapAddressToSymptom({ content: request.content, symptom });
+        return found.outcome === "failed" ? found : { outcome: "ok", value: [found.value] };
+      }),
+  });
 };
 
 const forfeitureLeftElsewhereOf = (request: ReportInputs): readonly AssessmentLeftElsewhere[] =>
@@ -120,9 +138,13 @@ const reportAfterAnswering = (
     readonly runs: readonly NamedEngineRun[];
     readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
   },
-): RunReport => {
-  const { answering, catalogue, records, runs } = request;
-  return {
+): Result<RunReport, SymptomUnheld> => {
+  const { answering, catalogue, content, records, runs } = request;
+  const symptoms = symptomsOf({ catalogue, content, findings: answering.findings });
+  if (symptoms.outcome === "failed") {
+    return symptoms;
+  }
+  const report: RunReport = {
     ...request.status,
     excluded: request.excluded,
     findings: answering.findings,
@@ -152,8 +174,9 @@ const reportAfterAnswering = (
     "settings-notes": request.notes,
     "record-notes": records.notes,
     carried: carriedListingOf({ records: records.records }),
-    symptoms: symptomsOf({ catalogue, findings: answering.findings }),
+    symptoms: symptoms.value,
   };
+  return { outcome: "ok", value: report };
 };
 
 export type RunReportRequest = ReportInputs & {
@@ -161,7 +184,7 @@ export type RunReportRequest = ReportInputs & {
   readonly runs: readonly NamedEngineRun[];
 };
 
-export const namedRunReportOf = (request: RunReportRequest): RunReport => {
+export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, SymptomUnheld> => {
   const { catalogue, records, runs, selection } = request;
   const selected = selection.selected.map(({ binding }) => binding);
   const status = {
@@ -190,5 +213,7 @@ export const namedRunReportOf = (request: RunReportRequest): RunReport => {
     findings,
     measurements,
   });
-  return reportAfterAnswering({ ...request, selected, answering, status });
+  return answering.outcome === "failed"
+    ? answering
+    : reportAfterAnswering({ ...request, selected, answering: answering.value, status });
 };

@@ -12,6 +12,7 @@ import type {
   MeasureVersionOneProjection,
   ProjectionMeasurement,
 } from "../../ports/upgrade/version-one-measurement.ts";
+import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
 import { namedEngineCallsOf } from "../../run/engines/named-engines-run.ts";
 import {
@@ -94,10 +95,14 @@ const findingsFor = async (
   if (names.outcome === "failed") return names;
   const checkedProjection = await request.checkProjection({ records: request.records });
   if (checkedProjection.outcome === "failed") return checkedProjection;
-  const checks = request.catalogues.flatMap(({ catalogue }) => catalogue.checks);
+  const catalogues = request.catalogues.map(({ catalogue }) => catalogue);
+  const checks = mapCataloguesToEngineChecks({ catalogues });
+  if (checks.outcome === "failed") {
+    return refused(request.loadFailureDetail({ failure: checks.error }));
+  }
   const ran = await namedEngineCallsOf({
     ...request,
-    checks,
+    checks: checks.value,
     settings: settings.value,
     answered: versionOneAnsweredFilesOf({ names: names.value, records: request.records }),
     call: (call) => {

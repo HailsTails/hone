@@ -1,3 +1,4 @@
+import type { SymptomUnheld } from "../language-layer/rule-content.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
 import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
@@ -62,7 +63,8 @@ export type RunLoadFailureSource =
   | HoneRecordsFailure
   | CatalogueNotRead
   | UpgradeNeeded
-  | SettingsRenameRefusal;
+  | SettingsRenameRefusal
+  | SymptomUnheld;
 
 export type EngineNaming =
   | { readonly named: "engine"; readonly engine: Engine }
@@ -127,7 +129,8 @@ export type RunLoadFailure =
   | { readonly kind: "records-refused"; readonly refusals: readonly RecordsDocumentRefusal[] }
   | CatalogueNotRead
   | UpgradeNeeded
-  | SettingsRenameRefusal;
+  | SettingsRenameRefusal
+  | SymptomUnheld;
 
 type EnginesRequest = { readonly engines: readonly Engine[] };
 
@@ -201,6 +204,7 @@ export const runLoadFailureOf = (
     case "upgrade-needed":
     case "listed-under-both-names":
     case "renamed-address-outside-listings":
+    case "symptom-unheld":
       return source;
     case "selection-absent":
     case "unknown-discipline":

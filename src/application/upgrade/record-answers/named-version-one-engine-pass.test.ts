@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   Check,
   RecordKind,
+  Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
@@ -59,18 +60,20 @@ const INPUT: NamedVersionOnePassRequest = {
   loadFailureDetail: vi.fn(),
 };
 
+const LOOP_KEYWORD: Symptom = {
+  ruleSet: TOOL_RULE_SET,
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "A loop.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
 const LOOP: Check = {
   name: "loops",
-  symptom: {
-    ruleSet: TOOL_RULE_SET,
-    name: "loop-keyword",
-    title: "Loop keyword",
-    seen: "A loop.",
-    mayIndicate: [],
-    breachUsuallySits: "in the unit",
-    recipes: [],
-    correctUses: [],
-  },
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
   page: "loop-keyword/loops.md",
   clause: CLAUSE,
   engines: [{ name: "walker" }],
@@ -98,7 +101,7 @@ const CATALOGUE: SymptomCatalogue = {
   recipes: [],
   recordKinds: [DEBT, AUTHORISED],
   engines: LOOP.engines,
-  symptoms: [LOOP.symptom],
+  symptoms: [LOOP_KEYWORD],
   clauses: [{ clause: CLAUSE, sight: { kind: "one-symptom", symptom: LOOP.symptom } }],
   checks: [LOOP],
   namedBans: [],
@@ -149,7 +152,7 @@ const WALKER_PIECE = {
 
 const ACME = { name: ruleSetNameOf("acme") };
 
-const TEAM_LOOP: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: ACME } };
+const TEAM_LOOP: Check = { ...LOOP, symptom: { ruleSet: ACME, name: "loop-keyword" } };
 
 const LOOP_BINDING: CheckBinding = {
   address: "loop-keyword#loops",
@@ -240,7 +243,11 @@ describe("createNamedVersionOneEnginePass", () => {
         { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
         {
           ruleSet: ACME,
-          catalogue: { ...CATALOGUE, symptoms: [TEAM_LOOP.symptom], checks: [TEAM_LOOP] },
+          catalogue: {
+            ...CATALOGUE,
+            symptoms: [{ ...LOOP_KEYWORD, ruleSet: ACME }],
+            checks: [TEAM_LOOP],
+          },
         },
       ],
       sources: {
@@ -267,7 +274,18 @@ describe("createNamedVersionOneEnginePass", () => {
           files: [],
           trackedPaths: [],
           bindings: [LOOP_BINDING],
-          checks: [LOOP, TEAM_LOOP],
+          checks: [
+            {
+              name: "loops",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword", title: "Loop keyword" },
+              engines: [{ name: "walker" }],
+            },
+            {
+              name: "loops",
+              symptom: { ruleSet: ACME, name: "loop-keyword", title: "Loop keyword" },
+              engines: [{ name: "walker" }],
+            },
+          ],
           answered: [],
           declaredConfigRoots: [],
           testFiles: DEFAULT_TEST_FILES,
@@ -275,6 +293,37 @@ describe("createNamedVersionOneEnginePass", () => {
       },
       projection: PROJECTION,
       location: WALKER_LOCATION,
+    });
+  });
+
+  it("refuses when a check names a symptom no catalogue holds", async () => {
+    const loadFailureDetail = vi.fn().mockReturnValue("the symptom is unheld");
+    const pass = createNamedVersionOneEnginePass({
+      ...INPUT,
+      loadFailureDetail,
+      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: { ...CATALOGUE, symptoms: [] } }],
+      sources: {
+        ...INPUT.sources,
+        ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+        catalogue: vi.fn().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: { ...CATALOGUE, symptoms: [] } },
+        }),
+      },
+      readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
+      checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
+    });
+    const found = await pass.findingsFor({ records: [] });
+
+    expect(found).toEqual({
+      outcome: "failed",
+      error: { kind: "version-one-run-failed", detail: "the symptom is unheld" },
+    });
+    expect(loadFailureDetail).toHaveBeenCalledWith({
+      failure: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+      },
     });
   });
 });

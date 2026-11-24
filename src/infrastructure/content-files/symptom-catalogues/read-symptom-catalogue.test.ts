@@ -173,12 +173,15 @@ describe("createSymptomCatalogueRepository", () => {
           engines: [WALKER, ESLINT],
           symptoms: [REBINDING],
           clauses: [
-            { clause: PARAMETER_REASSIGNMENT, sight: { kind: "one-symptom", symptom: REBINDING } },
+            {
+              clause: PARAMETER_REASSIGNMENT,
+              sight: { kind: "one-symptom", symptom: { ruleSet: "hone", name: "rebinding" } },
+            },
           ],
           checks: [
             {
               name: "parameter-reassignment",
-              symptom: REBINDING,
+              symptom: { ruleSet: "hone", name: "rebinding" },
               page: "rebinding/parameter-reassignment.md",
               clause: PARAMETER_REASSIGNMENT,
               forms: [],
@@ -263,7 +266,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
           checks: [
             {
               name: "parameter-reassignment",
-              symptom: { ruleSet: TEAM, sourceFile: "rules/sql/symptoms/rebinding.md" },
+              symptom: { ruleSet: TEAM, name: "rebinding" },
             },
           ],
         },

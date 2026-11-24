@@ -1,3 +1,4 @@
+import type { SymptomUnheld } from "../../../domain/language-layer/rule-content.ts";
 import type {
   RecordIssue,
   RecordsDocumentRefusal,
@@ -15,6 +16,7 @@ import type {
   NotReadyYet,
   RunLoadFailure,
 } from "../../../domain/report/run-load-failure.ts";
+import { ownedNameText } from "../../../domain/rule-set/rule-set-identity.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type {
   RunnerFailure,
@@ -197,9 +199,13 @@ type RecordsFailure = Extract<
       | "catalogue-not-read"
       | "upgrade-needed"
       | "rule-set-not-upgraded"
-      | "rule-set-half-upgraded";
+      | "rule-set-half-upgraded"
+      | "symptom-unheld";
   }
 >;
+
+export const symptomUnheldText = (request: { readonly failure: SymptomUnheld }): string =>
+  `${ownedNameText(request.failure.symptom)}: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it`;
 
 const CONFIG_ROOT_REPAIR = `an eslintConfigRoots entry is a folder git tracks files under outside every excluded path, spelled exactly as git spells it; fix or remove it in ${SETTINGS_FILE_NAME}`;
 
@@ -359,6 +365,8 @@ const recordsFields = (request: {
         "this rule set holds both version 1 discipline files and version 2 items, so an upgrade stopped part way; remove these version 1 files, or restore the rule set from version control and run the upgrade again:",
         ...failure.files,
       ];
+    case "symptom-unheld":
+      return [symptomUnheldText({ failure })];
   }
 };
 
@@ -412,6 +420,7 @@ const failureFields = (request: {
     case "upgrade-needed":
     case "rule-set-not-upgraded":
     case "rule-set-half-upgraded":
+    case "symptom-unheld":
       return recordsFields({ failure, upgradeCommand: request.upgradeCommand });
   }
 };

@@ -23,6 +23,7 @@ import type { SettingsFileFormat } from "../../ports/settings/settings-file-form
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import { type CheckedTree, checkedTreeOf } from "../../run/checked-tree-of.ts";
+import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import { namedEngineProjectionsOf } from "../../run/engines/named-engines-run.ts";
 import {
   catalogueWithExternalChecks,
@@ -155,6 +156,10 @@ export const plannedProjectionOf =
       catalogue: catalogue.value,
       settings: planned.value,
     });
+    const checks = mapCataloguesToEngineChecks({ catalogues: [effectiveCatalogue] });
+    if (checks.outcome === "failed") {
+      return refusedBy({ failure: checks.error });
+    }
     const records = recordsReadingFor({
       recordsReader: context.recordsReader,
       documents,
@@ -168,7 +173,7 @@ export const plannedProjectionOf =
       return tree;
     }
     const projected = await namedEngineProjectionsOf({
-      checks: effectiveCatalogue.checks,
+      checks: checks.value,
       settings: planned.value,
       answered: answeredFilesOf({ records: records.value.records }),
       tree: tree.value,

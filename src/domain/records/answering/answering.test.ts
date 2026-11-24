@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import type { CheckFinding, NamedGovernedRun } from "../../finding/governance.ts";
+import type { SymptomUnheld } from "../../language-layer/rule-content.ts";
 import type {
   Check,
   Engine,
   Recipe,
   RecordKind,
-  Symptom,
+  SymptomAddress,
   SymptomCatalogue,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { Result } from "../../result.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
@@ -25,6 +27,7 @@ import type {
 import type { RunMeasurement } from "../measurement/measured-at.ts";
 import type { WhyChain } from "../why-chain.ts";
 import {
+  type Answering,
   answerFindings,
   type RaisedFinding,
   type StaleReason,
@@ -99,28 +102,14 @@ const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
   reason: { text: "One adapter holds each outside party.", standing: "accepted" },
 };
 
-const symptomOf = (request: {
-  readonly name: string;
-  readonly recipes: readonly Recipe[];
-}): Symptom => ({
+const AUTHORED_CLASS: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "authored-class-or-this" };
+
+const LOOP_KEYWORD: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "loop-keyword" };
+
+const OUTSIDE_IMPORT: SymptomAddress = {
   ruleSet: TOOL_RULE_SET,
-  name: request.name,
-  title: request.name,
-  seen: "Seen.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: request.recipes,
-  correctUses: [],
-});
-
-const AUTHORED_CLASS = symptomOf({ name: "authored-class-or-this", recipes: [] });
-
-const LOOP_KEYWORD = symptomOf({ name: "loop-keyword", recipes: [] });
-
-const OUTSIDE_IMPORT = symptomOf({
   name: "outside-import-past-a-boundary",
-  recipes: [ADAPTER_PER_OUTSIDE_PARTY],
-});
+};
 
 const NO_CLASS = {
   ruleSet: TOOL_RULE_SET,
@@ -148,7 +137,7 @@ const IMPORT_BOUNDARIES = {
 
 const checkOf = (request: {
   readonly name: string;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly page: string;
   readonly clause: Check["clause"];
 }): Check => ({
@@ -180,7 +169,7 @@ const CATALOGUE: SymptomCatalogue = {
   recipes: [ADAPTER_PER_OUTSIDE_PARTY],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [{ name: "walker" }],
-  symptoms: [AUTHORED_CLASS, LOOP_KEYWORD, OUTSIDE_IMPORT],
+  symptoms: [],
   clauses: [
     { clause: NO_CLASS, sight: { kind: "one-symptom", symptom: AUTHORED_CLASS } },
     { clause: NO_THIS, sight: { kind: "one-symptom", symptom: AUTHORED_CLASS } },
@@ -500,6 +489,7 @@ describe("answerFindings with no records", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -507,8 +497,33 @@ describe("answerFindings with no records", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [NO_CLASS_IN_A],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [NO_CLASS_IN_A],
+      },
+    });
+  });
+});
+
+describe("answerFindings, symptom not held", () => {
+  it("fails naming the symptom when the content does not hold a finding's symptom", () => {
+    expect(
+      answerFindings({
+        catalogue: CATALOGUE,
+        content: { symptoms: new Map() },
+        records: [],
+        findings: [unreported(NO_CLASS_IN_A)],
+        touched: NOTHING_TOUCHED,
+        runs: [],
+        measurements: { runs: [], tracked: [], excluded: [] },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "authored-class-or-this" },
+      },
     });
   });
 });
@@ -524,6 +539,7 @@ describe("answerFindings, answer", () => {
       expect(
         answerFindings({
           catalogue: CATALOGUE,
+          content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
           records: [placed],
           findings: [unreported(NO_CLASS_IN_A)],
           touched: NOTHING_TOUCHED,
@@ -531,8 +547,11 @@ describe("answerFindings, answer", () => {
           measurements: { runs: [], tracked: [], excluded: [] },
         }),
       ).toEqual({
-        ...NOTHING_ANSWERED,
-        answered: [{ finding: NO_CLASS_IN_A, by: [placed] }],
+        outcome: "ok",
+        value: {
+          ...NOTHING_ANSWERED,
+          answered: [{ finding: NO_CLASS_IN_A, by: [placed] }],
+        },
       });
     },
   );
@@ -541,6 +560,12 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [ADAPTER_DEVIATION_IN_A],
         findings: [
           importing({ finding: { ...UUID_IMPORT_IN_IDS, file: FILE_A }, specifier: "uuid" }),
@@ -550,10 +575,13 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [
-        { finding: { ...UUID_IMPORT_IN_IDS, file: FILE_A }, by: [ADAPTER_DEVIATION_IN_A] },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [
+          { finding: { ...UUID_IMPORT_IN_IDS, file: FILE_A }, by: [ADAPTER_DEVIATION_IN_A] },
+        ],
+      },
     });
   });
 
@@ -561,6 +589,13 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["loop-keyword", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [ADAPTER_DEVIATION_IN_A],
         findings: [importing({ finding: LODASH_IMPORT_IN_A, specifier: "lodash/fp" })],
         touched: NOTHING_TOUCHED,
@@ -568,9 +603,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [LODASH_IMPORT_IN_A],
-      stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [LODASH_IMPORT_IN_A],
+        stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
+      },
     });
   });
 
@@ -578,6 +616,13 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["loop-keyword", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [ADAPTER_DEVIATION_IN_A],
         findings: [unreported(LODASH_IMPORT_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -585,9 +630,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [LODASH_IMPORT_IN_A],
-      stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [LODASH_IMPORT_IN_A],
+        stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
+      },
     });
   });
 
@@ -595,6 +643,12 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [IDS_BOUNDARY],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid/v4" })],
         touched: NOTHING_TOUCHED,
@@ -602,8 +656,11 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
+      },
     });
   });
 
@@ -615,6 +672,12 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [IDS_BOUNDARY],
         findings: [importing({ finding: lodashInIds, specifier: "lodash" })],
         touched: NOTHING_TOUCHED,
@@ -622,9 +685,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [lodashInIds],
-      stale: [creditedNothing(IDS_BOUNDARY)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [lodashInIds],
+        stale: [creditedNothing(IDS_BOUNDARY)],
+      },
     });
   });
 
@@ -632,6 +698,12 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [LOCATED_UUID_IN_IDS, IDS_BOUNDARY],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" })],
         touched: NOTHING_TOUCHED,
@@ -639,8 +711,11 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: UUID_IMPORT_IN_IDS, by: [LOCATED_UUID_IN_IDS, IDS_BOUNDARY] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [LOCATED_UUID_IN_IDS, IDS_BOUNDARY] }],
+      },
     });
   });
 
@@ -648,6 +723,7 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_B)],
         touched: NOTHING_TOUCHED,
@@ -655,9 +731,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [NO_CLASS_IN_B],
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [NO_CLASS_IN_B],
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      },
     });
   });
 
@@ -665,6 +744,13 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["loop-keyword", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [unreported(FOR_OF_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -672,9 +758,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [FOR_OF_IN_A],
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [FOR_OF_IN_A],
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      },
     });
   });
 
@@ -682,6 +771,7 @@ describe("answerFindings, answer", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [unreported(UNCATALOGUED_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -689,9 +779,12 @@ describe("answerFindings, answer", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [UNCATALOGUED_IN_A],
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [UNCATALOGUED_IN_A],
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+      },
     });
   });
 });
@@ -701,6 +794,7 @@ describe("answerFindings, forfeit", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: FILE_A_TOUCHED,
@@ -708,9 +802,12 @@ describe("answerFindings, forfeit", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [NO_CLASS_IN_A],
-      forfeited: [DEBT_ON_CLASS_IN_A],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [NO_CLASS_IN_A],
+        forfeited: [DEBT_ON_CLASS_IN_A],
+      },
     });
   });
 
@@ -718,6 +815,7 @@ describe("answerFindings, forfeit", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: ELSEWHERE,
@@ -725,8 +823,11 @@ describe("answerFindings, forfeit", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -734,6 +835,7 @@ describe("answerFindings, forfeit", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: FILE_A_TOUCHED,
@@ -741,8 +843,11 @@ describe("answerFindings, forfeit", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -752,6 +857,7 @@ describe("answerFindings, forfeit", () => {
       expect(
         answerFindings({
           catalogue: CATALOGUE,
+          content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
           records: [DEBT_ON_CLASS_IN_A],
           findings: [unreported(NO_CLASS_IN_A)],
           touched,
@@ -759,8 +865,11 @@ describe("answerFindings, forfeit", () => {
           measurements: { runs: [], tracked: [], excluded: [] },
         }),
       ).toEqual({
-        ...NOTHING_ANSWERED,
-        answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+        outcome: "ok",
+        value: {
+          ...NOTHING_ANSWERED,
+          answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+        },
       });
     },
   );
@@ -771,6 +880,7 @@ describe("answerFindings, a record naming one check", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
         findings: [unreported(NO_CLASS_IN_A), unreported(NO_THIS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -778,11 +888,14 @@ describe("answerFindings, a record naming one check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [
-        { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] },
-        { finding: NO_THIS_IN_A, by: [DEBT_ON_CLASS_IN_A] },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [
+          { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] },
+          { finding: NO_THIS_IN_A, by: [DEBT_ON_CLASS_IN_A] },
+        ],
+      },
     });
   });
 
@@ -790,6 +903,7 @@ describe("answerFindings, a record naming one check", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_SYNTAX_IN_A, DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A_BY_ESLINT)],
         touched: NOTHING_TOUCHED,
@@ -797,9 +911,12 @@ describe("answerFindings, a record naming one check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [NO_CLASS_IN_A_BY_ESLINT],
-      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A), creditedNothing(DEBT_ON_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [NO_CLASS_IN_A_BY_ESLINT],
+        stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A), creditedNothing(DEBT_ON_CLASS_IN_A)],
+      },
     });
   });
 
@@ -807,6 +924,7 @@ describe("answerFindings, a record naming one check", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
         findings: [unreported(NO_CLASS_IN_A), unreported(NO_THIS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -814,11 +932,14 @@ describe("answerFindings, a record naming one check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [
-        { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A] },
-        { finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [
+          { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A] },
+          { finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] },
+        ],
+      },
     });
   });
 
@@ -826,6 +947,7 @@ describe("answerFindings, a record naming one check", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_THIS_KEYWORD_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -833,9 +955,12 @@ describe("answerFindings, a record naming one check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(LOCATED_THIS_KEYWORD_IN_A)],
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(LOCATED_THIS_KEYWORD_IN_A)],
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 });
@@ -845,6 +970,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_IN_A, DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -852,9 +978,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
-      paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -862,6 +991,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -869,8 +999,11 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A), creditedNothing(LOCATED_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A), creditedNothing(LOCATED_CLASS_IN_A)],
+      },
     });
   });
 
@@ -878,6 +1011,13 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["loop-keyword", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_IN_A],
         findings: [unreported(FOR_OF_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -885,9 +1025,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [FOR_OF_IN_A],
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A), creditedNothing(LOCATED_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [FOR_OF_IN_A],
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A), creditedNothing(LOCATED_CLASS_IN_A)],
+      },
     });
   });
 
@@ -895,6 +1038,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_UNKNOWN_CHECK_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -902,9 +1046,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
-      stale: [creditedNothing(LOCATED_UNKNOWN_CHECK_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+        stale: [creditedNothing(LOCATED_UNKNOWN_CHECK_IN_A)],
+      },
     });
   });
 
@@ -912,6 +1059,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_IN_A, ESTABLISHED_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -919,11 +1067,14 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A, ESTABLISHED_CLASS_IN_A] }],
-      paid: [
-        { debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A, ESTABLISHED_CLASS_IN_A] },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A, ESTABLISHED_CLASS_IN_A] }],
+        paid: [
+          { debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A, ESTABLISHED_CLASS_IN_A] },
+        ],
+      },
     });
   });
 
@@ -931,6 +1082,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [CARRIED_CLASS_IN_A, DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -938,8 +1090,11 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [CARRIED_CLASS_IN_A, DEBT_ON_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [CARRIED_CLASS_IN_A, DEBT_ON_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -947,6 +1102,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [ESTABLISHED_CLASS_IN_A, DEBT_ON_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -954,9 +1110,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [ESTABLISHED_CLASS_IN_A] }],
-      paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [ESTABLISHED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [ESTABLISHED_CLASS_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [ESTABLISHED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -964,6 +1123,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_SYNTAX_IN_A, LOCATED_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -971,9 +1131,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
-      paid: [{ debt: DEBT_ON_CLASS_SYNTAX_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_SYNTAX_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -981,6 +1144,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -988,9 +1152,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] }],
-      paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_SYNTAX_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_SYNTAX_IN_A] }],
+      },
     });
   });
 
@@ -998,6 +1165,12 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [DEBT_ON_IMPORTS_IN_IDS, IDS_BOUNDARY],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" })],
         touched: NOTHING_TOUCHED,
@@ -1005,9 +1178,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
-      paid: [{ debt: DEBT_ON_IMPORTS_IN_IDS, answeredBy: [IDS_BOUNDARY] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
+        paid: [{ debt: DEBT_ON_IMPORTS_IN_IDS, answeredBy: [IDS_BOUNDARY] }],
+      },
     });
   });
 
@@ -1015,6 +1191,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_THIS_KEYWORD_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
         findings: [unreported(NO_CLASS_IN_A), unreported(NO_THIS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -1022,17 +1199,20 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [
-        { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] },
-        { finding: NO_THIS_IN_A, by: [LOCATED_THIS_KEYWORD_IN_A] },
-      ],
-      paid: [
-        {
-          debt: DEBT_ON_CLASS_IN_A,
-          answeredBy: [LOCATED_THIS_KEYWORD_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
-        },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [
+          { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_SYNTAX_IN_A] },
+          { finding: NO_THIS_IN_A, by: [LOCATED_THIS_KEYWORD_IN_A] },
+        ],
+        paid: [
+          {
+            debt: DEBT_ON_CLASS_IN_A,
+            answeredBy: [LOCATED_THIS_KEYWORD_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
+          },
+        ],
+      },
     });
   });
 
@@ -1040,6 +1220,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A, LOCATED_CLASS_IN_A],
         findings: [unreported(NO_THIS_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -1047,10 +1228,13 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] }],
-      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
-      paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+        stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -1063,6 +1247,12 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [DEBT_ON_IMPORTS_IN_IDS, IDS_BOUNDARY],
         findings: [
           importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" }),
@@ -1074,12 +1264,15 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [
-        { finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] },
-        { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
-        { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [
+          { finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] },
+          { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
+          { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
+        ],
+      },
     });
   });
 
@@ -1087,6 +1280,7 @@ describe("answerFindings, paid debt", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_IN_A],
         findings: [unreported(NO_CLASS_IN_A)],
         touched: FILE_A_TOUCHED,
@@ -1094,9 +1288,12 @@ describe("answerFindings, paid debt", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
-      forfeited: [DEBT_ON_CLASS_IN_A],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+        forfeited: [DEBT_ON_CLASS_IN_A],
+      },
     });
   });
 });
@@ -1106,6 +1303,7 @@ describe("answerFindings, stale", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1113,8 +1311,11 @@ describe("answerFindings, stale", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(LOCATED_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(LOCATED_CLASS_IN_A)],
+      },
     });
   });
 
@@ -1122,6 +1323,7 @@ describe("answerFindings, stale", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: FILE_A_TOUCHED,
@@ -1129,8 +1331,11 @@ describe("answerFindings, stale", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      forfeited: [DEBT_ON_CLASS_IN_A],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        forfeited: [DEBT_ON_CLASS_IN_A],
+      },
     });
   });
 
@@ -1138,19 +1343,21 @@ describe("answerFindings, stale", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [ZOD_DEPENDENCY],
         findings: [],
         touched: NOTHING_TOUCHED,
         runs: [],
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
-    ).toEqual(NOTHING_ANSWERED);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("keeps stale records in the records' order", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_B, LOCATED_UUID_IN_IDS],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1158,8 +1365,11 @@ describe("answerFindings, stale", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_B), creditedNothing(LOCATED_UUID_IN_IDS)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_B), creditedNothing(LOCATED_UUID_IN_IDS)],
+      },
     });
   });
 });
@@ -1169,6 +1379,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1176,8 +1387,11 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [DEBT_ON_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [DEBT_ON_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -1185,6 +1399,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1192,9 +1407,12 @@ describe("answerFindings, natives held", () => {
         runs: [inlineRun({ nativeExceptions: [DISABLE_IN_A] })],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_IN_A] }],
-      paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+      },
     });
   });
 
@@ -1202,6 +1420,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1222,13 +1441,14 @@ describe("answerFindings, natives held", () => {
           },
         ],
       }),
-    ).toEqual(NOTHING_ANSWERED);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("lists, attributed to its engine, an inline disable no record holds", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1236,8 +1456,11 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1245,6 +1468,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_B],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1252,9 +1476,12 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_B)],
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_B)],
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1262,6 +1489,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1277,9 +1505,12 @@ describe("answerFindings, natives held", () => {
         ],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1287,6 +1518,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: FILE_A_TOUCHED,
@@ -1294,9 +1526,12 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      forfeited: [DEBT_ON_CLASS_IN_A],
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        forfeited: [DEBT_ON_CLASS_IN_A],
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1312,6 +1547,12 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [IDS_BOUNDARY],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1319,9 +1560,12 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(IDS_BOUNDARY)],
-      unrecorded: [{ ...disableInIds, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(IDS_BOUNDARY)],
+        unrecorded: [{ ...disableInIds, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1337,6 +1581,13 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["authored-class-or-this", { recipes: [] }],
+            ["loop-keyword", { recipes: [] }],
+            ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+          ]),
+        },
         records: [ADAPTER_DEVIATION_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1344,9 +1595,12 @@ describe("answerFindings, natives held", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
-      unrecorded: [{ ...disableInA, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(ADAPTER_DEVIATION_IN_A)],
+        unrecorded: [{ ...disableInA, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1354,19 +1608,24 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [],
         findings: [],
         touched: NOTHING_TOUCHED,
         runs: [inlineRun({ nativeExceptions: [SCRIPT_RULE_OFF] })],
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
-    ).toEqual({ ...NOTHING_ANSWERED, unrecorded: [{ ...SCRIPT_RULE_OFF, mechanism: AUDIT }] });
+    ).toEqual({
+      outcome: "ok",
+      value: { ...NOTHING_ANSWERED, unrecorded: [{ ...SCRIPT_RULE_OFF, mechanism: AUDIT }] },
+    });
   });
 
   it("lists an inline disable from an engine that runs no check of its clause, though a record on that check's symptom names its file", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [DEBT_ON_CLASS_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1382,9 +1641,12 @@ describe("answerFindings, natives held", () => {
         ],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
-      unrecorded: [{ ...DISABLE_IN_A, mechanism: ESLINT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(DEBT_ON_CLASS_IN_A)],
+        unrecorded: [{ ...DISABLE_IN_A, mechanism: ESLINT }],
+      },
     });
   });
 
@@ -1393,6 +1655,7 @@ describe("answerFindings, natives held", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1409,12 +1672,15 @@ describe("answerFindings, natives held", () => {
         ],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      unrecorded: [
-        { ...disableInB, mechanism: ESLINT },
-        { ...DISABLE_IN_A, mechanism: AUDIT },
-        { ...SCRIPT_RULE_OFF, mechanism: AUDIT },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        unrecorded: [
+          { ...disableInB, mechanism: ESLINT },
+          { ...DISABLE_IN_A, mechanism: AUDIT },
+          { ...SCRIPT_RULE_OFF, mechanism: AUDIT },
+        ],
+      },
     });
   });
 });
@@ -1456,6 +1722,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_SYNTAX_IN_A, LOCATED_CLASS_HERITAGE_IN_A],
         findings: [unreported(HERITAGE_FINDING_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -1463,9 +1730,12 @@ describe("answerFindings, a finding or exception that names its check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      answered: [{ finding: HERITAGE_FINDING_IN_A, by: [LOCATED_CLASS_HERITAGE_IN_A] }],
-      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        answered: [{ finding: HERITAGE_FINDING_IN_A, by: [LOCATED_CLASS_HERITAGE_IN_A] }],
+        stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
+      },
     });
   });
 
@@ -1473,6 +1743,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_IN_A],
         findings: [unreported(MISNAMED_FINDING_IN_A)],
         touched: NOTHING_TOUCHED,
@@ -1480,9 +1751,12 @@ describe("answerFindings, a finding or exception that names its check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [MISNAMED_FINDING_IN_A],
-      stale: [creditedNothing(LOCATED_CLASS_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [MISNAMED_FINDING_IN_A],
+        stale: [creditedNothing(LOCATED_CLASS_IN_A)],
+      },
     });
   });
 
@@ -1491,6 +1765,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_HERITAGE_IN_A],
         findings: [unreported(heritageByEslint)],
         touched: NOTHING_TOUCHED,
@@ -1498,9 +1773,12 @@ describe("answerFindings, a finding or exception that names its check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      findings: [heritageByEslint],
-      stale: [creditedNothing(LOCATED_CLASS_HERITAGE_IN_A)],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        findings: [heritageByEslint],
+        stale: [creditedNothing(LOCATED_CLASS_HERITAGE_IN_A)],
+      },
     });
   });
 
@@ -1508,6 +1786,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_HERITAGE_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1515,13 +1794,16 @@ describe("answerFindings, a finding or exception that names its check", () => {
         runs: [inlineRun({ nativeExceptions: [HERITAGE_DISABLE_IN_A] })],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      held: [
-        {
-          exception: { ...HERITAGE_DISABLE_IN_A, mechanism: AUDIT },
-          by: [LOCATED_CLASS_HERITAGE_IN_A],
-        },
-      ],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        held: [
+          {
+            exception: { ...HERITAGE_DISABLE_IN_A, mechanism: AUDIT },
+            by: [LOCATED_CLASS_HERITAGE_IN_A],
+          },
+        ],
+      },
     });
   });
 
@@ -1529,6 +1811,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_SYNTAX_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1536,9 +1819,12 @@ describe("answerFindings, a finding or exception that names its check", () => {
         runs: [inlineRun({ nativeExceptions: [HERITAGE_DISABLE_IN_A] })],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
-      unrecorded: [{ ...HERITAGE_DISABLE_IN_A, mechanism: AUDIT }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
+        unrecorded: [{ ...HERITAGE_DISABLE_IN_A, mechanism: AUDIT }],
+      },
     });
   });
 
@@ -1546,6 +1832,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
+        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
         records: [LOCATED_CLASS_SYNTAX_IN_A],
         findings: [],
         touched: NOTHING_TOUCHED,
@@ -1553,8 +1840,13 @@ describe("answerFindings, a finding or exception that names its check", () => {
         runs: [inlineRun({ nativeExceptions: [DISABLE_IN_A] })],
       }),
     ).toEqual({
-      ...NOTHING_ANSWERED,
-      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_SYNTAX_IN_A] }],
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        held: [
+          { exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_SYNTAX_IN_A] },
+        ],
+      },
     });
   });
 });
@@ -1604,9 +1896,16 @@ const staleAmong = (request: {
   readonly measurements: readonly RunMeasurement[];
   readonly tracked: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
-}): readonly StaleRecord[] =>
+}): Result<Answering, SymptomUnheld> =>
   answerFindings({
     catalogue: MIXED_ENGINES,
+    content: {
+      symptoms: new Map([
+        ["authored-class-or-this", { recipes: [] }],
+        ["loop-keyword", { recipes: [] }],
+        ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
+      ]),
+    },
     records: [request.record],
     findings: [],
     touched: NOTHING_TOUCHED,
@@ -1616,7 +1915,7 @@ const staleAmong = (request: {
       tracked: request.tracked,
       excluded: request.excluded,
     },
-  }).stale;
+  });
 
 const walkerMeasured = (request: { readonly file: RepoPath }): RunMeasurement => ({
   mechanism: AUDIT,
@@ -1655,7 +1954,10 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_A }), eslintMeasured],
       }),
-    ).toEqual([creditedNothing(DEBT_ON_CLASS_IN_A)]);
+    ).toEqual({
+      outcome: "ok",
+      value: { ...NOTHING_ANSWERED, stale: [creditedNothing(DEBT_ON_CLASS_IN_A)] },
+    });
   });
 
   it("does not list a record as stale when one check it reaches was measured and another, selected, was not", () => {
@@ -1666,7 +1968,7 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([]);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("lists a record that reaches only a measured check as stale while an engine of another check measured nothing", () => {
@@ -1677,7 +1979,10 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_SYNTAX_IN_A,
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([creditedNothing(DEBT_ON_CLASS_SYNTAX_IN_A)]);
+    ).toEqual({
+      outcome: "ok",
+      value: { ...NOTHING_ANSWERED, stale: [creditedNothing(DEBT_ON_CLASS_SYNTAX_IN_A)] },
+    });
   });
 
   it("does not list a record as stale when the engine of a check it reaches measured only other files", () => {
@@ -1688,13 +1993,16 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_SYNTAX_IN_A,
         measurements: [walkerMeasured({ file: FILE_B })],
       }),
-    ).toEqual([]);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("lists a record as stale when no run selected a check it reaches", () => {
     expect(
       staleAmong({ tracked: TRACKED, excluded: [], record: DEBT_ON_CLASS_IN_A, measurements: [] }),
-    ).toEqual([creditedNothing(DEBT_ON_CLASS_IN_A)]);
+    ).toEqual({
+      outcome: "ok",
+      value: { ...NOTHING_ANSWERED, stale: [creditedNothing(DEBT_ON_CLASS_IN_A)] },
+    });
   });
 
   it("lists a record as stale when its file is no longer in the tree, whatever the engines measured, since no run can measure a file that is gone", () => {
@@ -1705,7 +2013,13 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_B }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-gone" })]);
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-gone" })],
+      },
+    });
   });
 
   it("lists a record as stale when its file is excluded by the settings, which take it out of what is checked, though it is still in the repository", () => {
@@ -1716,7 +2030,13 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_B }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-excluded" })]);
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-excluded" })],
+      },
+    });
   });
 
   it("lists a record as stale when a folder the settings exclude holds its file", () => {
@@ -1727,7 +2047,13 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_B }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-excluded" })]);
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        ...NOTHING_ANSWERED,
+        stale: [staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-excluded" })],
+      },
+    });
   });
 
   it("does not list a record as stale when its file is in the tree and a check it reaches was not measured there", () => {
@@ -1738,7 +2064,7 @@ describe("answerFindings, what the runs measured", () => {
         record: DEBT_ON_CLASS_IN_A,
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([]);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("does not list a boundary record as stale when an engine of a check it reaches measured nothing in its module", () => {
@@ -1749,7 +2075,7 @@ describe("answerFindings, what the runs measured", () => {
         record: IDS_BOUNDARY,
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([]);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 
   it("lists a boundary record as stale once its module's files were measured by every engine of a check it reaches", () => {
@@ -1770,7 +2096,10 @@ describe("answerFindings, what the runs measured", () => {
         record: IDS_BOUNDARY,
         measurements: [walkerInModule, eslintMeasured],
       }),
-    ).toEqual([creditedNothing(IDS_BOUNDARY)]);
+    ).toEqual({
+      outcome: "ok",
+      value: { ...NOTHING_ANSWERED, stale: [creditedNothing(IDS_BOUNDARY)] },
+    });
   });
 
   it("does not list a deviation on an imported-party symptom as stale when an engine of a check it reaches measured nothing", () => {
@@ -1781,6 +2110,6 @@ describe("answerFindings, what the runs measured", () => {
         record: ADAPTER_DEVIATION_IN_A,
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
-    ).toEqual([]);
+    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 });

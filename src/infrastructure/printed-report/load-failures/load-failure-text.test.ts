@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { loadFailureDetail, loadFailureText } from "./load-failure-text.ts";
 
 const WALKER = "walker" as const;
@@ -392,5 +393,18 @@ describe("loadFailureDetail", () => {
         },
       }),
     ).toBe("rule-set-invalid /repo/rules/ACME-2/discipline.json first\\nsecond");
+  });
+
+  it("prints a symptom no catalogue holds as the disagreement between the catalogue and the records", () => {
+    expect(
+      loadFailureDetail({
+        failure: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "console-output" },
+        },
+      }),
+    ).toBe(
+      "acme/console-output: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it",
+    );
   });
 });

@@ -117,7 +117,7 @@ const CATALOGUE: SymptomCatalogue = {
         discipline: disciplineIdOf("CD-44"),
         clause: clauseIdOf("parameter-reassignment"),
       },
-      sight: { kind: "one-symptom", symptom: REBINDING },
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
       clause: {
@@ -128,8 +128,11 @@ const CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { form: "branching-with-if", symptom: BRANCH_IN_A_TEST },
-          { form: "a-let", symptom: REBINDING },
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
@@ -139,7 +142,11 @@ const CATALOGUE: SymptomCatalogue = {
         discipline: disciplineIdOf("CD-9"),
         clause: clauseIdOf("result-failures"),
       },
-      sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] },
+      sight: {
+        kind: "method",
+        recipe: RESULT_UNION,
+        outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "rebinding" }],
+      },
     },
     {
       clause: {
@@ -171,7 +178,7 @@ describe("symptomReadingOf", () => {
           clause: clauseIdOf("parameter-reassignment"),
         },
       },
-      reading: { reading: "named", symptom: REBINDING },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
       name: "names the symptom of the form a by-form clause's finding gives as its form",
@@ -183,7 +190,7 @@ describe("symptomReadingOf", () => {
         },
         remedy: { fix: "write one test per case", form: "branching-with-if" },
       },
-      reading: { reading: "named", symptom: BRANCH_IN_A_TEST },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" } },
     },
     {
       name: "names another form's symptom for another section of the same clause",
@@ -195,7 +202,7 @@ describe("symptomReadingOf", () => {
         },
         remedy: { fix: "write the values out", form: "a-let" },
       },
-      reading: { reading: "named", symptom: REBINDING },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
       name: "is not in the catalogue for a by-form clause's form the catalogue does not list",

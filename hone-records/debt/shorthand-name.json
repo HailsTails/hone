@@ -23,10 +23,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/walker/ambient-randomness/random-call/ambient-randomness.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/walker/answer-set-in-a-hook/hook-answer/hook-answers.test.ts"
     },
     {
@@ -43,19 +39,11 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/walker/process-global-used-in-place/direct-global-use/process-global-used-in-place.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/walker/prose-in-code/comment-prose/prose-in-code.test.ts"
     },
     {
       "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/walker/runner/pieces/tracker-patterns.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/walker/throw-between-our-units/throw-statement/throws-in-production.test.ts"
     }
   ]
 }

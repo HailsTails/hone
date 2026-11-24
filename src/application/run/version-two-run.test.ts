@@ -234,7 +234,7 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
   page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
@@ -243,7 +243,7 @@ const CLOCK_CHECK: Check = {
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
   page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
@@ -252,7 +252,7 @@ const TEST_BODY_CHECK: Check = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
@@ -274,15 +274,29 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -427,7 +441,7 @@ describe("versionTwoRunOver", () => {
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
       record: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: { reaches: "whole-symptom" },
         file: repoPathOf("src/basket.ts"),
         holding: { held: "stated" },
@@ -466,7 +480,7 @@ describe("versionTwoRunOver", () => {
           place: debtAtBase.place,
           record: {
             kind: "debt",
-            symptom: CLAIMED_TYPE,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
             reach: { reaches: "whole-symptom" },
             file: FILE_A,
             holding: { held: "stated" },
@@ -484,6 +498,31 @@ describe("versionTwoRunOver", () => {
           settings: SETTINGS,
           records: onDisk,
           tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+          checks: [
+            {
+              name: "clock-sources",
+              symptom: {
+                ruleSet: TOOL_RULE_SET,
+                name: "date-used-directly",
+                title: "Date used directly",
+              },
+              engines: [WALKER],
+            },
+            {
+              name: "test-body",
+              symptom: {
+                ruleSet: TOOL_RULE_SET,
+                name: "branch-in-a-test",
+                title: "Branch in a test",
+              },
+              engines: [WALKER],
+            },
+            {
+              name: "cast-expressions",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
+              engines: [ESLINT_ENGINE],
+            },
+          ],
         },
       ],
     ]);
@@ -506,9 +545,75 @@ describe("versionTwoRunOver", () => {
             settings: SETTINGS,
             records: RECORDS,
             tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+            checks: [
+              {
+                name: "clock-sources",
+                symptom: {
+                  ruleSet: TOOL_RULE_SET,
+                  name: "date-used-directly",
+                  title: "Date used directly",
+                },
+                engines: [WALKER],
+              },
+              {
+                name: "test-body",
+                symptom: {
+                  ruleSet: TOOL_RULE_SET,
+                  name: "branch-in-a-test",
+                  title: "Branch in a test",
+                },
+                engines: [WALKER],
+              },
+              {
+                name: "cast-expressions",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
+                engines: [ESLINT_ENGINE],
+              },
+            ],
           },
         ],
       ],
+    });
+  });
+
+  it("fails naming the symptom a check names and no catalogue holds, and runs no engine", async () => {
+    const stages = stagesGiving({
+      catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          principles: [],
+          rules: [],
+          cases: [],
+          recipes: [],
+          recordKinds: [],
+          engines: [WALKER],
+          symptoms: [],
+          clauses: [],
+          checks: [
+            {
+              name: "clock-sources",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+              page: "date-used-directly/clock-sources.md",
+              engines: [WALKER],
+              forms: [],
+            },
+          ],
+          namedBans: [],
+        },
+      }),
+    });
+
+    const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+
+    expect({ run, engines: vi.mocked(stages.engines).mock.calls }).toEqual({
+      run: {
+        outcome: "failed",
+        error: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+        },
+      },
+      engines: [],
     });
   });
 
@@ -602,6 +707,38 @@ describe("measureEngines", () => {
         settings: SETTINGS,
         records: RECORDS,
         tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+        checks: [
+          {
+            name: "clock-sources",
+            symptom: {
+              ruleSet: TOOL_RULE_SET,
+              name: "date-used-directly",
+              title: "Date used directly",
+            },
+            engines: [WALKER],
+          },
+          {
+            name: "test-body",
+            symptom: {
+              ruleSet: TOOL_RULE_SET,
+              name: "branch-in-a-test",
+              title: "Branch in a test",
+            },
+            engines: [WALKER],
+          },
+          {
+            name: "cast-expressions",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
+            engines: [ESLINT_ENGINE],
+          },
+        ],
+        content: {
+          symptoms: new Map([
+            ["date-used-directly", DATE_USED_DIRECTLY],
+            ["branch-in-a-test", BRANCH_IN_A_TEST],
+            ["claimed-type", CLAIMED_TYPE],
+          ]),
+        },
         runs: [RUN],
       },
     });

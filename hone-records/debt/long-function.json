@@ -56,6 +56,22 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/printed-report/load-failures/load-failure-text.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/application/run/settings/read-settings.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/application/run/version-two-run.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/application/upgrade/command/planned-projection.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/composition/version-two-stages.test.ts"
     }
   ]
 }

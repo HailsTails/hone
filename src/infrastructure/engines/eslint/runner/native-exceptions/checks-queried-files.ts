@@ -275,9 +275,7 @@ const answeredHolds = (request: {
   readonly entry: Pick<SelectedNamedCheck, "ruleSet" | "address" | "symptom">;
   readonly file: RepoPath;
 }): Holding =>
-  answeredAt({ byPlace: request.answeredByPlace, ...request.entry, file: request.file })
-    ? "holds"
-    : "does-not-hold";
+  answeredAt({ byPlace: request.answeredByPlace, ...request.entry, file: request.file });
 
 type ProjectedRule = Pick<SelectedNamedCheck, "ruleSet" | "address" | "symptom" | "ruleId">;
 

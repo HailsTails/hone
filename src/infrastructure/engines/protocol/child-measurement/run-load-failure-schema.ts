@@ -6,7 +6,11 @@ import type {
   MissingProjection,
   RunProjectionProblem,
 } from "../../../../domain/report/run-report.ts";
-import { engineIdSchema, ruleSetNameSchema } from "../../../hone-config-file/identifiers.ts";
+import {
+  engineIdSchema,
+  ruleSetIdentitySchema,
+  ruleSetNameSchema,
+} from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
 import type { DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
@@ -197,6 +201,10 @@ export const runLoadFailureSchema = z.discriminatedUnion("kind", [
     kind: z.literal("renamed-address-outside-listings"),
     path: z.string(),
     listings: z.array(z.string()).readonly(),
+  }),
+  z.strictObject({
+    kind: z.literal("symptom-unheld"),
+    symptom: z.strictObject({ ruleSet: ruleSetIdentitySchema, name: z.string() }),
   }),
 ]);
 

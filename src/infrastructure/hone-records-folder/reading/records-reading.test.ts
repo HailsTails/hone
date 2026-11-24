@@ -46,7 +46,7 @@ const CLAIMED_TYPE: Symptom = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: "hone", name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -59,7 +59,7 @@ const CAST_CHECK: Check = {
 
 const NON_NULL_CHECK: Check = {
   name: "non-null-assertions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: "hone", name: "claimed-type" },
   page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
@@ -195,7 +195,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 0 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/a.ts",
               holding: { held: "stated" },
@@ -205,7 +205,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 1 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/b.ts",
               holding: { held: "stated" },
@@ -242,7 +242,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 1 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/b.ts",
               holding: { held: "stated" },
@@ -289,7 +289,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 1 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/b.ts",
               holding: { held: "stated" },
@@ -341,7 +341,7 @@ describe("recordsReadingOf", () => {
             place: { file: AUTHORISED_FILE, index: 0 },
             record: {
               kind: "authorised-location",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/held.ts",
               holding: {
@@ -404,7 +404,7 @@ describe("recordsReadingOf", () => {
           held: [
             {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/basket.ts",
               holding: { held: "stated" },
@@ -455,7 +455,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 0 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/a.ts",
               holding: { held: "stated" },
@@ -500,8 +500,14 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 0 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
-              reach: { reaches: "one-check", check: CAST_CHECK },
+              symptom: { ruleSet: "hone", name: "claimed-type" },
+              reach: {
+                reaches: "one-check",
+                check: {
+                  name: "cast-expressions",
+                  symptom: { ruleSet: "hone", name: "claimed-type" },
+                },
+              },
               file: "src/a.ts",
               holding: { held: "stated" },
             },
@@ -510,8 +516,14 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 1 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
-              reach: { reaches: "one-check", check: NON_NULL_CHECK },
+              symptom: { ruleSet: "hone", name: "claimed-type" },
+              reach: {
+                reaches: "one-check",
+                check: {
+                  name: "non-null-assertions",
+                  symptom: { ruleSet: "hone", name: "claimed-type" },
+                },
+              },
               file: "src/a.ts",
               holding: { held: "stated" },
             },
@@ -550,7 +562,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 0 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: "src/a.ts",
               holding: { held: "stated" },
@@ -560,8 +572,14 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 1 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
-              reach: { reaches: "one-check", check: CAST_CHECK },
+              symptom: { ruleSet: "hone", name: "claimed-type" },
+              reach: {
+                reaches: "one-check",
+                check: {
+                  name: "cast-expressions",
+                  symptom: { ruleSet: "hone", name: "claimed-type" },
+                },
+              },
               file: "src/a.ts",
               holding: { held: "stated" },
             },
@@ -594,7 +612,7 @@ describe("recordsReadingOf", () => {
             place: { file: AUTHORISED_FILE, index: 0 },
             record: {
               kind: "authorised-location",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: { reaches: "unknown-check", check: "no-such-check" },
               file: "src/held.ts",
               holding: {
@@ -610,7 +628,11 @@ describe("recordsReadingOf", () => {
         notes: [
           {
             place: { file: AUTHORISED_FILE, index: 0 },
-            note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" },
+            note: {
+              kind: "unknown-check",
+              symptom: { ruleSet: "hone", name: "claimed-type" },
+              check: "no-such-check",
+            },
           },
         ],
         base: { measured: "no", base: { state: "not-given" } },
@@ -647,7 +669,11 @@ describe("recordsReadingOf", () => {
         notes: [
           {
             place: { file: AUTHORISED_FILE, index: 0 },
-            note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" },
+            note: {
+              kind: "unknown-check",
+              symptom: { ruleSet: "hone", name: "claimed-type" },
+              check: "no-such-check",
+            },
           },
           {
             place: { file: AUTHORISED_FILE, index: 0 },
@@ -744,9 +770,12 @@ describe("recordsReadingOf", () => {
   });
 
   it.each([
-    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/debt/claimed-type.json") },
     {
-      symptom: TEXT_PAST_ITS_READER,
+      symptom: { ruleSet: "hone", name: "claimed-type" },
+      file: repoPathOf("hone-records/debt/claimed-type.json"),
+    },
+    {
+      symptom: { ruleSet: "hone", name: "text-past-its-reader" },
       file: repoPathOf("hone-records/debt/text-past-its-reader.json"),
     },
   ])("accepts debt on $symptom.name: debt is debt, not blockers", ({ symptom, file }) => {
@@ -772,11 +801,11 @@ describe("recordsReadingOf", () => {
 
   it.each([
     {
-      symptom: CLAIMED_TYPE,
+      symptom: { ruleSet: "hone", name: "claimed-type" },
       file: repoPathOf("hone-records/authorised-locations/claimed-type.json"),
     },
     {
-      symptom: TEXT_PAST_ITS_READER,
+      symptom: { ruleSet: "hone", name: "text-past-its-reader" },
       file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json"),
     },
   ])("never refuses an authorised location for being on $symptom.name", ({ symptom, file }) => {
@@ -861,7 +890,7 @@ describe("recordsReadingOf", () => {
             place: { file: DEBT_FILE, index: 0 },
             record: {
               kind: "debt",
-              symptom: CLAIMED_TYPE,
+              symptom: { ruleSet: "hone", name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: ADAPTER,
               holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" },
@@ -912,7 +941,7 @@ describe("recordsReadingOf", () => {
             place: { file, index: 0 },
             record: {
               kind: "debt",
-              symptom: teamClaimedType,
+              symptom: { ruleSet: acme, name: "claimed-type" },
               reach: WHOLE_SYMPTOM,
               file: ADAPTER,
               holding: { held: "stated" },

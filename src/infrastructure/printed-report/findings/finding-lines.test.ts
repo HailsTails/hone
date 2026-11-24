@@ -245,7 +245,7 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
   page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
@@ -254,7 +254,7 @@ const CLOCK_CHECK: Check = {
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
   page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
@@ -263,7 +263,7 @@ const TEST_BODY_CHECK: Check = {
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
@@ -285,15 +285,29 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -329,7 +343,7 @@ const BRANCH_FINDING: CheckFinding = {
 
 const SECOND_CAST_CHECK: Check = {
   name: "cast-walker",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   page: "claimed-type/cast-walker.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
@@ -348,7 +362,7 @@ const DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: {
     kind: "debt",
-    symptom: CLAIMED_TYPE,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
     reach: WHOLE_SYMPTOM,
     file: WEBHOOK_FILE,
     holding: { held: "stated" },
@@ -369,7 +383,7 @@ const TEST_BODY_DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/branch-in-a-test.json"), index: 0 },
   record: {
     kind: "debt",
-    symptom: BRANCH_IN_A_TEST,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
     reach: WHOLE_SYMPTOM,
     file: TEST_FILE,
     holding: { held: "stated" },
@@ -380,7 +394,7 @@ const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
   place: { file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"), index: 0 },
   record: {
     kind: "authorised-location",
-    symptom: BRANCH_IN_A_TEST,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
     reach: { reaches: "unknown-check", check: "test-bodies" },
     file: TEST_FILE,
     holding: {
@@ -397,6 +411,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map([["date-used-directly", DATE_USED_DIRECTLY]]) },
         finding: CLOCK_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -409,6 +424,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
         finding: BRANCH_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -420,7 +436,12 @@ describe("findingLine", () => {
   it("names no fix when the catalogue has no check for the finding", () => {
     const catalogue = { ...REPORT_CATALOGUE, checks: [CLOCK_CHECK, CAST_CHECK] };
 
-    const line = findingLine({ catalogue, finding: BRANCH_FINDING, symptomPage: SYMPTOM_PAGE });
+    const line = findingLine({
+      catalogue,
+      content: { symptoms: new Map<string, Symptom>() },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
 
     expect(line).toBe(
       "branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return;",
@@ -441,7 +462,7 @@ describe("findingLine", () => {
     };
     const check: Check = {
       name: "no-moment",
-      symptom,
+      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "outside-import-past-a-boundary" },
       page: "rules/team/checks/no-moment.md",
       engines: [ESLINT_ENGINE],
       forms: [],
@@ -453,6 +474,7 @@ describe("findingLine", () => {
           checks: [check],
           symptoms: [symptom],
         },
+        content: { symptoms: new Map([["acme/outside-import-past-a-boundary", symptom]]) },
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -465,11 +487,27 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map<string, Symptom>() },
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
     ).toBe(
       "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
+    );
+  });
+
+  it("says the catalogue and the records disagree when no catalogue holds the symptom its check names", () => {
+    const content = { symptoms: new Map<string, Symptom>() };
+
+    const line = findingLine({
+      catalogue: REPORT_CATALOGUE,
+      content,
+      finding: CLOCK_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); date-used-directly: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it",
     );
   });
 });

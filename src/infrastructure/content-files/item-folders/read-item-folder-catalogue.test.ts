@@ -138,7 +138,7 @@ const ASSEMBLED_CONTENT = {
   checks: [
     {
       name: "clock-sources",
-      symptom: { name: "date-used-directly" },
+      symptom: { ruleSet: { name: "acme" }, name: "date-used-directly" },
       page: "rules/typescript/symptoms/date-used-directly/clock-sources.md",
       clause: CLOCK_SOURCES,
     },

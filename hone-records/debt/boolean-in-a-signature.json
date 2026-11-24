@@ -15,10 +15,6 @@
     },
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/domain/records/answering/records-by-place.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
     },
     {
