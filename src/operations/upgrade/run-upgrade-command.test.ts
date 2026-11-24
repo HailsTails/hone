@@ -457,6 +457,9 @@ describe("upgradeOf", () => {
       tree: vi.fn<VersionTwoStages["tree"]>(),
       engines: vi.fn<VersionTwoStages["engines"]>(),
       projections: vi.fn<VersionTwoStages["projections"]>(),
+      renamed: vi
+        .fn<VersionTwoStages["renamed"]>()
+        .mockReturnValue({ measured: "yes", renamed: new Map() }),
       touched: vi.fn<VersionTwoStages["touched"]>(),
     };
     const foundTreeStages = vi.fn<UpgradeInput["foundTreeStages"]>().mockReturnValue(stages);

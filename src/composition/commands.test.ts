@@ -615,6 +615,9 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
     .fn<VersionTwoStages["engines"]>()
     .mockResolvedValue({ outcome: "ok", value: [runOf({ hits: [CAST] })] }),
   projections: vi.fn<VersionTwoStages["projections"]>(),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
   touched: vi
     .fn<VersionTwoStages["touched"]>()
     .mockReturnValue({ measured: "yes", paths: new Set() }),
@@ -715,6 +718,46 @@ describe("versionTwoRecordDebtCommandOf", () => {
     ]);
   });
 
+  it("repoints a record held at a path git moved, prints the repoint and the project command, and records nothing", async () => {
+    const cart = repoPathOf("src/cart.ts");
+    const ran = await ranWith({
+      handler: versionTwoRecordDebtCommandOf,
+      arguments: RECORD_ARGUMENTS,
+      stages: stagesGiving({
+        records: vi
+          .fn<VersionTwoStages["records"]>()
+          .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
+        renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
+          measured: "yes",
+          renamed: new Map([[cart, { basePath: FILE_A, content: "unchanged" }]]),
+        }),
+        engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+          outcome: "ok",
+          value: [runOf({ hits: [{ ...CAST, file: cart }] })],
+        }),
+      }),
+      held: debtHeld({ text: DEBT_DOCUMENT }),
+    });
+    expect({ writes: ran.writes, exits: ran.exits, written: ran.written }).toEqual({
+      writes: [
+        [
+          {
+            text: `hone-records/debt/claimed-type.json records[0] repointed to src/cart.ts\n${PROJECT_LINE}`,
+          },
+        ],
+      ],
+      exits: [[{ code: 0 }]],
+      written: [
+        [
+          {
+            path: "/repo/hone-records/debt/claimed-type.json",
+            text: '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type#cast-expressions",\n      "file": "src/cart.ts"\n    }\n  ]\n}\n',
+          },
+        ],
+      ],
+    });
+  });
+
   it("refuses debt on a touched file, printing the touched line, when the repository's own setting is this-run", async () => {
     const touched = touchedStageGiving({ touched: FILE_A_CHANGED });
     const stages = stagesGiving({
@@ -731,6 +774,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       assessment: { forfeiture: "this-run" },
       measuring: "always",
       records: NO_RECORDS,
+      renamed: { measured: "yes", renamed: new Map() },
     });
     expect(ran.writes).toEqual([
       [
@@ -758,6 +802,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       assessment: { forfeiture: "elsewhere" },
       measuring: "always",
       records: NO_RECORDS,
+      renamed: { measured: "yes", renamed: new Map() },
     });
     expect(ran.writes).toEqual([
       [{ text: `claimed-type#cast-expressions recorded src/a.ts\n${PROJECT_LINE}` }],
@@ -1098,6 +1143,9 @@ describe("versionTwoPruneDebtCommandOf", () => {
           outcome: "ok",
           value: [{ ...runOf({ hits: [] }), projection: "not-included" }],
         }),
+        renamed: vi
+          .fn<VersionTwoStages["renamed"]>()
+          .mockReturnValue({ measured: "yes", renamed: new Map() }),
         touched: vi
           .fn<VersionTwoStages["touched"]>()
           .mockReturnValue({ measured: "no", base: { state: "not-given" } }),

@@ -409,6 +409,32 @@ describe("versionTwoStagesOver", () => {
     });
   });
 
+  it("asks git once for the renames since the base revision", () => {
+    const git = gitListing({ tracked: vi.fn<GitPort["trackedPaths"]>() });
+    vi.mocked(git.renamedSince).mockReturnValue({
+      outcome: "ok",
+      value: new Map([
+        [
+          repoPathOf("src/cart.ts"),
+          { basePath: repoPathOf("src/basket.ts"), content: "unchanged" },
+        ],
+      ]),
+    });
+    expect(stagesOver({ git, baseRevision: "origin/main" }).renamed()).toEqual({
+      measured: "yes",
+      renamed: new Map([
+        [
+          repoPathOf("src/cart.ts"),
+          { basePath: repoPathOf("src/basket.ts"), content: "unchanged" },
+        ],
+      ]),
+    });
+    expect(git.renamedSince).toHaveBeenCalledExactlyOnceWith({
+      repoRoot: REPO,
+      baseRevision: "origin/main",
+    });
+  });
+
   it("touches nothing when no record is debt, without asking git", () => {
     const git = gitListing({ tracked: vi.fn<GitPort["trackedPaths"]>() });
     const records: RecordsReading = {
@@ -422,6 +448,7 @@ describe("versionTwoStagesOver", () => {
         assessment: { forfeiture: "this-run" },
         measuring: "when-debt-held",
         records,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set() });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
@@ -452,6 +479,7 @@ describe("versionTwoStagesOver", () => {
         assessment: { forfeiture: "this-run" },
         measuring: "when-debt-held",
         records,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({
       measured: "yes",

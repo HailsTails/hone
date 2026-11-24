@@ -123,6 +123,7 @@ export type RecordRefusal =
   | { readonly kind: "misplaced"; readonly belongsIn: RepoPath }
   | { readonly kind: "not-a-records-name"; readonly folder: RepoPath; readonly name: string }
   | { readonly kind: "carried-changed-since-base" }
+  | { readonly kind: "held-at-moved-path"; readonly movedTo: RepoPath }
   | { readonly kind: "duplicate"; readonly of: RecordPlace };
 
 export type RefusedRecord = {

@@ -43,4 +43,36 @@ describe("headPathByBasePathOf", () => {
       ]),
     );
   });
+
+  it("maps each base path once, so a chain a to b and b to c moves a to b and b to c", () => {
+    expect(
+      headPathByBasePathOf({
+        renamed: new Map([
+          [CART, { basePath: BASKET, content: "unchanged" }],
+          [TOTAL, { basePath: CART, content: "unchanged" }],
+        ]),
+      }),
+    ).toEqual(
+      new Map([
+        [BASKET, CART],
+        [CART, TOTAL],
+      ]),
+    );
+  });
+
+  it("maps a swap both ways, a to b and b to a", () => {
+    expect(
+      headPathByBasePathOf({
+        renamed: new Map([
+          [CART, { basePath: BASKET, content: "unchanged" }],
+          [BASKET, { basePath: CART, content: "unchanged" }],
+        ]),
+      }),
+    ).toEqual(
+      new Map([
+        [BASKET, CART],
+        [CART, BASKET],
+      ]),
+    );
+  });
 });

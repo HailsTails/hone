@@ -221,10 +221,7 @@ const REQUEST: DebtEffectsRequest = {
   records: [],
   leave: [],
   touched: { measured: "yes", paths: new Set([TOUCHED_FILE, NEW_FILE]) },
-  renamed: new Map(),
 };
-
-const MOVED_FILE = repoPathOf("src/charges/charge-order.ts");
 
 describe("what record-debt does with each symptom and file the check finds", () => {
   it("records debt on a file this change left alone", () => {
@@ -268,51 +265,6 @@ describe("what record-debt does with each symptom and file the check finds", () 
         file: ORDER_FILE,
         effect: "already-recorded",
         heldIn: DEBT_FILE,
-      },
-    ]);
-  });
-
-  it("repoints the debt held at a file's path before git saw it renamed, so the record keeps answering it", () => {
-    expect(
-      debtOutcomesOf({
-        ...REQUEST,
-        sites: [
-          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: MOVED_FILE, origin: "finding" },
-        ],
-        records: [HELD_CLOCK_DEBT],
-        touched: { measured: "yes", paths: new Set([MOVED_FILE]) },
-        renamed: new Map([[MOVED_FILE, { basePath: ORDER_FILE, content: "edited" }]]),
-      }),
-    ).toEqual([
-      {
-        ruleSet: TOOL_RULE_SET,
-        address: CLOCK_ADDRESS,
-        file: MOVED_FILE,
-        effect: "repointed",
-        held: HELD_CLOCK_DEBT.place,
-        was: ORDER_FILE,
-      },
-    ]);
-  });
-
-  it("repoints only the debt on the site's own check, treating the renamed file as touched for any other", () => {
-    expect(
-      debtOutcomesOf({
-        ...REQUEST,
-        sites: [
-          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: MOVED_FILE, origin: "finding" },
-        ],
-        records: [HELD_CAST_DEBT],
-        touched: { measured: "yes", paths: new Set([MOVED_FILE]) },
-        renamed: new Map([[MOVED_FILE, { basePath: ORDER_FILE, content: "edited" }]]),
-      }),
-    ).toEqual([
-      {
-        ruleSet: TOOL_RULE_SET,
-        address: CLOCK_ADDRESS,
-        file: MOVED_FILE,
-        effect: "touched",
-        of: "finding",
       },
     ]);
   });

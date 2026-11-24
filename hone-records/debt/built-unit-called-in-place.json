@@ -7,19 +7,11 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/check-command.version-two.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/commands.version-two-needed.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/commands.version-two-project.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",

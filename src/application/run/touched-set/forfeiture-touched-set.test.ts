@@ -13,10 +13,6 @@ const MOVED_BASKET = repoPathOf("src/basket/basket.ts");
 
 const BASKET = repoPathOf("src/basket.ts");
 
-const NOTHING_RENAMED = vi
-  .fn<GitPort["renamedSince"]>()
-  .mockReturnValue({ outcome: "ok", value: new Map() });
-
 describe("the change a run measures to assess forfeiture, by the forfeiture setting", () => {
   it("measures the files changed since the base when the run assesses forfeiture", () => {
     const changedSince = vi
@@ -27,40 +23,28 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
         forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
-        git: { changedSince, renamedSince: NOTHING_RENAMED },
+        git: { changedSince },
+        renamed: { measured: "yes", renamed: new Map() },
       }),
-    ).toEqual({
-      measured: "yes",
-      paths: new Set([ORDER_FILE]),
-    });
+    ).toEqual({ measured: "yes", paths: new Set([ORDER_FILE]) });
     expect(changedSince).toHaveBeenCalledWith({ repoRoot: REPO_ROOT, baseRevision: "origin/main" });
   });
 
   it("measures nothing when another run assesses forfeiture", () => {
     const changedSince = vi.fn<GitPort["changedSince"]>();
-    const renamedSince = vi.fn<GitPort["renamedSince"]>();
     expect(
       touchedSetUnder({
         forfeiture: "elsewhere",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
-        git: { changedSince, renamedSince },
+        git: { changedSince },
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "elsewhere" });
-    expect({
-      changed: changedSince.mock.calls,
-      renamed: renamedSince.mock.calls,
-    }).toEqual({ changed: [], renamed: [] });
+    expect(changedSince).not.toHaveBeenCalled();
   });
 
   it("leaves out a file only moved since the base, keeping one moved and edited", () => {
-    const renamedSince = vi.fn<GitPort["renamedSince"]>().mockReturnValue({
-      outcome: "ok",
-      value: new Map([
-        [MOVED_BASKET, { basePath: BASKET, content: "unchanged" }],
-        [ORDER_FILE, { basePath: repoPathOf("src/charge-order.ts"), content: "edited" }],
-      ]),
-    });
     expect(
       touchedSetUnder({
         forfeiture: "this-run",
@@ -70,17 +54,19 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
           changedSince: vi
             .fn<GitPort["changedSince"]>()
             .mockReturnValue({ outcome: "ok", value: [MOVED_BASKET, ORDER_FILE] }),
-          renamedSince,
+        },
+        renamed: {
+          measured: "yes",
+          renamed: new Map([
+            [MOVED_BASKET, { basePath: BASKET, content: "unchanged" }],
+            [ORDER_FILE, { basePath: repoPathOf("src/charge-order.ts"), content: "edited" }],
+          ]),
         },
       }),
     ).toEqual({ measured: "yes", paths: new Set([ORDER_FILE]) });
-    expect(renamedSince).toHaveBeenCalledWith({
-      repoRoot: REPO_ROOT,
-      baseRevision: "origin/main",
-    });
   });
 
-  it("is unmeasured, carrying git's message, when git cannot list the renames", () => {
+  it("is unmeasured, carrying git's message, when the renames since the base are unmeasured", () => {
     expect(
       touchedSetUnder({
         forfeiture: "this-run",
@@ -90,10 +76,10 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
           changedSince: vi
             .fn<GitPort["changedSince"]>()
             .mockReturnValue({ outcome: "ok", value: [ORDER_FILE] }),
-          renamedSince: vi.fn<GitPort["renamedSince"]>().mockReturnValue({
-            outcome: "failed",
-            error: { kind: "git-failed", command: "git diff", detail: "fatal: bad revision" },
-          }),
+        },
+        renamed: {
+          measured: "no",
+          base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" },
         },
       }),
     ).toEqual({
@@ -102,16 +88,15 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     });
   });
 
-  it("does not ask git for renames when no base revision is given", () => {
-    const renamedSince = vi.fn<GitPort["renamedSince"]>();
+  it("is unmeasured with no base revision given, whatever the renames", () => {
     expect(
       touchedSetUnder({
         forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: undefined,
-        git: { changedSince: vi.fn<GitPort["changedSince"]>(), renamedSince },
+        git: { changedSince: vi.fn<GitPort["changedSince"]>() },
+        renamed: { measured: "no", base: { state: "not-given" } },
       }),
     ).toEqual({ measured: "no", base: { state: "not-given" } });
-    expect(renamedSince).not.toHaveBeenCalled();
   });
 });

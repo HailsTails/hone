@@ -342,6 +342,9 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
     .mockReturnValue({ outcome: "ok", value: { tracked: [FILE_A], declaredConfigRoots: [] } }),
   engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({ outcome: "ok", value: [RUN] }),
   projections: vi.fn<VersionTwoStages["projections"]>(),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
   touched: vi
     .fn<VersionTwoStages["touched"]>()
     .mockReturnValue({ measured: "yes", paths: new Set() }),
@@ -379,7 +382,14 @@ describe("versionTwoRunOver", () => {
     });
     expect(run).toMatchObject({ outcome: "ok", value: { output: "counts" } });
     expect(touched.mock.calls).toEqual([
-      [{ assessment: { forfeiture: "elsewhere" }, measuring: "when-debt-held", records: RECORDS }],
+      [
+        {
+          assessment: { forfeiture: "elsewhere" },
+          measuring: "when-debt-held",
+          records: RECORDS,
+          renamed: { measured: "yes", renamed: new Map() },
+        },
+      ],
     ]);
   });
 
@@ -392,7 +402,66 @@ describe("versionTwoRunOver", () => {
     });
     expect(run).toMatchObject({ outcome: "ok", value: { touched: measured } });
     expect(touched.mock.calls).toEqual([
-      [{ assessment: { forfeiture: "this-run" }, measuring: "always", records: RECORDS }],
+      [
+        {
+          assessment: { forfeiture: "this-run" },
+          measuring: "always",
+          records: RECORDS,
+          renamed: { measured: "yes", renamed: new Map() },
+        },
+      ],
+    ]);
+  });
+
+  it("judges the records at the paths git moved them to, refusing each where it is held, and measures with the files as they are", async () => {
+    const debtAtBase = {
+      place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+      record: {
+        kind: "debt",
+        symptom: CLAIMED_TYPE,
+        reach: { reaches: "whole-symptom" },
+        file: repoPathOf("src/basket.ts"),
+        holding: { held: "stated" },
+      },
+    } as const;
+    const onDisk: RecordsReading = { ...RECORDS, records: [debtAtBase] };
+    const stages = stagesGiving({
+      records: vi
+        .fn<VersionTwoStages["records"]>()
+        .mockReturnValue({ outcome: "ok", value: onDisk }),
+      renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
+        measured: "yes",
+        renamed: new Map([[FILE_A, { basePath: repoPathOf("src/basket.ts"), content: "edited" }]]),
+      }),
+      touched: vi
+        .fn<VersionTwoStages["touched"]>()
+        .mockReturnValue({ measured: "yes", paths: new Set([FILE_A]) }),
+    });
+    const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    expect(run).toMatchObject({
+      outcome: "ok",
+      value: {
+        moved: [{ place: debtAtBase.place, file: FILE_A }],
+        report: {
+          forfeited: [{ place: debtAtBase.place, record: { ...debtAtBase.record, file: FILE_A } }],
+          refused: [
+            {
+              place: debtAtBase.place,
+              refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }],
+            },
+          ],
+        },
+      },
+    });
+    expect(vi.mocked(stages.engines).mock.calls).toEqual([
+      [
+        {
+          catalogue: REPORT_CATALOGUE,
+          settings: SETTINGS,
+          records: onDisk,
+          tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+        },
+      ],
     ]);
   });
 

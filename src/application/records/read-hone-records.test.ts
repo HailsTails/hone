@@ -278,68 +278,59 @@ const READING_DEBT_ON_A: RecordsReading = {
 };
 
 describe("readingFollowingRenames", () => {
-  it("points each record on a file git saw renamed since the base at the file's path now", () => {
-    const renamedSince = vi.fn<GitPort["renamedSince"]>().mockReturnValue({
-      outcome: "ok",
-      value: new Map([
-        [repoPathOf("src/moved/a.ts"), { basePath: repoPathOf("src/a.ts"), content: "unchanged" }],
-      ]),
-    });
-    expect({
-      reading: readingFollowingRenames({
-        reading: READING_DEBT_ON_A,
-        repoRoot: REPO_ROOT,
-        baseRevision: "origin/main",
-        git: { renamedSince },
-      }),
-      asked: renamedSince.mock.calls,
-    }).toEqual({
-      reading: {
-        records: [
-          {
-            place: { file: "hone-records/debt/claimed-type.json", index: 0 },
-            record: {
-              kind: "debt",
-              symptom: CLAIMED_TYPE,
-              reach: { reaches: "whole-symptom" },
-              file: "src/moved/a.ts",
-              holding: { held: "stated" },
-            },
-          },
-        ],
-        refused: [],
-        notes: [],
-        base: { measured: "yes" },
-      },
-      asked: [[{ repoRoot: REPO_ROOT, baseRevision: "origin/main" }]],
-    });
-  });
-
-  it("follows no rename and asks git nothing when no base revision is given", () => {
-    const renamedSince = vi.fn<GitPort["renamedSince"]>();
-    expect({
-      reading: readingFollowingRenames({
-        reading: READING_DEBT_ON_A,
-        repoRoot: REPO_ROOT,
-        baseRevision: undefined,
-        git: { renamedSince },
-      }),
-      asked: renamedSince.mock.calls,
-    }).toEqual({ reading: READING_DEBT_ON_A, asked: [] });
-  });
-
-  it("follows no rename and leaves the base unmeasured, carrying git's message, when git cannot list the renames", () => {
+  it("points each record on a file git saw renamed at the file's path now, and refuses it where it is held", () => {
     expect(
       readingFollowingRenames({
         reading: READING_DEBT_ON_A,
-        repoRoot: REPO_ROOT,
-        baseRevision: "origin/main",
-        git: {
-          renamedSince: vi.fn<GitPort["renamedSince"]>().mockReturnValue({
-            outcome: "failed",
-            error: { kind: "git-failed", command: "git diff", detail: "fatal: bad object" },
-          }),
+        renamed: {
+          measured: "yes",
+          renamed: new Map([
+            [
+              repoPathOf("src/moved/a.ts"),
+              { basePath: repoPathOf("src/a.ts"), content: "unchanged" },
+            ],
+          ]),
         },
+        moved: [
+          {
+            place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+            file: repoPathOf("src/moved/a.ts"),
+          },
+        ],
+      }),
+    ).toEqual({
+      records: [
+        {
+          place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+          record: {
+            kind: "debt",
+            symptom: CLAIMED_TYPE,
+            reach: { reaches: "whole-symptom" },
+            file: "src/moved/a.ts",
+            holding: { held: "stated" },
+          },
+        },
+      ],
+      refused: [
+        {
+          place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+          refusals: [{ kind: "held-at-moved-path", movedTo: "src/moved/a.ts" }],
+        },
+      ],
+      notes: [],
+      base: { measured: "yes" },
+    });
+  });
+
+  it("follows no rename and leaves the base unmeasured, carrying git's message, when the renames are unmeasured", () => {
+    expect(
+      readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        renamed: {
+          measured: "no",
+          base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad object" },
+        },
+        moved: [],
       }),
     ).toEqual({
       records: [DEBT_ON_A],
@@ -350,5 +341,19 @@ describe("readingFollowingRenames", () => {
         base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad object" },
       },
     });
+  });
+
+  it("keeps the reading's own unmeasured base when no base revision was given", () => {
+    const unmeasured: RecordsReading = {
+      ...READING_DEBT_ON_A,
+      base: { measured: "no", base: { state: "not-given" } },
+    };
+    expect(
+      readingFollowingRenames({
+        reading: unmeasured,
+        renamed: { measured: "no", base: { state: "not-given" } },
+        moved: [],
+      }),
+    ).toEqual(unmeasured);
   });
 });

@@ -22,7 +22,6 @@ import { namedRecordsFileOf } from "../../domain/records/hone-records/records-la
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import type { RenamedPaths } from "../../domain/repository/renamed-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
@@ -51,7 +50,7 @@ export type RecordDebtRequest = {
   readonly unrecorded: readonly AttributedCheckException[];
   readonly runs: readonly NamedGovernedRun[];
   readonly touched: TouchedSet;
-  readonly renamed: RenamedPaths;
+  readonly moved: readonly RecordRepointing[];
   readonly leave: readonly RepoPath[];
 };
 
@@ -145,13 +144,6 @@ const additionsOf = (request: {
   );
 };
 
-const repointingsOf = (request: {
-  readonly outcomes: readonly DebtOutcome[];
-}): readonly RecordRepointing[] =>
-  request.outcomes.flatMap((outcome) =>
-    outcome.effect === "repointed" ? [{ place: outcome.held, file: outcome.file }] : [],
-  );
-
 const storedEdits = (request: {
   readonly ports: Pick<RecordDebtPorts, "store" | "recordsEditor">;
   readonly documents: readonly RecordsDocument[];
@@ -219,7 +211,6 @@ const outcomesOf = (request: {
       records: held.value.records,
       leave: request.run.leave,
       touched,
-      renamed: request.run.renamed,
     }),
   };
 };
@@ -229,7 +220,7 @@ export const recordDebtOf = (request: {
   readonly run: RecordDebtRequest;
 }): Commanded<readonly DebtOutcome[]> => {
   const { ports, run } = request;
-  if (run.findings.length === 0 && run.unrecorded.length === 0) {
+  if (run.findings.length === 0 && run.unrecorded.length === 0 && run.moved.length === 0) {
     return { outcome: "ok", value: [] };
   }
   const documents = documentsOf(ports);
@@ -248,7 +239,7 @@ export const recordDebtOf = (request: {
     ports,
     documents: documents.value,
     additions: additions.value,
-    repointings: repointingsOf({ outcomes: outcomes.value }),
+    repointings: run.moved,
   });
   return stored.outcome === "failed" ? stored : outcomes;
 };

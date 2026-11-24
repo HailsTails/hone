@@ -9,6 +9,7 @@ import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   authorisingLines,
   debtOutcomeLine,
+  movedRecordLine,
   projectNextLine,
   prunedDebtLine,
 } from "./record-command-lines.ts";
@@ -129,15 +130,6 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
     "date-used-directly#clock-sources already-recorded src/orders/charge-order.ts: hone-records/debt/date-used-directly.json already holds debt on this symptom and file; the check says why it does not answer",
   ],
   [
-    {
-      ...SITE,
-      effect: "repointed",
-      held: { file: RECORDS_FILE, index: 0 },
-      was: repoPathOf("src/charges/charge-order.ts"),
-    },
-    "date-used-directly#clock-sources repointed src/orders/charge-order.ts: hone-records/debt/date-used-directly.json held this debt at src/charges/charge-order.ts, which git sees renamed to this file",
-  ],
-  [
     { ...SITE, effect: "left", under: repoPathOf("src/orders") },
     "date-used-directly#clock-sources left src/orders/charge-order.ts: under --leave src/orders; record it as an authorised location with a why chain, or fix it",
   ],
@@ -249,6 +241,19 @@ describe("the lines hone record-debt prints", () => {
 
   it.each(OUTCOME_LINES)("prints %j as one line", (outcome, line) => {
     expect(debtOutcomeLine({ outcome })).toBe(line);
+  });
+});
+
+describe("the line hone record-debt prints for a record it repointed", () => {
+  it("names the record's place and the path git moved its file to", () => {
+    expect(
+      movedRecordLine({
+        moved: {
+          place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 1 },
+          file: repoPathOf("src/cart/cart.ts"),
+        },
+      }),
+    ).toBe("hone-records/debt/claimed-type.json records[1] repointed to src/cart/cart.ts");
   });
 });
 

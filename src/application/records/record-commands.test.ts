@@ -419,7 +419,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
     unrecorded: [],
     runs: [walkerRun, { ...walkerRun, mechanism: ESLINT }],
     touched: NOTHING_CHANGED,
-    renamed: new Map(),
+    moved: [],
     leave: [],
   };
 
@@ -485,7 +485,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(apply).toHaveBeenCalledWith({ edit: { write: [DEBT_DOCUMENT], remove: [] } });
   });
 
-  it("repoints the debt held at a file's path before git saw it renamed, writing the repointed document and recording nothing", () => {
+  it("repoints each record the run found held at a moved path, writing the repointed document, with no finding to record", () => {
     const { apply, store } = storeOf();
     const moved = repoPathOf("src/charges/charge-order.ts");
     const repointedDocument: RecordsDocument = {
@@ -508,9 +508,8 @@ describe("hone record-debt over a run's unanswered findings", () => {
       },
       run: {
         ...request,
-        findings: [{ ...CLOCK_FINDING, file: moved }],
-        touched: { measured: "yes", paths: new Set([moved]) },
-        renamed: new Map([[moved, { basePath: ORDER_FILE, content: "edited" }]]),
+        findings: [],
+        moved: [{ place: HELD_CLOCK_DEBT.place, file: moved }],
       },
     });
     expect({
@@ -519,19 +518,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       added: vi.mocked(recordsEditor.documentsWithAdded).mock.calls,
       stored: apply.mock.calls,
     }).toEqual({
-      recorded: {
-        outcome: "ok",
-        value: [
-          {
-            ruleSet: TOOL_RULE_SET,
-            address: "date-used-directly#clock-sources",
-            file: moved,
-            effect: "repointed",
-            held: HELD_CLOCK_DEBT.place,
-            was: ORDER_FILE,
-          },
-        ],
-      },
+      recorded: { outcome: "ok", value: [] },
       repointed: [
         [
           {

@@ -21,7 +21,6 @@ import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import {
   type RecordsSourceFor,
-  type RenamedSince,
   type VersionTwoRecordInput,
   versionTwoAuthoriseOf,
   versionTwoPruneDebtOf,
@@ -42,8 +41,6 @@ const AUTHORISING: AuthoriseRequest = {
 
 const PROJECT_COMMAND = "node /tool/hone.js project --repo /repo";
 
-const NOTHING_RENAMED: RenamedSince = () => ({ outcome: "ok", value: new Map() });
-
 const SETTINGS_ABSENT: RunLoadFailure = { kind: "config-absent", repo: "/repo" };
 
 const inputFailingCatalogue = (): VersionTwoRecordInput => ({
@@ -56,6 +53,9 @@ const inputFailingCatalogue = (): VersionTwoRecordInput => ({
     tree: vi.fn<VersionTwoStages["tree"]>(),
     engines: vi.fn<VersionTwoStages["engines"]>(),
     projections: vi.fn<VersionTwoStages["projections"]>(),
+    renamed: vi
+      .fn<VersionTwoStages["renamed"]>()
+      .mockReturnValue({ measured: "yes", renamed: new Map() }),
     touched: vi.fn<VersionTwoStages["touched"]>(),
   },
   repoRoot: absoluteRootOf("/repo"),
@@ -79,7 +79,6 @@ describe("versionTwoRecordDebtOf", () => {
         ...input,
         leave: [],
         projectCommand: PROJECT_COMMAND,
-        renamedSince: NOTHING_RENAMED,
       }),
     ).toEqual({
       outcome: "failed",
@@ -166,39 +165,14 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
       value: [OUT_OF_DATE_ESLINT_RUN],
     }),
     projections: vi.fn<VersionTwoStages["projections"]>(),
+    renamed: vi
+      .fn<VersionTwoStages["renamed"]>()
+      .mockReturnValue({ measured: "yes", renamed: new Map() }),
     touched: vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
       measured: "yes",
       paths: new Set(),
     }),
   },
-});
-
-describe("versionTwoRecordDebtOf, renames git cannot list", () => {
-  it("names the git failure and opens no records store", async () => {
-    const input = inputWithOutOfDateProjection();
-    const recorded = await versionTwoRecordDebtOf({
-      ...input,
-      stages: {
-        ...input.stages,
-        engines: vi
-          .fn<VersionTwoStages["engines"]>()
-          .mockResolvedValue({ outcome: "ok", value: [] }),
-      },
-      leave: [],
-      projectCommand: PROJECT_COMMAND,
-      renamedSince: () => ({
-        outcome: "failed",
-        error: { kind: "git-failed", command: "git diff", detail: "bad revision" },
-      }),
-    });
-    expect({ recorded, storeOpened: vi.mocked(input.recordsStoreOf).mock.calls }).toEqual({
-      recorded: {
-        outcome: "failed",
-        error: { kind: "git-failed", detail: "git diff: bad revision" },
-      },
-      storeOpened: [],
-    });
-  });
 });
 
 const CLAIMED_TYPE: Symptom = {
@@ -232,17 +206,6 @@ const DEBT_ON_BASKET: PlacedRecord = {
     symptom: CLAIMED_TYPE,
     reach: { reaches: "one-check", check: CAST_CHECK },
     file: BASKET,
-    holding: { held: "stated" },
-  },
-};
-
-const DEBT_FOLLOWED_TO_MOVED_BASKET: PlacedRecord = {
-  place: { file: DEBT_FILE, index: 0 },
-  record: {
-    kind: "debt",
-    symptom: CLAIMED_TYPE,
-    reach: { reaches: "one-check", check: CAST_CHECK },
-    file: MOVED_BASKET,
     holding: { held: "stated" },
   },
 };
@@ -282,7 +245,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
       records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
         outcome: "ok",
         value: {
-          records: [DEBT_FOLLOWED_TO_MOVED_BASKET],
+          records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
           base: { measured: "yes" },
@@ -291,6 +254,10 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
       engines: vi
         .fn<VersionTwoStages["engines"]>()
         .mockResolvedValue({ outcome: "ok", value: [CAST_IN_MOVED_BASKET_RUN] }),
+      renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
+        measured: "yes",
+        renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
+      }),
     },
     recordsSourceFor: vi.fn<RecordsSourceFor>().mockReturnValue({
       read: vi.fn().mockReturnValue({ outcome: "ok", value: HELD_DOCUMENTS }),
@@ -316,16 +283,12 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
 };
 
 describe("versionTwoRecordDebtOf, debt the run answers across a rename", () => {
-  it("repoints the debt held at the file's path in the base to the path git sees it renamed to", async () => {
+  it("repoints the debt held at the file's path in the base to the path git sees it renamed to, recording nothing", async () => {
     const input = inputAnsweringAcrossARename();
     const recorded = await versionTwoRecordDebtOf({
       ...input,
       leave: [],
       projectCommand: PROJECT_COMMAND,
-      renamedSince: () => ({
-        outcome: "ok",
-        value: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
-      }),
     });
     expect({
       recorded,
@@ -333,16 +296,7 @@ describe("versionTwoRecordDebtOf, debt the run answers across a rename", () => {
     }).toEqual({
       recorded: {
         outcome: "ok",
-        value: [
-          {
-            ruleSet: TOOL_RULE_SET,
-            address: "claimed-type#cast-expressions",
-            file: MOVED_BASKET,
-            effect: "repointed",
-            held: DEBT_ON_BASKET.place,
-            was: BASKET,
-          },
-        ],
+        value: { outcomes: [], moved: [{ place: DEBT_ON_BASKET.place, file: MOVED_BASKET }] },
       },
       repointed: [
         [
@@ -365,7 +319,6 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
         ...input,
         leave: [],
         projectCommand: PROJECT_COMMAND,
-        renamedSince: NOTHING_RENAMED,
       }),
     ).toEqual({
       outcome: "failed",

@@ -6,10 +6,7 @@ import type { ModuleExtension } from "../application/ports/host/module-extension
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import {
-  readHoneRecords,
-  readingFollowingRenames,
-} from "../application/records/read-hone-records.ts";
+import { readHoneRecords } from "../application/records/read-hone-records.ts";
 import { type CheckedTree, checkedTreeOf } from "../application/run/checked-tree-of.ts";
 import {
   type NamedEnginesRequest,
@@ -21,6 +18,7 @@ import {
   type NamedSettingsReading,
 } from "../application/run/settings/read-settings.ts";
 import { toolCatalogueOf } from "../application/run/tool-catalogue.ts";
+import { renamedSinceBaseOf } from "../application/run/touched-set/renamed-since-base.ts";
 import { touchedSetOf } from "../application/run/touched-set/touched-set-of.ts";
 import type { EngineStageRequest, VersionTwoStages } from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
@@ -109,15 +107,7 @@ const recordsStage = (
         outcome: "failed",
         error: runFailureOf({ engines: request.catalogue.engines, source: read.error }),
       }
-    : {
-        outcome: "ok",
-        value: readingFollowingRenames({
-          reading: read.value,
-          repoRoot: request.locations.repoRoot,
-          baseRevision: request.locations.baseRevision,
-          git,
-        }),
-      };
+    : read;
 };
 
 const treeStage = (
@@ -183,6 +173,12 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       catalogue: stage.catalogue,
       outcome: await namedEngineProjectionsOf(enginesRequestOf({ ...request, stage })),
     }),
+  renamed: () =>
+    renamedSinceBaseOf({
+      repoRoot: request.locations.repoRoot,
+      baseRevision: request.locations.baseRevision,
+      git: request.ports.git,
+    }),
   touched: (stage) =>
     touchedSetOf({
       assessment: stage.assessment,
@@ -191,5 +187,6 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       repoRoot: request.locations.repoRoot,
       baseRevision: request.locations.baseRevision,
       git: request.ports.git,
+      renamed: stage.renamed,
     }),
 });

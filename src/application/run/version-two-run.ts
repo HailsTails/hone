@@ -1,8 +1,11 @@
 import type { NamedGovernedRun } from "../../domain/finding/governance.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
+import { recordsAtMovedPathsOf } from "../../domain/records/hone-records/records-following-renames.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
+import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
@@ -13,6 +16,7 @@ import {
   reportOutputInEffect,
 } from "../../domain/settings/report-output.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import type { CheckedTree } from "./checked-tree-of.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {
@@ -27,6 +31,7 @@ export type VersionTwoRun = {
   readonly touched: TouchedSet;
   readonly output: VersionTwoReportOutput;
   readonly runs: readonly NamedGovernedRun[];
+  readonly moved: readonly RecordRepointing[];
 };
 
 export type EngineStageRequest = {
@@ -53,10 +58,12 @@ export type VersionTwoStages = {
   readonly projections: (
     request: EngineStageRequest,
   ) => Promise<Result<readonly ProjectedFile[], RunLoadFailure>>;
+  readonly renamed: () => RenamedSinceBase;
   readonly touched: (request: {
     readonly assessment: Assessment;
     readonly measuring: TouchedMeasuring;
     readonly records: RecordsReading;
+    readonly renamed: RenamedSinceBase;
   }) => TouchedSet;
 };
 
@@ -124,17 +131,24 @@ export const versionTwoRunOver = async (request: {
     requested: { forfeiture: request.arguments.forfeiture },
     configured: settings.runSettings.assessment,
   });
+  const renamed = request.stages.renamed();
+  const moved =
+    renamed.measured === "yes"
+      ? recordsAtMovedPathsOf({ records: records.records, renamed: renamed.renamed })
+      : [];
+  const followed = readingFollowingRenames({ reading: records, renamed, moved });
   const touched = request.stages.touched({
     assessment,
     measuring: request.arguments.measuring,
-    records,
+    records: followed,
+    renamed,
   });
   const report = namedRunReportOf({
     catalogue,
     selection: settings.selection,
     excluded: settings.selection.excluded,
     notes: settings.notes,
-    records,
+    records: followed,
     touched,
     runs: runs.value,
     tracked: tree.value.tracked,
@@ -147,6 +161,7 @@ export const versionTwoRunOver = async (request: {
       catalogue,
       touched,
       runs: runs.value,
+      moved,
       output: reportOutputInEffect({
         requested: request.arguments.reportOutput,
         configured: settings.runSettings.reportOutput,

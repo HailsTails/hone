@@ -16,6 +16,9 @@ const stagesFailingCatalogue = (): VersionTwoStages => ({
   tree: vi.fn<VersionTwoStages["tree"]>(),
   engines: vi.fn<VersionTwoStages["engines"]>(),
   projections: vi.fn<VersionTwoStages["projections"]>(),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
   touched: vi.fn<VersionTwoStages["touched"]>(),
 });
 

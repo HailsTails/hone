@@ -4,8 +4,13 @@ import type {
   RecordsAtBase,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
-import { recordsFollowingRenames } from "../../domain/records/hone-records/records-following-renames.ts";
+import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
+import {
+  movedPathRefusalsOf,
+  recordsFollowingRenames,
+} from "../../domain/records/hone-records/records-following-renames.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -63,25 +68,18 @@ export const readHoneRecords = (request: {
 
 export const readingFollowingRenames = (request: {
   readonly reading: RecordsReading;
-  readonly repoRoot: AbsolutePath;
-  readonly baseRevision: string | undefined;
-  readonly git: Pick<GitPort, "renamedSince">;
+  readonly renamed: RenamedSinceBase;
+  readonly moved: readonly RecordRepointing[];
 }): RecordsReading => {
-  const { reading, baseRevision } = request;
-  if (baseRevision === undefined) {
-    return reading;
+  const { reading, renamed } = request;
+  if (renamed.measured === "no") {
+    return reading.base.measured === "no"
+      ? reading
+      : { ...reading, base: { measured: "no", base: renamed.base } };
   }
-  const renamed = request.git.renamedSince({ repoRoot: request.repoRoot, baseRevision });
-  return renamed.outcome === "ok"
-    ? {
-        ...reading,
-        records: recordsFollowingRenames({ records: reading.records, renamed: renamed.value }),
-      }
-    : {
-        ...reading,
-        base: {
-          measured: "no",
-          base: baseRevisionAvailabilityOf({ revision: baseRevision, failure: renamed.error }),
-        },
-      };
+  return {
+    ...reading,
+    records: recordsFollowingRenames({ records: reading.records, renamed: renamed.renamed }),
+    refused: [...reading.refused, ...movedPathRefusalsOf({ moved: request.moved })],
+  };
 };

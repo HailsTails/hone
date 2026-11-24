@@ -337,7 +337,15 @@ const renamedPaths = (
 ): Result<RenamedPaths, GitFailure> => {
   const output = gitOutput({
     ...request,
-    gitArguments: ["diff", "--name-status", "-M", "-z", "--end-of-options", request.baseRevision],
+    gitArguments: [
+      "diff",
+      "--name-status",
+      "-M",
+      "-z",
+      "--merge-base",
+      "--end-of-options",
+      request.baseRevision,
+    ],
   });
   if (output.outcome === "failed") {
     return output;

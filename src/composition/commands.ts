@@ -10,6 +10,7 @@ import type { RepositoryLocated } from "../application/ports/command/repository-
 import type { RecordsSplit } from "../application/ports/records/exception-repository.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
+import type { RecordRepointing } from "../domain/records/hone-records/records-edit.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { Result } from "../domain/result.ts";
 import { ownedNameText } from "../domain/rule-set/rule-set-identity.ts";
@@ -35,6 +36,7 @@ import { repoRootOf } from "../infrastructure/printed-report/check-locations.ts"
 import {
   authorisingLines,
   debtOutcomeLine,
+  movedRecordLine,
   projectNextLine,
   prunedDebtLine,
 } from "../infrastructure/printed-report/records/record-command-lines.ts";
@@ -62,6 +64,7 @@ type AuthoriseParsed = { readonly repo: string; readonly authorising: AuthoriseR
 
 type RecordedDebt = {
   readonly outcomes: readonly DebtOutcome[];
+  readonly moved: readonly RecordRepointing[];
   readonly projectCommand: string | undefined;
 };
 
@@ -242,10 +245,6 @@ export const VERSION_TWO_RECORD_DEBT: ToolCommand<
       }),
       leave: parsed.leave,
       projectCommand: projectCommand.value,
-      renamedSince: () =>
-        parsed.baseRevision === undefined
-          ? { outcome: "ok", value: new Map() }
-          : ports.git.renamedSince({ repoRoot, baseRevision: parsed.baseRevision }),
     });
     if (recorded.outcome === "failed") {
       return runFailed({ failure: recorded.error, repoRoot });
@@ -253,15 +252,21 @@ export const VERSION_TWO_RECORD_DEBT: ToolCommand<
     return {
       outcome: "ok",
       value: {
-        outcomes: recorded.value,
-        projectCommand: recorded.value.some((outcome) => outcome.effect === "recorded")
-          ? projectCommand.value
-          : undefined,
+        outcomes: recorded.value.outcomes,
+        moved: recorded.value.moved,
+        projectCommand:
+          recorded.value.moved.length > 0 ||
+          recorded.value.outcomes.some((outcome) => outcome.effect === "recorded")
+            ? projectCommand.value
+            : undefined,
       },
     };
   },
   print: ({ produced }) => {
-    const outcomeLines = produced.outcomes.map((outcome) => debtOutcomeLine({ outcome }));
+    const outcomeLines = [
+      ...produced.moved.map((moved) => movedRecordLine({ moved })),
+      ...produced.outcomes.map((outcome) => debtOutcomeLine({ outcome })),
+    ];
     return linesOutcome({
       lines:
         produced.projectCommand === undefined

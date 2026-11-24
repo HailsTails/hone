@@ -15,10 +15,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/version-two-repository.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
     },
     {

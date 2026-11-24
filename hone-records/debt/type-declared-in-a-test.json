@@ -99,10 +99,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/composition/commands.version-two-project.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/composed-command.test.ts"
     },
     {

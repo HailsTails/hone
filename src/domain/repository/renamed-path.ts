@@ -1,3 +1,4 @@
+import type { BaseRevisionAvailability } from "./base-revision-availability.ts";
 import type { RepoPath } from "./repo-path-types.ts";
 
 export type RenamedPath = {
@@ -6,6 +7,10 @@ export type RenamedPath = {
 };
 
 export type RenamedPaths = ReadonlyMap<RepoPath, RenamedPath>;
+
+export type RenamedSinceBase =
+  | { readonly measured: "yes"; readonly renamed: RenamedPaths }
+  | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export const basePathOf = (request: {
   readonly file: RepoPath;
