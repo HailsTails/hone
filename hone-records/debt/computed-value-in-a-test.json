@@ -35,18 +35,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {

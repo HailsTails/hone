@@ -92,10 +92,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/printed-report/upgrade/upgrade-refusal-text.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/operations/upgrade/run-upgrade-command.ts"
     }
   ]
 }

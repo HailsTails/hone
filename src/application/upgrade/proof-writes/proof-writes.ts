@@ -1,13 +1,15 @@
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
-import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
 import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
-import type { FileCreationPort } from "../../ports/file-system/file-creation-port.ts";
-import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
+import type {
+  EffectsApplied,
+  ProofEffect,
+  ProofEffects,
+  StoppedEffect,
+} from "../../ports/upgrade/proof-effect.ts";
 import type {
   ProofWrite,
   ProofWriteFailure,
@@ -17,47 +19,38 @@ import type {
 
 export type PlannedFile = { readonly path: AbsolutePath; readonly text: string };
 
-export type ProofWritePorts = {
-  readonly fileText: FileTextPort;
-  readonly fileCreation: FileCreationPort;
-  readonly fileRemoval: FileRemovalPort;
-  readonly directory: DirectoryPort;
-  readonly directoryRemoval: DirectoryRemovalPort;
+export type ProofQueries = {
+  readonly fileText: Pick<FileTextPort, "read" | "exists">;
   readonly entryKind: EntryKindPort;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "join" | "relative" | "directoryOf">;
+};
+
+export type ProofWriteQueries = {
+  readonly fileText: Pick<FileTextPort, "read">;
+  readonly entryKind: EntryKindPort;
+  readonly path: Pick<PathPort, "directoryOf">;
 };
 
 export type ProofWrites = readonly ProofWrite[];
 
-export type ProofWriteRequest = {
-  readonly ports: ProofWritePorts;
-  readonly files: readonly PlannedFile[];
-  readonly replacements: readonly PlannedFile[];
-};
-
 type Replacement = { readonly file: PlannedFile; readonly original: string };
 
-type Step =
-  | { readonly kind: "directory"; readonly path: AbsolutePath }
-  | { readonly kind: "file"; readonly file: PlannedFile }
-  | { readonly kind: "replacement"; readonly file: PlannedFile; readonly original: string };
-
 const parentOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofWriteQueries;
   readonly path: AbsolutePath;
 }): AbsolutePath => {
-  const parent = request.ports.path.directoryOf({ path: request.path });
+  const parent = request.queries.path.directoryOf({ path: request.path });
   return isAbsolutePath(parent) ? parent : request.path;
 };
 
 const missingDirectoriesOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofWriteQueries;
   readonly path: AbsolutePath;
 }): readonly AbsolutePath[] => {
   const parent = parentOf(request);
-  return parent === request.path || request.ports.entryKind.kindOf({ path: parent }) !== "absent"
+  return parent === request.path || request.queries.entryKind.kindOf({ path: parent }) !== "absent"
     ? []
-    : [...missingDirectoriesOf({ ports: request.ports, path: parent }), parent];
+    : [...missingDirectoriesOf({ queries: request.queries, path: parent }), parent];
 };
 
 const uniquePaths = (request: {
@@ -65,153 +58,46 @@ const uniquePaths = (request: {
 }): readonly AbsolutePath[] => [...new Set(request.paths)];
 
 const alreadyExisting = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofWriteQueries;
   readonly files: readonly PlannedFile[];
 }): ProofWriteFailure | undefined => {
   const existing = request.files.find(
-    (file) => request.ports.entryKind.kindOf({ path: file.path }) !== "absent",
+    (file) => request.queries.entryKind.kindOf({ path: file.path }) !== "absent",
   );
   return existing === undefined ? undefined : { kind: "path-already-exists", path: existing.path };
 };
 
-const stepsOf = (request: {
-  readonly ports: ProofWritePorts;
+const effectsOf = (request: {
+  readonly queries: ProofWriteQueries;
   readonly files: readonly PlannedFile[];
   readonly replacements: readonly Replacement[];
-}): readonly Step[] => {
+}): readonly ProofEffect[] => {
   const directories = uniquePaths({
     paths: request.files.flatMap((file) =>
-      missingDirectoriesOf({ ports: request.ports, path: file.path }),
+      missingDirectoriesOf({ queries: request.queries, path: file.path }),
     ),
   }).toSorted((left, right) => left.length - right.length);
   return [
-    ...directories.map((path): Step => ({ kind: "directory", path })),
-    ...request.files.map((file): Step => ({ kind: "file", file })),
-    ...request.replacements.map(({ file, original }): Step => ({
-      kind: "replacement",
-      file,
+    ...directories.map((path): ProofEffect => ({ kind: "create-directory", path })),
+    ...request.files.map((file): ProofEffect => ({
+      kind: "create-file",
+      path: file.path,
+      text: file.text,
+    })),
+    ...request.replacements.map(({ file, original }): ProofEffect => ({
+      kind: "replace-file",
+      path: file.path,
+      text: file.text,
       original,
     })),
   ];
 };
 
-const performed = (request: {
-  readonly ports: ProofWritePorts;
-  readonly step: Step;
-}): Result<ProofWrite, ProofWriteFailure> => {
-  const { ports, step } = request;
-  switch (step.kind) {
-    case "directory": {
-      const created = ports.directory.create({ path: step.path });
-      return created.outcome === "ok"
-        ? { outcome: "ok", value: { kind: "directory-created", path: step.path } }
-        : {
-            outcome: "failed",
-            error: { kind: "directory-uncreatable", path: step.path, detail: created.error.detail },
-          };
-    }
-    case "file": {
-      const created = ports.fileCreation.createNew({ path: step.file.path, text: step.file.text });
-      if (created.outcome === "ok") {
-        return { outcome: "ok", value: { kind: "file-created", path: step.file.path } };
-      }
-      return {
-        outcome: "failed",
-        error:
-          created.error.kind === "already-exists"
-            ? { kind: "path-already-exists", path: step.file.path }
-            : { kind: "unwritable", path: step.file.path, detail: created.error.detail },
-      };
-    }
-    case "replacement": {
-      const written = ports.fileText.write({ path: step.file.path, text: step.file.text });
-      return written.outcome === "ok"
-        ? {
-            outcome: "ok",
-            value: { kind: "file-replaced", path: step.file.path, original: step.original },
-          }
-        : {
-            outcome: "failed",
-            error: { kind: "unwritable", path: step.file.path, detail: written.error.detail },
-          };
-    }
-  }
-};
-
-const undoneOf = (request: {
-  readonly ports: ProofWritePorts;
-  readonly write: ProofWrite;
-}): Unrestored | undefined => {
-  const { ports, write } = request;
-  switch (write.kind) {
-    case "directory-created": {
-      const removed = ports.directoryRemoval.removeEmpty({ path: write.path });
-      return removed.outcome === "ok"
-        ? undefined
-        : { written: write.kind, path: write.path, detail: removed.error.detail };
-    }
-    case "file-created": {
-      const removed = ports.fileRemoval.remove({ path: write.path });
-      return removed.outcome === "ok"
-        ? undefined
-        : { written: write.kind, path: write.path, detail: removed.error.detail };
-    }
-    case "file-replaced": {
-      const restored = ports.fileText.write({ path: write.path, text: write.original });
-      return restored.outcome === "ok"
-        ? undefined
-        : { written: write.kind, path: write.path, detail: restored.error.detail };
-    }
-  }
-};
-
-export const rolledBackProofWrites = (request: {
-  readonly ports: ProofWritePorts;
-  readonly writes: ProofWrites;
-}): readonly Unrestored[] =>
-  request.writes.toReversed().flatMap((write) => {
-    const unrestored = undoneOf({ ports: request.ports, write });
-    return unrestored === undefined ? [] : [unrestored];
-  });
-
-const performedAll = (request: {
-  readonly ports: ProofWritePorts;
-  readonly steps: readonly Step[];
-  readonly done: ProofWrites;
-}): Result<ProofWrites, ProofWriteRefusal> => {
-  const [step, ...rest] = request.steps;
-  if (step === undefined) {
-    return { outcome: "ok", value: request.done };
-  }
-  const stepOutcome = performed({ ports: request.ports, step });
-  if (stepOutcome.outcome === "failed") {
-    const attempted: ProofWrites =
-      step.kind === "replacement"
-        ? [
-            ...request.done,
-            { kind: "file-replaced", path: step.file.path, original: step.original },
-          ]
-        : request.done;
-    return {
-      outcome: "failed",
-      error: {
-        failure: stepOutcome.error,
-        unrestored: rolledBackProofWrites({ ports: request.ports, writes: attempted }),
-      },
-    };
-  }
-  return performedAll({
-    ports: request.ports,
-    steps: rest,
-    done: [...request.done, stepOutcome.value],
-  });
-};
-
 const replacementOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofWriteQueries;
   readonly file: PlannedFile;
 }): Result<Replacement, ProofWriteFailure> => {
-  const read = request.ports.fileText.read({ path: request.file.path });
+  const read = request.queries.fileText.read({ path: request.file.path });
   return read.outcome === "ok"
     ? { outcome: "ok", value: { file: request.file, original: read.value } }
     : {
@@ -225,10 +111,10 @@ const replacementOf = (request: {
 };
 
 const replacementsOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofWriteQueries;
   readonly files: readonly PlannedFile[];
 }): Result<readonly Replacement[], ProofWriteFailure> => {
-  const read = request.files.map((file) => replacementOf({ ports: request.ports, file }));
+  const read = request.files.map((file) => replacementOf({ queries: request.queries, file }));
   const unreadable = read.find((each) => each.outcome === "failed");
   return (
     unreadable ?? {
@@ -238,31 +124,105 @@ const replacementsOf = (request: {
   );
 };
 
-const refusedBeforeWriting = (request: {
-  readonly failure: ProofWriteFailure;
-}): Result<ProofWrites, ProofWriteRefusal> => ({
-  outcome: "failed",
-  error: { failure: request.failure, unrestored: [] },
-});
-
-export const writeProofFiles = (
-  request: ProofWriteRequest,
-): Result<ProofWrites, ProofWriteRefusal> => {
-  const existing = alreadyExisting({ ports: request.ports, files: request.files });
+export const proofWriteEffectsOf = (request: {
+  readonly queries: ProofWriteQueries;
+  readonly files: readonly PlannedFile[];
+  readonly replacements: readonly PlannedFile[];
+}): Result<readonly ProofEffect[], ProofWriteFailure> => {
+  const existing = alreadyExisting(request);
   if (existing !== undefined) {
-    return refusedBeforeWriting({ failure: existing });
+    return { outcome: "failed", error: existing };
   }
-  const replacements = replacementsOf({ ports: request.ports, files: request.replacements });
-  if (replacements.outcome === "failed") {
-    return refusedBeforeWriting({ failure: replacements.error });
+  const replacements = replacementsOf({ queries: request.queries, files: request.replacements });
+  return replacements.outcome === "failed"
+    ? replacements
+    : {
+        outcome: "ok",
+        value: effectsOf({
+          queries: request.queries,
+          files: request.files,
+          replacements: replacements.value,
+        }),
+      };
+};
+
+const writeOf = (request: { readonly effect: ProofEffect }): readonly ProofWrite[] => {
+  const { effect } = request;
+  switch (effect.kind) {
+    case "create-directory":
+      return [{ kind: "directory-created", path: effect.path }];
+    case "create-file":
+      return [{ kind: "file-created", path: effect.path }];
+    case "replace-file":
+      return [{ kind: "file-replaced", path: effect.path, original: effect.original }];
+    case "remove-file":
+    case "remove-directory-if-empty":
+      return [];
   }
-  return performedAll({
-    ports: request.ports,
-    steps: stepsOf({
-      ports: request.ports,
-      files: request.files,
-      replacements: replacements.value,
-    }),
-    done: [],
+};
+
+const failureOf = (request: { readonly stopped: StoppedEffect }): ProofWriteFailure => {
+  const { effect, outcome, detail } = request.stopped;
+  if (outcome === "already-exists") {
+    return { kind: "path-already-exists", path: effect.path };
+  }
+  return effect.kind === "create-directory"
+    ? { kind: "directory-uncreatable", path: effect.path, detail }
+    : { kind: "unwritable", path: effect.path, detail };
+};
+
+const attemptedReplacementOf = (request: { readonly stopped: StoppedEffect }): ProofWrites =>
+  request.stopped.effect.kind === "replace-file" && request.stopped.outcome === "failed"
+    ? writeOf(request.stopped)
+    : [];
+
+export type ProofWritesApplied =
+  | { readonly outcome: "written"; readonly writes: ProofWrites }
+  | {
+      readonly outcome: "stopped";
+      readonly failure: ProofWriteFailure;
+      readonly attempted: ProofWrites;
+    };
+
+export const proofWritesAppliedOf = (request: {
+  readonly applied: EffectsApplied;
+}): ProofWritesApplied => {
+  const { applied } = request;
+  const writes = applied.settled.flatMap(({ effect }) => writeOf({ effect }));
+  return applied.outcome === "all-applied"
+    ? { outcome: "written", writes }
+    : {
+        outcome: "stopped",
+        failure: failureOf({ stopped: applied.stopped }),
+        attempted: [...writes, ...attemptedReplacementOf({ stopped: applied.stopped })],
+      };
+};
+
+export const rolledBackWrites = (request: {
+  readonly effects: Pick<ProofEffects, "undo">;
+  readonly writes: ProofWrites;
+}): readonly Unrestored[] => request.effects.undo({ writes: request.writes.toReversed() });
+
+export const writtenProofFiles = (request: {
+  readonly queries: ProofWriteQueries;
+  readonly effects: ProofEffects;
+  readonly files: readonly PlannedFile[];
+  readonly replacements: readonly PlannedFile[];
+}): Result<ProofWrites, ProofWriteRefusal> => {
+  const effects = proofWriteEffectsOf(request);
+  if (effects.outcome === "failed") {
+    return { outcome: "failed", error: { failure: effects.error, unrestored: [] } };
+  }
+  const applied = proofWritesAppliedOf({
+    applied: request.effects.apply({ effects: effects.value }),
   });
+  return applied.outcome === "written"
+    ? { outcome: "ok", value: applied.writes }
+    : {
+        outcome: "failed",
+        error: {
+          failure: applied.failure,
+          unrestored: rolledBackWrites({ effects: request.effects, writes: applied.attempted }),
+        },
+      };
 };

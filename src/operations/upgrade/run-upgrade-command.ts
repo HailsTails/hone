@@ -12,6 +12,7 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { LoadFailureDetail } from "../../application/ports/report/load-failure-detail.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
+import type { ProofEffects } from "../../application/ports/upgrade/proof-effect.ts";
 import type {
   ProofCarriedOver,
   ProofRefusal,
@@ -29,14 +30,20 @@ import type {
   VersionOneTeamLayoutsOf,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
-import { type VersionTwoStages, versionTwoRunOver } from "../../application/run/version-two-run.ts";
+import {
+  type VersionTwoRun,
+  type VersionTwoStages,
+  versionTwoRunOver,
+} from "../../application/run/version-two-run.ts";
 import {
   type PlannedProjectionPorts,
   plannedProjectionOf,
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
-import type { ProofWritePorts } from "../../application/upgrade/proof-writes/proof-writes.ts";
+import { proofEffectsOver } from "../../application/upgrade/proof-writes/applied-effects.ts";
+import type { ProofQueries } from "../../application/upgrade/proof-writes/proof-writes.ts";
+import type { ProjectionFilesOf } from "../../application/upgrade/proof/upgrade-plan.ts";
 import type {
   RuleSetLayoutRemoval,
   UpgradeProofRequest,
@@ -52,6 +59,7 @@ import { provenWithTeamLayout } from "../../application/upgrade/team-layout/team
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
@@ -185,15 +193,47 @@ const preparedOf = (request: UpgradeInput): Result<Prepared, UpgradeStop> => {
   };
 };
 
-const proofWritePortsOf = (request: UpgradeInput): ProofWritePorts => ({
+const proofQueriesOf = (request: UpgradeInput): ProofQueries => ({
   fileText: request.command.fileText,
-  fileCreation: request.ports.fileCreation,
-  fileRemoval: request.ports.fileRemoval,
-  directory: request.ports.directory,
-  directoryRemoval: request.ports.directoryRemoval,
   entryKind: request.ports.entryKind,
   path: request.command.path,
 });
+
+const proofEffectsOf = (request: UpgradeInput): ProofEffects =>
+  proofEffectsOver({
+    fileText: request.command.fileText,
+    fileCreation: request.ports.fileCreation,
+    fileRemoval: request.ports.fileRemoval,
+    directory: request.ports.directory,
+    directoryRemoval: request.ports.directoryRemoval,
+  });
+
+const projectionFilesFor = (request: UpgradeInput): ProjectionFilesOf =>
+  plannedProjectionOf({
+    command: request.command,
+    repoRoot: request.located.repoRoot,
+    installRoot: request.located.installRoot,
+    directory: request.ports.directory,
+    recordsReader: request.ports.recordsReader,
+    boundCatalogueOf: request.ports.boundCatalogueOf,
+    settingsFormat: request.ports.settingsFormat,
+    settingsSourcesOf: request.ports.settingsSourcesOf,
+    checkPieceSourceOf: request.ports.checkPieceSourceOf,
+    namedEngine: request.ports.namedEngine,
+  });
+
+const versionTwoRunFor = (request: {
+  readonly foundTreeStages: UpgradeInput["foundTreeStages"];
+  readonly proofWritten: ProofWritten;
+}): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
+  versionTwoRunOver({
+    stages: request.foundTreeStages(request.proofWritten),
+    arguments: {
+      forfeiture: undefined,
+      reportOutput: undefined,
+      measuring: "when-debt-held",
+    },
+  });
 
 const proofRequestOf = (
   request: UpgradeInput & {
@@ -224,7 +264,8 @@ const proofRequestOf = (
     loadFailureDetail: ports.loadFailureDetail,
   });
   return {
-    ports: proofWritePortsOf(request),
+    queries: proofQueriesOf(request),
+    effects: proofEffectsOf(request),
     oracle: createAnsweringOracle({
       enginePass: before.enginePass,
       catalogues: prepared.catalogues,
@@ -232,14 +273,7 @@ const proofRequestOf = (
     runs: request.proofRunsOf({
       versionOne: before.report,
       versionTwo: (proofWritten) =>
-        versionTwoRunOver({
-          stages: request.foundTreeStages(proofWritten),
-          arguments: {
-            forfeiture: undefined,
-            reportOutput: undefined,
-            measuring: "when-debt-held",
-          },
-        }),
+        versionTwoRunFor({ foundTreeStages: request.foundTreeStages, proofWritten }),
     }),
     reading: prepared.read.reading,
     versionOneFiles: prepared.read.versionOneFiles,
@@ -247,18 +281,7 @@ const proofRequestOf = (
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
     trackedPaths: prepared.trackedPaths,
-    projectionFilesOf: plannedProjectionOf({
-      command,
-      repoRoot: located.repoRoot,
-      installRoot: located.installRoot,
-      directory: ports.directory,
-      recordsReader: ports.recordsReader,
-      boundCatalogueOf: ports.boundCatalogueOf,
-      settingsFormat: ports.settingsFormat,
-      settingsSourcesOf: ports.settingsSourcesOf,
-      checkPieceSourceOf: ports.checkPieceSourceOf,
-      namedEngine: ports.namedEngine,
-    }),
+    projectionFilesOf: projectionFilesFor(request),
     settingsFormat: ports.settingsFormat,
     versionOneProjectionsOf: versionOneProjectionsOfRepository({
       project: () =>
@@ -339,7 +362,8 @@ export const upgradeOf = async (
   }
   const { selection } = prepared.value.read.reading;
   const carried = await provenWithTeamLayout({
-    ports: proofWritePortsOf(request),
+    queries: proofQueriesOf(request),
+    effects: proofEffectsOf(request),
     repoRoot: request.located.repoRoot,
     plan: plan.value,
     cataloguesAfterWriting: () => {

@@ -7,6 +7,7 @@ import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
 import type {
   AfterWriting,
   ProofCarriedOver,
@@ -27,10 +28,10 @@ import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
 import { reportedWrittenFilesOf } from "../proof-comparison/reported-written-files.ts";
 import {
   type PlannedFile,
-  type ProofWritePorts,
+  type ProofQueries,
   type ProofWrites,
-  rolledBackProofWrites,
-  writeProofFiles,
+  rolledBackWrites,
+  writtenProofFiles,
 } from "../proof-writes/proof-writes.ts";
 import {
   type RecordsRoot,
@@ -51,7 +52,8 @@ import type {
 } from "./version-one-projections-reading.ts";
 
 export type UpgradeProofRequest = {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
+  readonly effects: ProofEffects;
   readonly oracle: RecordAnswerOracle;
   readonly runs: ProofRuns;
   readonly reading: VersionOneReading;
@@ -70,8 +72,10 @@ export type RuleSetLayoutRemoval = {
   readonly folders: readonly RepoPath[];
 };
 
+export type PlacedRepoFile = PlannedFile & { readonly file: RepoPath };
+
 type Placed = {
-  readonly files: readonly PlannedFile[];
+  readonly files: readonly PlacedRepoFile[];
   readonly replacements: readonly PlannedFile[];
   readonly replaced: readonly RepoPath[];
   readonly removal: VersionOneRemoval;
@@ -84,24 +88,27 @@ const unplaceable = (request: { readonly file: RepoPath }): ProofRefusal => ({
 });
 
 const absoluteOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
   readonly repoRoot: AbsolutePath;
   readonly file: RepoPath;
 }): Result<AbsolutePath, ProofRefusal> => {
-  const joined = request.ports.path.join({ segments: [request.repoRoot, request.file] });
+  const joined = request.queries.path.join({ segments: [request.repoRoot, request.file] });
   return isAbsolutePath(joined)
     ? { outcome: "ok", value: joined }
     : { outcome: "failed", error: unplaceable({ file: request.file }) };
 };
 
 const plannedFileOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
   readonly repoRoot: AbsolutePath;
   readonly planned: PlannedRepoFile;
-}): Result<PlannedFile, ProofRefusal> => {
+}): Result<PlacedRepoFile, ProofRefusal> => {
   const path = absoluteOf({ ...request, file: request.planned.file });
   return path.outcome === "ok"
-    ? { outcome: "ok", value: { path: path.value, text: request.planned.text } }
+    ? {
+        outcome: "ok",
+        value: { file: request.planned.file, path: path.value, text: request.planned.text },
+      }
     : path;
 };
 
@@ -120,33 +127,33 @@ const allOf = <Value>(request: {
 };
 
 export const placedFilesOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
   readonly repoRoot: AbsolutePath;
   readonly files: readonly PlannedRepoFile[];
-}): Result<readonly PlannedFile[], ProofRefusal> =>
+}): Result<readonly PlacedRepoFile[], ProofRefusal> =>
   allOf({
     results: request.files.map((planned) =>
-      plannedFileOf({ ports: request.ports, repoRoot: request.repoRoot, planned }),
+      plannedFileOf({ queries: request.queries, repoRoot: request.repoRoot, planned }),
     ),
   });
 
 const absolutesOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
   readonly repoRoot: AbsolutePath;
   readonly files: readonly RepoPath[];
 }): Result<readonly AbsolutePath[], ProofRefusal> =>
   allOf({
     results: request.files.map((file) =>
-      absoluteOf({ ports: request.ports, repoRoot: request.repoRoot, file }),
+      absoluteOf({ queries: request.queries, repoRoot: request.repoRoot, file }),
     ),
   });
 
 const recordsRootOf = (request: UpgradeProofRequest): Result<RecordsRoot, ProofRefusal> => {
-  const { ports, repoRoot, versionOneFiles } = request;
+  const { queries, repoRoot, versionOneFiles } = request;
   if (versionOneFiles.recordsRoot.kind === "repository") {
     return { outcome: "ok", value: { kind: "repository", path: repoRoot } };
   }
-  const folder = absoluteOf({ ports, repoRoot, file: versionOneFiles.recordsRoot.folder });
+  const folder = absoluteOf({ queries, repoRoot, file: versionOneFiles.recordsRoot.folder });
   return folder.outcome === "ok"
     ? { outcome: "ok", value: { kind: "folder", path: folder.value } }
     : folder;
@@ -158,18 +165,18 @@ const removalOf = (
     readonly removed: readonly AbsolutePath[];
   },
 ): Result<VersionOneRemoval, ProofRefusal> => {
-  const { ports, repoRoot, versionOneFiles, ruleSetLayout } = request;
-  const recordsFiles = absolutesOf({ ports, repoRoot, files: versionOneFiles.recordsFiles });
-  const recordsFolders = absolutesOf({ ports, repoRoot, files: versionOneFiles.recordsFolders });
-  const ruleSetFiles = absolutesOf({ ports, repoRoot, files: ruleSetLayout.removed });
-  const ruleSetFolders = absolutesOf({ ports, repoRoot, files: ruleSetLayout.folders });
+  const { queries, repoRoot, versionOneFiles, ruleSetLayout } = request;
+  const recordsFiles = absolutesOf({ queries, repoRoot, files: versionOneFiles.recordsFiles });
+  const recordsFolders = absolutesOf({ queries, repoRoot, files: versionOneFiles.recordsFolders });
+  const ruleSetFiles = absolutesOf({ queries, repoRoot, files: ruleSetLayout.removed });
+  const ruleSetFolders = absolutesOf({ queries, repoRoot, files: ruleSetLayout.folders });
   const recordsRoot = recordsRootOf(request);
   const projections = allOf({
     results: request.projections.map(({ projection }) =>
-      absoluteOf({ ports, repoRoot, file: projection }),
+      absoluteOf({ queries, repoRoot, file: projection }),
     ),
   });
-  const settings = absoluteOf({ ports, repoRoot, file: versionOneFiles.settings });
+  const settings = absoluteOf({ queries, repoRoot, file: versionOneFiles.settings });
   if (recordsFiles.outcome === "failed") return recordsFiles;
   if (recordsFolders.outcome === "failed") return recordsFolders;
   if (ruleSetFiles.outcome === "failed") return ruleSetFiles;
@@ -186,7 +193,7 @@ const removalOf = (
       projections: projections.value,
       declarations: projectionDeclarationsOf({
         projections: [...projections.value, ...request.removed],
-        fileText: ports.fileText,
+        fileText: queries.fileText,
       }),
       settings: settings.value,
       ruleSetFiles: ruleSetFiles.value,
@@ -203,9 +210,9 @@ type ToPlace = UpgradeProofRequest & {
 };
 
 const placedOf = (request: ToPlace): Result<Placed, ProofRefusal> => {
-  const { ports, repoRoot, plan } = request;
-  const files = placedFilesOf({ ports, repoRoot, files: plan.files });
-  const replacements = placedFilesOf({ ports, repoRoot, files: request.replacements });
+  const { queries, repoRoot, plan } = request;
+  const files = placedFilesOf({ queries, repoRoot, files: plan.files });
+  const replacements = placedFilesOf({ queries, repoRoot, files: request.replacements });
   const removal = removalOf(request);
   if (files.outcome === "failed") return files;
   if (replacements.outcome === "failed") return replacements;
@@ -222,11 +229,11 @@ const placedOf = (request: ToPlace): Result<Placed, ProofRefusal> => {
 };
 
 const removedPlacedOf = (request: {
-  readonly ports: ProofWritePorts;
+  readonly queries: ProofQueries;
   readonly repoRoot: AbsolutePath;
   readonly removed: readonly RepoPath[];
 }): Result<readonly AbsolutePath[], ProofRefusal> =>
-  absolutesOf({ ports: request.ports, repoRoot: request.repoRoot, files: request.removed });
+  absolutesOf({ queries: request.queries, repoRoot: request.repoRoot, files: request.removed });
 
 const projectionsRefusalOf = (request: { readonly refusal: ProjectionsRefusal }): ProofRefusal => {
   const { refusal } = request;
@@ -254,12 +261,14 @@ type Written = {
 };
 
 const rolledBackWith = (request: UpgradeProofRequest & Written): readonly Unrestored[] =>
-  rolledBackProofWrites({ ports: request.ports, writes: request.writes });
+  rolledBackWrites({ effects: request.effects, writes: request.writes });
+
+type RunsAgree = { readonly agreed: "both-runs-agree"; readonly written: readonly RepoPath[] };
 
 const comparedAfterWriting = async (
   request: UpgradeProofRequest & Written,
-): Promise<Result<null, ProofRefusal>> => {
-  const written = request.plan.files.map(({ file }) => file);
+): Promise<Result<RunsAgree, ProofRefusal>> => {
+  const written = request.placed.files.map(({ file }) => file);
   const after = await request.runs.versionTwo({ written });
   if (after.outcome === "failed") {
     return {
@@ -300,12 +309,12 @@ const comparedAfterWriting = async (
           removedByVersionOne: [],
         },
       }
-    : { outcome: "ok", value: null };
+    : { outcome: "ok", value: { agreed: "both-runs-agree", written } };
 };
 
 const comparedOrRolledBack = async (
   request: UpgradeProofRequest & Written,
-): Promise<Result<null, ProofRefusal>> => {
+): Promise<Result<RunsAgree, ProofRefusal>> => {
   try {
     return await comparedAfterWriting(request);
   } catch (thrown: unknown) {
@@ -322,13 +331,17 @@ const comparedOrRolledBack = async (
 };
 
 const removedAfterComparing = (
-  request: UpgradeProofRequest & Written,
+  request: UpgradeProofRequest & Written & { readonly agreement: RunsAgree },
 ): Result<ProofCarriedOver, ProofRefusal> => {
   const carried: AfterWriting = {
-    written: request.plan.files.map(({ file }) => file),
+    written: request.agreement.written,
     replaced: request.placed.replaced,
   };
-  const removed = removedVersionOneFiles({ ports: request.ports, removal: request.placed.removal });
+  const removed = removedVersionOneFiles({
+    path: request.queries.path,
+    effects: request.effects,
+    removal: request.placed.removal,
+  });
   return removed.outcome === "failed"
     ? {
         outcome: "failed",
@@ -356,8 +369,9 @@ const removedAfterComparing = (
 const writtenAndCompared = async (
   request: UpgradeProofRequest & Omit<Written, "writes">,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
-  const writes = writeProofFiles({
-    ports: request.ports,
+  const writes = writtenProofFiles({
+    queries: request.queries,
+    effects: request.effects,
     files: request.placed.files,
     replacements: request.placed.replacements,
   });
@@ -369,7 +383,9 @@ const writtenAndCompared = async (
   }
   const written: UpgradeProofRequest & Written = { ...request, writes: writes.value };
   const compared = await comparedOrRolledBack(written);
-  return compared.outcome === "failed" ? compared : removedAfterComparing(written);
+  return compared.outcome === "failed"
+    ? compared
+    : removedAfterComparing({ ...written, agreement: compared.value });
 };
 
 const afterProjecting = async (
@@ -394,7 +410,7 @@ const afterProjecting = async (
   if (placed.outcome === "failed") {
     return placed;
   }
-  const outside = recordsOutsideRoot({ ports: request.ports, removal: placed.value.removal });
+  const outside = recordsOutsideRoot({ path: request.queries.path, removal: placed.value.removal });
   if (outside !== undefined) {
     return {
       outcome: "failed",
@@ -434,7 +450,7 @@ const afterReading = async (
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const reading = request.projectionsReading;
   const removed = removedPlacedOf({
-    ports: request.ports,
+    queries: request.queries,
     repoRoot: request.repoRoot,
     removed: reading.removed,
   });
@@ -496,8 +512,8 @@ const provenOver = async (
 export const upgradeProof = async (
   request: UpgradeProofRequest,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
-  const { ports, repoRoot, trackedPaths } = request;
-  const patches = patchedProjectionsOf({ ports, repoRoot, trackedPaths });
+  const { queries, effects, repoRoot, trackedPaths } = request;
+  const patches = patchedProjectionsOf({ queries, effects, repoRoot, trackedPaths });
   if (patches.outcome === "failed") {
     return patches;
   }
@@ -507,7 +523,8 @@ export const upgradeProof = async (
     : {
         outcome: "failed",
         error: restoredOriginalProjections({
-          ports,
+          queries,
+          effects,
           repoRoot,
           patches: patches.value,
           refusal: proven.error,

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
+import type { DirectoryRemovalPort } from "../../application/ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
+import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../application/ports/git-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
@@ -453,6 +457,114 @@ describe("upgradeOf", () => {
       expect(read).not.toHaveBeenCalled();
     });
   });
+  describe("the proof's effects", () => {
+    const FOLDER = absoluteRootOf("/repo/hone-records");
+
+    const FILE = absoluteRootOf("/repo/hone.config.json");
+
+    const OK = { outcome: "ok", value: undefined } as const;
+
+    const ORACLE_FAILED = {
+      outcome: "failed",
+      error: { kind: "oracle-failed", failure: { kind: "version-one-run-failed", detail: "x" } },
+    } as const;
+
+    it("applies each kind of effect through the ports the upgrade was given", async () => {
+      const git = gitListing({ tracked: TRACKED });
+      const command = commandOver({ git });
+      const write = vi.fn<FileTextPort["write"]>().mockReturnValue(OK);
+      const create = vi.fn<DirectoryPort["create"]>().mockReturnValue(OK);
+      const list = vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] });
+      const createNew = vi.fn<FileCreationPort["createNew"]>().mockReturnValue(OK);
+      const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(OK);
+      const removeEmpty = vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(OK);
+      const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue(ORACLE_FAILED);
+
+      await upgradeOf(
+        inputWith({
+          git,
+          command: { ...command, fileText: { ...command.fileText, write } },
+          ports: {
+            ...PORTS,
+            directory: { list, create },
+            fileCreation: { createNew },
+            fileRemoval: { remove },
+            directoryRemoval: { removeEmpty },
+          },
+          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+          versionOneReadOf: vi
+            .fn<VersionOneReadOf>()
+            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+          proofOf,
+        }),
+      );
+      const [[proofRequest]] = proofOf.mock.calls;
+      proofRequest.effects.apply({
+        effects: [
+          { kind: "create-directory", path: FOLDER },
+          { kind: "create-file", path: FILE, text: "settings" },
+          { kind: "replace-file", path: FILE, text: "new", original: "old" },
+          { kind: "remove-file", path: FILE },
+          { kind: "remove-directory-if-empty", path: FOLDER },
+        ],
+      });
+
+      expect([
+        create.mock.calls,
+        createNew.mock.calls,
+        write.mock.calls,
+        remove.mock.calls,
+        list.mock.calls,
+        removeEmpty.mock.calls,
+      ]).toEqual([
+        [[{ path: FOLDER }]],
+        [[{ path: FILE, text: "settings" }]],
+        [[{ path: FILE, text: "new" }]],
+        [[{ path: FILE }]],
+        [[{ path: FOLDER }]],
+        [[{ path: FOLDER }]],
+      ]);
+    });
+
+    it("undoes each kind of write through the ports the upgrade was given", async () => {
+      const git = gitListing({ tracked: TRACKED });
+      const command = commandOver({ git });
+      const write = vi.fn<FileTextPort["write"]>().mockReturnValue(OK);
+      const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(OK);
+      const removeEmpty = vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(OK);
+      const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue(ORACLE_FAILED);
+
+      await upgradeOf(
+        inputWith({
+          git,
+          command: { ...command, fileText: { ...command.fileText, write } },
+          ports: { ...PORTS, fileRemoval: { remove }, directoryRemoval: { removeEmpty } },
+          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+          versionOneReadOf: vi
+            .fn<VersionOneReadOf>()
+            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+          proofOf,
+        }),
+      );
+      const [[proofRequest]] = proofOf.mock.calls;
+
+      expect(
+        proofRequest.effects.undo({
+          writes: [
+            { kind: "file-replaced", path: FILE, original: "old" },
+            { kind: "file-created", path: FILE },
+            { kind: "directory-created", path: FOLDER },
+          ],
+        }),
+      ).toEqual([]);
+      expect([write.mock.calls, remove.mock.calls, removeEmpty.mock.calls]).toEqual([
+        [[{ path: FILE, text: "old" }]],
+        [[{ path: FILE }]],
+        [[{ path: FOLDER }]],
+      ]);
+    });
+  });
+
   it("runs the version 2 proof over the found tree with the files the upgrade wrote", async () => {
     const proofRunsOf = vi.fn<ProofRunsOf>().mockReturnValue({
       versionOne: vi.fn<ProofRuns["versionOne"]>(),
