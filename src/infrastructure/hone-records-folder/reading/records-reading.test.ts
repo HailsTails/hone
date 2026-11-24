@@ -369,7 +369,7 @@ describe("recordsReadingOf", () => {
     });
   });
 
-  it("says the base revision was measured when it was, with the file each base record held at its place", () => {
+  it("says the base revision was measured when it was, with each record the base held and none it refuses", () => {
     expect(
       recordsReadingOf({
         documents: [],
@@ -378,13 +378,12 @@ describe("recordsReadingOf", () => {
           measured: "yes",
           documents: [
             {
-              file: repoPathOf("hone-records/debt/claimed-type.json"),
+              file: DEBT_FILE,
               document: {
                 version: 2,
                 records: [
                   { answers: "claimed-type", file: "src/basket.ts" },
-                  { module: "src/clock.ts" },
-                  { answers: "claimed-type", file: "src/total.ts" },
+                  { answers: "unknown-symptom", file: "src/clock.ts" },
                 ],
               },
             },
@@ -402,12 +401,11 @@ describe("recordsReadingOf", () => {
           measured: "yes",
           held: [
             {
-              place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
               file: "src/basket.ts",
-            },
-            {
-              place: { file: "hone-records/debt/claimed-type.json", index: 2 },
-              file: "src/total.ts",
+              holding: { held: "stated" },
             },
           ],
         },

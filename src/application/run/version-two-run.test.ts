@@ -434,7 +434,7 @@ describe("versionTwoRunOver", () => {
       records: [debtAtBase],
       base: {
         measured: "yes",
-        held: [{ place: debtAtBase.place, file: repoPathOf("src/basket.ts") }],
+        held: [debtAtBase.record],
       },
     };
     const stages = stagesGiving({

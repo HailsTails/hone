@@ -248,7 +248,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
-          base: { measured: "yes", held: [{ place: DEBT_ON_BASKET.place, file: BASKET }] },
+          base: { measured: "yes", held: [DEBT_ON_BASKET.record] },
         },
       }),
       engines: vi
@@ -273,7 +273,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
-          base: { measured: "yes", held: [{ place: DEBT_ON_BASKET.place, file: BASKET }] },
+          base: { measured: "yes", held: [DEBT_ON_BASKET.record] },
         },
       }),
     },

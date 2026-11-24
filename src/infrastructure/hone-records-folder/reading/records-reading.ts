@@ -4,7 +4,7 @@ import type { RecordsReader } from "../../../application/ports/records/records-r
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   BaseMeasurement,
-  HeldAtBase,
+  HoneRecord,
   PlacedRecord,
   RecordPlace,
   RecordNote,
@@ -23,7 +23,7 @@ import { recordsFileStandingOf } from "../../../domain/records/hone-records/reco
 import type { Result } from "../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
-import { heldFileSchema, recordsDocumentSchema } from "../records-wire.ts";
+import { recordsDocumentSchema } from "../records-wire.ts";
 import { type FiledUnder, recordOf } from "./record-resolution.ts";
 
 type PlacedEntry = {
@@ -158,23 +158,35 @@ const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): rea
   );
 };
 
-const heldIn = (request: { readonly document: RecordsDocument }): readonly HeldAtBase[] => {
-  const parsed = recordsDocumentSchema.safeParse(request.document.document);
-  return parsed.success
-    ? parsed.data.records.flatMap((entry, index) => {
-        const held = heldFileSchema.safeParse(entry);
-        return held.success
-          ? [{ place: { file: request.document.file, index }, file: held.data.file }]
-          : [];
-      })
-    : [];
+const recordsHeldAtBase = (request: {
+  readonly documents: readonly RecordsDocument[];
+  readonly catalogue: SymptomCatalogue;
+  readonly base: RecordsAtBase;
+}): readonly HoneRecord[] => {
+  const ruleSetsRead = ruleSetsReadOf(request);
+  return request.documents.flatMap((document) => {
+    const listed = entriesOf({ document, ruleSetsRead });
+    return listed.outcome === "failed"
+      ? []
+      : listed.value.flatMap((placed) => {
+          const judged = judgedEntry({ placed, catalogue: request.catalogue, base: request.base });
+          return judged.placed === "record" ? [judged.record.record] : [];
+        });
+  });
 };
 
-const baseMeasurementOf = (request: { readonly base: RecordsAtBase }): BaseMeasurement =>
+const baseMeasurementOf = (request: {
+  readonly base: RecordsAtBase;
+  readonly catalogue: SymptomCatalogue;
+}): BaseMeasurement =>
   request.base.measured === "yes"
     ? {
         measured: "yes",
-        held: request.base.documents.flatMap((document) => heldIn({ document })),
+        held: recordsHeldAtBase({
+          documents: request.base.documents,
+          catalogue: request.catalogue,
+          base: request.base,
+        }),
       }
     : { measured: "no", base: request.base.base };
 
@@ -188,6 +200,7 @@ const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNot
 const readingOf = (request: {
   readonly judged: readonly Judged[];
   readonly base: RecordsAtBase;
+  readonly catalogue: SymptomCatalogue;
 }): RecordsReading => {
   const records = request.judged.flatMap((judged) =>
     judged.placed === "record" ? [judged.record] : [],
@@ -219,7 +232,11 @@ export const recordsReadingOf = (request: {
   );
   return {
     outcome: "ok",
-    value: readingOf({ judged: withoutDuplicates({ judged }), base: request.base }),
+    value: readingOf({
+      judged: withoutDuplicates({ judged }),
+      base: request.base,
+      catalogue: request.catalogue,
+    }),
   };
 };
 

@@ -63,8 +63,6 @@ export const recordsDocumentSchema = z.strictObject({
 
 export const carriedFormSchema = z.looseObject({ carried: z.json() });
 
-export const heldFileSchema = z.looseObject({ file: repoPathSchema });
-
 const addressFieldRetirement = (issue: z.core.$ZodRawIssue): string | undefined =>
   issue.code === "unrecognized_keys" && issue.keys.includes("symptom")
     ? "`symptom` is `answers` in version 2"

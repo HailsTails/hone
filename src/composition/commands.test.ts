@@ -731,7 +731,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
           value: {
             ...NO_RECORDS,
             records: [HELD_DEBT],
-            base: { measured: "yes", held: [{ place: HELD_DEBT.place, file: FILE_A }] },
+            base: { measured: "yes", held: [HELD_DEBT.record] },
           },
         }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({

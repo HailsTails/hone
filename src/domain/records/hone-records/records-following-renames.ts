@@ -1,12 +1,7 @@
 import { headPathByBasePathOf, type RenamedPaths } from "../../repository/renamed-path.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
-import type {
-  HeldAtBase,
-  HoneRecord,
-  PlacedRecord,
-  RecordPlace,
-  RefusedRecord,
-} from "./hone-record.ts";
+import type { HoneRecord, PlacedRecord, RecordPlace, RefusedRecord } from "./hone-record.ts";
+import { sameRecordIdentity } from "./record-identity.ts";
 import type { RecordRepointing } from "./records-edit.ts";
 
 const placeMatch = (request: {
@@ -59,31 +54,41 @@ const pathHeldBy = (request: { readonly record: HoneRecord }): RepoPath | undefi
   }
 };
 
-const standingSinceBase = (request: {
-  readonly placed: PlacedRecord;
-  readonly file: RepoPath;
-  readonly held: readonly HeldAtBase[];
-}): "held-as-at-base" | "changed-since-base" =>
-  request.held.some(
-    ({ place, file }) =>
-      file === request.file && placeMatch({ left: place, right: request.placed.place }) === "same",
+const heldIn = (request: {
+  readonly record: HoneRecord;
+  readonly records: readonly HoneRecord[];
+}): "held" | "not-held" =>
+  request.records.some(
+    (candidate) => sameRecordIdentity({ left: request.record, right: candidate }) === "same",
   )
-    ? "held-as-at-base"
-    : "changed-since-base";
+    ? "held"
+    : "not-held";
+
+const followedToHead = (request: {
+  readonly record: HoneRecord;
+  readonly headPathOf: ReadonlyMap<RepoPath, RepoPath>;
+}): HoneRecord => {
+  const file = pathHeldBy({ record: request.record });
+  const movedTo = file === undefined ? undefined : request.headPathOf.get(file);
+  return movedTo === undefined
+    ? request.record
+    : recordAt({ record: request.record, file: movedTo });
+};
 
 export const recordsAtMovedPathsOf = (request: {
   readonly records: readonly PlacedRecord[];
   readonly renamed: RenamedPaths;
-  readonly held: readonly HeldAtBase[];
+  readonly held: readonly HoneRecord[];
 }): readonly RecordRepointing[] => {
   const headPathOf = headPathByBasePathOf({ renamed: request.renamed });
-  return request.records.flatMap((placed) => {
-    const file = pathHeldBy({ record: placed.record });
+  const expectedAtHead = request.held.map((record) => followedToHead({ record, headPathOf }));
+  return request.records.flatMap(({ place, record }) => {
+    const file = pathHeldBy({ record });
     const movedTo = file === undefined ? undefined : headPathOf.get(file);
-    return file !== undefined &&
-      movedTo !== undefined &&
-      standingSinceBase({ placed, file, held: request.held }) === "held-as-at-base"
-      ? [{ place: placed.place, file: movedTo }]
+    return movedTo !== undefined &&
+      heldIn({ record, records: request.held }) === "held" &&
+      heldIn({ record, records: expectedAtHead }) === "not-held"
+      ? [{ place, file: movedTo }]
       : [];
   });
 };

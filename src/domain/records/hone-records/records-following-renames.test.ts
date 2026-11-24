@@ -131,17 +131,28 @@ describe("recordsFollowingRenames", () => {
   });
 });
 
+const deviationAt = (request: {
+  readonly index: number;
+  readonly file: RepoPath;
+}): PlacedRecord => ({
+  place: { file: repoPathOf("hone-records/deviations/stub-with-vi-fn.json"), index: request.index },
+  record: {
+    kind: "deviation",
+    recipe: STUB_WITH_VI_FN,
+    file: request.file,
+    reasonFails: "the stub needs state",
+    evidence: "the basket counts its calls",
+    ruleHolds: "the test still owns its double",
+  },
+});
+
 describe("recordsAtMovedPathsOf", () => {
-  it("names each record still held where the base held it, at a path git saw renamed, with the path to repoint it to", () => {
+  it("names each record the base held at a path git saw renamed, with the path to repoint it to", () => {
     expect(
       recordsAtMovedPathsOf({
         records: [DEBT_ON_BASKET, DEBT_ON_TOTAL, DEVIATION_ON_BASKET, BOUNDARY_ON_BASKET],
         renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "edited" }]]),
-        held: [
-          { place: DEBT_ON_BASKET.place, file: BASKET },
-          { place: DEBT_ON_TOTAL.place, file: TOTAL },
-          { place: DEVIATION_ON_BASKET.place, file: BASKET },
-        ],
+        held: [DEBT_ON_BASKET.record, DEBT_ON_TOTAL.record, DEVIATION_ON_BASKET.record],
       }),
     ).toEqual([
       { place: DEBT_ON_BASKET.place, file: MOVED_BASKET },
@@ -154,9 +165,35 @@ describe("recordsAtMovedPathsOf", () => {
       recordsAtMovedPathsOf({
         records: [DEBT_ON_BASKET],
         renamed: new Map(),
-        held: [{ place: DEBT_ON_BASKET.place, file: BASKET }],
+        held: [DEBT_ON_BASKET.record],
       }),
     ).toEqual([]);
+  });
+
+  it("names a record whose place shifted since the base, after an entry ahead of it was pruned", () => {
+    expect(
+      recordsAtMovedPathsOf({
+        records: [debtAt({ index: 0, file: BASKET })],
+        renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
+        held: [debtAt({ index: 0, file: TOTAL }).record, debtAt({ index: 1, file: BASKET }).record],
+      }),
+    ).toEqual([{ place: debtAt({ index: 0, file: BASKET }).place, file: MOVED_BASKET }]);
+  });
+
+  it("names only the record still at the moved path when two records held the same file and one is repointed", () => {
+    expect(
+      recordsAtMovedPathsOf({
+        records: [
+          debtAt({ index: 0, file: MOVED_BASKET }),
+          deviationAt({ index: 0, file: BASKET }),
+        ],
+        renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
+        held: [
+          debtAt({ index: 0, file: BASKET }).record,
+          deviationAt({ index: 0, file: BASKET }).record,
+        ],
+      }),
+    ).toEqual([{ place: deviationAt({ index: 0, file: BASKET }).place, file: MOVED_BASKET }]);
   });
 
   it("names a record on the first path of a chain of renames, and not once it is repointed to the path the chain gave it", () => {
@@ -164,7 +201,7 @@ describe("recordsAtMovedPathsOf", () => {
       [TOTAL, { basePath: BASKET, content: "unchanged" as const }],
       [CHARGE, { basePath: TOTAL, content: "unchanged" as const }],
     ]);
-    const held = [{ place: debtAt({ index: 0, file: BASKET }).place, file: BASKET }];
+    const held = [debtAt({ index: 0, file: BASKET }).record];
     expect({
       before: recordsAtMovedPathsOf({
         records: [debtAt({ index: 0, file: BASKET })],
@@ -184,24 +221,24 @@ describe("recordsAtMovedPathsOf", () => {
       [BASKET, { basePath: TOTAL, content: "unchanged" as const }],
     ]);
     const held = [
-      { place: debtAt({ index: 0, file: BASKET }).place, file: BASKET },
-      { place: debtAt({ index: 1, file: TOTAL }).place, file: TOTAL },
+      debtAt({ index: 0, file: BASKET }).record,
+      deviationAt({ index: 0, file: TOTAL }).record,
     ];
     expect({
       before: recordsAtMovedPathsOf({
-        records: [debtAt({ index: 0, file: BASKET }), debtAt({ index: 1, file: TOTAL })],
+        records: [debtAt({ index: 0, file: BASKET }), deviationAt({ index: 0, file: TOTAL })],
         renamed,
         held,
       }),
       after: recordsAtMovedPathsOf({
-        records: [debtAt({ index: 0, file: TOTAL }), debtAt({ index: 1, file: BASKET })],
+        records: [debtAt({ index: 0, file: TOTAL }), deviationAt({ index: 0, file: BASKET })],
         renamed,
         held,
       }),
     }).toEqual({
       before: [
         { place: debtAt({ index: 0, file: BASKET }).place, file: TOTAL },
-        { place: debtAt({ index: 1, file: TOTAL }).place, file: BASKET },
+        { place: deviationAt({ index: 0, file: TOTAL }).place, file: BASKET },
       ],
       after: [],
     });
