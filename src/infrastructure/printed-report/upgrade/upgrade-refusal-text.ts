@@ -25,6 +25,7 @@ import type { InvalidRecord } from "../../../domain/records/discipline-exception
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
@@ -339,6 +340,9 @@ const directiveLinesOf = (request: {
   }),
 ];
 
+const uncoveredLineOf = (request: { readonly clauses: readonly ClauseAddress[] }): string =>
+  `version 1 already reports ${request.clauses.map((address) => clauseAddressText({ address })).join(", ")} as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.`;
+
 const mapSmoothingFailureToLines = (request: {
   readonly step: SmoothingStep;
   readonly failure: SmoothingFailure;
@@ -383,7 +387,7 @@ type VersionOneRunRefusal = Extract<
       | "oracle-failed"
       | "plan-refused"
       | "version-one-run-failed"
-      | "version-one-check-fails";
+      | "version-one-uncovered";
   }
 >;
 
@@ -395,6 +399,14 @@ const mapVersionOneRunRefusalToLines = (request: {
   switch (failure.kind) {
     case "oracle-failed":
       return { code: 1, lines: [oracleLineOf({ failure: failure.failure }), NOTHING_CHANGED] };
+    case "plan-refused":
+      return {
+        code: 1,
+        lines: [
+          ...planLinesOf({ refusal: failure.refusal }),
+          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
+        ],
+      };
     case "version-one-run-failed":
       return {
         code: 1,
@@ -403,19 +415,11 @@ const mapVersionOneRunRefusalToLines = (request: {
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
-    case "version-one-check-fails":
+    case "version-one-uncovered":
       return {
         code: 1,
         lines: [
-          "version 1's check fails; fix or record what it reports, then upgrade.",
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
-        ],
-      };
-    case "plan-refused":
-      return {
-        code: 1,
-        lines: [
-          ...planLinesOf({ refusal: failure.refusal }),
+          uncoveredLineOf({ clauses: failure.clauses }),
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
@@ -547,7 +551,7 @@ const proofLinesOf = (request: {
     case "oracle-failed":
     case "plan-refused":
     case "version-one-run-failed":
-    case "version-one-check-fails":
+    case "version-one-uncovered":
       return mapVersionOneRunRefusalToLines({ failure, placement });
     default:
       return mapVersionOneWriteRefusalToLines({ failure, placement });

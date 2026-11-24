@@ -329,11 +329,26 @@ Nothing was changed.
       },
     },
     {
-      name: "version 1's check fails",
-      failure: { kind: "version-one-check-fails", removedByVersionOne: [] },
+      name: "version 1 already reports clauses uncovered",
+      failure: {
+        kind: "version-one-uncovered",
+        clauses: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("claimed-type"),
+          },
+          {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-2"),
+            clause: clauseIdOf("claimed-members"),
+          },
+        ],
+        removedByVersionOne: [],
+      },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 1's check fails; fix or record what it reports, then upgrade.\nNothing was changed.\n",
+        text: "upgrade refused:\nversion 1 already reports CD-1#claimed-type, CD-2#claimed-members as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {

@@ -5,6 +5,7 @@ import type { RecordLine } from "../../../domain/records/upgrade/records-mapping
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import type { PlanRefusal } from "./plan-refusal.ts";
 import type { ProofRunFailure } from "./proof-runs.ts";
@@ -88,12 +89,15 @@ type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[
 
 export type ProofRefusal =
   | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
+  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-run-failed";
       readonly failure: ProofRunFailure;
     } & AfterVersionOneProject)
-  | ({ readonly kind: "version-one-check-fails" } & AfterVersionOneProject)
-  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
+  | ({
+      readonly kind: "version-one-uncovered";
+      readonly clauses: readonly ClauseAddress[];
+    } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-project-failed";
       readonly detail: string;

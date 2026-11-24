@@ -842,103 +842,63 @@ describe("upgradeProof", () => {
 
   it.each([
     {
+      name: "a repository version 1 already reports uncovered",
+      answered: ANSWERED,
+      before: {
+        outcome: "ok",
+        value: { ...VERSION_ONE_PASSING.value, uncovered: [LOOPS_CLAUSE] },
+      },
+      error: { kind: "version-one-uncovered", clauses: [LOOPS_CLAUSE], removedByVersionOne: [] },
+      versionOneRuns: [[]],
+    },
+    {
+      name: "a version 1 run that fails",
+      answered: ANSWERED,
+      before: { outcome: "failed", error: { kind: "run-failed", detail: "no selection" } },
+      error: {
+        kind: "version-one-run-failed",
+        failure: { kind: "run-failed", detail: "no selection" },
+        removedByVersionOne: [],
+      },
+      versionOneRuns: [[]],
+    },
+    {
       name: "an oracle that cannot answer",
       answered: {
         outcome: "failed",
         error: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
       },
+      before: VERSION_ONE_PASSING,
       error: {
         kind: "oracle-failed",
         failure: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
       },
+      versionOneRuns: [],
+    },
+    {
+      name: "a doubly held pair",
+      answered: {
+        outcome: "failed",
+        error: { kind: "record-doubly-held", clause: "CD-15#loops", file: repoPathOf("src/a.ts") },
+      },
+      before: VERSION_ONE_PASSING,
+      error: {
+        kind: "oracle-failed",
+        failure: {
+          kind: "record-doubly-held",
+          clause: "CD-15#loops",
+          file: repoPathOf("src/a.ts"),
+        },
+      },
+      versionOneRuns: [],
     },
   ] as const)(
     "refuses, before reading the projections or writing anything, $name",
-    async ({ answered, error }) => {
+    async ({ answered, before, error, versionOneRuns }) => {
       const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce(NOTHING_PATCHED);
+      const versionOne = vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(before);
       const versionTwo = vi.fn<ProofRuns["versionTwo"]>();
       const versionOneProjectionsOf = vi.fn<VersionOneProjectionsOf>();
-
-      await expect(
-        upgradeProof({
-          ...VERSION_ONE_REPOSITORY,
-          queries: {
-            fileText: {
-              read: vi.fn<FileTextPort["read"]>(),
-              exists: vi.fn<FileTextPort["exists"]>(),
-            },
-            entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
-            path: recordsFolderPath(),
-          },
-          effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
-          oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered) },
-          runs: {
-            versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
-            versionTwo,
-          },
-          projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
-          versionOneProjectionsOf,
-        }),
-      ).resolves.toEqual({ outcome: "failed", error });
-      expect([versionTwo.mock.calls, versionOneProjectionsOf.mock.calls, apply.mock.calls]).toEqual(
-        [[], [], [[PATCHING_NOTHING]]],
-      );
-    },
-  );
-
-  it.each([
-    {
-      name: "version 1's check has a finding",
-      versionOne: {
-        outcome: "ok",
-        value: {
-          ...VERSION_ONE_PASSING.value,
-          findings: [
-            {
-              clause: LOOPS_CLAUSE,
-              file: repoPathOf("src/a.ts"),
-              anchor: { line: 3, column: 1 },
-              snippet: "for (;;) {}",
-              mechanism: AUDIT,
-            },
-          ],
-        },
-      },
-      error: { kind: "version-one-check-fails", removedByVersionOne: [] },
-    },
-    {
-      name: "version 1's check has an unrecorded exception",
-      versionOne: {
-        outcome: "ok",
-        value: {
-          ...VERSION_ONE_PASSING.value,
-          unrecorded: [
-            {
-              kind: "config-override",
-              clause: LOOPS_CLAUSE,
-              file: repoPathOf("src/a.ts"),
-              mechanism: AUDIT,
-            },
-          ],
-        },
-      },
-      error: { kind: "version-one-check-fails", removedByVersionOne: [] },
-    },
-    {
-      name: "version 1's run fails",
-      versionOne: { outcome: "failed", error: { kind: "run-failed", detail: "no config" } },
-      error: {
-        kind: "version-one-run-failed",
-        failure: { kind: "run-failed", detail: "no config" },
-        removedByVersionOne: [],
-      },
-    },
-  ] as const)(
-    "refuses, before answering any record or writing anything, when $name",
-    async ({ versionOne, error }) => {
-      const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce(NOTHING_PATCHED);
-      const answer = vi.fn<RecordAnswerOracle["answer"]>();
-      const versionTwo = vi.fn<ProofRuns["versionTwo"]>();
 
       const proven = await upgradeProof({
         ...VERSION_ONE_REPOSITORY,
@@ -951,28 +911,97 @@ describe("upgradeProof", () => {
           path: recordsFolderPath(),
         },
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
-        oracle: { answer },
-        runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(versionOne),
-          versionTwo,
-        },
-        projectionFilesOf: vi.fn<ProjectionFilesOf>(),
-        versionOneProjectionsOf: vi.fn<VersionOneProjectionsOf>(),
+        oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered) },
+        runs: { versionOne, versionTwo },
+        projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+        versionOneProjectionsOf,
       });
 
       expect({
         proven,
-        answered: answer.mock.calls,
-        ranVersionTwo: versionTwo.mock.calls,
+        versionOneRuns: versionOne.mock.calls,
+        versionTwoRuns: versionTwo.mock.calls,
+        projectionsRead: versionOneProjectionsOf.mock.calls,
         applied: apply.mock.calls,
       }).toEqual({
         proven: { outcome: "failed", error },
-        answered: [],
-        ranVersionTwo: [],
+        versionOneRuns,
+        versionTwoRuns: [],
+        projectionsRead: [],
         applied: [[PATCHING_NOTHING]],
       });
     },
   );
+
+  it.each([
+    {
+      name: "a finding",
+      found: {
+        findings: [
+          {
+            clause: LOOPS_CLAUSE,
+            file: repoPathOf("src/a.ts"),
+            anchor: { line: 3, column: 1 },
+            snippet: "for (;;) {}",
+            mechanism: AUDIT,
+          },
+        ],
+      },
+    },
+    {
+      name: "an unrecorded exception",
+      found: {
+        unrecorded: [
+          {
+            kind: "config-override",
+            clause: LOOPS_CLAUSE,
+            file: repoPathOf("src/a.ts"),
+            mechanism: AUDIT,
+          },
+        ],
+      },
+    },
+    { name: "a stale record", found: { stale: [CARVE_OUT] } },
+  ] as const)("continues to version 2's check over version 1's $name", async ({ found }) => {
+    const versionTwo = vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN);
+
+    const proven = await upgradeProof({
+      ...VERSION_ONE_REPOSITORY,
+      queries: {
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
+        entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
+        path: recordsFolderPath(),
+      },
+      effects: {
+        apply: vi
+          .fn<ProofEffects["apply"]>()
+          .mockReturnValueOnce(NOTHING_PATCHED)
+          .mockReturnValueOnce(ALL_WRITTEN)
+          .mockReturnValueOnce(VERSION_ONE_REMOVED),
+        undo: vi.fn<ProofEffects["undo"]>(),
+      },
+      oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
+      runs: {
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue({
+          outcome: "ok",
+          value: { ...VERSION_ONE_PASSING.value, ...found },
+        }),
+        versionTwo,
+      },
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      versionOneProjectionsOf: vi
+        .fn<VersionOneProjectionsOf>()
+        .mockResolvedValue(FOUND_PROJECTIONS),
+    });
+
+    expect({ proven, checkedOver: versionTwo.mock.calls }).toEqual({
+      proven: { outcome: "ok", value: CARRIED_OVER },
+      checkedOver: [[{ written: WRITTEN_FILES }]],
+    });
+  });
 
   it("refuses, writing nothing and running nothing more, when a file it would write already exists", async () => {
     const kindOf = kindsOfExistingFirstFile();

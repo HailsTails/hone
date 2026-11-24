@@ -1,6 +1,5 @@
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
-import { verdictOf } from "../../../domain/report/verdict.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
@@ -490,19 +489,6 @@ const afterReading = async (
 const provenOver = async (
   request: UpgradeProofRequest,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
-  const before = await request.runs.versionOne();
-  if (before.outcome === "failed") {
-    return {
-      outcome: "failed",
-      error: { kind: "version-one-run-failed", failure: before.error, removedByVersionOne: [] },
-    };
-  }
-  if (verdictOf({ report: before.value }) === "fail") {
-    return {
-      outcome: "failed",
-      error: { kind: "version-one-check-fails", removedByVersionOne: [] },
-    };
-  }
   const answered = await request.oracle.answer({
     records: request.reading.heads.map(({ record }) => record),
   });
@@ -520,6 +506,23 @@ const provenOver = async (
     return {
       outcome: "failed",
       error: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] },
+    };
+  }
+  const before = await request.runs.versionOne();
+  if (before.outcome === "failed") {
+    return {
+      outcome: "failed",
+      error: { kind: "version-one-run-failed", failure: before.error, removedByVersionOne: [] },
+    };
+  }
+  if (before.value.uncovered.length > 0) {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "version-one-uncovered",
+        clauses: before.value.uncovered,
+        removedByVersionOne: [],
+      },
     };
   }
   return projectedOver({ ...request, plan: plan.value });
