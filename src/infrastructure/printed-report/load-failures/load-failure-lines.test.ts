@@ -60,24 +60,6 @@ describe("runLoadFailureLine, a failure version 2 renames", () => {
     },
     {
       failure: {
-        kind: "listed-under-both-names",
-        path: "/work/shop/hone.config.json",
-        under: "checks",
-        from: "export-from-a-test-file#test-file-export",
-        to: "export-from-a-test#test-file-export",
-      },
-      line: 'load failure: listed-under-both-names /work/shop/hone.config.json checks: it lists both "export-from-a-test-file#test-file-export" and its current name "export-from-a-test#test-file-export"; keep one of them',
-    },
-    {
-      failure: {
-        kind: "renamed-address-outside-listings",
-        path: "/work/shop/hone.config.json",
-        listings: ["checks", "checkSettings"],
-      },
-      line: "load failure: renamed-address-outside-listings /work/shop/hone.config.json: a renamed check address also appears outside checks and checkSettings",
-    },
-    {
-      failure: {
         kind: "engine-not-allowed",
         check: "date-used-directly#clock-sources",
         engine: "eslint",

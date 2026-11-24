@@ -88,7 +88,6 @@ describe("plannedProjectionOf", () => {
         fileOf: vi.fn(),
         documentOf: vi.fn(),
         textOf: vi.fn(),
-        renameKeys: vi.fn(),
       },
       settingsSourcesOf: vi.fn(),
       checkPieceSourceOf: vi.fn(),
@@ -150,7 +149,6 @@ describe("plannedProjectionOf", () => {
         fileOf: vi.fn(),
         documentOf: vi.fn(),
         textOf: vi.fn(),
-        renameKeys: vi.fn(),
       },
       settingsSourcesOf: vi.fn().mockReturnValue({
         settingsFile: vi.fn(),

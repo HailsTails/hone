@@ -577,23 +577,3 @@ describe("settingsTextOf", () => {
     expect(settingsTextOf({ settings: UNSORTED_FILE })).toBe(UNSORTED_TEXT);
   });
 });
-
-describe("SETTINGS_FILE_FORMAT", () => {
-  it("renames a listed key in the settings text, keeping the rest of the text as written", () => {
-    const text = '{ "checks": { "old#check": "walker" } }';
-    const rename = vi
-      .fn<(request: { readonly text: string }) => string>()
-      .mockReturnValue("new#check");
-
-    const renamed = SETTINGS_FILE_FORMAT.renameKeys({ text, under: ["checks"], rename });
-
-    expect(renamed).toEqual({
-      outcome: "ok",
-      value: {
-        text: '{ "checks": { "new#check": "walker" } }',
-        renamed: [{ under: "checks", from: "old#check", to: "new#check" }],
-        listed: [{ under: "checks", checks: ["old#check"] }],
-      },
-    });
-  });
-});

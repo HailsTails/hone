@@ -9,6 +9,7 @@ import { upgradeProof } from "../application/upgrade/proof/upgrade-proof.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { Result } from "../domain/result.ts";
 import { parseUpgradeArguments } from "../infrastructure/command-line/arguments/command-arguments.ts";
+import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
 import { itemTextFrom } from "../infrastructure/content-files/item-folders/item-text.ts";
 import { shippedCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/shipped-catalogues.ts";
@@ -17,7 +18,10 @@ import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
 import { createImportsRewriterOf } from "../infrastructure/engines/protocol/upgrade/load-imports-rewriter.ts";
-import { upgradeSuccessOutcomeOf } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import {
+  ALREADY_ON_VERSION_TWO,
+  upgradeSuccessOutcomeOf,
+} from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
 import { versionOneTeamLayoutsOf } from "../infrastructure/upgrade/team-layout/version-one-team-layout.ts";
 import {
   type UpgradeInput,
@@ -26,7 +30,7 @@ import {
 } from "../operations/upgrade/run-upgrade-command.ts";
 import type { FoundTreeReach } from "../operations/upgrade/smoothing-commands.ts";
 import { checkCommandsOf, symptomPageOf } from "./check-command.ts";
-import { loadFailed, type ToolCommand } from "./composed-command.ts";
+import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import {
   repositoryLocatedOf,
@@ -190,4 +194,9 @@ export const UPGRADE: ToolCommand<UpgradeArguments, Upgraded, UpgradeCommandPort
       repoRoot: produced.located.repoRoot,
       path: ports.path,
     }),
+};
+
+export const alreadyUpgradedCommand: CommandHandler = (command) => {
+  printOutcome({ process: command.process, outcome: ALREADY_ON_VERSION_TWO });
+  return Promise.resolve();
 };

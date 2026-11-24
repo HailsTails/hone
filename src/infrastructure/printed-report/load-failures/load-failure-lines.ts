@@ -162,11 +162,6 @@ type ToolFailure = Extract<
   }
 >;
 
-type SettingsRenameFailure = Extract<
-  RunLoadFailure,
-  { readonly kind: "listed-under-both-names" | "renamed-address-outside-listings" }
->;
-
 type CheckFailure = Extract<
   RunLoadFailure,
   {
@@ -250,25 +245,6 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
         "scope" in failure.problem
           ? projectionProblemLine({ ...failure, problem: failure.problem })
           : projectionMissingLine({ ...failure, unmeasured: failure.problem }),
-      ];
-  }
-};
-
-const settingsRenameFields = (request: {
-  readonly failure: SettingsRenameFailure;
-}): readonly string[] => {
-  const { failure } = request;
-  switch (failure.kind) {
-    case "listed-under-both-names":
-      return [
-        failure.path,
-        `${failure.under}:`,
-        `it lists both "${failure.from}" and its current name "${failure.to}"; keep one of them`,
-      ];
-    case "renamed-address-outside-listings":
-      return [
-        `${failure.path}:`,
-        `a renamed check address also appears outside ${failure.listings.join(" and ")}`,
       ];
   }
 };
@@ -391,9 +367,6 @@ const failureFields = (request: {
     case "not-ready-yet":
     case "projection-stale":
       return toolFields({ failure });
-    case "listed-under-both-names":
-    case "renamed-address-outside-listings":
-      return settingsRenameFields({ failure });
     case "unknown-check":
     case "review-only-listed":
     case "duplicate-check":

@@ -25,7 +25,6 @@ import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/jso
 import { recordsDocumentSchema } from "../records-wire.ts";
 import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 import { type FiledUnder, type RecordLookups, recordOf } from "./record-resolution.ts";
-import { readEntries } from "./records-entries.ts";
 
 type PlacedEntry = {
   readonly place: RecordPlace;
@@ -254,5 +253,4 @@ export const recordsReader: RecordsReader = {
       cases: catalogue.cases,
       namedBans: catalogue.namedBans,
     }),
-  readEntries,
 };

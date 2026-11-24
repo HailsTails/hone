@@ -373,17 +373,14 @@ describe("decodeMeasuredRuns", () => {
       status: 2,
       stderr: "warning: slow disk",
       reply:
-        '{"outcome":"not-loaded","failure":{"kind":"listed-under-both-names","path":"hone.config.json","under":"checks","from":"a#b","to":"a#c"}}',
+        '{"outcome":"not-loaded","failure":{"kind":"upgrade-needed","path":"disciplines.json"}}',
     });
 
     expect(runs).toEqual({
       outcome: "failed",
       error: {
-        kind: "listed-under-both-names",
-        path: "hone.config.json",
-        under: "checks",
-        from: "a#b",
-        to: "a#c",
+        kind: "upgrade-needed",
+        path: "disciplines.json",
       },
     });
   });

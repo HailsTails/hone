@@ -191,18 +191,6 @@ export const runLoadFailureSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ kind: z.literal("upgrade-needed"), path: z.string() }),
   z.strictObject({
-    kind: z.literal("listed-under-both-names"),
-    path: z.string(),
-    under: z.string(),
-    from: z.string(),
-    to: z.string(),
-  }),
-  z.strictObject({
-    kind: z.literal("renamed-address-outside-listings"),
-    path: z.string(),
-    listings: z.array(z.string()).readonly(),
-  }),
-  z.strictObject({
     kind: z.literal("symptom-unheld"),
     symptom: z.strictObject({ ruleSet: ruleSetIdentitySchema, name: z.string() }),
   }),

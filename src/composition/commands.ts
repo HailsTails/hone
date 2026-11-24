@@ -5,26 +5,17 @@ import type {
   PruneDebtArguments,
   RecordDebtArguments,
   SplitRecordsArguments,
-  UpgradeArguments,
 } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import type { RecordsSplit } from "../application/ports/records/exception-repository.ts";
-import type { CurrentNamesUpgrade } from "../application/ports/upgrade/current-names-upgrade.ts";
-import { proofEffectsOver } from "../application/upgrade/proof-writes/applied-effects.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
 import type { RecordRepointing } from "../domain/records/hone-records/records-edit.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { absoluteWithin } from "../domain/repository/absolute-within.ts";
-import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { Result } from "../domain/result.ts";
 import { ownedNameText } from "../domain/rule-set/rule-set-identity.ts";
 import type { ProjectionWrite } from "../domain/runner/runner-result-types.ts";
-import {
-  SETTINGS_FILE_NAME,
-  VERSION_ONE_SETTINGS_FILE_NAME,
-} from "../domain/settings/settings-file.ts";
+import { VERSION_ONE_SETTINGS_FILE_NAME } from "../domain/settings/settings-file.ts";
 import { authoriseRequestOf } from "../infrastructure/command-line/arguments/authorise-options.ts";
 import {
   parseAuthoriseArguments,
@@ -32,7 +23,6 @@ import {
   parsePruneDebtArguments,
   parseRecordDebtArguments,
   parseSplitRecordsArguments,
-  parseUpgradeArguments,
 } from "../infrastructure/command-line/arguments/command-arguments.ts";
 import { projectCommandOf } from "../infrastructure/command-line/arguments/tool-invocations.ts";
 import { installRootOf } from "../infrastructure/command-line/installation/install-root.ts";
@@ -50,12 +40,10 @@ import {
   projectNextLine,
   prunedDebtLine,
 } from "../infrastructure/printed-report/records/record-command-lines.ts";
-import { mapCurrentNamesUpgradeToOutcome } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
 import { versionTwoProjectedOf } from "../operations/project/version-two-project-command.ts";
 import {
   type VersionTwoRecordInput,
   versionTwoAuthoriseOf,
-  writeCurrentNames,
   versionTwoPruneDebtOf,
   versionTwoRecordDebtOf,
 } from "../operations/version-two-record-commands.ts";
@@ -70,16 +58,7 @@ import {
 } from "./version-two-repository.ts";
 
 export type VersionTwoRecordPorts = VersionTwoRepositoryPorts &
-  Pick<
-    ToolPorts,
-    | "fileRemoval"
-    | "fileCreation"
-    | "directory"
-    | "directoryRemoval"
-    | "recordsReader"
-    | "recordsEditor"
-    | "settingsFormat"
-  >;
+  Pick<ToolPorts, "fileRemoval" | "recordsReader" | "recordsEditor">;
 
 type AuthoriseParsed = { readonly repo: string; readonly authorising: AuthoriseRequest };
 
@@ -367,51 +346,4 @@ export const AUTHORISE: ToolCommand<AuthoriseParsed, Authorising, VersionTwoReco
         authorising: produced,
       }),
     }),
-};
-
-type CurrentNamesUpgraded = {
-  readonly upgrade: CurrentNamesUpgrade;
-  readonly repoRoot: AbsolutePath;
-};
-
-export const CURRENT_NAMES_UPGRADE: ToolCommand<
-  UpgradeArguments,
-  CurrentNamesUpgraded,
-  VersionTwoRecordPorts
-> = {
-  parse: parseUpgradeArguments,
-  run: ({ command, ports, parsed }) => {
-    const located = repositoryLocatedOf({
-      path: ports.path,
-      moduleUrl: command.moduleUrl,
-      repo: parsed.repo,
-    });
-    if (located.outcome === "failed") {
-      return Promise.resolve(loadFailed({ failure: located.error }));
-    }
-    const upgrade = writeCurrentNames({
-      ...recordInputOf({ ports, command, located: located.value, baseRevision: undefined }),
-      fileText: ports.fileText,
-      settingsPath: absoluteWithin({
-        root: located.value.repoRoot,
-        file: repoPathOf(SETTINGS_FILE_NAME),
-      }),
-      settingsFormat: ports.settingsFormat,
-      effects: proofEffectsOver({
-        fileText: ports.fileText,
-        fileCreation: ports.fileCreation,
-        fileRemoval: ports.fileRemoval,
-        directory: ports.directory,
-        directoryRemoval: ports.directoryRemoval,
-      }),
-    });
-    const { repoRoot } = located.value;
-    return Promise.resolve(
-      upgrade.outcome === "failed"
-        ? runFailed({ failure: upgrade.error, repoRoot })
-        : { outcome: "ok", value: { upgrade: upgrade.value, repoRoot } },
-    );
-  },
-  print: ({ produced, ports }) =>
-    mapCurrentNamesUpgradeToOutcome({ ...produced, path: ports.path }),
 };

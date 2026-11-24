@@ -353,36 +353,6 @@ describe("runLoadFailureOf, failures version 2 names first", () => {
       failure: { kind: "upgrade-needed", path: "disciplines.json" },
     },
     {
-      name: "a settings file listing a check under both names",
-      source: {
-        kind: "listed-under-both-names",
-        path: "/repo/hone.config.json",
-        under: "checks",
-        from: "walker-pre#check",
-        to: "walker#check",
-      },
-      failure: {
-        kind: "listed-under-both-names",
-        path: "/repo/hone.config.json",
-        under: "checks",
-        from: "walker-pre#check",
-        to: "walker#check",
-      },
-    },
-    {
-      name: "a renamed check address outside the listings",
-      source: {
-        kind: "renamed-address-outside-listings",
-        path: "/repo/hone.config.json",
-        listings: ["checks"],
-      },
-      failure: {
-        kind: "renamed-address-outside-listings",
-        path: "/repo/hone.config.json",
-        listings: ["checks"],
-      },
-    },
-    {
       name: "a symptom no catalogue holds",
       source: { kind: "symptom-unheld", symptom: { ruleSet: "hone", name: "loop-keyword" } },
       failure: { kind: "symptom-unheld", symptom: { ruleSet: "hone", name: "loop-keyword" } },

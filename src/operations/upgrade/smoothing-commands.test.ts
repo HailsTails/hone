@@ -131,7 +131,7 @@ describe("createSmoothingCommands", () => {
     const commands = createSmoothingCommands({
       reach,
       repoRoot: absoluteRootOf("/repo"),
-      recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       recordsEditor: {
         documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>(),
         placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>(),
@@ -187,7 +187,7 @@ describe("createSmoothingCommands", () => {
         recordsSourceFor: () => ({ read, readAt: vi.fn<RecordsSource["readAt"]>() }),
       }),
       repoRoot: absoluteRootOf("/repo"),
-      recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       recordsEditor: {
         documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>(),
         placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>(),
@@ -225,7 +225,7 @@ describe("createSmoothingCommands", () => {
         recordsSourceFor: () => ({ read, readAt: vi.fn<RecordsSource["readAt"]>() }),
       }),
       repoRoot: absoluteRootOf("/repo"),
-      recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       recordsEditor: {
         documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>(),
         placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>(),
@@ -273,7 +273,7 @@ describe("createSmoothingCommands", () => {
         }),
       }),
       repoRoot: absoluteRootOf("/repo"),
-      recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       recordsEditor: {
         documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>(),
         placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>(),
@@ -306,7 +306,7 @@ describe("createSmoothingCommands", () => {
         recordsSourceFor: vi.fn(),
       }),
       repoRoot: absoluteRootOf("/repo"),
-      recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       recordsEditor: {
         documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>(),
         placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>(),
