@@ -31,4 +31,4 @@ const name = user.name;
 ```
 Parse or narrow the value so the type follows from a check rather than from an assertion. For a value that may be absent, handle the absent case with a check or an early return; for a binding assigned later, initialise it where it is declared or make it a `const` built from what it needs.
 
-In a test file, [the test-body check](../branch-in-a-test/test-body.md) flags an `if` check at either edition, and its edition 2 flags the `??` fallback: there, `assert.isDefined` a value that may be missing before reading it, as [the allowed forms](../branch-in-a-test/test-body.md#a-short-circuit) show.
+In a test file, [the test-body check](../branch-in-a-test/test-body.md) flags an `if` check at either edition, and its edition 2 flags the `??` fallback: read [Branch in a test](../branch-in-a-test.md) there.

@@ -20,6 +20,15 @@
           "rule": "doer-or-orchestrator"
         }
       ]
+    },
+    {
+      "case": "uses-what-a-collaborator-gives-back",
+      "situation": "in a test",
+      "points": [
+        {
+          "rule": "written-out-answers"
+        }
+      ]
     }
   ],
   "breachUsuallySits": "in the unit: no caller sees it, so on its own it shows no hidden effect, but it is suspect for work done inline in steps",
