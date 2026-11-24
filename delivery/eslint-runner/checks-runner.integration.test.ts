@@ -1,1138 +1,570 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
-import type { NamedEngineRunRequest } from "../../src/application/ports/engine/engine-run.ts";
-import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import type {
+  EngineCheck,
+  NamedEngineRunRequest,
+} from "../../src/application/ports/engine/engine-run.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import type { Result } from "../../src/domain/result.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../src/domain/rule-set/edition-of.ts";
-import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
+import type { CheckHit, CheckMeasurement } from "../../src/domain/runner/check-observations.ts";
+import type { AnsweredFile } from "../../src/domain/runner/checks-run-report.ts";
+import type { EslintConfigLookup } from "../../src/domain/settings/eslint-config-lookup.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json" with { type: "json" };
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
-import {
-  createEslintRunner,
-  ESLINT_PROJECTED_KINDS,
-} from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import {
-  CHECKS_DECLARATION_PATH,
-  CHECKS_PROJECTION_PATH,
-  checksProjectionText,
-} from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
-  createEslintPort,
-  type EslintPort,
-  type EslintToolchain,
-} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import {
+  defaultEslintToolchainModules,
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
-  type EslintToolchainPeers,
-  installedEslintBoundary,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import type { EmbeddedRunner } from "../../src/infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
-import { toolchainBoundEmbeddedRunner } from "../../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import type { NamedChecksRunReport } from "../../src/infrastructure/engines/protocol/checks/checks-runner-types.ts";
 import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import {
-  createDefaultScratchFilesPort,
-  type ScratchFilesPort,
-} from "../install-proof/install-proof-ports.ts";
+import { createDefaultScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
-
-const installedBoundary = await installedEslintBoundary();
-
-if (installedBoundary.outcome === "failed") {
-  throw new Error(installedBoundary.error);
-}
-
-const DECLARATION_TEXT: string = installedBoundary.value.declarationText;
-
-type ScratchRepositories = {
-  readonly repositoryWith: (request: {
-    readonly files: Readonly<Record<string, string>>;
-  }) => AbsolutePath;
-  readonly removeAll: () => void;
+type EslintLineRow = {
+  readonly line: string;
+  readonly eslintVersion: string;
+  readonly toolchainModules: EslintToolchainModules;
+  readonly pieceModules: ModuleLoaderPort;
 };
 
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-  readonly scratch: ScratchFilesPort;
-}): ScratchRepositories => {
-  const made: AbsolutePath[] = [];
-  return {
-    repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(
-        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
-      );
-      const directory = request.scratch.makeDirectory({ path: folder });
-      if (directory.outcome !== "ok") {
-        throw new Error(
-          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
-        );
-      }
-      made.push(folder);
-      Object.entries(repository.files).forEach(([name, text]) => {
-        request.fileText.write({ path: `${folder}/${name}`, text });
-      });
-      return folder;
-    },
-    removeAll: () => {
-      made.forEach((folder) => {
-        request.scratch.removeTree({ path: folder });
-      });
-    },
-  };
+type RootFileRow = {
+  readonly name: string;
+  readonly folder: string;
+  readonly config: string;
+  readonly projection: string;
+  readonly source: string;
+  readonly answered: readonly AnsweredFile[];
+  readonly report: NamedChecksRunReport;
 };
 
-const repositoryWithSubfolder = (request: {
-  readonly repositories: ScratchRepositories;
-  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
-  readonly fileText: Pick<FileTextPort, "write">;
-  readonly files: Readonly<Record<string, string>>;
-  readonly subfolder: string;
-  readonly subfolderFiles: Readonly<Record<string, string>>;
-}): AbsolutePath => {
-  const repo = request.repositories.repositoryWith({ files: request.files });
-  const folder = `${repo}/${request.subfolder}`;
-  const made = request.scratch.makeDirectory({ path: folder });
-  if (made.outcome !== "ok") {
-    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
-  }
-  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
-    const written = request.fileText.write({ path: `${folder}/${name}`, text });
-    if (written.outcome !== "ok") {
-      throw new Error(
-        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
-      );
-    }
-  });
-  return repo;
+type SubfolderRow = {
+  readonly name: string;
+  readonly folder: string;
+  readonly rootConfig: string;
+  readonly rootProjection: string;
+  readonly subConfig: string;
+  readonly subProjection: string;
+  readonly tracked: readonly RepoPath[];
+  readonly answered: readonly AnsweredFile[];
+  readonly lookup: EslintConfigLookup;
+  readonly report: NamedChecksRunReport;
 };
 
-type EslintLine = "eslint-10" | "eslint-9";
+const fileText = createDefaultFileTextPort({});
 
-const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+const fileRemoval = createDefaultFileRemovalPort({});
 
-type LineDefinition = {
-  readonly eslintVersion: RegExp;
-  readonly modules: EslintToolchainModules;
-  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
-};
+const path = createDefaultPathPort({});
 
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({
-  installRoot: INSTALL_ROOT,
-  installForm: "source",
-});
+const scratch = createDefaultScratchFilesPort({});
 
-const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
-  "eslint-10": {
-    eslintVersion: /^10\./,
-    modules: DEVELOPMENT_PEERS.modules,
-    pieceModules: (request) => request.base,
-  },
-  "eslint-9": {
-    eslintVersion: /^9\./,
-    modules: eslint9ToolchainModules,
-    pieceModules: eslint9PieceModules,
-  },
-};
-
-const loadedEslintToolchain = async (request: {
-  readonly line: EslintLine;
-}): Promise<EslintToolchain> => {
-  const loaded = await loadEslintToolchain({
-    peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules },
-  });
-  assert(
-    loaded.outcome === "ok",
-    `the ${request.line} toolchain loads from the development install`,
-  );
-  assert(
-    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
-    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
-  );
-  return loaded.value;
-};
-
-const eslintPortOn = async (request: { readonly line: EslintLine }): Promise<EslintPort> =>
-  createEslintPort({ toolchain: await loadedEslintToolchain(request) });
-
-const pieceModulesOn = (request: {
-  readonly line: EslintLine;
-  readonly base: ModuleLoaderPort;
-}): ModuleLoaderPort => LINES[request.line].pieceModules({ base: request.base });
-
-const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner =>
-  toolchainBoundEmbeddedRunner({
-    toolchain: loadedEslintToolchain(request).then(
-      (toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain }),
-    ),
-    projectedKinds: ESLINT_PROJECTED_KINDS,
-    runnerOf: (toolchain) =>
-      createEslintRunner({
-        fileText: createDefaultFileTextPort({}),
-        fileRemoval: createDefaultFileRemovalPort({}),
-        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
-        path: createDefaultPathPort({}),
-        eslint: createEslintPort({ toolchain }),
-        moduleExtension: ".ts",
-      }),
-  });
-
-const REPOSITORY_ROOT = absolutePathSchema.parse(
-  createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }),
+const INSTALL_ROOT = absolutePathSchema.parse(
+  path.join({ segments: [import.meta.dirname, "..", ".."] }),
 );
 
-const CATALOGUE_HOLDING = readBoundCatalogue({
-  ruleSet: TOOL_RULE_SET,
-  inheritedRecordKinds: [],
-  directory: createDefaultDirectoryPort({}),
-  fileText: createDefaultFileTextPort({}),
-  path: createDefaultPathPort({}),
-  ruleSetRoot: REPOSITORY_ROOT,
-  installRoot: REPOSITORY_ROOT,
-});
+const SCRATCH = `${INSTALL_ROOT}/artefacts/checks-runner-integration`;
 
-assert(CATALOGUE_HOLDING.outcome === "ok", "this repository's catalogue reads");
+const PEER_LOCATION = defaultEslintToolchainPeers({
+  installRoot: INSTALL_ROOT,
+  installForm: "source",
+}).location;
 
-assert(CATALOGUE_HOLDING.value.held === "catalogue", "this repository holds a catalogue");
+const DONE = { outcome: "ok", value: null };
 
-const CATALOGUE = CATALOGUE_HOLDING.value.catalogue;
+const WRITTEN = { outcome: "ok", value: undefined };
 
-const CLASS_SYNTAX = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-14"),
-  clause: clauseIdOf("class-syntax"),
-};
-
-const CLASS_CHECK = "authored-class-or-this#class-keyword";
-
-const CLASS_RULE = "hone/authored-class-or-this#class-keyword";
-
-const SOURCE_FILE = repoPathOf("kept.ts");
-
-const BINDING_SETTINGS = ESLINT_CD_14_PIECE.settings;
-
-const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`;
+const CHECKS: readonly EngineCheck[] = [
+  {
+    name: "class-keyword",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "authored-class-or-this",
+      title: "Authored class or this",
+    },
+    engines: [{ name: "walker" }, { name: "eslint" }],
+  },
+  {
+    name: "static-members-only",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "authored-class-or-this",
+      title: "Authored class or this",
+    },
+    engines: [{ name: "eslint" }],
+  },
+];
 
 const BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
-    address: CLASS_CHECK,
+    address: "authored-class-or-this#class-keyword",
     ruleSet: TOOL_RULE_SET,
     engine: "eslint",
     anchor: { kind: "keyword", keyword: "class" },
-    pieceRoot: PIECE_ROOT,
-    settings: BINDING_SETTINGS,
+    pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+    settings: {
+      pluginNamespace: "hone",
+      pluginModule: "eslint-plugin.ts",
+      rule: "no-class-authoring",
+    },
     checkSettings: {},
     edition: editionOf("1"),
   },
 ];
 
-const CLASS_PROJECTED = {
-  ruleSet: TOOL_RULE_SET,
-  symptom: "authored-class-or-this",
-  check: "class-keyword",
-  ruleId: CLASS_RULE,
-  options: [],
-};
-
-const PROJECTION_TEXT = checksProjectionText({
-  pluginImport: "../../src/eslint-plugin.ts",
-  checks: [CLASS_PROJECTED],
-  answered: [],
-});
-
-const TEAM_CONFIG = `import hone from "./${CHECKS_PROJECTION_PATH}";\nexport default [...hone];\n`;
-
-const fileText = createDefaultFileTextPort({});
-
-const scratch = createDefaultScratchFilesPort({});
-
-const repositories = scratchRepositoriesUnder({
-  parent: `${INSTALL_ROOT}/artefacts`,
-  fileText,
-  scratch,
-});
-
-const repositoryHoldingSub = (request: {
-  readonly files: Readonly<Record<string, string>>;
-  readonly sub: Readonly<Record<string, string>>;
-}) =>
-  repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
-    files: { [CHECKS_DECLARATION_PATH]: DECLARATION_TEXT, ...request.files },
-    subfolder: "sub",
-    subfolderFiles: { [CHECKS_DECLARATION_PATH]: DECLARATION_TEXT, ...request.sub },
-  });
-
-afterAll(() => {
-  repositories.removeAll();
-});
-
-const ROOT_FILE_RUN: {
-  readonly answered: NamedEngineRunRequest["answered"];
-  readonly declaredConfigRoots: readonly RepoPath[];
-  readonly declaredConfigLookup: NamedEngineRunRequest["declaredConfigLookup"];
-  readonly queried: readonly RepoPath[];
-  readonly tracked: readonly RepoPath[];
-  readonly sub: Readonly<Record<string, string>>;
-} = {
-  answered: [],
-  declaredConfigRoots: [],
-  declaredConfigLookup: undefined,
-  queried: [SOURCE_FILE],
-  tracked: [SOURCE_FILE],
-  sub: {},
-};
-
-const runnerOn = async (request: { readonly line: EslintLine }) =>
-  createChecksRunner({
-    fileText,
-    fileRemoval: createDefaultFileRemovalPort({}),
-    modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
-    path: createDefaultPathPort({}),
-    eslint: await eslintPortOn({ line: request.line }),
-    moduleExtension: ".ts",
-  });
-
-const runOver = async (request: {
-  readonly line: EslintLine;
-  readonly files: Readonly<Record<string, string>>;
-  readonly answered: NamedEngineRunRequest["answered"];
-  readonly declaredConfigRoots: readonly RepoPath[];
-  readonly declaredConfigLookup: NamedEngineRunRequest["declaredConfigLookup"];
-  readonly queried: readonly RepoPath[];
-  readonly tracked: readonly RepoPath[];
-  readonly sub: Readonly<Record<string, string>>;
-}) => {
-  const runner = await runnerOn(request);
-  return runner.run({
-    repoRoot: repositoryHoldingSub(request),
-    installRoot: INSTALL_ROOT,
-    files: request.queried,
-    trackedPaths: request.tracked,
-    checks: CATALOGUE.checks,
-    bindings: BINDINGS,
-    answered: request.answered,
-    declaredConfigRoots: request.declaredConfigRoots,
-    declaredConfigLookup: request.declaredConfigLookup,
-    testFiles: { suffixes: ["test", "spec"], folders: [] },
-  });
-};
-
-const IGNORING_THE_SOURCE = `import hone from "./${CHECKS_PROJECTION_PATH}";
-export default [{ ignores: ["kept.ts"] }, ...hone];
-`;
-
-const ADOPTED = { "eslint.config.mjs": TEAM_CONFIG, [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT };
-
-const CLASS_HIT = {
-  file: "kept.ts",
-  anchor: { line: 1, column: 7 },
-  snippet: "export class Kept {}",
-  check: CLASS_CHECK,
-};
-
-const CLASS_HIT_ON_LINE_2 = { ...CLASS_HIT, anchor: { line: 2, column: 7 } };
-
-const MEASURED = [{ check: CLASS_CHECK, file: "kept.ts" }];
-
 const ONE_CLASS = "export class Kept {}\n";
 
-const sourceDisabling = (request: { readonly ruleId: string }): string =>
-  `// eslint-disable-next-line ${request.ruleId}\n${ONE_CLASS}`;
-
-const REPORT = {
-  hits: [],
-  nativeExceptions: [],
-  measured: [],
-  nestedConfigurations: [],
-  unprojectedFolders: [],
-  misnamedRuleIds: [],
-  projection: "current",
-  slices: [],
-};
-
-const V1_CLAUSE: RunnerClause = {
-  address: CLASS_SYNTAX,
-  anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: PIECE_ROOT,
-  clauseSettings: {},
-  edition: editionOf("1"),
-  settings: BINDING_SETTINGS,
-};
-
-const V1_CONFIG = `import projection from "./disciplines.eslint.mjs";\nexport default [...projection];\n`;
-
-const REPOSITORY_ROOT_LOOKUP: NamedEngineRunRequest["declaredConfigLookup"] = "repository-root";
-
-const SUB_FILE = repoPathOf("sub/kept.ts");
-
-const SUB_CONFIG_WITHOUT_THE_CHECKS = `export default [{ files: ["**/*.ts"], rules: {} }];
+const PROJECTION = `import hone from "../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
-const SUB_HIT = { ...CLASS_HIT, file: "sub/kept.ts" };
-
-const SUB_FILES = { "eslint.config.mjs": SUB_CONFIG_WITHOUT_THE_CHECKS, "kept.ts": ONE_CLASS };
-
-const IGNORING_SUB_CONFIG = `import hone from "./${CHECKS_PROJECTION_PATH}";
-export default [...hone, { ignores: ["sub/**"] }];
+const SUB_PROJECTION = `import hone from "../../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
-const V1_IGNORING_SUB_CONFIG = `import projection from "./disciplines.eslint.mjs";
-export default [...projection, { ignores: ["sub/**"] }];
+const TEAM_CONFIG = `import hone from "./hone.eslint.mjs";
+export default [...hone];
 `;
 
-const BROKEN_SUB_FILES = { "eslint.config.mjs": "export default [;\n", "kept.ts": ONE_CLASS };
+const CONFIG_WITHOUT_THE_CHECKS = `export default [{ files: ["**/*.ts"], rules: {} }];
+`;
 
-const SUPPRESSIONS_PATH = repoPathOf("eslint-suppressions.json");
-
-const PACKAGE_PATH = repoPathOf("package.json");
-
-const SUPPRESSIONS = `{ "kept.ts": { "hone/authored-class-or-this#class-keyword": { "count": 1 } } }\n`;
-
-const SUPPRESS_SCRIPT = `{ "scripts": { "lint:suppress": "eslint --suppress-all ." } }\n`;
-
-const V1_RUN = {
-  installRoot: INSTALL_ROOT,
-  files: [SOURCE_FILE],
-  trackedPaths: [SOURCE_FILE],
-  clauses: [V1_CLAUSE],
-  declaredConfigRoots: [],
+const CLASS_ON_LINE_1: CheckHit = {
+  file: repoPathOf("kept.ts"),
+  anchor: { line: 1, column: 7 },
+  snippet: "export class Kept {}",
+  check: "authored-class-or-this#class-keyword",
 };
 
-describe.each(ESLINT_LINES)(
-  "the version 2 ESLint runner on %s, over a repository whose config spreads hone.eslint.mjs",
-  (line) => {
-    it("reports a class in its file, position and snippet, naming its check", async () => {
-      expect(
-        await runOver({ ...ROOT_FILE_RUN, line, files: { ...ADOPTED, "kept.ts": ONE_CLASS } }),
-      ).toEqual({
-        outcome: "ok",
-        value: { ...REPORT, hits: [CLASS_HIT], measured: MEASURED },
-      });
-    });
+const CLASS_ON_LINE_2: CheckHit = {
+  file: repoPathOf("kept.ts"),
+  anchor: { line: 2, column: 7 },
+  snippet: "export class Kept {}",
+  check: "authored-class-or-this#class-keyword",
+};
 
-    it("reports the same file, position and snippet as the version 1 runner does for the same source", async () => {
-      const repoRoot = repositories.repositoryWith({
-        files: { "eslint.config.mjs": V1_CONFIG, "kept.ts": ONE_CLASS },
-      });
-      const runner = eslintRunnerOn({ line });
-      await runner.project({ ...V1_RUN, repoRoot, records: [] });
-      expect(await runner.run({ ...V1_RUN, repoRoot, records: [] })).toMatchObject({
-        outcome: "ok",
-        value: {
-          hits: [
-            {
-              clause: CLASS_SYNTAX,
-              file: "kept.ts",
-              anchor: CLASS_HIT.anchor,
-              snippet: CLASS_HIT.snippet,
-            },
-          ],
-        },
-      });
-    });
+const CLASS_IN_SUB: CheckHit = {
+  file: repoPathOf("sub/kept.ts"),
+  anchor: { line: 1, column: 7 },
+  snippet: "export class Kept {}",
+  check: "authored-class-or-this#class-keyword",
+};
 
-    it("reports an inline disable written with the check's id as a native exception on that check, beside the hit it does not remove", async () => {
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: { ...ADOPTED, "kept.ts": sourceDisabling({ ruleId: CLASS_RULE }) },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT_ON_LINE_2],
-          nativeExceptions: [
-            {
-              kind: "inline-disable",
-              file: "kept.ts",
-              line: 1,
-              text: `// eslint-disable-next-line ${CLASS_RULE}`,
-              reach: "one-check",
-              check: CLASS_CHECK,
-            },
-          ],
-          measured: MEASURED,
-        },
-      });
-    });
+const MEASURED: CheckMeasurement = {
+  check: "authored-class-or-this#class-keyword",
+  file: repoPathOf("kept.ts"),
+};
 
-    it("reports an inline disable written with a version 1 id as misnamed and suppresses nothing", async () => {
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: { ...ADOPTED, "kept.ts": sourceDisabling({ ruleId: "hone/no-class-authoring" }) },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT_ON_LINE_2],
-          measured: MEASURED,
-          misnamedRuleIds: [
-            {
-              kind: "version-1-id",
-              ruleId: "hone/no-class-authoring",
-              file: "kept.ts",
-              line: 1,
-              text: "// eslint-disable-next-line hone/no-class-authoring",
-              replacedBy: ["hone/authored-class-or-this#class-keyword"],
-            },
-          ],
-        },
-      });
-    });
+const MEASURED_IN_SUB: CheckMeasurement = {
+  check: "authored-class-or-this#class-keyword",
+  file: repoPathOf("sub/kept.ts"),
+};
 
-    it("reports an inline disable that gives a reason after the check's id as a native exception whose text keeps the reason", async () => {
-      const comment = `// eslint-disable-next-line ${CLASS_RULE} -- inherited from the billing module`;
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: { ...ADOPTED, "kept.ts": `${comment}\n${ONE_CLASS}` },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT_ON_LINE_2],
-          nativeExceptions: [
-            {
-              kind: "inline-disable",
-              file: "kept.ts",
-              line: 1,
-              text: comment,
-              reach: "one-check",
-              check: CLASS_CHECK,
-            },
-          ],
-          measured: MEASURED,
-        },
-      });
-    });
-
-    it("reports an inline rule configuration written with the check's id as a native exception on that check", async () => {
-      const comment = `/* eslint ${CLASS_RULE}: "off" */`;
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: { ...ADOPTED, "kept.ts": `${comment}\n${ONE_CLASS}` },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT_ON_LINE_2],
-          nativeExceptions: [
-            {
-              kind: "inline-rule-config",
-              file: "kept.ts",
-              line: 1,
-              text: comment,
-              check: CLASS_CHECK,
-            },
-          ],
-          measured: MEASURED,
-        },
-      });
-    });
-
-    it("reports an inline disable whose id splits the check's address with a slash as misnamed, naming no check, and suppresses nothing", async () => {
-      const comment = "// eslint-disable-next-line hone/authored-class-or-this/class-keyword";
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: { ...ADOPTED, "kept.ts": `${comment}\n${ONE_CLASS}` },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT_ON_LINE_2],
-          measured: MEASURED,
-          misnamedRuleIds: [
-            {
-              kind: "names-no-check",
-              ruleId: "hone/authored-class-or-this/class-keyword",
-              file: "kept.ts",
-              line: 1,
-              text: comment,
-            },
-          ],
-        },
-      });
-    });
-
-    it("does not call a disable misnamed when it names a real check of the catalogue that the repository has not selected", async () => {
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: {
-            ...ADOPTED,
-            "kept.ts": sourceDisabling({
-              ruleId: "hone/authored-class-or-this#static-members-only",
-            }),
-          },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: { ...REPORT, hits: [CLASS_HIT_ON_LINE_2], measured: MEASURED },
-      });
-    });
-
-    it("reports a global ignore over the source as a native exception on the check", async () => {
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: {
-            "eslint.config.mjs": IGNORING_THE_SOURCE,
-            [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT,
-            "kept.ts": ONE_CLASS,
-          },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT],
-          nativeExceptions: [{ kind: "ignore", file: "kept.ts", check: CLASS_CHECK }],
-          measured: MEASURED,
-        },
-      });
-    });
-
-    it("reports a config override of the check's rule after the projection as a native exception on that check", async () => {
-      const config = `import hone from "./${CHECKS_PROJECTION_PATH}";\nexport default [...hone, { rules: { "${CLASS_RULE}": "off" } }];\n`;
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          files: {
-            "eslint.config.mjs": config,
-            [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT,
-            "kept.ts": ONE_CLASS,
-          },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT],
-          nativeExceptions: [{ kind: "config-override", file: "kept.ts", check: CLASS_CHECK }],
-          measured: MEASURED,
-        },
-      });
-    });
-
-    it("does not report the projection's own off block over an answered file as an override", async () => {
-      const answered = [
-        {
-          ruleSet: TOOL_RULE_SET,
-          symptom: "authored-class-or-this",
-          check: "class-keyword",
-          file: SOURCE_FILE,
-        },
-      ];
-      const projection = checksProjectionText({
-        pluginImport: "../../src/eslint-plugin.ts",
-        checks: [CLASS_PROJECTED],
-        answered,
-      });
-      expect(
-        await runOver({
-          ...ROOT_FILE_RUN,
-          line,
-          answered,
-          files: {
-            "eslint.config.mjs": TEAM_CONFIG,
-            [CHECKS_PROJECTION_PATH]: projection,
-            "kept.ts": ONE_CLASS,
-          },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: { ...REPORT, hits: [CLASS_HIT], measured: MEASURED },
-      });
-    });
-
-    it("reads the root config only, as version 1 does, when the repository declares a repository-root lookup, whatever a subfolder config holds", async () => {
-      const run = {
-        ...ROOT_FILE_RUN,
-        line,
-        queried: [SUB_FILE],
-        tracked: [SUB_FILE],
-        declaredConfigLookup: REPOSITORY_ROOT_LOOKUP,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      };
-      expect(await runOver({ ...run, files: ADOPTED, sub: SUB_FILES })).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
-        },
-      });
-    });
-
-    it("reports the same hit as version 1 does for the same subfolder source under a declared repository-root lookup", async () => {
-      const repoRoot = repositoryHoldingSub({
-        files: {
-          "eslint.config.mjs": V1_CONFIG,
-          "disciplines.json": '{ "eslintConfigLookup": "repository-root" }',
-        },
-        sub: SUB_FILES,
-      });
-      const runner = eslintRunnerOn({ line });
-      const v1Run = {
-        ...V1_RUN,
-        repoRoot,
-        files: [SUB_FILE],
-        trackedPaths: [SUB_FILE],
-        records: [],
-      };
-      await runner.project(v1Run);
-      expect(await runner.run(v1Run)).toMatchObject({
-        outcome: "ok",
-        value: {
-          hits: [
-            {
-              clause: CLASS_SYNTAX,
-              file: "sub/kept.ts",
-              anchor: SUB_HIT.anchor,
-              snippet: SUB_HIT.snippet,
-            },
-          ],
-        },
-      });
-    });
-
-    it("reports a file as ignored, as version 1 does, when its broken subfolder config sits in a folder the root config ignores", async () => {
-      const run = { ...ROOT_FILE_RUN, line, queried: [SUB_FILE], tracked: [SUB_FILE] };
-      expect(
-        await runOver({
-          ...run,
-          files: { ...ADOPTED, "eslint.config.mjs": IGNORING_SUB_CONFIG },
-          sub: BROKEN_SUB_FILES,
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
-          nativeExceptions: [{ kind: "ignore", file: "sub/kept.ts", check: CLASS_CHECK }],
-        },
-      });
-    });
-
-    it("reports the same ignore as version 1 does for the same broken subfolder config under the same root config", async () => {
-      const repoRoot = repositoryHoldingSub({
-        files: { "eslint.config.mjs": V1_IGNORING_SUB_CONFIG },
-        sub: BROKEN_SUB_FILES,
-      });
-      const runner = eslintRunnerOn({ line });
-      const v1Run = {
-        ...V1_RUN,
-        repoRoot,
-        files: [SUB_FILE],
-        trackedPaths: [SUB_FILE],
-        records: [],
-      };
-      await runner.project(v1Run);
-      expect(await runner.run(v1Run)).toMatchObject({
-        outcome: "ok",
-        value: {
-          nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: "sub/kept.ts" }],
-        },
-      });
-    });
-
-    it("reports an entry in the default eslint-suppressions.json as a suppression-entry on that check, beside the hit it does not remove", async () => {
-      const run = { ...ROOT_FILE_RUN, line, tracked: [SOURCE_FILE, SUPPRESSIONS_PATH] };
-      expect(
-        await runOver({
-          ...run,
-          files: { ...ADOPTED, "kept.ts": ONE_CLASS, "eslint-suppressions.json": SUPPRESSIONS },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT],
-          measured: MEASURED,
-          nativeExceptions: [
-            {
-              kind: "suppression-entry",
-              file: "kept.ts",
-              location: "eslint-suppressions.json",
-              check: CLASS_CHECK,
-            },
-          ],
-        },
-      });
-    });
-
-    it("reports a package.json script option that weakens the whole run as a command-line-option on that check", async () => {
-      const run = { ...ROOT_FILE_RUN, line, tracked: [SOURCE_FILE, PACKAGE_PATH] };
-      expect(
-        await runOver({
-          ...run,
-          files: { ...ADOPTED, "kept.ts": ONE_CLASS, "package.json": SUPPRESS_SCRIPT },
-        }),
-      ).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [CLASS_HIT],
-          measured: MEASURED,
-          nativeExceptions: [
-            {
-              kind: "command-line-option",
-              location: "package.json",
-              script: "lint:suppress",
-              option: "--suppress-all",
-              cause: { kind: "weakens-run" },
-              check: CLASS_CHECK,
-            },
-          ],
-        },
-      });
-    });
-  },
-);
-
-const SUB_SLICE = repoPathOf("sub/hone.eslint.mjs");
-
-const SUB_DECLARATION_PATH = repoPathOf(`sub/${CHECKS_DECLARATION_PATH}`);
-
-const ROOT_DECLARATION = { file: CHECKS_DECLARATION_PATH, text: DECLARATION_TEXT };
-
-const SUB_DECLARATION = { file: SUB_DECLARATION_PATH, text: DECLARATION_TEXT };
-
-const SUB_PROJECTION_TEXT = checksProjectionText({
-  pluginImport: "../../../src/eslint-plugin.ts",
-  checks: [CLASS_PROJECTED],
-  answered: [],
+afterAll(() => {
+  scratch.removeTree({ path: SCRATCH });
 });
 
-const PACKAGE_CONFIG = `import hone from "./${CHECKS_PROJECTION_PATH}";\nexport default [{ files: ["**/*.ts"] }, ...hone];\n`;
-
-const PACKAGE_RUN = {
-  ...ROOT_FILE_RUN,
-  declaredConfigLookup: "nearest-to-file" as const,
-  testFiles: { suffixes: ["test", "spec"], folders: [] },
-  queried: [SUB_FILE],
-  tracked: [repoPathOf("eslint.config.mjs"), repoPathOf("sub/eslint.config.mjs"), SUB_FILE],
-  files: {
-    "eslint.config.mjs": SUB_CONFIG_WITHOUT_THE_CHECKS,
-    [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT,
-  },
-  sub: {
-    "eslint.config.mjs": PACKAGE_CONFIG,
-    "kept.ts": ONE_CLASS,
-    [CHECKS_PROJECTION_PATH]: SUB_PROJECTION_TEXT,
-  },
-};
-
-describe.each(ESLINT_LINES)(
-  "the version 2 ESLint runner on %s, over a repository whose package config spreads its own hone.eslint.mjs",
-  (line) => {
-    it("projects the root file and the package's file as the texts on disk, and reports the projection current and the class in the package's file", async () => {
-      const runner = await runnerOn({ line });
-      const repoRoot = repositoryHoldingSub(PACKAGE_RUN);
-      const projected = await runner.project({
-        repoRoot,
-        installRoot: INSTALL_ROOT,
-        files: PACKAGE_RUN.queried,
-        trackedPaths: PACKAGE_RUN.tracked,
-        checks: CATALOGUE.checks,
-        bindings: BINDINGS,
-        answered: [],
-        declaredConfigRoots: [],
-        declaredConfigLookup: PACKAGE_RUN.declaredConfigLookup,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      });
-      const run = await runner.run({
-        repoRoot,
-        installRoot: INSTALL_ROOT,
-        files: PACKAGE_RUN.queried,
-        trackedPaths: PACKAGE_RUN.tracked,
-        checks: CATALOGUE.checks,
-        bindings: BINDINGS,
-        answered: [],
-        declaredConfigRoots: [],
-        declaredConfigLookup: PACKAGE_RUN.declaredConfigLookup,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      });
-      expect({ projected, run }).toEqual({
-        projected: {
-          outcome: "ok",
-          value: [
-            { file: CHECKS_PROJECTION_PATH, text: PROJECTION_TEXT },
-            { file: SUB_SLICE, text: SUB_PROJECTION_TEXT },
-            ROOT_DECLARATION,
-            SUB_DECLARATION,
-          ],
-        },
-        run: {
-          outcome: "ok",
-          value: {
-            ...REPORT,
-            hits: [SUB_HIT],
-            measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
-          },
-        },
-      });
-    });
-
-    it("matches an answer for a package file in that package's own file, written relative to the package, without reporting its off block as an override", async () => {
-      const answered = [
-        {
-          ruleSet: TOOL_RULE_SET,
-          symptom: "authored-class-or-this",
-          check: "class-keyword",
-          file: SUB_FILE,
-        },
-      ];
-      const answeredWithinSub = [
-        {
-          ruleSet: TOOL_RULE_SET,
-          symptom: "authored-class-or-this",
-          check: "class-keyword",
-          file: SOURCE_FILE,
-        },
-      ];
-      const rootText = checksProjectionText({
-        pluginImport: "../../src/eslint-plugin.ts",
-        checks: [CLASS_PROJECTED],
-        answered,
-      });
-      const subText = checksProjectionText({
-        pluginImport: "../../../src/eslint-plugin.ts",
-        checks: [CLASS_PROJECTED],
-        answered: answeredWithinSub,
-      });
-      const outcome = await runOver({
-        ...PACKAGE_RUN,
-        line,
-        answered,
-        files: { ...PACKAGE_RUN.files, [CHECKS_PROJECTION_PATH]: rootText },
-        sub: { ...PACKAGE_RUN.sub, [CHECKS_PROJECTION_PATH]: subText },
-      });
-      expect(outcome).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
-        },
-      });
-    });
-  },
-);
-
-const SUB_DIRECTORY = repoPathOf("sub");
-
-const ROOT_CONFIG_IMPORTING_THE_SUB_SLICE = `import hone from "./${CHECKS_PROJECTION_PATH}";
-import sub from "./${SUB_SLICE}";
-export default [...hone, ...sub];
-`;
-
-const SUB_MEASURED = [{ check: CLASS_CHECK, file: "sub/kept.ts" }];
-
-const ANSWERED_IN_SUB = [
+describe.each<EslintLineRow>([
   {
-    ruleSet: TOOL_RULE_SET,
-    symptom: "authored-class-or-this",
-    check: "class-keyword",
-    file: SUB_FILE,
+    line: "eslint-10",
+    eslintVersion: "10.15.0",
+    toolchainModules: defaultEslintToolchainModules,
+    pieceModules: createDefaultModuleLoaderPort({}),
   },
-];
+  {
+    line: "eslint-9",
+    eslintVersion: "9.39.5",
+    toolchainModules: eslint9ToolchainModules,
+    pieceModules: eslint9PieceModules({ base: createDefaultModuleLoaderPort({}) }),
+  },
+])("the version 2 ESLint runner on real $line", (row) => {
+  it("loads the ESLint major its line names from the development install", async () => {
+    const toolchain = await loadEslintToolchain({
+      peers: { location: PEER_LOCATION, modules: row.toolchainModules },
+    });
 
-const ROOT_TEXT_ANSWERING_SUB = checksProjectionText({
-  pluginImport: "../../src/eslint-plugin.ts",
-  checks: [CLASS_PROJECTED],
-  answered: ANSWERED_IN_SUB,
-});
+    assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
+    expect(toolchain.value.eslintVersion).toBe(row.eslintVersion);
+  });
 
-const SUB_TEXT_ANSWERING_ITS_FILE = checksProjectionText({
-  pluginImport: "../../../src/eslint-plugin.ts",
-  checks: [CLASS_PROJECTED],
-  answered: [
+  it.each<RootFileRow>([
     {
-      ruleSet: TOOL_RULE_SET,
-      symptom: "authored-class-or-this",
-      check: "class-keyword",
-      file: SOURCE_FILE,
+      name: "reports a class in its file, position and snippet, naming its check, through a team config that spreads hone.eslint.mjs",
+      folder: "class",
+      config: TEAM_CONFIG,
+      projection: PROJECTION,
+      source: ONE_CLASS,
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_1],
+        nativeExceptions: [],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
     },
-  ],
-});
-
-const DECLARED_RUN = {
-  ...PACKAGE_RUN,
-  declaredConfigRoots: [SUB_DIRECTORY],
-  answered: ANSWERED_IN_SUB,
-  files: { ...PACKAGE_RUN.files, [CHECKS_PROJECTION_PATH]: ROOT_TEXT_ANSWERING_SUB },
-  sub: {
-    "eslint.config.mjs": PACKAGE_CONFIG,
-    "kept.ts": ONE_CLASS,
-    [CHECKS_PROJECTION_PATH]: SUB_TEXT_ANSWERING_ITS_FILE,
-  },
-};
-
-describe.each(ESLINT_LINES)(
-  "the version 2 ESLint runner on %s, over a repository that declares a config root whose config spreads its own hone.eslint.mjs",
-  (line) => {
-    it("reports the class in the declared folder, with its answer matched in that folder's own file, and no slice problem", async () => {
-      expect(await runOver({ ...DECLARED_RUN, line })).toEqual({
-        outcome: "ok",
-        value: { ...REPORT, hits: [SUB_HIT], measured: SUB_MEASURED },
-      });
-    });
-
-    it("names the declared folder's file out of date, and still reports the class, when that file differs from what project writes", async () => {
-      const sub = {
-        ...DECLARED_RUN.sub,
-        [CHECKS_PROJECTION_PATH]: `${SUB_TEXT_ANSWERING_ITS_FILE}\n`,
-      };
-      expect(await runOver({ ...DECLARED_RUN, line, sub })).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: SUB_MEASURED,
-          slices: [{ slice: SUB_SLICE, state: "out-of-date" }],
-        },
-      });
-    });
-
-    it("names the declared folder's file missing, and lints nothing, when that file is not written", async () => {
-      const sub = { "eslint.config.mjs": PACKAGE_CONFIG, "kept.ts": ONE_CLASS };
-      expect(await runOver({ ...DECLARED_RUN, line, sub })).toEqual({
-        outcome: "ok",
-        value: { ...REPORT, slices: [{ slice: SUB_SLICE, state: "missing" }] },
-      });
-    });
-
-    it("names the declared folder's declaration out of date, and still reports the class, when it differs from what project writes", async () => {
-      const sub = { ...DECLARED_RUN.sub, [CHECKS_DECLARATION_PATH]: "export {};\n" };
-      expect(await runOver({ ...DECLARED_RUN, line, sub })).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: SUB_MEASURED,
-          slices: [{ slice: SUB_DECLARATION_PATH, state: "out-of-date" }],
-        },
-      });
-    });
-
-    it("gives the declared folder's file beside the root file, each holding the answers that belong to it", async () => {
-      const runner = await runnerOn({ line });
-      const projected = await runner.project({
-        repoRoot: repositoryHoldingSub(DECLARED_RUN),
-        installRoot: INSTALL_ROOT,
-        files: DECLARED_RUN.queried,
-        trackedPaths: DECLARED_RUN.tracked,
-        checks: CATALOGUE.checks,
-        bindings: BINDINGS,
-        answered: ANSWERED_IN_SUB,
-        declaredConfigRoots: DECLARED_RUN.declaredConfigRoots,
-        declaredConfigLookup: DECLARED_RUN.declaredConfigLookup,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      });
-      expect(projected).toEqual({
-        outcome: "ok",
-        value: [
-          { file: CHECKS_PROJECTION_PATH, text: ROOT_TEXT_ANSWERING_SUB },
-          { file: SUB_SLICE, text: SUB_TEXT_ANSWERING_ITS_FILE },
-          ROOT_DECLARATION,
-          SUB_DECLARATION,
+    {
+      name: "reports an inline disable that gives a reason after the check's id as a native exception whose text keeps the reason, beside the hit it does not remove",
+      folder: "disable-with-reason",
+      config: TEAM_CONFIG,
+      projection: PROJECTION,
+      source:
+        "// eslint-disable-next-line hone/authored-class-or-this#class-keyword -- inherited from the billing module\nexport class Kept {}\n",
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_2],
+        nativeExceptions: [
+          {
+            kind: "inline-disable",
+            file: repoPathOf("kept.ts"),
+            line: 1,
+            text: "// eslint-disable-next-line hone/authored-class-or-this#class-keyword -- inherited from the billing module",
+            reach: "one-check",
+            check: "authored-class-or-this#class-keyword",
+          },
         ],
-      });
-    });
-  },
-);
-
-const UNCONFIGURED_RUN = {
-  ...ROOT_FILE_RUN,
-  declaredConfigRoots: [SUB_DIRECTORY],
-  queried: [SUB_FILE],
-  tracked: [repoPathOf("eslint.config.mjs"), SUB_FILE],
-  sub: { "kept.ts": ONE_CLASS, [CHECKS_PROJECTION_PATH]: SUB_PROJECTION_TEXT },
-};
-
-describe.each(ESLINT_LINES)(
-  "the version 2 ESLint runner on %s, over a repository that declares a config root holding no eslint.config.*",
-  (line) => {
-    it("names the declared folder's file unconfigured, though it is written and current, under a repository-root lookup", async () => {
-      const run = {
-        ...UNCONFIGURED_RUN,
-        line,
-        declaredConfigLookup: REPOSITORY_ROOT_LOOKUP,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-        files: {
-          "eslint.config.mjs": ROOT_CONFIG_IMPORTING_THE_SUB_SLICE,
-          [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT,
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "reports an inline rule configuration written with the check's id as a native exception on that check, beside the hit it does not remove",
+      folder: "inline-rule-config",
+      config: TEAM_CONFIG,
+      projection: PROJECTION,
+      source:
+        '/* eslint hone/authored-class-or-this#class-keyword: "off" */\nexport class Kept {}\n',
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_2],
+        nativeExceptions: [
+          {
+            kind: "inline-rule-config",
+            file: repoPathOf("kept.ts"),
+            line: 1,
+            text: '/* eslint hone/authored-class-or-this#class-keyword: "off" */',
+            check: "authored-class-or-this#class-keyword",
+          },
+        ],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "reports an inline disable written with a version 1 id as misnamed and suppresses nothing",
+      folder: "version-1-id",
+      config: TEAM_CONFIG,
+      projection: PROJECTION,
+      source: "// eslint-disable-next-line hone/no-class-authoring\nexport class Kept {}\n",
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_2],
+        nativeExceptions: [],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [
+          {
+            kind: "version-1-id",
+            ruleId: "hone/no-class-authoring",
+            file: repoPathOf("kept.ts"),
+            line: 1,
+            text: "// eslint-disable-next-line hone/no-class-authoring",
+            replacedBy: ["hone/authored-class-or-this#class-keyword"],
+          },
+        ],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "does not call a disable misnamed when it names a real check of the catalogue that the repository has not selected",
+      folder: "unselected-check",
+      config: TEAM_CONFIG,
+      projection: PROJECTION,
+      source:
+        "// eslint-disable-next-line hone/authored-class-or-this#static-members-only\nexport class Kept {}\n",
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_2],
+        nativeExceptions: [],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "reports a global ignore over the source as a native exception on the check",
+      folder: "global-ignore",
+      config: `import hone from "./hone.eslint.mjs";\nexport default [{ ignores: ["kept.ts"] }, ...hone];\n`,
+      projection: PROJECTION,
+      source: ONE_CLASS,
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_1],
+        nativeExceptions: [
+          {
+            kind: "ignore",
+            file: repoPathOf("kept.ts"),
+            check: "authored-class-or-this#class-keyword",
+          },
+        ],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "reports a config override of the check's rule after the projection as a native exception on that check",
+      folder: "config-override",
+      config: `import hone from "./hone.eslint.mjs";\nexport default [...hone, { rules: { "hone/authored-class-or-this#class-keyword": "off" } }];\n`,
+      projection: PROJECTION,
+      source: ONE_CLASS,
+      answered: [],
+      report: {
+        hits: [CLASS_ON_LINE_1],
+        nativeExceptions: [
+          {
+            kind: "config-override",
+            file: repoPathOf("kept.ts"),
+            check: "authored-class-or-this#class-keyword",
+          },
+        ],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "does not report the projection's own off block over an answered file as an override",
+      folder: "answered-root-file",
+      config: TEAM_CONFIG,
+      projection: `import hone from "../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+{ name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
+`,
+      source: ONE_CLASS,
+      answered: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "authored-class-or-this",
+          check: "class-keyword",
+          file: repoPathOf("kept.ts"),
         },
-      };
-      expect(await runOver(run)).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: SUB_MEASURED,
-          slices: [{ slice: SUB_SLICE, state: "unconfigured" }],
-        },
-      });
+      ],
+      report: {
+        hits: [CLASS_ON_LINE_1],
+        nativeExceptions: [],
+        measured: [MEASURED],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+  ])("$name", async ({ folder, config, projection, source, answered, report }) => {
+    const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-${folder}`);
+    const toolchain = await loadEslintToolchain({
+      peers: { location: PEER_LOCATION, modules: row.toolchainModules },
+    });
+    assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
+    const eslint = createEslintPort({ toolchain: toolchain.value });
+    expect([
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: repo }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: config }),
+      fileText.write({ path: `${repo}/hone.eslint.mjs`, text: projection }),
+      fileText.write({
+        path: `${repo}/hone.eslint.d.mts`,
+        text: eslint.boundary.declarationText,
+      }),
+      fileText.write({ path: `${repo}/kept.ts`, text: source }),
+    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
+    const runner = createChecksRunner({
+      fileText,
+      fileRemoval,
+      modules: row.pieceModules,
+      path,
+      eslint,
+      moduleExtension: ".ts",
     });
 
-    it("names the declared folder's file unconfigured, though it is written and current, when each file looks up its nearest config", async () => {
-      const run = {
-        ...UNCONFIGURED_RUN,
-        line,
-        declaredConfigLookup: "nearest-to-file" as const,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-        files: ADOPTED,
-      };
-      expect(await runOver(run)).toEqual({
-        outcome: "ok",
-        value: {
-          ...REPORT,
-          hits: [SUB_HIT],
-          measured: SUB_MEASURED,
-          slices: [{ slice: SUB_SLICE, state: "unconfigured" }],
-        },
-      });
+    const outcome = await runner.run({
+      repoRoot: repo,
+      installRoot: INSTALL_ROOT,
+      files: [repoPathOf("kept.ts")],
+      trackedPaths: [repoPathOf("kept.ts")],
+      checks: CHECKS,
+      bindings: BINDINGS,
+      answered,
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
-  },
-);
+
+    expect(outcome).toEqual({ outcome: "ok", value: report });
+  });
+
+  it.each<SubfolderRow>([
+    {
+      name: "reads the root config only when the repository declares a repository-root lookup, whatever a subfolder config holds",
+      folder: "repository-root-lookup",
+      rootConfig: TEAM_CONFIG,
+      rootProjection: PROJECTION,
+      subConfig: CONFIG_WITHOUT_THE_CHECKS,
+      subProjection: SUB_PROJECTION,
+      tracked: [repoPathOf("sub/kept.ts")],
+      answered: [],
+      lookup: "repository-root",
+      report: {
+        hits: [CLASS_IN_SUB],
+        nativeExceptions: [],
+        measured: [MEASURED_IN_SUB],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "reports a file as ignored, as version 1 does, when its broken subfolder config sits in a folder the root config ignores",
+      folder: "broken-ignored-config",
+      rootConfig: `import hone from "./hone.eslint.mjs";\nexport default [...hone, { ignores: ["sub/**"] }];\n`,
+      rootProjection: PROJECTION,
+      subConfig: "export default [;\n",
+      subProjection: SUB_PROJECTION,
+      tracked: [repoPathOf("sub/kept.ts")],
+      answered: [],
+      lookup: "nearest-to-file",
+      report: {
+        hits: [CLASS_IN_SUB],
+        nativeExceptions: [
+          {
+            kind: "ignore",
+            file: repoPathOf("sub/kept.ts"),
+            check: "authored-class-or-this#class-keyword",
+          },
+        ],
+        measured: [MEASURED_IN_SUB],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+    {
+      name: "matches an answer for a package file in that package's own hone.eslint.mjs, written relative to the package, without reporting its off block as an override",
+      folder: "answered-package-file",
+      rootConfig: CONFIG_WITHOUT_THE_CHECKS,
+      rootProjection: `import hone from "../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+{ name: "hone/answered/authored-class-or-this#class-keyword", files: ["sub/kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
+`,
+      subConfig: `import hone from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"] }, ...hone];\n`,
+      subProjection: `import hone from "../../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+{ name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
+`,
+      tracked: [
+        repoPathOf("eslint.config.mjs"),
+        repoPathOf("sub/eslint.config.mjs"),
+        repoPathOf("sub/kept.ts"),
+      ],
+      answered: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "authored-class-or-this",
+          check: "class-keyword",
+          file: repoPathOf("sub/kept.ts"),
+        },
+      ],
+      lookup: "nearest-to-file",
+      report: {
+        hits: [CLASS_IN_SUB],
+        nativeExceptions: [],
+        measured: [MEASURED_IN_SUB],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
+    },
+  ])("$name", async (subfolder) => {
+    const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-${subfolder.folder}`);
+    const toolchain = await loadEslintToolchain({
+      peers: { location: PEER_LOCATION, modules: row.toolchainModules },
+    });
+    assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
+    const eslint = createEslintPort({ toolchain: toolchain.value });
+    const declarationText = eslint.boundary.declarationText;
+    expect([
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/sub` }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: subfolder.rootConfig }),
+      fileText.write({ path: `${repo}/hone.eslint.mjs`, text: subfolder.rootProjection }),
+      fileText.write({ path: `${repo}/hone.eslint.d.mts`, text: declarationText }),
+      fileText.write({ path: `${repo}/sub/eslint.config.mjs`, text: subfolder.subConfig }),
+      fileText.write({ path: `${repo}/sub/hone.eslint.mjs`, text: subfolder.subProjection }),
+      fileText.write({ path: `${repo}/sub/hone.eslint.d.mts`, text: declarationText }),
+      fileText.write({ path: `${repo}/sub/kept.ts`, text: ONE_CLASS }),
+    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
+    const runner = createChecksRunner({
+      fileText,
+      fileRemoval,
+      modules: row.pieceModules,
+      path,
+      eslint,
+      moduleExtension: ".ts",
+    });
+
+    const outcome = await runner.run({
+      repoRoot: repo,
+      installRoot: INSTALL_ROOT,
+      files: [repoPathOf("sub/kept.ts")],
+      trackedPaths: subfolder.tracked,
+      checks: CHECKS,
+      bindings: BINDINGS,
+      answered: subfolder.answered,
+      declaredConfigRoots: [],
+      declaredConfigLookup: subfolder.lookup,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    });
+
+    expect(outcome).toEqual({ outcome: "ok", value: subfolder.report });
+  });
+});

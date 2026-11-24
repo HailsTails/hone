@@ -267,6 +267,7 @@ const runnerOverQuery = (
   stubs: Omit<ProjectionStubs, "ruleState"> & {
     readonly fileText: FileTextPort;
     readonly query: QueryInstance;
+    readonly repository?: Partial<ChecksRepository>;
   },
 ) => {
   const realModules = createDefaultModuleLoaderPort({});
@@ -284,7 +285,7 @@ const runnerOverQuery = (
     ports: {
       repositoryAt: vi
         .fn<ChecksRunnerPorts["repositoryAt"]>()
-        .mockReturnValue(repositoryHolding(stubs.currents)),
+        .mockReturnValue({ ...repositoryHolding(stubs.currents), ...stubs.repository }),
       coreInstall: vi
         .fn<ChecksRunnerPorts["coreInstall"]>()
         .mockReturnValue({ outcome: "ok", value: { form: "source" } }),
@@ -427,6 +428,45 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
         },
       },
       linted: [[{ files: SELECTING_THE_CLASS_CHECK.files }]],
+    });
+  });
+
+  it("reports a suppression entry from eslint-suppressions.json in the report's native exceptions", async () => {
+    const outcome = await runnerOverQuery({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      fileText: createDefaultFileTextPort({}),
+      query: queryInstanceOver(CONFIGURED_ON),
+      governance: lintingNothing(),
+      repository: {
+        suppressionsAt: vi.fn<ChecksRepository["suppressionsAt"]>().mockReturnValue({
+          outcome: "ok",
+          value: { "kept.ts": { "hone/authored-class-or-this#class-keyword": { count: 1 } } },
+        }),
+      },
+    }).run({
+      ...SELECTING_THE_CLASS_CHECK,
+      trackedPaths: [repoPathOf("kept.ts"), repoPathOf("eslint-suppressions.json")],
+    });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: {
+        hits: [],
+        nativeExceptions: [
+          {
+            kind: "suppression-entry",
+            file: "kept.ts",
+            location: "eslint-suppressions.json",
+            check: "authored-class-or-this#class-keyword",
+          },
+        ],
+        measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "current",
+        slices: [],
+      },
     });
   });
 

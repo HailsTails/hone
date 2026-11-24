@@ -7,10 +7,6 @@
     },
     {
       "answers": "process-global-used-in-place#direct-global-use",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
