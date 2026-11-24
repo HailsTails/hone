@@ -158,6 +158,8 @@ const refusalDetail = (request: { readonly refusal: RecordRefusal }): string => 
       return ` ${refusal.folder} ${quoted({ text: refusal.name })}`;
     case "carried-changed-since-base":
       return "";
+    case "held-at-moved-path":
+      return ` ${refusal.movedTo}: git moved its file there; run record-debt to repoint it`;
     case "duplicate":
       return ` of ${recordPlaceText({ place: refusal.of })}`;
   }

@@ -18,6 +18,7 @@ import {
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
+import type { RecordRepointing } from "../domain/records/hone-records/records-edit.ts";
 import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
@@ -25,6 +26,11 @@ import type { Result } from "../domain/result.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 
 export type RecordsSourceFor = (request: { readonly catalogue: SymptomCatalogue }) => RecordsSource;
+
+export type RecordedDebt = {
+  readonly outcomes: readonly DebtOutcome[];
+  readonly moved: readonly RecordRepointing[];
+};
 
 export type VersionTwoRecordInput = {
   readonly stages: VersionTwoStages;
@@ -50,7 +56,7 @@ export const versionTwoRecordDebtOf = async (
     readonly leave: readonly RepoPath[];
     readonly projectCommand: string;
   },
-): Promise<Result<readonly DebtOutcome[], RunLoadFailure>> => {
+): Promise<Result<RecordedDebt, RunLoadFailure>> => {
   const run = await versionTwoRunOver({
     stages: request.stages,
     arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
@@ -58,7 +64,7 @@ export const versionTwoRecordDebtOf = async (
   if (run.outcome === "failed") {
     return run;
   }
-  const { catalogue, report, runs, touched } = run.value;
+  const { catalogue, report, runs, touched, moved } = run.value;
   const stale = refreshableProjectionOf({
     problems: report["projection-problems"],
     unmeasured: report.unmeasured,
@@ -69,7 +75,7 @@ export const versionTwoRecordDebtOf = async (
       error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
     };
   }
-  return recordFailureOf({
+  const recorded = recordFailureOf({
     recorded: recordDebtOf({
       ports: {
         catalogue,
@@ -83,10 +89,14 @@ export const versionTwoRecordDebtOf = async (
         unrecorded: report.unrecorded,
         runs,
         touched,
+        moved,
         leave: request.leave,
       },
     }),
   });
+  return recorded.outcome === "failed"
+    ? recorded
+    : { outcome: "ok", value: { outcomes: recorded.value, moved } };
 };
 
 export const versionTwoPruneDebtOf = async (

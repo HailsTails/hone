@@ -7,10 +7,6 @@
     },
     {
       "answers": "name-off-its-casing#naming-convention",
-      "file": "src/infrastructure/git/git-port.test.ts"
-    },
-    {
-      "answers": "name-off-its-casing#naming-convention",
       "file": "src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.test.ts"
     },
     {

@@ -9,6 +9,7 @@ import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   authorisingLines,
   debtOutcomeLine,
+  movedRecordLine,
   projectNextLine,
   prunedDebtLine,
 } from "./record-command-lines.ts";
@@ -240,6 +241,19 @@ describe("the lines hone record-debt prints", () => {
 
   it.each(OUTCOME_LINES)("prints %j as one line", (outcome, line) => {
     expect(debtOutcomeLine({ outcome })).toBe(line);
+  });
+});
+
+describe("the line hone record-debt prints for a record it repointed", () => {
+  it("names the record's place and the path git moved its file to", () => {
+    expect(
+      movedRecordLine({
+        moved: {
+          place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 1 },
+          file: repoPathOf("src/cart/cart.ts"),
+        },
+      }),
+    ).toBe("hone-records/debt/claimed-type.json records[1] repointed to src/cart/cart.ts");
   });
 });
 

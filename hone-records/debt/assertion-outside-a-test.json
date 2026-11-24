@@ -3,30 +3,6 @@
   "records": [
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
@@ -36,14 +12,6 @@
     {
       "answers": "assertion-outside-a-test#assertion-site",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
@@ -79,19 +47,11 @@
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/composition/projection-pair.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/composition/settings-pair.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
@@ -160,14 +120,6 @@
     {
       "answers": "assertion-outside-a-test#assertion-site",
       "file": "src/infrastructure/engines/eslint/rebinding/parameter-reassignment/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",

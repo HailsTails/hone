@@ -682,14 +682,12 @@ export const exceptionRepositoryOf =
   (request) =>
     createExceptionRepository({ ...ports, repoRoot: request.repoRoot });
 
-export const createDefaultExceptionRepositoryOf = (
-  _options: Record<string, never>,
-): ExceptionRepositoryOf =>
+export const createDefaultExceptionRepositoryOf = (): ExceptionRepositoryOf =>
   exceptionRepositoryOf({
     fileText: createDefaultFileTextPort({}),
     path: createDefaultPathPort({}),
     directory: createDefaultDirectoryPort({}),
     fileRemoval: createDefaultFileRemovalPort({}),
-    git: createDefaultGitPort({}),
-    gitTree: createDefaultGitTreePort({}),
+    git: createDefaultGitPort(),
+    gitTree: createDefaultGitTreePort(),
   });

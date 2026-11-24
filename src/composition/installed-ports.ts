@@ -5,8 +5,7 @@ import { exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-f
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { foundTreeRecordsSourceOf } from "../infrastructure/discipline-exceptions-folder/found-tree-records-source.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import { createNamedEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import { loadVersionOneProjectionOver } from "../infrastructure/engines/protocol/upgrade/load-version-one-projection.ts";
+import { runnerModuleAt } from "../infrastructure/engines/protocol/runner-module/runner-module-at.ts";
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 import {
   createCheckPieceSource,
@@ -16,6 +15,7 @@ import { createRecordsFolder } from "../infrastructure/hone-records-folder/folde
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
 import { loadFailureDetail } from "../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { runnerEnginesOver } from "./runner-engines.ts";
 import type { ToolPorts } from "./tool-ports.ts";
 import { versionTwoStagesOver } from "./version-two-stages.ts";
 
@@ -44,7 +44,7 @@ export const installedPortsOver = (node: NodePorts): ToolPorts => {
   });
   return {
     ...node,
-    namedEngine: createNamedEnginePort({}),
+    ...runnerEnginesOver({ runnerModuleOf: runnerModuleAt }),
     exceptionRepositoryOf: exceptionRepositories,
     exceptionEntryParser,
     selectionRepositoryOf: createSelectionRepository,
@@ -62,6 +62,5 @@ export const installedPortsOver = (node: NodePorts): ToolPorts => {
     settingsFormat: SETTINGS_FILE_FORMAT,
     settingsSourcesOf: createSettingsSources,
     checkPieceSourceOf: createCheckPieceSource,
-    versionOneProjectionOf: loadVersionOneProjectionOver,
   };
 };

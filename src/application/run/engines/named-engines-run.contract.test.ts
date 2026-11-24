@@ -113,19 +113,23 @@ const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => (
   settings: {},
 });
 
+const selectedOn = (request: {
+  readonly mechanism: CheckBinding["engine"];
+}): NamedSettingsReading["selection"]["selected"][number] => ({
+  address: { ruleSet: "hone", check: "claimed-type#cast-expressions" },
+  check: CAST_CHECK,
+  exceptions: "allowed",
+  editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+  binding: bindingOn(request),
+});
+
 const settingsBinding = (request: {
-  readonly bindings: readonly CheckBinding[];
+  readonly selected: NamedSettingsReading["selection"]["selected"];
   readonly lookup: NamedSettingsReading["eslintConfigLookup"];
 }): NamedSettingsReading => ({
   available: [],
   selection: {
-    selected: request.bindings.map((binding) => ({
-      address: { ruleSet: "hone", check: "claimed-type#cast-expressions" },
-      check: CAST_CHECK,
-      exceptions: "allowed",
-      editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
-      binding,
-    })),
+    selected: request.selected,
     notAdopted: [],
     notRun: [],
     excluded: [],
@@ -152,7 +156,7 @@ const DEBT_ON_A: RecordsReading = {
   ],
   refused: [],
   notes: [],
-  base: { measured: "yes" },
+  base: { measured: "yes", held: [] },
 };
 
 const UNUSED_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>() };
@@ -186,14 +190,7 @@ const AUDIT_RUN: NamedEngineRun = {
 
 const ESLINT_RUN: NamedEngineRun = { ...AUDIT_RUN, mechanism: ESLINT };
 
-type EngineFake = {
-  readonly load: Mock<NamedEnginePort["load"]>;
-  readonly runChecks: Mock<NamedEnginePort["run"]>;
-  readonly projectChecks: Mock<NamedEnginePort["project"]>;
-  readonly port: NamedEnginePort;
-};
-
-const engineFake = (): EngineFake => {
+const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
   const runChecks = vi.fn<NamedEnginePort["run"]>();
   const projectChecks = vi.fn<NamedEnginePort["project"]>();
@@ -212,7 +209,7 @@ const engineFake = (): EngineFake => {
 const DETECTED: NamedSettingsReading["eslintConfigLookup"] = { lookup: "detected" };
 
 const enginesRequestOf = (request: {
-  readonly bindings: readonly CheckBinding[];
+  readonly selected: NamedSettingsReading["selection"]["selected"];
   readonly lookup: NamedSettingsReading["eslintConfigLookup"];
   readonly engine: NamedEnginePort;
 }): NamedEnginesRequest => ({
@@ -257,10 +254,10 @@ describe("namedEngineRunsOf", () => {
       .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     const run = await namedEngineRunsOf(
       enginesRequestOf({
-        bindings: [
-          bindingOn({ mechanism: AUDIT }),
-          bindingOn({ mechanism: ESLINT }),
-          bindingOn({ mechanism: AUDIT }),
+        selected: [
+          selectedOn({ mechanism: AUDIT }),
+          selectedOn({ mechanism: ESLINT }),
+          selectedOn({ mechanism: AUDIT }),
         ],
         lookup: DETECTED,
         engine: engine.port,
@@ -297,7 +294,7 @@ describe("namedEngineRunsOf", () => {
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     await namedEngineRunsOf(
       enginesRequestOf({
-        bindings: [bindingOn({ mechanism: ESLINT })],
+        selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
         engine: engine.port,
       }),
@@ -313,7 +310,7 @@ describe("namedEngineRunsOf", () => {
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     await namedEngineRunsOf(
       enginesRequestOf({
-        bindings: [bindingOn({ mechanism: ESLINT })],
+        selected: [selectedOn({ mechanism: ESLINT })],
         lookup: { lookup: "declared", value: "repository-root" },
         engine: engine.port,
       }),
@@ -335,7 +332,7 @@ describe("namedEngineRunsOf", () => {
     expect(
       await namedEngineRunsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
+          selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -364,7 +361,7 @@ describe("namedEngineRunsOf", () => {
     expect(
       await namedEngineRunsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
+          selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -383,7 +380,7 @@ describe("namedEngineRunsOf", () => {
     const engine = engineFake();
     expect({
       run: await namedEngineRunsOf(
-        enginesRequestOf({ bindings: [], lookup: DETECTED, engine: engine.port }),
+        enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
     }).toEqual({ run: { outcome: "ok", value: [] }, loaded: [] });
@@ -400,7 +397,7 @@ describe("namedEngineProjectionsOf", () => {
     expect(
       await namedEngineProjectionsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
+          selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -419,14 +416,14 @@ describe("namedEngineProjectionsOf", () => {
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     await namedEngineProjectionsOf(
       enginesRequestOf({
-        bindings: [bindingOn({ mechanism: ESLINT })],
+        selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
         engine: engine.port,
       }),
     );
     await namedEngineRunsOf(
       enginesRequestOf({
-        bindings: [bindingOn({ mechanism: ESLINT })],
+        selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
         engine: engine.port,
       }),
@@ -447,7 +444,7 @@ describe("namedEngineProjectionsOf", () => {
     expect(
       await namedEngineProjectionsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: AUDIT })],
+          selected: [selectedOn({ mechanism: AUDIT })],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -462,7 +459,7 @@ describe("namedEngineProjectionsOf", () => {
     const engine = engineFake();
     expect({
       projected: await namedEngineProjectionsOf(
-        enginesRequestOf({ bindings: [], lookup: DETECTED, engine: engine.port }),
+        enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
     }).toEqual({ projected: { outcome: "ok", value: [] }, loaded: [] });
@@ -474,7 +471,7 @@ describe("namedEngineProjectionsOf", () => {
     expect(
       await namedEngineProjectionsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
+          selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -503,7 +500,7 @@ describe("namedEngineProjectionsOf", () => {
     expect(
       await namedEngineProjectionsOf(
         enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
+          selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
           engine: engine.port,
         }),

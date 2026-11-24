@@ -6,13 +6,16 @@ import type {
   SymptomCatalogue,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type {
+  PlacedRecord,
   RecordsDocument,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { GitPort } from "../ports/git-port.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
-import { readHoneRecords } from "./read-hone-records.ts";
+import { readHoneRecords, readingFollowingRenames } from "./read-hone-records.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
   name: "authorised-location",
@@ -74,7 +77,12 @@ const sourceOf = (request: {
   readonly readAt: RecordsSource["readAt"];
 }): RecordsSource => request;
 
-const READING: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const READING: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const readerGiving = (
   reading: ReturnType<RecordsReader["recordsReadingOf"]>,
@@ -251,5 +259,106 @@ describe("readHoneRecords", () => {
         refusals: [{ kind: "document-refused", file: FILE, issues: [] }],
       },
     });
+  });
+});
+
+const REPO_ROOT = absoluteRootOf("/work/shop");
+
+const DEBT_ON_A: PlacedRecord = {
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+  record: {
+    kind: "debt",
+    symptom: CLAIMED_TYPE,
+    reach: { reaches: "whole-symptom" },
+    file: repoPathOf("src/a.ts"),
+    holding: { held: "stated" },
+  },
+};
+
+const READING_DEBT_ON_A: RecordsReading = {
+  records: [DEBT_ON_A],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
+
+describe("readingFollowingRenames", () => {
+  it("points each record on a file git saw renamed at the file's path now, and refuses it where it is held", () => {
+    expect(
+      readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        renamed: {
+          measured: "yes",
+          renamed: new Map([
+            [
+              repoPathOf("src/moved/a.ts"),
+              { basePath: repoPathOf("src/a.ts"), content: "unchanged" },
+            ],
+          ]),
+        },
+        moved: [
+          {
+            place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+            file: repoPathOf("src/moved/a.ts"),
+          },
+        ],
+      }),
+    ).toEqual({
+      records: [
+        {
+          place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+          record: {
+            kind: "debt",
+            symptom: CLAIMED_TYPE,
+            reach: { reaches: "whole-symptom" },
+            file: "src/moved/a.ts",
+            holding: { held: "stated" },
+          },
+        },
+      ],
+      refused: [
+        {
+          place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+          refusals: [{ kind: "held-at-moved-path", movedTo: "src/moved/a.ts" }],
+        },
+      ],
+      notes: [],
+      base: { measured: "yes", held: [] },
+    });
+  });
+
+  it("follows no rename and leaves the base unmeasured, carrying git's message, when the renames are unmeasured", () => {
+    expect(
+      readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        renamed: {
+          measured: "no",
+          base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad object" },
+        },
+        moved: [],
+      }),
+    ).toEqual({
+      records: [DEBT_ON_A],
+      refused: [],
+      notes: [],
+      base: {
+        measured: "no",
+        base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad object" },
+      },
+    });
+  });
+
+  it("keeps the reading's own unmeasured base when no base revision was given", () => {
+    const unmeasured: RecordsReading = {
+      ...READING_DEBT_ON_A,
+      base: { measured: "no", base: { state: "not-given" } },
+    };
+    expect(
+      readingFollowingRenames({
+        reading: unmeasured,
+        renamed: { measured: "no", base: { state: "not-given" } },
+        moved: [],
+      }),
+    ).toEqual(unmeasured);
   });
 });

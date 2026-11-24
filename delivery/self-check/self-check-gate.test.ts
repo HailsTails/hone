@@ -120,6 +120,7 @@ const producedOf = (request: {
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
     runs: [],
+    moved: [],
   },
 });
 

@@ -7,10 +7,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/domain/records/discipline-exceptions/exception-baseline.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/exception-entry.ts"
     },
     {
@@ -52,10 +48,6 @@
     {
       "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/infrastructure/engines/protocol/engine-port.ts"
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",

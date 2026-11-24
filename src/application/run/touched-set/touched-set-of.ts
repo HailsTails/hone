@@ -1,5 +1,6 @@
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RenamedSinceBase } from "../../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { Assessment } from "../../../domain/settings/assessment.ts";
 import type { GitPort } from "../../ports/git-port.ts";
@@ -27,6 +28,7 @@ export const touchedSetOf = (request: {
   readonly repoRoot: AbsolutePath;
   readonly baseRevision: string | undefined;
   readonly git: Pick<GitPort, "changedSince">;
+  readonly renamed: RenamedSinceBase;
 }): TouchedSet => {
   if (request.assessment.forfeiture !== "elsewhere" && measurementOf(request) === "not-needed") {
     return NOTHING_TOUCHED;
@@ -36,5 +38,6 @@ export const touchedSetOf = (request: {
     repoRoot: request.repoRoot,
     baseRevision: request.baseRevision,
     git: request.git,
+    renamed: request.renamed,
   });
 };

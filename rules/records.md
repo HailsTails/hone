@@ -29,7 +29,7 @@ Five kinds cover everything. They are the model Hone's records take on with 2.0,
 - **Answers:** Any symptom at a site, a known breach not yet paid.
 - **Must state:** The symptom and the site. Nothing more: "All debt is debt. Reason doesn't matter."
 - **Scope:** One symptom in one file.
-- **Stale or paid when:** Forfeited once the file is touched, so the change pays it. Stale when the symptom is gone. Removed by the tool when the file is gone, or when its check measured the file and found the debt paid.
+- **Stale or paid when:** Forfeited once the file is touched, so the change pays it. Moving a file without changing its content does not touch it. Stale when the symptom is gone. Removed by the tool when the file is gone, or when its check measured the file and found the debt paid.
 - **Industry name:** a baseline with a ratchet. Record-debt is the baseline, and forfeit-on-touch is the ratchet. A lint baseline, as in ESLint bulk suppressions, that ratchets down.
 
 ### Boundary record

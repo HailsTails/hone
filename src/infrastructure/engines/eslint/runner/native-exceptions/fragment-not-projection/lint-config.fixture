@@ -1,9 +1,0 @@
-import plugin from "../../../authored-class-or-this/class-keyword/eslint-plugin.ts";
-
-export default [
-  { files: ["**/*.{ts,tsx,mts,cts}"] },
-  {
-    plugins: { "hone": plugin },
-    rules: { "hone/no-class-authoring": "error" },
-  },
-];

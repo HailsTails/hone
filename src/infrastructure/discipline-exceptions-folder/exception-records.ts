@@ -269,8 +269,8 @@ const sameEntry = (request: {
   readonly atHead: StructuralExceptionEntry;
   readonly repointed: Repointing;
 }): "same" | "different" =>
-  JSON.stringify(request.atBase, (_key, value: unknown) =>
-    typeof value === "string" ? request.repointed({ text: value }) : value,
+  JSON.stringify(request.atBase, (_key, field: unknown) =>
+    typeof field === "string" ? request.repointed({ text: field }) : field,
   ) === JSON.stringify(request.atHead)
     ? "same"
     : "different";
@@ -333,7 +333,10 @@ const AS_RECORDED: Repointing = ({ text }) => text;
 
 const repointingOf = (request: { readonly baseline: MeasuredBaseline }): Repointing => {
   const headPathOf = new Map<string, RepoPath>(
-    [...request.baseline.basePathOfRenamed].map(([headPath, basePath]) => [basePath, headPath]),
+    [...request.baseline.basePathOfRenamed].map(([headPath, renamed]) => [
+      renamed.basePath,
+      headPath,
+    ]),
   );
   if (headPathOf.size === 0) {
     return AS_RECORDED;
@@ -547,79 +550,76 @@ const fileRecordOf = (request: {
   });
 };
 
+const parsedFileRecord = <
+  Evidence extends Unjudged<AuthorisedLocationEntry> | Unjudged<FileCarveOutEntry>,
+>(request: {
+  readonly entry: Exclude<StructuralExceptionEntry, { readonly kind: "clause-wide-carve-out" }>;
+  readonly schema: z.ZodType<Evidence>;
+  readonly selected: ClauseSelection;
+  readonly baseline: ExceptionBaseline;
+}): Result<ExceptionRecord, EntryProblem> => {
+  const { entry, selected, baseline } = request;
+  const file = recordedFile({ file: entry.file });
+  if (file.outcome === "failed") {
+    return file;
+  }
+  const evidence = request.schema.safeParse(entry);
+  return evidence.success
+    ? fileRecordOf({ evidence: evidence.data, entry, ...selected, file: file.value, baseline })
+    : {
+        outcome: "failed",
+        error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+      };
+};
+
+const clauseWideRecordOf = (request: {
+  readonly entry: Extract<StructuralExceptionEntry, { readonly kind: "clause-wide-carve-out" }>;
+  readonly selected: ClauseSelection;
+  readonly baseline: ExceptionBaseline;
+}): Result<ExceptionRecord, EntryProblem> => {
+  const { entry } = request;
+  const whyChain = judgedWhyChain({ whyChain: entry.whyChain, entry, baseline: request.baseline });
+  return whyChain.outcome === "failed"
+    ? whyChain
+    : {
+        outcome: "ok",
+        value: {
+          kind: entry.kind,
+          ...request.selected,
+          reason: entry.reason,
+          whyChain: whyChain.value,
+        },
+      };
+};
+
 const parsedRecord = (request: {
   readonly entry: StructuralExceptionEntry;
   readonly selection: Selection;
   readonly baseline: ExceptionBaseline;
   readonly fileEvidence: FileEvidenceSchemas;
 }): Result<ExceptionRecord, EntryProblem> => {
-  const { entry } = request;
+  const { entry, baseline } = request;
   const selected = selectedClauseOf(request);
   if (selected.outcome === "failed") {
     return selected;
   }
-  const { clause, mechanism } = selected.value;
   switch (entry.kind) {
-    case "authorised-location": {
-      const file = recordedFile({ file: entry.file });
-      if (file.outcome === "failed") {
-        return file;
-      }
-      const evidence = request.fileEvidence["authorised-location"].safeParse(entry);
-      return evidence.success
-        ? fileRecordOf({
-            evidence: evidence.data,
-            entry,
-            clause,
-            mechanism,
-            file: file.value,
-            baseline: request.baseline,
-          })
-        : {
-            outcome: "failed",
-            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
-          };
-    }
-    case "file-carve-out": {
-      const file = recordedFile({ file: entry.file });
-      if (file.outcome === "failed") {
-        return file;
-      }
-      const evidence = request.fileEvidence["file-carve-out"].safeParse(entry);
-      return evidence.success
-        ? fileRecordOf({
-            evidence: evidence.data,
-            entry,
-            clause,
-            mechanism,
-            file: file.value,
-            baseline: request.baseline,
-          })
-        : {
-            outcome: "failed",
-            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
-          };
-    }
-    case "clause-wide-carve-out": {
-      const whyChain = judgedWhyChain({
-        whyChain: entry.whyChain,
+    case "authorised-location":
+      return parsedFileRecord({
         entry,
-        baseline: request.baseline,
+        schema: request.fileEvidence["authorised-location"],
+        selected: selected.value,
+        baseline,
       });
-      if (whyChain.outcome === "failed") {
-        return whyChain;
-      }
-      return {
-        outcome: "ok",
-        value: {
-          kind: entry.kind,
-          clause,
-          mechanism,
-          reason: entry.reason,
-          whyChain: whyChain.value,
-        },
-      };
-    }
+    case "file-carve-out":
+      return parsedFileRecord({
+        entry,
+        schema: request.fileEvidence["file-carve-out"],
+        selected: selected.value,
+        baseline,
+      });
+    case "clause-wide-carve-out":
+      return clauseWideRecordOf({ entry, selected: selected.value, baseline });
   }
 };
 

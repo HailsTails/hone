@@ -6,16 +6,13 @@ import type { GitTreePort } from "../application/ports/git-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
-
-const notUsed = (): never => {
-  throw new Error("this port is not used by the command under test");
-};
 
 const memory: { readonly fileText: FileTextPort; readonly directory: DirectoryPort } = {
   fileText: {
@@ -39,28 +36,9 @@ const emptyProcess: ProcessPort = {
   exitWith: () => undefined,
 };
 
-const command: VersionOneCommandRequest = {
-  process: emptyProcess,
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-  fileText: memory.fileText,
-  modules: { load: notUsed },
-  git: {
-    trackedPaths: notUsed,
-    changedSince: notUsed,
-    contentInBase: notUsed,
-    textInBase: notUsed,
-    renamedSince: notUsed,
-  },
-  exceptionRepositoryOf: notUsed,
-  exceptionEntryParser: {
-    parseExceptionEntries: notUsed,
-    importedEntriesIn: notUsed,
-    importSourcesOf: notUsed,
-  },
-  selectionRepositoryOf: notUsed,
-  shownPathOfRepository: notUsed,
-  moduleUrl: "file:///install/src/hone.ts",
-};
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
+
+const MODULE_URL = "file:///install/src/hone.ts";
 
 const UNRESOLVABLE_PATH: PathPort = {
   ...createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
@@ -72,7 +50,7 @@ const UNRESOLVABLE_PATH: PathPort = {
 
 describe("repoRootOf", () => {
   it("resolves --repo against the working directory", () => {
-    expect(repoRootOf({ path: command.path, repo: "shop" })).toEqual({
+    expect(repoRootOf({ path: PATH, repo: "shop" })).toEqual({
       outcome: "ok",
       value: "/work/shop",
     });
@@ -88,15 +66,16 @@ describe("repoRootOf", () => {
 
 describe("repositoryLocatedOf", () => {
   it("gives the repository root and the install the command runs from", () => {
-    expect(
-      repositoryLocatedOf({ path: command.path, moduleUrl: command.moduleUrl, repo: "/repo" }),
-    ).toEqual({ outcome: "ok", value: { repoRoot: "/repo", installRoot: "/install" } });
+    expect(repositoryLocatedOf({ path: PATH, moduleUrl: MODULE_URL, repo: "/repo" })).toEqual({
+      outcome: "ok",
+      value: { repoRoot: "/repo", installRoot: "/install" },
+    });
   });
 
   it("fails as the install-root failure when the command was not started from a file", () => {
     expect(
       repositoryLocatedOf({
-        path: command.path,
+        path: PATH,
         moduleUrl: "https://example.com/tool-command.js",
         repo: "/repo",
       }),
@@ -105,6 +84,31 @@ describe("repositoryLocatedOf", () => {
       error: { kind: "install-root-unresolvable" },
     });
   });
+});
+
+const commandRequestWithSpies = (): VersionOneCommandRequest => ({
+  git: {
+    trackedPaths: vi.fn<VersionOneCommandRequest["git"]["trackedPaths"]>(),
+    changedSince: vi.fn<VersionOneCommandRequest["git"]["changedSince"]>(),
+    contentInBase: vi.fn<VersionOneCommandRequest["git"]["contentInBase"]>(),
+    textInBase: vi.fn<VersionOneCommandRequest["git"]["textInBase"]>(),
+    renamedSince: vi.fn<VersionOneCommandRequest["git"]["renamedSince"]>(),
+  },
+  process: emptyProcess,
+  path: PATH,
+  fileText: memory.fileText,
+  modules: { load: vi.fn<VersionOneCommandRequest["modules"]["load"]>() },
+  exceptionRepositoryOf: vi.fn<VersionOneCommandRequest["exceptionRepositoryOf"]>(),
+  exceptionEntryParser: {
+    parseExceptionEntries:
+      vi.fn<VersionOneCommandRequest["exceptionEntryParser"]["parseExceptionEntries"]>(),
+    importedEntriesIn:
+      vi.fn<VersionOneCommandRequest["exceptionEntryParser"]["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<VersionOneCommandRequest["exceptionEntryParser"]["importSourcesOf"]>(),
+  },
+  selectionRepositoryOf: vi.fn<VersionOneCommandRequest["selectionRepositoryOf"]>(),
+  shownPathOfRepository: vi.fn<VersionOneCommandRequest["shownPathOfRepository"]>(),
+  moduleUrl: MODULE_URL,
 });
 
 describe("stagesOverRepository", () => {
@@ -116,9 +120,13 @@ describe("stagesOverRepository", () => {
       tree: vi.fn<VersionTwoStages["tree"]>(),
       engines: vi.fn<VersionTwoStages["engines"]>(),
       projections: vi.fn<VersionTwoStages["projections"]>(),
+      renamed: vi
+        .fn<VersionTwoStages["renamed"]>()
+        .mockReturnValue({ measured: "yes", renamed: new Map() }),
       touched: vi.fn<VersionTwoStages["touched"]>(),
     };
     const stagesOver = vi.fn<StagesOver>().mockReturnValue(stages);
+    const command = commandRequestWithSpies();
     const gitTree: GitTreePort = { pathsAt: () => ({ outcome: "ok", value: [] }) };
     const recordsSourceOf = vi.fn<RecordsSourceOf>();
     const built = stagesOverRepository({
@@ -128,9 +136,10 @@ describe("stagesOverRepository", () => {
         gitTree,
         directory: memory.directory,
         recordsSourceOf,
+        settingsSourcesOf: vi.fn<SettingsSourcesOf>(),
         stagesOver,
       },
-      moduleUrl: command.moduleUrl,
+      moduleUrl: MODULE_URL,
       located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       baseRevision: "origin/main",
     });

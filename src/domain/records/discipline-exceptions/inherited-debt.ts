@@ -1,5 +1,5 @@
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
-import { basePathOf } from "../../repository/renamed-path.ts";
+import { basePathOf, type RenamedPaths } from "../../repository/renamed-path.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
@@ -26,7 +26,7 @@ export type InheritedDebtRequest = {
   readonly existing: readonly PlacedEntry[];
   readonly leave: readonly RepoPath[];
   readonly inBase: ReadonlySet<RepoPath>;
-  readonly basePathOfRenamed: ReadonlyMap<RepoPath, RepoPath>;
+  readonly basePathOfRenamed: RenamedPaths;
   readonly refusing: readonly ClauseAddress[];
 };
 

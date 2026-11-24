@@ -580,7 +580,9 @@ describe("baselineAtBase", () => {
       text: { outcome: "ok", value: { presence: "present-in-base", text: "[]" } },
       renames: {
         outcome: "ok",
-        value: new Map([[repoPathOf("src/moved/legacy.ts"), LEGACY_FILE]]),
+        value: new Map([
+          [repoPathOf("src/moved/legacy.ts"), { basePath: LEGACY_FILE, content: "edited" }],
+        ]),
       },
     });
     const exceptionRepository = exceptionRepositoryAnswering({
@@ -601,7 +603,9 @@ describe("baselineAtBase", () => {
         measured: "yes",
         entriesAtBase: [CARVE_OUT_ENTRY],
         sourceTextsAtBase: new Map([[LEGACY_SOURCE_FILE, "[]"]]),
-        basePathOfRenamed: new Map([["src/moved/legacy.ts", "src/legacy.ts"]]),
+        basePathOfRenamed: new Map([
+          ["src/moved/legacy.ts", { basePath: "src/legacy.ts", content: "edited" }],
+        ]),
       },
       readAt: [[{ revision: "main" }]],
       textInBase: [[{ repoRoot: REPO_ROOT, baseRevision: "main", file: LEGACY_SOURCE_FILE }]],

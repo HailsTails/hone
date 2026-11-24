@@ -29,10 +29,10 @@ const REPO_ROOT = absoluteRootOf("/repo");
 
 const SELECTION_ABSENT: LoadFailure = { kind: "selection-absent", repo: "/repo" };
 
-const SETTINGS_READ = vi.fn<RunSettingsOf>().mockReturnValue({
+const SETTINGS_READ: ReturnType<RunSettingsOf> = {
   outcome: "ok",
   value: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
-});
+};
 
 const gitListing = (request: {
   readonly tracked: ReturnType<GitPort["trackedPaths"]>;
@@ -89,7 +89,7 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   ports: PORTS,
   measureVersionOne: vi.fn<UpgradeInput["measureVersionOne"]>(),
   located: { repoRoot: REPO_ROOT, installRoot: absoluteRootOf("/install") },
-  runSettingsOf: SETTINGS_READ,
+  runSettingsOf: vi.fn<RunSettingsOf>().mockReturnValue(SETTINGS_READ),
   catalogues: () => ({ outcome: "ok", value: [] }),
   externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
   versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
@@ -107,7 +107,7 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
 
 const TRACKED: ReturnType<GitPort["trackedPaths"]> = { outcome: "ok", value: [] };
 
-const VERSION_ONE_READ_EXCLUDING_VENDOR = vi.fn<VersionOneReadOf>().mockReturnValue({
+const VERSION_ONE_READ_EXCLUDING_VENDOR: ReturnType<VersionOneReadOf> = {
   outcome: "ok",
   value: {
     reading: {
@@ -132,12 +132,12 @@ const VERSION_ONE_READ_EXCLUDING_VENDOR = vi.fn<VersionOneReadOf>().mockReturnVa
       settings: repoPathOf("disciplines.json"),
     },
   },
-});
+};
 
-const RECORDS_ON_DISK = vi.fn<RecordsOnDiskOf>().mockReturnValue({
+const RECORDS_ON_DISK: ReturnType<RecordsOnDiskOf> = {
   outcome: "ok",
   value: { files: [], folders: [], root: { kind: "repository" } },
-});
+};
 
 const CONSOLE_CLAUSE = {
   ruleSet: { name: ruleSetNameOf("acme") },
@@ -274,8 +274,10 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: RECORDS_ON_DISK,
-          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+          versionOneReadOf: vi
+            .fn<VersionOneReadOf>()
+            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({ outcome: "failed", error: SELECTION_ABSENT }),
           proofOf,
         }),
@@ -291,8 +293,10 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: RECORDS_ON_DISK,
-          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+          versionOneReadOf: vi
+            .fn<VersionOneReadOf>()
+            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [PIECED_LAYOUT] }),
           importsRewriterOf: vi
             .fn<UpgradeInput["importsRewriterOf"]>()
@@ -312,8 +316,10 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: RECORDS_ON_DISK,
-          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+          versionOneReadOf: vi
+            .fn<VersionOneReadOf>()
+            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({
             outcome: "ok",
             value: [UNPIECED_LAYOUT],
@@ -382,8 +388,10 @@ describe("upgradeOf", () => {
               fileText: { ...command.fileText, read },
               path: { ...command.path, join },
             },
-            recordsOnDiskOf: RECORDS_ON_DISK,
-            versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+            recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+            versionOneReadOf: vi
+              .fn<VersionOneReadOf>()
+              .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
             proofOf,
           }),
         ),
@@ -424,8 +432,10 @@ describe("upgradeOf", () => {
           inputWith({
             git,
             command: { ...command, fileText: { ...command.fileText, read } },
-            recordsOnDiskOf: RECORDS_ON_DISK,
-            versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+            recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+            versionOneReadOf: vi
+              .fn<VersionOneReadOf>()
+              .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
             proofOf,
           }),
         ),
@@ -457,6 +467,9 @@ describe("upgradeOf", () => {
       tree: vi.fn<VersionTwoStages["tree"]>(),
       engines: vi.fn<VersionTwoStages["engines"]>(),
       projections: vi.fn<VersionTwoStages["projections"]>(),
+      renamed: vi
+        .fn<VersionTwoStages["renamed"]>()
+        .mockReturnValue({ measured: "yes", renamed: new Map() }),
       touched: vi.fn<VersionTwoStages["touched"]>(),
     };
     const foundTreeStages = vi.fn<UpgradeInput["foundTreeStages"]>().mockReturnValue(stages);
@@ -464,8 +477,10 @@ describe("upgradeOf", () => {
     await upgradeOf(
       inputWith({
         git: gitListing({ tracked: TRACKED }),
-        recordsOnDiskOf: RECORDS_ON_DISK,
-        versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+        recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+        versionOneReadOf: vi
+          .fn<VersionOneReadOf>()
+          .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
         proofRunsOf,
         proofOf: vi.fn().mockResolvedValue({
           outcome: "failed",

@@ -530,7 +530,7 @@ describe("createGitPort textInBase", () => {
 });
 
 describe("createGitPort renamedSince", () => {
-  it("diffs the base against the worktree with rename detection, using option-safe arguments", () => {
+  it("diffs the merge base with the worktree, as changedSince does, with rename detection and option-safe arguments", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
     const renames = gitOver(spawn).renamedSince({
@@ -551,6 +551,7 @@ describe("createGitPort renamedSince", () => {
               "--name-status",
               "-M",
               "-z",
+              "--merge-base",
               "--end-of-options",
               "-selected-base",
             ],
@@ -562,7 +563,7 @@ describe("createGitPort renamedSince", () => {
     });
   });
 
-  it("maps each renamed path to its path at the base, passing over every other change", () => {
+  it("maps each renamed path to its path at the base, unchanged only at a 100 score, passing over every other change", () => {
     const renames = gitOver(
       vi.fn<GitSpawn>().mockReturnValue({
         ...EXITED_EMPTY,
@@ -574,8 +575,8 @@ describe("createGitPort renamedSince", () => {
     expect(renames).toEqual({
       outcome: "ok",
       value: new Map([
-        ["src/moved/old.ts", "src/old.ts"],
-        ["lib/b.ts", "lib/a.ts"],
+        ["src/moved/old.ts", { basePath: "src/old.ts", content: "unchanged" }],
+        ["lib/b.ts", { basePath: "lib/a.ts", content: "edited" }],
       ]),
     });
   });
@@ -591,7 +592,7 @@ describe("createGitPort renamedSince", () => {
       outcome: "failed",
       error: {
         kind: "git-failed",
-        command: "git -C /repo diff --name-status -M -z --end-of-options base",
+        command: "git -C /repo diff --name-status -M -z --merge-base --end-of-options base",
         detail: "git listed a path that is not a repo path: ../outside.ts",
       },
     });
@@ -606,7 +607,7 @@ describe("createGitPort renamedSince", () => {
       outcome: "failed",
       error: {
         kind: "git-failed",
-        command: "git -C /repo diff --name-status -M -z --end-of-options base",
+        command: "git -C /repo diff --name-status -M -z --merge-base --end-of-options base",
         detail: "git diff did not return a complete NUL-separated name-status listing",
       },
     });
@@ -624,7 +625,7 @@ describe("createGitPort renamedSince", () => {
       outcome: "failed",
       error: {
         kind: "git-failed",
-        command: "git -C /repo diff --name-status -M -z --end-of-options missing-base",
+        command: "git -C /repo diff --name-status -M -z --merge-base --end-of-options missing-base",
         detail: "fatal: bad revision 'missing-base'",
       },
     });

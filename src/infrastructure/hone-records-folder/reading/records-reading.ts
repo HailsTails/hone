@@ -4,6 +4,7 @@ import type { RecordsReader } from "../../../application/ports/records/records-r
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   BaseMeasurement,
+  HoneRecord,
   PlacedRecord,
   RecordPlace,
   RecordNote,
@@ -157,9 +158,36 @@ const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): rea
   );
 };
 
-const baseMeasurementOf = (request: { readonly base: RecordsAtBase }): BaseMeasurement =>
+const recordsHeldAtBase = (request: {
+  readonly documents: readonly RecordsDocument[];
+  readonly catalogue: SymptomCatalogue;
+  readonly base: RecordsAtBase;
+}): readonly HoneRecord[] => {
+  const ruleSetsRead = ruleSetsReadOf(request);
+  return request.documents.flatMap((document) => {
+    const listed = entriesOf({ document, ruleSetsRead });
+    return listed.outcome === "failed"
+      ? []
+      : listed.value.flatMap((placed) => {
+          const judged = judgedEntry({ placed, catalogue: request.catalogue, base: request.base });
+          return judged.placed === "record" ? [judged.record.record] : [];
+        });
+  });
+};
+
+const baseMeasurementOf = (request: {
+  readonly base: RecordsAtBase;
+  readonly catalogue: SymptomCatalogue;
+}): BaseMeasurement =>
   request.base.measured === "yes"
-    ? { measured: "yes" }
+    ? {
+        measured: "yes",
+        held: recordsHeldAtBase({
+          documents: request.base.documents,
+          catalogue: request.catalogue,
+          base: request.base,
+        }),
+      }
     : { measured: "no", base: request.base.base };
 
 const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNote[] => {
@@ -172,6 +200,7 @@ const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNot
 const readingOf = (request: {
   readonly judged: readonly Judged[];
   readonly base: RecordsAtBase;
+  readonly catalogue: SymptomCatalogue;
 }): RecordsReading => {
   const records = request.judged.flatMap((judged) =>
     judged.placed === "record" ? [judged.record] : [],
@@ -203,7 +232,11 @@ export const recordsReadingOf = (request: {
   );
   return {
     outcome: "ok",
-    value: readingOf({ judged: withoutDuplicates({ judged }), base: request.base }),
+    value: readingOf({
+      judged: withoutDuplicates({ judged }),
+      base: request.base,
+      catalogue: request.catalogue,
+    }),
   };
 };
 

@@ -15,7 +15,6 @@ import { upgradeRuleSetCataloguesOf } from "../infrastructure/content-files/symp
 import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
-import { measureVersionOneProjection } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { createImportsRewriterOf } from "../infrastructure/engines/protocol/upgrade/load-imports-rewriter.ts";
 import {
   ALREADY_ON_VERSION_TWO,
@@ -37,7 +36,7 @@ import {
 
 export type UpgradeCommandPorts = VersionOneToolPorts &
   VersionTwoRepositoryPorts &
-  Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf">;
+  Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf" | "measureVersionOne">;
 
 type Placed = {
   readonly ports: UpgradeCommandPorts;
@@ -70,7 +69,7 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
   return {
     command: { ...ports, moduleUrl: command.moduleUrl },
     ports,
-    measureVersionOne: measureVersionOneProjection,
+    measureVersionOne: ports.measureVersionOne,
     located,
     runSettingsOf: ({ repoRoot }) => readRunSettings({ fileText, path, repoRoot }),
     catalogues: () =>

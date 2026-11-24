@@ -35,23 +35,7 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",

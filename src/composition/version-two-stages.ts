@@ -6,6 +6,7 @@ import type { ModuleExtension } from "../application/ports/host/module-extension
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import { readHoneRecords } from "../application/records/read-hone-records.ts";
 import { type CheckedTree, checkedTreeOf } from "../application/run/checked-tree-of.ts";
 import {
@@ -18,6 +19,7 @@ import {
   type NamedSettingsReading,
 } from "../application/run/settings/read-settings.ts";
 import { toolCatalogueOf } from "../application/run/tool-catalogue.ts";
+import { renamedSinceBaseOf } from "../application/run/touched-set/renamed-since-base.ts";
 import { touchedSetOf } from "../application/run/touched-set/touched-set-of.ts";
 import type { EngineStageRequest, VersionTwoStages } from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
@@ -30,10 +32,7 @@ import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import { createBoundCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
-import {
-  createCheckPieceSource,
-  createSettingsSources,
-} from "../infrastructure/hone-config-file/settings-sources.ts";
+import { createCheckPieceSource } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 export type VersionTwoPorts = {
@@ -45,6 +44,7 @@ export type VersionTwoPorts = {
   readonly gitTree: GitTreePort;
   readonly directory: DirectoryPort;
   readonly recordsSourceOf: RecordsSourceOf;
+  readonly settingsSourcesOf: SettingsSourcesOf;
 };
 
 export type VersionTwoLocations = {
@@ -64,7 +64,7 @@ const settingsStage = (
   const { fileText, path } = request.ports;
   const { repoRoot, installRoot, moduleExtension } = request.locations;
   const read = readNamedSettings({
-    sources: createSettingsSources({
+    sources: request.ports.settingsSourcesOf({
       fileText,
       directory: request.ports.directory,
       path,
@@ -172,6 +172,12 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       catalogue: stage.catalogue,
       outcome: await namedEngineProjectionsOf(enginesRequestOf({ ...request, stage })),
     }),
+  renamed: () =>
+    renamedSinceBaseOf({
+      repoRoot: request.locations.repoRoot,
+      baseRevision: request.locations.baseRevision,
+      git: request.ports.git,
+    }),
   touched: (stage) =>
     touchedSetOf({
       assessment: stage.assessment,
@@ -180,5 +186,6 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       repoRoot: request.locations.repoRoot,
       baseRevision: request.locations.baseRevision,
       git: request.ports.git,
+      renamed: stage.renamed,
     }),
 });

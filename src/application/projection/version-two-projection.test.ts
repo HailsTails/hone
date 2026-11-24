@@ -58,7 +58,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 
@@ -88,6 +93,9 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
   projections: vi
     .fn<VersionTwoStages["projections"]>()
     .mockResolvedValue({ outcome: "ok", value: [WRITTEN] }),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
   touched: vi.fn<VersionTwoStages["touched"]>(),
   ...request,
 });
@@ -106,8 +114,9 @@ describe("versionTwoProjectionOver", () => {
     await versionTwoProjectionOver({ stages });
     expect({
       engines: vi.mocked(stages.engines).mock.calls,
+      renamed: vi.mocked(stages.renamed).mock.calls,
       touched: vi.mocked(stages.touched).mock.calls,
-    }).toEqual({ engines: [], touched: [] });
+    }).toEqual({ engines: [], renamed: [], touched: [] });
   });
 
   it("fails with the catalogue's failure and reads nothing more when the catalogue cannot be read", async () => {

@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/git/git-port.test.ts",
+      "case": "names-something",
+      "owes": "our-code-reads-in-the-common-language",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does git-port.test.ts hold names off the casing convention?",
+            "because": "It writes out the environment keys the git port strips or keeps.",
+            "evidence": "src/infrastructure/git/git-port.test.ts:16"
+          },
+          {
+            "why": "Why does the test write out the environment keys the git port strips or keeps?",
+            "because": "The git port decides which environment keys reach the git subprocess.",
+            "evidence": "src/infrastructure/git/git-port.ts:42"
+          },
+          {
+            "why": "Why does the git port decide which environment keys reach the git subprocess?",
+            "because": "Git reads GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE from its environment and would act on another repository.",
+            "evidence": "https://git-scm.com/docs/git#_environment_variables"
+          },
+          {
+            "why": "Why does git read GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE from its environment?",
+            "because": "Git's contract names those environment variables, and POSIX names PATH and HOME.",
+            "evidence": "https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html"
+          },
+          {
+            "why": "Why are those environment variable names in that casing?",
+            "because": "Git and POSIX define the environment variable names outside our code.",
+            "evidence": "https://git-scm.com/docs/git#_environment_variables"
+          }
+        ],
+        "rootCause": "Git and POSIX define the environment variable names outside our code.",
+        "rootEvidence": "Read 24 Nov 2026: src/infrastructure/git/git-port.ts:42 lists GIT_DIR in environmentWithoutGit, and git's documentation defines it.",
+        "readback": "Git and POSIX define the environment variable names; therefore git reads those keys; therefore the git port decides which reach the subprocess; therefore its test writes them out; therefore the test holds names off the casing convention.",
+        "owner": "HailsTails"
+      }
+    }
+  ]
+}

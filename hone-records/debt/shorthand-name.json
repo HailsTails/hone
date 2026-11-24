@@ -7,18 +7,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/application/records/record-commands.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/composition/settings-pair.integration.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/disciplines-file/consumer-selection.ts"
     },
     {
@@ -36,10 +24,6 @@
     {
       "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/protocol/engine-run/engine-run.test.ts"
     },
     {
       "answers": "shorthand-name#identifier-names",

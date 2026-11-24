@@ -1,4 +1,5 @@
 import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
+import type { RenamedPaths } from "../../repository/renamed-path.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { StructuralExceptionEntry } from "./exception-entry.ts";
 import { whyChainFormOf } from "./version-one-why-chain.ts";
@@ -9,7 +10,7 @@ export type ExceptionBaseline =
       readonly measured: "yes";
       readonly entriesAtBase: readonly StructuralExceptionEntry[];
       readonly sourceTextsAtBase: ReadonlyMap<RepoPath, string>;
-      readonly basePathOfRenamed: ReadonlyMap<RepoPath, RepoPath>;
+      readonly basePathOfRenamed: RenamedPaths;
     };
 
 export const UNMEASURED_EXCEPTION_BASELINE: ExceptionBaseline = {

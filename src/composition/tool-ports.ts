@@ -19,6 +19,7 @@ import type {
 } from "../application/ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../application/ports/symptom-catalogue-repository.ts";
+import type { MeasureVersionOneProjection } from "../application/ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPortOf } from "../application/ports/upgrade/version-one-projection-port.ts";
 import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
 import type { StagesOver } from "./version-two-stages.ts";
@@ -49,4 +50,5 @@ export type ToolPorts = VersionOneToolPorts & {
   readonly settingsSourcesOf: SettingsSourcesOf;
   readonly checkPieceSourceOf: CheckPieceSourceOf;
   readonly versionOneProjectionOf: VersionOneProjectionPortOf;
+  readonly measureVersionOne: MeasureVersionOneProjection;
 };

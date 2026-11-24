@@ -489,6 +489,11 @@ describe("refusedLines", () => {
       line: "hone-records/authorised-locations/claimed-type.json records[2] carried-changed-since-base",
     },
     {
+      name: "a record held at a path git saw moved, by the path to repoint it to",
+      refusal: { kind: "held-at-moved-path", movedTo: repoPathOf("src/cart/cart.ts") },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] held-at-moved-path src/cart/cart.ts: git moved its file there; run record-debt to repoint it",
+    },
+    {
       name: "a duplicate, by the record it repeats",
       refusal: { kind: "duplicate", of: { file: AUTHORISED_FILE, index: 0 } },
       line: "hone-records/authorised-locations/claimed-type.json records[2] duplicate of hone-records/authorised-locations/claimed-type.json records[0]",

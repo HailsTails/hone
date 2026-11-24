@@ -4,6 +4,7 @@ import type { DirectoryPort } from "../application/ports/file-system/directory-p
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { SettingsSources, SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type {
   Case,
@@ -24,6 +25,7 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
@@ -306,7 +308,9 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
   changedSince: vi.fn<GitPort["changedSince"]>().mockReturnValue({ outcome: "ok", value: [] }),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
   textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>(),
+  renamedSince: vi
+    .fn<GitPort["renamedSince"]>()
+    .mockReturnValue({ outcome: "ok", value: new Map() }),
 });
 
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
@@ -318,6 +322,7 @@ const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
   directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
   recordsSourceOf: createRecordsFolder,
+  settingsSourcesOf: createSettingsSources,
 });
 
 const GIT_LISTING_NOTHING = gitListing({
@@ -376,6 +381,40 @@ describe("versionTwoStagesOver", () => {
     });
   });
 
+  it("reads the settings through the settings sources it is handed, over the repository and install", () => {
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const settingsSourcesOf = vi.fn<SettingsSourcesOf>().mockReturnValue({
+      settingsFile: vi.fn<SettingsSources["settingsFile"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "selection-absent", repo: "/repo" },
+      }),
+      ruleSetRoot: vi.fn<SettingsSources["ruleSetRoot"]>(),
+      catalogue: vi.fn<SettingsSources["catalogue"]>(),
+    });
+    const stages = versionTwoStagesOver({
+      ports: { ...ports, settingsSourcesOf },
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
+    });
+    expect(stages.settings({ catalogue: REPORT_CATALOGUE })).toEqual({
+      outcome: "failed",
+      error: { kind: "config-absent", repo: "/repo" },
+    });
+    expect(settingsSourcesOf).toHaveBeenCalledExactlyOnceWith({
+      fileText: ports.fileText,
+      directory: ports.directory,
+      path: ports.path,
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      toolRecordKinds: REPORT_CATALOGUE.recordKinds,
+    });
+  });
+
   it("reads no records, and says no base revision was given, when the repository holds no hone-records folder and none was passed", () => {
     expect(
       stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).records({
@@ -407,19 +446,46 @@ describe("versionTwoStagesOver", () => {
     });
   });
 
+  it("asks git once for the renames since the base revision", () => {
+    const git = gitListing({ tracked: vi.fn<GitPort["trackedPaths"]>() });
+    vi.mocked(git.renamedSince).mockReturnValue({
+      outcome: "ok",
+      value: new Map([
+        [
+          repoPathOf("src/cart.ts"),
+          { basePath: repoPathOf("src/basket.ts"), content: "unchanged" },
+        ],
+      ]),
+    });
+    expect(stagesOver({ git, baseRevision: "origin/main" }).renamed()).toEqual({
+      measured: "yes",
+      renamed: new Map([
+        [
+          repoPathOf("src/cart.ts"),
+          { basePath: repoPathOf("src/basket.ts"), content: "unchanged" },
+        ],
+      ]),
+    });
+    expect(git.renamedSince).toHaveBeenCalledExactlyOnceWith({
+      repoRoot: REPO,
+      baseRevision: "origin/main",
+    });
+  });
+
   it("touches nothing when no record is debt, without asking git", () => {
     const git = gitListing({ tracked: vi.fn<GitPort["trackedPaths"]>() });
     const records: RecordsReading = {
       records: [],
       refused: [],
       notes: [],
-      base: { measured: "yes" },
+      base: { measured: "yes", held: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
         assessment: { forfeiture: "this-run" },
         measuring: "when-debt-held",
         records,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set() });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
@@ -443,13 +509,14 @@ describe("versionTwoStagesOver", () => {
       ],
       refused: [],
       notes: [],
-      base: { measured: "yes" },
+      base: { measured: "yes", held: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
         assessment: { forfeiture: "this-run" },
         measuring: "when-debt-held",
         records,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({
       measured: "yes",

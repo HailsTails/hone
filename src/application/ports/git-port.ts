@@ -1,5 +1,6 @@
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
+import type { RenamedPaths } from "../../domain/repository/renamed-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 
@@ -28,7 +29,7 @@ export type GitPort = {
   readonly renamedSince: (request: {
     readonly repoRoot: AbsolutePath;
     readonly baseRevision: string;
-  }) => Result<ReadonlyMap<RepoPath, RepoPath>, GitFailure>;
+  }) => Result<RenamedPaths, GitFailure>;
 };
 
 export type GitHistoryPort = {

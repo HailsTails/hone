@@ -1,8 +1,10 @@
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
-import type { RecordsDocument } from "./hone-record.ts";
+import type { RecordPlace, RecordsDocument } from "./hone-record.ts";
 
 export type RecordAddition = { readonly file: RepoPath; readonly entry: ReadonlyJsonValue };
+
+export type RecordRepointing = { readonly place: RecordPlace; readonly file: RepoPath };
 
 export type RecordsEdit = {
   readonly write: readonly RecordsDocument[];

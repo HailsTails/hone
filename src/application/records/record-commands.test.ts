@@ -372,10 +372,13 @@ const READER_HOLDING_NOTHING = readerHolding({ records: [] });
 
 const editorAdding = (request: {
   readonly added: readonly RecordsDocument[];
-}): Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition"> => ({
+}): Pick<RecordsEditor, "documentsWithAdded" | "documentsWithRepointed" | "placeOfAddition"> => ({
   documentsWithAdded: vi
     .fn<RecordsEditor["documentsWithAdded"]>()
     .mockReturnValue({ outcome: "ok", value: request.added }),
+  documentsWithRepointed: vi
+    .fn<RecordsEditor["documentsWithRepointed"]>()
+    .mockReturnValue({ outcome: "ok", value: [] }),
   placeOfAddition: vi
     .fn<RecordsEditor["placeOfAddition"]>()
     .mockReturnValue({ file: AUTHORISED_FILE, index: 0 }),
@@ -416,6 +419,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
     unrecorded: [],
     runs: [walkerRun, { ...walkerRun, mechanism: ESLINT }],
     touched: NOTHING_CHANGED,
+    moved: [],
     leave: [],
   };
 
@@ -479,6 +483,53 @@ describe("hone record-debt over a run's unanswered findings", () => {
       }),
     );
     expect(apply).toHaveBeenCalledWith({ edit: { write: [DEBT_DOCUMENT], remove: [] } });
+  });
+
+  it("repoints each record the run found held at a moved path, writing the repointed document, with no finding to record", () => {
+    const { apply, store } = storeOf();
+    const moved = repoPathOf("src/charges/charge-order.ts");
+    const repointedDocument: RecordsDocument = {
+      file: DEBT_FILE,
+      document: { version: 2, records: [{ ...CLOCK_DEBT_ENTRY, file: moved }] },
+    };
+    const recordsEditor = {
+      ...editorAdding({ added: [] }),
+      documentsWithRepointed: vi
+        .fn<RecordsEditor["documentsWithRepointed"]>()
+        .mockReturnValue({ outcome: "ok", value: [repointedDocument] }),
+    };
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerHolding({ records: [HELD_CLOCK_DEBT] }),
+        recordsEditor,
+        source: sourceOf({ documents: [DEBT_DOCUMENT] }),
+        store,
+      },
+      run: {
+        ...request,
+        findings: [],
+        moved: [{ place: HELD_CLOCK_DEBT.place, file: moved }],
+      },
+    });
+    expect({
+      recorded,
+      repointed: recordsEditor.documentsWithRepointed.mock.calls,
+      added: vi.mocked(recordsEditor.documentsWithAdded).mock.calls,
+      stored: apply.mock.calls,
+    }).toEqual({
+      recorded: { outcome: "ok", value: [] },
+      repointed: [
+        [
+          {
+            documents: [DEBT_DOCUMENT],
+            repointings: [{ place: HELD_CLOCK_DEBT.place, file: moved }],
+          },
+        ],
+      ],
+      added: [[{ documents: [repointedDocument], additions: [] }]],
+      stored: [[{ edit: { write: [repointedDocument], remove: [] } }]],
+    });
   });
 
   it("fails with the records-folder failure when the symptom's name cannot name a records file", () => {
@@ -549,7 +600,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
     const { apply, store } = storeOf();
     const folder = repoPathOf("src/orders");
     const unprojected = { folder, selectionFolder: repoPathOf("src") };
-    const result = recordDebtOf({
+    const recorded = recordDebtOf({
       ports: {
         catalogue: REPORT_CATALOGUE,
         recordsReader: READER_HOLDING_NOTHING,
@@ -570,7 +621,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
         ],
       },
     });
-    expect(result).toEqual({
+    expect(recorded).toEqual({
       outcome: "ok",
       value: [
         {

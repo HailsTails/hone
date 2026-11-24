@@ -86,6 +86,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: "origin/main",
         git,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "elsewhere" });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
@@ -100,6 +101,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: "origin/main",
         git: gitChanging({ files: [FILE_A] }),
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set([FILE_A]) });
   });
@@ -113,6 +115,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: undefined,
         git: gitChanging({ files: [] }),
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({
       measured: "no",
@@ -130,6 +133,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: "origin/main",
         git,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set() });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
@@ -144,6 +148,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: "origin/main",
         git: gitChanging({ files: [FILE_A] }),
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set([FILE_A]) });
   });
@@ -158,6 +163,7 @@ describe("touchedSetOf", () => {
         repoRoot: REPO,
         baseRevision: "origin/main",
         git,
+        renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "elsewhere" });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);

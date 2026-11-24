@@ -14,7 +14,10 @@ import type {
   RecordsDocument,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
-import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
+import type {
+  RecordAddition,
+  RecordRepointing,
+} from "../../domain/records/hone-records/records-edit.ts";
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
@@ -39,7 +42,7 @@ export type RecordDebtPorts = {
   readonly source: Pick<RecordsSource, "read">;
   readonly store: RecordsStore;
   readonly recordsReader: RecordsReader;
-  readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded">;
+  readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded" | "documentsWithRepointed">;
 };
 
 export type RecordDebtRequest = {
@@ -47,6 +50,7 @@ export type RecordDebtRequest = {
   readonly unrecorded: readonly AttributedCheckException[];
   readonly runs: readonly NamedGovernedRun[];
   readonly touched: TouchedSet;
+  readonly moved: readonly RecordRepointing[];
   readonly leave: readonly RepoPath[];
 };
 
@@ -140,18 +144,39 @@ const additionsOf = (request: {
   );
 };
 
-const storedAdditions = (request: {
+const storedEdits = (request: {
   readonly ports: Pick<RecordDebtPorts, "store" | "recordsEditor">;
   readonly documents: readonly RecordsDocument[];
   readonly additions: readonly RecordAddition[];
+  readonly repointings: readonly RecordRepointing[];
 }): Commanded<void> => {
-  if (request.additions.length === 0) {
+  if (request.additions.length === 0 && request.repointings.length === 0) {
     return { outcome: "ok", value: undefined };
   }
-  const added = request.ports.recordsEditor.documentsWithAdded(request);
-  return added.outcome === "failed"
-    ? added
-    : request.ports.store.apply({ edit: { write: added.value, remove: [] } });
+  const repointed = request.ports.recordsEditor.documentsWithRepointed({
+    documents: request.documents,
+    repointings: request.repointings,
+  });
+  if (repointed.outcome === "failed") {
+    return repointed;
+  }
+  const current = request.documents.map(
+    (document) => repointed.value.find(({ file }) => file === document.file) ?? document,
+  );
+  const added = request.ports.recordsEditor.documentsWithAdded({
+    documents: current,
+    additions: request.additions,
+  });
+  if (added.outcome === "failed") {
+    return added;
+  }
+  const write = [
+    ...repointed.value.filter(
+      ({ file }) => !added.value.some((document) => document.file === file),
+    ),
+    ...added.value,
+  ];
+  return request.ports.store.apply({ edit: { write, remove: [] } });
 };
 
 const outcomesOf = (request: {
@@ -195,7 +220,7 @@ export const recordDebtOf = (request: {
   readonly run: RecordDebtRequest;
 }): Commanded<readonly DebtOutcome[]> => {
   const { ports, run } = request;
-  if (run.findings.length === 0 && run.unrecorded.length === 0) {
+  if (run.findings.length === 0 && run.unrecorded.length === 0 && run.moved.length === 0) {
     return { outcome: "ok", value: [] };
   }
   const documents = documentsOf(ports);
@@ -210,7 +235,12 @@ export const recordDebtOf = (request: {
   if (additions.outcome === "failed") {
     return additions;
   }
-  const stored = storedAdditions({ ports, documents: documents.value, additions: additions.value });
+  const stored = storedEdits({
+    ports,
+    documents: documents.value,
+    additions: additions.value,
+    repointings: run.moved,
+  });
   return stored.outcome === "failed" ? stored : outcomes;
 };
 

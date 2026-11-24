@@ -3,19 +3,7 @@
   "records": [
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/check-command.version-two.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/commands.prune-debt.integration.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
@@ -23,15 +11,7 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/commands.version-two-needed.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/commands.version-two-project.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
@@ -40,10 +20,6 @@
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/upgrade-command.test.ts"
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",

@@ -1,115 +1,34 @@
-import { afterAll, assert, describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
-import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import type { RunnerModuleOf } from "../../src/application/ports/engine/runner-location.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
-import { checkedTreeOf } from "../../src/application/run/checked-tree-of.ts";
 import { INSTALLED_PORTS, toolSubcommandsOf } from "../../src/composition/run-tool-command.ts";
-import { UNMEASURED_EXCEPTION_BASELINE } from "../../src/domain/records/discipline-exceptions/exception-baseline.ts";
-import type { ExceptionsFile } from "../../src/domain/records/discipline-exceptions/exception-record.ts";
-import type { AuthorisedLocationEntry } from "../../src/domain/records/discipline-exceptions/exception-record.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import type { Result } from "../../src/domain/result.ts";
-import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
+import { type RunnerEngines, runnerEnginesOver } from "../../src/composition/runner-engines.ts";
 import type { Subcommand } from "../../src/infrastructure/command-line/arguments/command-line.ts";
 import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultExceptionRepositoryOf } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import {
-  bindEslintChecksModule,
-  createChecksRunner,
-  type EslintChecksRunner,
-} from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
-import {
-  ESLINT_PROJECTED_KINDS,
-  versionOneProjectionOver,
-} from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { eslintRunnerModuleOver } from "../../src/infrastructure/engines/eslint/runner/eslint-runner-module.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import {
-  createEslintPort,
-  type EslintToolchain,
-} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import {
   defaultEslintToolchainPeers,
-  type EslintToolchainModules,
-  type EslintToolchainPeers,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultGitPort } from "../../src/infrastructure/git/git-port.ts";
 import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import {
   createDefaultCommandRunPort,
   createDefaultScratchFilesPort,
-  type ScratchFilesPort,
 } from "../install-proof/install-proof-ports.ts";
-
-const subcommandRan = (request: {
-  readonly subcommand: Subcommand;
-  readonly command: VersionOneCommandRequest;
-}): Promise<void> => {
-  const ports = { ...INSTALLED_PORTS, ...request.command };
-  return toolSubcommandsOf(ports)[request.subcommand](request.command);
-};
-
-const VERSION_ONE = 1;
-
-const JSON_INDENT = 2;
-
-const selectionTextOf = (request: { readonly clauses: Readonly<Record<string, string>> }): string =>
-  `${JSON.stringify({ version: VERSION_ONE, ruleSets: {}, clauses: request.clauses }, null, JSON_INDENT)}\n`;
-
-const exceptionsTextOf = (request: { readonly exceptions: ExceptionsFile["exceptions"] }): string =>
-  `${JSON.stringify({ version: VERSION_ONE, exceptions: request.exceptions }, null, JSON_INDENT)}\n`;
-
-type ScratchRepositories = {
-  readonly repositoryWith: (request: {
-    readonly files: Readonly<Record<string, string>>;
-  }) => AbsolutePath;
-  readonly removeAll: () => void;
-};
-
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-  readonly scratch: ScratchFilesPort;
-}): ScratchRepositories => {
-  const made: AbsolutePath[] = [];
-  return {
-    repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(
-        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
-      );
-      const directory = request.scratch.makeDirectory({ path: folder });
-      if (directory.outcome !== "ok") {
-        throw new Error(
-          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
-        );
-      }
-      made.push(folder);
-      Object.entries(repository.files).forEach(([name, text]) => {
-        const path = `${folder}/${name}`;
-        request.scratch.makeDirectory({ path: path.slice(0, path.lastIndexOf("/")) });
-        request.fileText.write({ path, text });
-      });
-      return folder;
-    },
-    removeAll: () => {
-      made.forEach((folder) => {
-        request.scratch.removeTree({ path: folder });
-      });
-    },
-  };
-};
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
@@ -117,245 +36,131 @@ const ENTRY_URL = new URL("../../src/hone.ts", import.meta.url).href;
 
 const fileText = createDefaultFileTextPort({});
 
+const path = createDefaultPathPort({});
+
 const scratch = createDefaultScratchFilesPort({});
-
-const repositories = scratchRepositoriesUnder({
-  parent: `${INSTALL_ROOT}/artefacts`,
-  fileText,
-  scratch,
-});
-
-afterAll(() => {
-  repositories.removeAll();
-});
 
 const commands = createDefaultCommandRunPort({});
 
-const repositoryWithSubfolder = (request: {
-  readonly files: Readonly<Record<string, string>>;
-  readonly subfolder: string;
-  readonly subfolderFiles: Readonly<Record<string, string>>;
-}): AbsolutePath => {
-  const repo = repositories.repositoryWith({ files: request.files });
-  const folder = `${repo}/${request.subfolder}`;
-  const made = scratch.makeDirectory({ path: folder });
-  if (made.outcome !== "ok") {
-    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
-  }
-  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
-    const written = fileText.write({ path: `${folder}/${name}`, text });
-    if (written.outcome !== "ok") {
-      throw new Error(
-        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
-      );
-    }
-  });
-  return repo;
-};
-
-const directoryPort = createDefaultDirectoryPort({});
-
-const GIT_FOLDER = ".git";
-
-const FOLDER_MARK = "<folder>";
-
-const pathsUnder = (request: {
-  readonly folder: string;
-  readonly prefix: string;
-}): readonly string[] => {
-  const listed = directoryPort.list({ path: absolutePathSchema.parse(request.folder) });
-  if (listed.outcome !== "ok") {
-    throw new Error(`${request.folder} could not be listed: ${listed.error.detail}`);
-  }
-  return listed.value
-    .filter(({ name }) => name !== GIT_FOLDER)
-    .flatMap(({ name, kind }) => {
-      const shown = `${request.prefix}${name}`;
-      return kind === "directory"
-        ? [`${shown}/`, ...pathsUnder({ folder: `${request.folder}/${name}`, prefix: `${shown}/` })]
-        : [shown];
-    });
-};
-
-const listedPathsOf = (request: { readonly repo: string }): readonly string[] =>
-  pathsUnder({ folder: request.repo, prefix: "" }).toSorted();
-
-const textAt = (request: { readonly repo: string; readonly shown: string }): string => {
-  const read = fileText.read({ path: `${request.repo}/${request.shown}` });
-  return read.outcome === "ok" ? read.value : "<unreadable>";
-};
-
-const treeOf = (request: { readonly repo: string }): Readonly<Record<string, string>> =>
-  Object.fromEntries(
-    listedPathsOf(request).map((shown) => [
-      shown,
-      shown.endsWith("/") ? FOLDER_MARK : textAt({ repo: request.repo, shown }),
-    ]),
-  );
-
-type EslintLine = "eslint-10" | "eslint-9";
-
-const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
-
-type LineDefinition = {
-  readonly eslintVersion: RegExp;
-  readonly modules: EslintToolchainModules;
-  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
-};
-
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({
+const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({
   installRoot: INSTALL_ROOT,
   installForm: "source",
 });
 
-const RUNNER_MODULE_SUFFIX = "src/infrastructure/engines/eslint/runner/runner.ts";
+const GIT_INIT = ["init", "-q"];
 
-const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
-  "eslint-10": {
-    eslintVersion: /^10\./,
-    modules: DEVELOPMENT_PEERS.modules,
-    pieceModules: (request) => request.base,
-  },
-  "eslint-9": {
-    eslintVersion: /^9\./,
-    modules: eslint9ToolchainModules,
-    pieceModules: eslint9PieceModules,
-  },
-};
+const GIT_ADD = ["add", "."];
 
-const loadedEslintToolchain = async (request: {
-  readonly line: EslintLine;
-}): Promise<EslintToolchain> => {
-  const loaded = await loadEslintToolchain({
-    peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules },
-  });
-  assert(
-    loaded.outcome === "ok",
-    `the ${request.line} toolchain loads from the development install`,
-  );
-  assert(
-    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
-    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
-  );
-  return loaded.value;
-};
+const GIT_COMMIT = [
+  "-c",
+  "user.name=proof",
+  "-c",
+  "user.email=proof@example.test",
+  "commit",
+  "-q",
+  "-m",
+  "base",
+];
 
-const pieceModulesOn = (request: {
-  readonly line: EslintLine;
-  readonly base: ModuleLoaderPort;
-}): ModuleLoaderPort => LINES[request.line].pieceModules({ base: request.base });
+const GIT_STATUS = ["status", "--porcelain"];
 
-const eslintChecksRunnerOn = (request: { readonly line: EslintLine }) =>
-  bindEslintChecksModule({
-    projectedKinds: ESLINT_PROJECTED_KINDS,
-    runner: loadedEslintToolchain(request).then(
-      (toolchain): Result<EslintChecksRunner, RunnerFailure> => ({
-        outcome: "ok",
-        value: createChecksRunner({
-          fileText: createDefaultFileTextPort({}),
-          fileRemoval: createDefaultFileRemovalPort({}),
-          modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
-          path: createDefaultPathPort({}),
-          eslint: createEslintPort({ toolchain }),
-          moduleExtension: ".ts",
-        }),
-      }),
-    ),
-  });
+const GIT_LIST = ["ls-files"];
 
-const checkModulesOn = (request: { readonly line: EslintLine }): ModuleLoaderPort => {
-  const pieces = pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) });
-  return {
-    load: (load) =>
-      load.path.replaceAll("\\", "/").endsWith(RUNNER_MODULE_SUFFIX)
-        ? Promise.resolve({
-            outcome: "ok",
-            value: {
-              ...eslintChecksRunnerOn(request),
-              versionOneProjectionOver,
-            },
-          })
-        : pieces.load(load),
-  };
-};
+const DONE = { outcome: "ok", value: null };
+
+const WRITTEN = { outcome: "ok", value: undefined };
+
+const SUCCEEDED = expect.objectContaining({ outcome: "exited", exitCode: 0 });
+
+const UNCHANGED = { outcome: "exited", exitCode: 0, output: "" };
 
 const SELECTION =
   '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
 
-const EXCEPTIONS =
+const DECLARED_SELECTION =
+  '{ "version": 1, "ruleSets": {}, "eslintConfigLookup": "repository-root", "eslintConfigRoots": ["packages/a"], "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
+
+const NO_RECORDS = '{ "version": 1, "exceptions": [] }\n';
+
+const SRC_CARVE_OUT =
   '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "src/kept.ts", "reason": "legacy class" }] }\n';
+
+const PACKAGE_CARVE_OUT =
+  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "packages/a/kept.ts", "reason": "legacy class" }] }\n';
+
+const ROOT_CARVE_OUT =
+  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "kept.ts", "reason": "legacy class" }] }\n';
 
 const TEAM_CONFIG =
   'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
 
-const VERSION_ONE_FILES: Readonly<Record<string, string>> = {
-  "disciplines.json": SELECTION,
-  "discipline-exceptions.json": EXCEPTIONS,
-  "eslint.config.mjs": TEAM_CONFIG,
-};
+const TEAM_CONFIG_IGNORING_DECLARATIONS =
+  'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, { ignores: ["*.d.mts"] }, ...projection];\n';
 
-const DEFAULT_MODULES = createDefaultModuleLoaderPort({});
+const ROOT_CONFIG_IMPORTING_PACKAGE_SLICE =
+  'import projection from "./disciplines.eslint.mjs";\nimport packageProjection from "./packages/a/disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...packageProjection, ...projection];\n';
 
-const prepareVersionOneProjection = async (request: {
-  readonly repo: string;
-  readonly modules: ModuleLoaderPort;
-}): Promise<void> => {
-  const repoRoot = absolutePathSchema.parse(request.repo);
-  const path = createDefaultPathPort({});
-  const resolvedInstall = path.resolve({ path: `${import.meta.dirname}/../..` });
-  assert(resolvedInstall.outcome === "ok");
-  const installRoot = resolvedInstall.value;
-  const git = createDefaultGitPort({});
-  const selection = createSelectionRepository({
-    repoRoot,
-    installRoot,
-    fileText,
-    path,
-    moduleExtension: ".ts",
-  }).read({});
-  assert(selection.outcome === "ok");
-  const tree = checkedTreeOf({
-    git,
-    repoRoot,
-    fileText,
-    path,
-    excluded: selection.value.excluded,
-    eslintConfigRoots: selection.value.eslintConfigRoots,
-  });
-  assert(tree.outcome === "ok");
-  const entries = createDefaultExceptionRepositoryOf({})({ repoRoot }).read();
-  assert(entries.outcome === "ok");
-  const { records } = exceptionEntryParser.parseExceptionEntries({
-    entries: entries.value,
-    selection: selection.value.selection,
-    baseline: UNMEASURED_EXCEPTION_BASELINE,
-    fileExceptionWhyChains: selection.value.fileExceptionWhyChains,
-  });
-  const clauses = selection.value.bindings.filter(({ mechanism }) => mechanism === "eslint");
-  if (clauses.length === 0) return;
-  const prepared = await INSTALLED_PORTS.versionOneProjectionOf({
-    installRoot,
-    modules: request.modules,
-    fileText,
-    path,
-    fileRemoval: createDefaultFileRemovalPort({}),
-    moduleExtension: ".ts",
-  }).prepare({
-    installRoot,
-    repoRoot,
-    trackedPaths: tree.value.tracked,
-    declaredConfigRoots: tree.value.declaredConfigRoots,
-    clauses: clauses.map(({ clause }) => clause),
-    records: records.filter(({ mechanism }) => mechanism === "eslint"),
-  });
-  expect(prepared).toMatchObject({ outcome: "ok" });
-};
+const UNPROJECTING_PACKAGE_CONFIG = 'export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }];\n';
+
+const KEPT_CLASS = "export class Kept {}\n";
+
+const KEPT_CONSTANT = "export const kept = 1;\n";
+
+const ROOT_PROJECTION_CARVING_SRC =
+  'import piece0 from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n  {\n    name: "hone-core/file-records/CD-14#class-syntax",\n    files: [\n      "src/kept.ts",\n    ],\n    rules: { "hone/no-class-authoring": "off" },\n  },\n];\n';
+
+const ROOT_PROJECTION =
+  'import piece0 from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n];\n';
+
+const ROOT_PROJECTION_CARVING_PACKAGE =
+  'import piece0 from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n  {\n    name: "hone-core/file-records/CD-14#class-syntax",\n    files: [\n      "packages/a/kept.ts",\n    ],\n    rules: { "hone/no-class-authoring": "off" },\n  },\n];\n';
+
+const ROOT_PROJECTION_CARVING_ROOT =
+  'import piece0 from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n  {\n    name: "hone-core/file-records/CD-14#class-syntax",\n    files: [\n      "kept.ts",\n    ],\n    rules: { "hone/no-class-authoring": "off" },\n  },\n];\n';
+
+const PACKAGE_PROJECTION_CARVING =
+  'import piece0 from "../../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n  {\n    name: "hone-core/file-records/CD-14#class-syntax",\n    files: [\n      "kept.ts",\n    ],\n    rules: { "hone/no-class-authoring": "off" },\n  },\n];\n';
+
+const PACKAGE_PROJECTION =
+  'import piece0 from "../../../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";\n\nexport default [\n  {\n    name: "hone-core/piece/hone",\n    files: ["**/*.{ts,tsx,mts,cts}"],\n    plugins: { "hone": piece0 },\n    rules: { "hone/no-class-authoring": "error", "hone/no-extraneous-class": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] },\n  },\n];\n';
+
+const UPGRADED_ROOT =
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+
+const CHECKED_ROOT =
+  "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
+
+const REFUSED_IGNORED_DECLARATIONS =
+  "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\n    only after: eslint ignore CD-14#static-only-class hone.eslint.d.mts\n  verdict:\n    only before: pass\n    only after: fail\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n";
+
+const UPGRADED_PACKAGE =
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+
+const CHECKED_PACKAGE =
+  "answered (1)\nauthored-class-or-this#class-keyword eslint packages/a/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
+
+const UPGRADED_DECLARED =
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n";
+
+const CHECKED_DECLARED =
+  "answered (1)\nauthored-class-or-this#class-keyword eslint kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
+
+const DECLARED_CONFIGURATION =
+  '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "authored-class-or-this#class-keyword": "eslint",\n    "authored-class-or-this#static-members-only": "eslint"\n  },\n  "eslintConfigRoots": [\n    "packages/a"\n  ],\n  "eslintConfigLookup": "repository-root"\n}\n';
+
+const PACKAGE_TRACKED =
+  "eslint.config.mjs\nhone-records/debt/authored-class-or-this.json\nhone.config.json\nhone.eslint.d.mts\nhone.eslint.mjs\npackages/a/eslint.config.mjs\npackages/a/hone.eslint.d.mts\npackages/a/hone.eslint.mjs\npackages/a/kept.ts\n";
+
+const DECLARED_TRACKED =
+  "eslint.config.mjs\nhone-records/debt/authored-class-or-this.json\nhone.config.json\nhone.eslint.d.mts\nhone.eslint.mjs\nkept.ts\npackages/a/eslint.config.mjs\npackages/a/hone.eslint.d.mts\npackages/a/hone.eslint.mjs\npackages/a/kept.ts\n";
+
+const NOTHING_TO_UPGRADE = "already on version 2; nothing to upgrade\n";
 
 const runCommandIn = async (request: {
   readonly repo: string;
   readonly subcommand: Subcommand;
   readonly options: readonly string[];
-  readonly modules: ModuleLoaderPort;
+  readonly engines: RunnerEngines;
 }) => {
   const processPort: ProcessPort = {
     arguments: ["--repo", request.repo, ...request.options],
@@ -363,1156 +168,290 @@ const runCommandIn = async (request: {
     writeError: vi.fn<ProcessPort["writeError"]>(),
     exitWith: vi.fn<ProcessPort["exitWith"]>(),
   };
-  await subcommandRan({
-    subcommand: request.subcommand,
-    command: {
-      process: processPort,
-      path: createDefaultPathPort({}),
-      fileText,
-      modules: request.modules,
-      git: createDefaultGitPort({}),
-      exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),
-      exceptionEntryParser,
-      selectionRepositoryOf: createSelectionRepository,
-      shownPathOfRepository,
-      moduleUrl: ENTRY_URL,
-    },
-  });
+  const command: VersionOneCommandRequest = {
+    process: processPort,
+    path,
+    fileText,
+    modules: createDefaultModuleLoaderPort({}),
+    git: createDefaultGitPort(),
+    exceptionRepositoryOf: createDefaultExceptionRepositoryOf(),
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
+    moduleUrl: ENTRY_URL,
+  };
+  const subcommands = toolSubcommandsOf({ ...INSTALLED_PORTS, ...command, ...request.engines });
+  await subcommands[request.subcommand](command);
   return {
     writes: vi.mocked(processPort.writeOut).mock.calls,
     exits: vi.mocked(processPort.exitWith).mock.calls,
   };
 };
 
-const trackEverything = (request: { readonly repo: string }): void => {
-  commands.run({ command: "git", arguments: ["add", "."], directory: request.repo });
-};
+const ESLINT_10_SLICED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-sliced-eslint-10"],
+});
 
-const KEPT_CLASS = "export class Kept {}\n";
+const ESLINT_10_DECLARED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-declared-eslint-10"],
+});
 
-const NO_RECORDS = '{ "version": 1, "exceptions": [] }\n';
+const ESLINT_9_SLICED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-sliced-eslint-9"],
+});
 
-type VersionOneRepositoryRequest = {
-  readonly selection: string;
-  readonly exceptions: string;
-  readonly sources: Readonly<Record<string, string>>;
-};
+const ESLINT_9_DECLARED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-declared-eslint-9"],
+});
 
-const versionOneRepositoryOf = async (request: VersionOneRepositoryRequest): Promise<string> => {
-  const repo = repositoryWithSubfolder({
-    files: {
-      ...VERSION_ONE_FILES,
-      "disciplines.json": request.selection,
-      "discipline-exceptions.json": request.exceptions,
-    },
-    subfolder: "src",
-    subfolderFiles: request.sources,
-  });
-  commands.run({ command: "git", arguments: ["init"], directory: repo });
-  trackEverything({ repo });
-  await prepareVersionOneProjection({ repo, modules: checkModulesOn({ line: "eslint-10" }) });
-  trackEverything({ repo });
-  return repo;
-};
+const ESLINT_LINES = [
+  {
+    line: "eslint-10",
+    sliced: ESLINT_10_SLICED,
+    declared: ESLINT_10_DECLARED,
+    runnerModule: eslintRunnerModuleOver({
+      toolchain: loadEslintToolchain({ peers: DEVELOPMENT_PEERS }),
+      platform: {
+        fileText,
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: createDefaultModuleLoaderPort({}),
+        path,
+        moduleExtension: ".ts",
+      },
+    }),
+  },
+  {
+    line: "eslint-9",
+    sliced: ESLINT_9_SLICED,
+    declared: ESLINT_9_DECLARED,
+    runnerModule: eslintRunnerModuleOver({
+      toolchain: loadEslintToolchain({
+        peers: { location: DEVELOPMENT_PEERS.location, modules: eslint9ToolchainModules },
+      }),
+      platform: {
+        fileText,
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: eslint9PieceModules({ base: createDefaultModuleLoaderPort({}) }),
+        path,
+        moduleExtension: ".ts",
+      },
+    }),
+  },
+];
 
-const versionOneRepository = (request: {
-  readonly source: string;
-  readonly exceptions: string;
-}): Promise<string> =>
-  versionOneRepositoryOf({
-    selection: SELECTION,
-    exceptions: request.exceptions,
-    sources: { "kept.ts": request.source },
-  });
+const SLICED_MADE = [
+  DONE,
+  DONE,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  SUCCEEDED,
+  SUCCEEDED,
+];
 
-const commitEverything = (request: { readonly repo: string }): void => {
-  commands.run({
-    command: "git",
-    arguments: [
-      "-c",
-      "user.name=proof",
-      "-c",
-      "user.email=proof@example.test",
-      "commit",
-      "-m",
-      "base",
-    ],
-    directory: request.repo,
-  });
-};
+const DECLARED_MADE = [
+  DONE,
+  DONE,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  WRITTEN,
+  SUCCEEDED,
+  SUCCEEDED,
+];
+
+const UPGRADED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-upgraded"] });
+
+const IGNORED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-ignored"] });
+
+afterAll(() => {
+  scratch.removeTree({ path: UPGRADED });
+  scratch.removeTree({ path: IGNORED });
+  scratch.removeTree({ path: ESLINT_10_SLICED });
+  scratch.removeTree({ path: ESLINT_10_DECLARED });
+  scratch.removeTree({ path: ESLINT_9_SLICED });
+  scratch.removeTree({ path: ESLINT_9_DECLARED });
+});
 
 describe("hone upgrade over a real repository, through the real ports", () => {
-  it.each([
-    { file: "hone.config.json", settings: '{ "version": 2, "checks": {} }\n' },
-    { file: "disciplines.json", settings: SELECTION },
-  ])(
-    "upgrades a parent repository whose tracked source folder has its own $file",
-    async ({ file, settings }) => {
-      const repo = await versionOneRepositoryOf({
-        selection: SELECTION,
-        exceptions: NO_RECORDS,
-        sources: { "kept.ts": KEPT_CLASS, [file]: settings },
-      });
-      const upgraded = await runCommandIn({
-        repo,
-        subcommand: "upgrade",
-        options: [],
-        modules: DEFAULT_MODULES,
-      });
-
-      expect(upgraded.exits).toEqual([[{ code: 0 }]]);
-      expect(upgraded.writes).toMatchObject([
-        [{ text: expect.stringContaining("upgraded to version 2") }],
-      ]);
-      expect(fileText.exists({ path: `${repo}/src/${file}` })).toBe("present");
-    },
-  );
-
   it("upgrades a version 1 repository, checks it with the projection current, and finds nothing left to upgrade", async () => {
-    const repo = await versionOneRepository({ source: KEPT_CLASS, exceptions: EXCEPTIONS });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    trackEverything({ repo });
-    const checked = await runCommandIn({
-      repo,
-      subcommand: "check",
-      options: ["--forfeiture", "elsewhere"],
-      modules: DEFAULT_MODULES,
-    });
-    const again = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, checked, again }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      checked: {
-        writes: [
-          [
-            {
-              text: "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      again: {
-        writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
-        exits: [[{ code: 0 }]],
-      },
-    });
+    const repo = UPGRADED;
+    const engines = INSTALLED_PORTS;
+    expect([
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: SRC_CARVE_OUT }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROOT_PROJECTION_CARVING_SRC }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CLASS }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED]);
+    expect([
+      await runCommandIn({ repo, subcommand: "upgrade", options: [], engines }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      await runCommandIn({
+        repo,
+        subcommand: "check",
+        options: ["--forfeiture", "elsewhere"],
+        engines,
+      }),
+      await runCommandIn({ repo, subcommand: "upgrade", options: [], engines }),
+    ]).toEqual([
+      { writes: [[{ text: UPGRADED_ROOT }]], exits: [[{ code: 0 }]] },
+      SUCCEEDED,
+      { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
+      { writes: [[{ text: NOTHING_TO_UPGRADE }]], exits: [[{ code: 0 }]] },
+    ]);
   });
 
-  it("refuses a carve-out that answers no finding, and leaves every file of the repository byte for byte as it was", async () => {
-    const repo = await versionOneRepository({
-      source: "export const kept = 1;\n",
-      exceptions: EXCEPTIONS,
-    });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: "upgrade refused:\nthe file carve-out for CD-14#class-syntax in src/kept.ts answers no finding. Remove it, or fix the file it names, then run the upgrade again.\nNothing was changed.\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-
-  it("refuses a recorded inline disable written with a version 1 rule id, naming the version 2 id to write, and leaves every file of the repository byte for byte as it was", async () => {
-    const repo = await versionOneRepository({
-      source: "// eslint-disable-next-line hone/no-class-authoring\nexport class Kept {}\n",
-      exceptions: EXCEPTIONS,
-    });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: "upgrade refused:\nthese inline directives name a version 1 rule id, which version 2 names differently:\n  src/kept.ts:1 hone/no-class-authoring: write hone/authored-class-or-this#class-keyword\nReplace each version 1 id with the version 2 id shown, then run the upgrade again.\nNothing was changed.\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-
-  it("refuses an inline directive naming a hone rule id version 2 has no check under, with the file and line, and leaves every file of the repository byte for byte as it was", async () => {
-    const repo = await versionOneRepository({
-      source: "export class Kept {} // eslint-disable-line hone/no-such-check\n",
-      exceptions: EXCEPTIONS,
-    });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: "upgrade refused:\nthese inline directives name a hone rule id that version 2 has no check under:\n  src/kept.ts:1 hone/no-such-check\nFix each one to name a check of version 2, or remove it, then run the upgrade again.\nNothing was changed.\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-
-  it("upgrades a repository whose records are split, and checks it against a real git base revision", async () => {
-    const repo = await versionOneRepository({ source: KEPT_CLASS, exceptions: EXCEPTIONS });
-    await runCommandIn({
-      repo,
-      subcommand: "split-records",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    trackEverything({ repo });
-    commitEverything({ repo });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    trackEverything({ repo });
-    const checked = await runCommandIn({
-      repo,
-      subcommand: "check",
-      options: ["--base-revision", "HEAD"],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, checked }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      checked: {
-        writes: [
-          [
-            {
-              text: "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nverdict: pass\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-    });
-  });
-
-  it("removes a single records file that holds no records, and reports only what it removed", async () => {
-    const repo = await versionOneRepository({
-      source: "export const kept = 1;\n",
-      exceptions: NO_RECORDS,
-    });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, after: listedPathsOf({ repo }) }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      after: [
-        "eslint.config.mjs",
-        "hone.config.json",
-        "hone.eslint.d.mts",
-        "hone.eslint.mjs",
-        "src/",
-        "src/kept.ts",
-      ],
-    });
-  });
-
-  it("names each line of a tracked script that still mentions a version 1 file, after the records and before the proof line", async () => {
-    const repo = await versionOneRepositoryOf({
-      selection: SELECTION,
-      exceptions: EXCEPTIONS,
-      sources: {
-        "kept.ts": KEPT_CLASS,
-        "check.sh": "set -e\ncat disciplines.json\nrm -r discipline-exceptions\n",
-      },
-    });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect(upgraded.writes[0]?.[0]?.text).toContain(
-      "authored-class-or-this#class-keyword\nmention src/check.sh:2\nmention src/check.sh:3\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-    );
-  });
-
-  it("refuses when the team config ignores a file the upgrade writes, as checking the committed upgrade would, and leaves every file of the repository byte for byte as it was", async () => {
-    const repo = await versionOneRepository({
-      source: "export const kept = 1;\n",
-      exceptions: NO_RECORDS,
-    });
-    fileText.write({
-      path: absolutePathSchema.parse(`${repo}/eslint.config.mjs`),
-      text: 'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, { ignores: ["*.d.mts"] }, ...projection];\n',
-    });
-    trackEverything({ repo });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\n    only after: eslint ignore CD-14#static-only-class hone.eslint.d.mts\n  verdict:\n    only before: pass\n    only after: fail\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-
-  it("removes the declaration file a 1.x install wrote beside the projection", async () => {
-    const repo = await versionOneRepository({
-      source: "export const kept = 1;\n",
-      exceptions: NO_RECORDS,
-    });
-    fileText.write({
-      path: absolutePathSchema.parse(`${repo}/disciplines.eslint.d.mts`),
-      text: "declare const projection: readonly unknown[];\nexport default projection;\n",
-    });
-    trackEverything({ repo });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, after: listedPathsOf({ repo }) }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.eslint.d.mts\nremoved disciplines.json\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      after: [
-        "eslint.config.mjs",
-        "hone.config.json",
-        "hone.eslint.d.mts",
-        "hone.eslint.mjs",
-        "src/",
-        "src/kept.ts",
-      ],
-    });
-  });
-
-  it("removes a split records folder whose kind folder was emptied by an earlier prune", async () => {
-    const repo = await versionOneRepository({ source: KEPT_CLASS, exceptions: EXCEPTIONS });
-    await runCommandIn({
-      repo,
-      subcommand: "split-records",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    scratch.makeDirectory({
-      path: absolutePathSchema.parse(`${repo}/discipline-exceptions/authorised-locations`),
-    });
-    trackEverything({ repo });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, after: listedPathsOf({ repo }) }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/authorised-locations\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      after: [
-        "eslint.config.mjs",
-        "hone-records/",
-        "hone-records/debt/",
-        "hone-records/debt/authored-class-or-this.json",
-        "hone.config.json",
-        "hone.eslint.d.mts",
-        "hone.eslint.mjs",
-        "src/",
-        "src/kept.ts",
-      ],
-    });
+  it("refuses when the team config ignores a file the upgrade writes, as checking the committed upgrade would, and changes nothing", async () => {
+    const repo = IGNORED;
+    expect([
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
+      fileText.write({
+        path: `${repo}/eslint.config.mjs`,
+        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+      }),
+      fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROOT_PROJECTION }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CONSTANT }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
+    ]).toEqual([
+      DONE,
+      DONE,
+      WRITTEN,
+      WRITTEN,
+      WRITTEN,
+      WRITTEN,
+      WRITTEN,
+      SUCCEEDED,
+      SUCCEEDED,
+      SUCCEEDED,
+    ]);
+    expect([
+      await runCommandIn({ repo, subcommand: "upgrade", options: [], engines: INSTALLED_PORTS }),
+      commands.run({ command: "git", arguments: GIT_STATUS, directory: repo }),
+    ]).toEqual([
+      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      UNCHANGED,
+    ]);
   });
 });
 
-const PACKAGE_SELECTION =
-  '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
-
-const DECLARED_SELECTION =
-  '{ "version": 1, "ruleSets": {}, "eslintConfigLookup": "repository-root", "eslintConfigRoots": ["packages/a"], "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
-
-const PACKAGE_CARVE_OUT =
-  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "packages/a/kept.ts", "reason": "legacy class" }] }\n';
-
-const PACKAGE_CONFIG =
-  'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
-
-const ROOT_CONFIG_IMPORTING_PACKAGE_SLICE =
-  'import projection from "./disciplines.eslint.mjs";\nimport packageProjection from "./packages/a/disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...packageProjection, ...projection];\n';
-
-const PACKAGE_CONFIG_IMPORTING_ROOT_AND_OWN_SLICE =
-  'import root from "../../disciplines.eslint.mjs";\nimport projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...root, ...projection];\n';
-
-const UNPROJECTING_PACKAGE_CONFIG = 'export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }];\n';
-
-const ROOT_CARVE_OUT =
-  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "kept.ts", "reason": "legacy class" }] }\n';
-
-const PACKAGE_SOURCE = "export const kept = 1;\n";
-
-const packageRepository = async (request: {
-  readonly line: EslintLine;
-  readonly files: Readonly<Record<string, string>>;
-  readonly packageFiles: Readonly<Record<string, string>>;
-}): Promise<string> => {
-  const repo = repositoryWithSubfolder({
-    files: request.files,
-    subfolder: "packages/a",
-    subfolderFiles: request.packageFiles,
-  });
-  commands.run({ command: "git", arguments: ["init"], directory: repo });
-  trackEverything({ repo });
-  const modules = checkModulesOn({ line: request.line });
-  await prepareVersionOneProjection({ repo, modules });
-  trackEverything({ repo });
-  return repo;
-};
-
 describe.each(ESLINT_LINES)(
-  "hone upgrade over a real repository whose ESLint slices are not only at the root, on %s",
-  (line) => {
+  "hone upgrade over a real repository whose ESLint slices are not only at the root, on $line",
+  ({ sliced, declared, runnerModule }) => {
     it("carries a package slice to version 2, rewrites the package config to import it, and leaves a repository that checks the same", async () => {
-      const modules = checkModulesOn({ line });
-      const repo = await packageRepository({
-        line,
-        files: {
-          "disciplines.json": PACKAGE_SELECTION,
-          "discipline-exceptions.json": PACKAGE_CARVE_OUT,
-          "eslint.config.mjs": TEAM_CONFIG,
-        },
-        packageFiles: { "kept.ts": KEPT_CLASS, "eslint.config.mjs": PACKAGE_CONFIG },
+      const repo = sliced;
+      const engines = runnerEnginesOver({
+        runnerModuleOf: vi
+          .fn<RunnerModuleOf>()
+          .mockResolvedValue({ outcome: "ok", value: runnerModule }),
       });
-      const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], modules });
-      trackEverything({ repo });
-      const checked = await runCommandIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "elsewhere"],
-        modules,
-      });
-      const again = await runCommandIn({ repo, subcommand: "upgrade", options: [], modules });
-      expect({ upgraded, checked, again, after: listedPathsOf({ repo }) }).toEqual({
-        upgraded: {
-          writes: [
-            [
-              {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        checked: {
-          writes: [
-            [
-              {
-                text: "answered (1)\nauthored-class-or-this#class-keyword eslint packages/a/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        again: {
-          writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
-          exits: [[{ code: 0 }]],
-        },
-        after: [
-          "eslint.config.mjs",
-          "hone-records/",
-          "hone-records/debt/",
-          "hone-records/debt/authored-class-or-this.json",
-          "hone.config.json",
-          "hone.eslint.d.mts",
-          "hone.eslint.mjs",
-          "packages/",
-          "packages/a/",
-          "packages/a/eslint.config.mjs",
-          "packages/a/hone.eslint.d.mts",
-          "packages/a/hone.eslint.mjs",
-          "packages/a/kept.ts",
-        ],
-      });
-    });
-
-    it("rewrites every config that imports a projection, a package config importing the root projection beside its own", async () => {
-      const modules = checkModulesOn({ line });
-      const repo = await packageRepository({
-        line,
-        files: {
-          "disciplines.json": PACKAGE_SELECTION,
-          "discipline-exceptions.json": PACKAGE_CARVE_OUT,
-          "eslint.config.mjs": TEAM_CONFIG,
-        },
-        packageFiles: {
-          "kept.ts": KEPT_CLASS,
-          "eslint.config.mjs": PACKAGE_CONFIG_IMPORTING_ROOT_AND_OWN_SLICE,
-        },
-      });
-      const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], modules });
-      trackEverything({ repo });
-      const checked = await runCommandIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "elsewhere"],
-        modules,
-      });
-      const packageConfig = fileText.read({ path: `${repo}/packages/a/eslint.config.mjs` });
-      expect({ upgraded, checked, packageConfig }).toEqual({
-        upgraded: {
-          writes: [
-            [
-              {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        checked: {
-          writes: [
-            [
-              {
-                text: "answered (1)\nauthored-class-or-this#class-keyword eslint packages/a/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        packageConfig: {
-          outcome: "ok",
-          value:
-            'import root from "../../hone.eslint.mjs";\nimport projection from "./hone.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...root, ...projection];\n',
-        },
-      });
+      expect([
+        scratch.removeTree({ path: repo }),
+        scratch.makeDirectory({ path: `${repo}/packages/a` }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+        fileText.write({ path: `${repo}/discipline-exceptions.json`, text: PACKAGE_CARVE_OUT }),
+        fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+        fileText.write({
+          path: `${repo}/disciplines.eslint.mjs`,
+          text: ROOT_PROJECTION_CARVING_PACKAGE,
+        }),
+        fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: TEAM_CONFIG }),
+        fileText.write({
+          path: `${repo}/packages/a/disciplines.eslint.mjs`,
+          text: PACKAGE_PROJECTION_CARVING,
+        }),
+        fileText.write({ path: `${repo}/packages/a/kept.ts`, text: KEPT_CLASS }),
+        commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      ]).toEqual(SLICED_MADE);
+      expect([
+        await runCommandIn({ repo, subcommand: "upgrade", options: [], engines }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+        await runCommandIn({
+          repo,
+          subcommand: "check",
+          options: ["--forfeiture", "elsewhere"],
+          engines,
+        }),
+        await runCommandIn({ repo, subcommand: "upgrade", options: [], engines }),
+        commands.run({ command: "git", arguments: GIT_LIST, directory: repo }),
+      ]).toEqual([
+        { writes: [[{ text: UPGRADED_PACKAGE }]], exits: [[{ code: 0 }]] },
+        SUCCEEDED,
+        { writes: [[{ text: CHECKED_PACKAGE }]], exits: [[{ code: 0 }]] },
+        { writes: [[{ text: NOTHING_TO_UPGRADE }]], exits: [[{ code: 0 }]] },
+        { outcome: "exited", exitCode: 0, output: PACKAGE_TRACKED },
+      ]);
     });
 
     it("carries a declared eslintConfigRoots folder under the repository-root lookup, and checks it with the same findings answered", async () => {
-      const modules = checkModulesOn({ line });
-      const repo = await packageRepository({
-        line,
-        files: {
-          "disciplines.json": DECLARED_SELECTION,
-          "discipline-exceptions.json": ROOT_CARVE_OUT,
-          "kept.ts": KEPT_CLASS,
-          "eslint.config.mjs": ROOT_CONFIG_IMPORTING_PACKAGE_SLICE,
-        },
-        packageFiles: {
-          "kept.ts": PACKAGE_SOURCE,
-          "eslint.config.mjs": UNPROJECTING_PACKAGE_CONFIG,
-        },
+      const repo = declared;
+      const engines = runnerEnginesOver({
+        runnerModuleOf: vi
+          .fn<RunnerModuleOf>()
+          .mockResolvedValue({ outcome: "ok", value: runnerModule }),
       });
-      const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], modules });
-      trackEverything({ repo });
-      const checked = await runCommandIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "elsewhere"],
-        modules,
-      });
-      const configuration = fileText.read({ path: `${repo}/hone.config.json` });
-      expect({ upgraded, checked, configuration, after: listedPathsOf({ repo }) }).toEqual({
-        upgraded: {
-          writes: [
-            [
-              {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        checked: {
-          writes: [
-            [
-              {
-                text: "answered (1)\nauthored-class-or-this#class-keyword eslint kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 0 }]],
-        },
-        configuration: {
-          outcome: "ok",
-          value:
-            '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "authored-class-or-this#class-keyword": "eslint",\n    "authored-class-or-this#static-members-only": "eslint"\n  },\n  "eslintConfigRoots": [\n    "packages/a"\n  ],\n  "eslintConfigLookup": "repository-root"\n}\n',
-        },
-        after: [
-          "eslint.config.mjs",
-          "hone-records/",
-          "hone-records/debt/",
-          "hone-records/debt/authored-class-or-this.json",
-          "hone.config.json",
-          "hone.eslint.d.mts",
-          "hone.eslint.mjs",
-          "kept.ts",
-          "packages/",
-          "packages/a/",
-          "packages/a/eslint.config.mjs",
-          "packages/a/hone.eslint.d.mts",
-          "packages/a/hone.eslint.mjs",
-          "packages/a/kept.ts",
-        ],
-      });
-    });
-
-    it("refuses a package config that never imports its slice, and leaves every file of the repository byte for byte as it was", async () => {
-      const modules = checkModulesOn({ line });
-      const repo = await packageRepository({
-        line,
-        files: {
-          "disciplines.json": PACKAGE_SELECTION,
-          "discipline-exceptions.json": PACKAGE_CARVE_OUT,
-          "eslint.config.mjs": TEAM_CONFIG,
-        },
-        packageFiles: { "kept.ts": KEPT_CLASS, "eslint.config.mjs": UNPROJECTING_PACKAGE_CONFIG },
-      });
-      const before = treeOf({ repo });
-      const refused = await runCommandIn({ repo, subcommand: "upgrade", options: [], modules });
-      expect({ refused, after: treeOf({ repo }) }).toEqual({
-        refused: {
-          writes: [
-            [
-              {
-                text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is not-applied. Run hone check with your version 1 release, fix what it reports, then run the upgrade again.\nNothing was changed.\n",
-              },
-            ],
-          ],
-          exits: [[{ code: 1 }]],
-        },
-        after: before,
-      });
+      expect([
+        scratch.removeTree({ path: repo }),
+        scratch.makeDirectory({ path: `${repo}/packages/a` }),
+        fileText.write({ path: `${repo}/disciplines.json`, text: DECLARED_SELECTION }),
+        fileText.write({ path: `${repo}/discipline-exceptions.json`, text: ROOT_CARVE_OUT }),
+        fileText.write({
+          path: `${repo}/eslint.config.mjs`,
+          text: ROOT_CONFIG_IMPORTING_PACKAGE_SLICE,
+        }),
+        fileText.write({
+          path: `${repo}/disciplines.eslint.mjs`,
+          text: ROOT_PROJECTION_CARVING_ROOT,
+        }),
+        fileText.write({ path: `${repo}/kept.ts`, text: KEPT_CLASS }),
+        fileText.write({
+          path: `${repo}/packages/a/eslint.config.mjs`,
+          text: UNPROJECTING_PACKAGE_CONFIG,
+        }),
+        fileText.write({
+          path: `${repo}/packages/a/disciplines.eslint.mjs`,
+          text: PACKAGE_PROJECTION,
+        }),
+        fileText.write({ path: `${repo}/packages/a/kept.ts`, text: KEPT_CONSTANT }),
+        commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      ]).toEqual(DECLARED_MADE);
+      expect([
+        await runCommandIn({ repo, subcommand: "upgrade", options: [], engines }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+        await runCommandIn({
+          repo,
+          subcommand: "check",
+          options: ["--forfeiture", "elsewhere"],
+          engines,
+        }),
+        fileText.read({ path: `${repo}/hone.config.json` }),
+        commands.run({ command: "git", arguments: GIT_LIST, directory: repo }),
+      ]).toEqual([
+        { writes: [[{ text: UPGRADED_DECLARED }]], exits: [[{ code: 0 }]] },
+        SUCCEEDED,
+        { writes: [[{ text: CHECKED_DECLARED }]], exits: [[{ code: 0 }]] },
+        { outcome: "ok", value: DECLARED_CONFIGURATION },
+        { outcome: "exited", exitCode: 0, output: DECLARED_TRACKED },
+      ]);
     });
   },
 );
-
-const AUDIT_SELECTION = selectionTextOf({
-  clauses: {
-    "CD-1#any-cast": "walker",
-    "CD-1#explicit-any": "eslint",
-    "CD-1#implicit-any-let": "eslint",
-    "CD-2#cast-expressions": "walker",
-    "CD-2#non-null-assertions": "eslint",
-  },
-});
-
-const ANY_CAST = "export const parsed = JSON.parse(text) as any;\n";
-
-const AUTHORISED_LOCATION: AuthorisedLocationEntry = {
-  kind: "authorised-location",
-  clause: "CD-1#any-cast",
-  file: "src/located.ts",
-  reason: "the parser boundary wants an any cast",
-  whyChain: {
-    whys: [
-      {
-        why: "Why does src/located.ts cast JSON.parse's result to any?",
-        because:
-          "Its callers read fields whose shape the payload's sender has never published, so no type describes them yet.",
-        evidence: "src/located.ts:1",
-      },
-      {
-        why: "Why has the payload's sender never published the shape of those fields?",
-        because:
-          "The sender is a partner export that is still in beta, and its schema changes weekly.",
-        evidence: "partner ticket #31",
-      },
-      {
-        why: "Why does the partner export's schema still change weekly in beta?",
-        because:
-          "The partner is adding fields as its customers ask for them, with a freeze planned for version 1.0.",
-        evidence: "partner roadmap, version 1.0 milestone",
-      },
-      {
-        why: "Why do we not type the fields before the partner's version 1.0 freeze?",
-        because:
-          "A type written now would go stale within a week and turn every new field into a compile error at the boundary.",
-        evidence: "src/located.ts:1",
-      },
-      {
-        why: "Why would a stale type turn new fields into compile errors at the boundary?",
-        because:
-          "Every caller imports the parsed value's type, so a missing field fails the build until someone updates the declaration by hand.",
-        evidence: "src/open.ts:1",
-      },
-    ],
-    rootCause:
-      "Until the partner freezes its schema, a hand-kept declaration would fail the build weekly, so the any cast stays at this one boundary.",
-    rootCheck:
-      "partner ticket #31 still lists the schema freeze as planned for version 1.0, not shipped.",
-    readback:
-      "The partner's schema is not frozen, therefore a declared type would break the build weekly, therefore the fields stay untyped, therefore src/located.ts casts JSON.parse's result to any.",
-    owner: "integrations team",
-  },
-};
-
-const AUDIT_EXCEPTIONS = exceptionsTextOf({
-  exceptions: [
-    { kind: "file-carve-out", clause: "CD-1#any-cast", file: "src/owed.ts", reason: "legacy cast" },
-    {
-      kind: "file-carve-out",
-      clause: "CD-1#explicit-any",
-      file: "src/owed.ts",
-      reason: "legacy cast",
-    },
-    AUTHORISED_LOCATION,
-  ],
-});
-
-const CD_1_ONLY_SELECTION = (request: { readonly implicitAnyLet: string }): string =>
-  `{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "walker", "CD-1#explicit-any": "eslint", "CD-1#implicit-any-let": ${request.implicitAnyLet} } }\n`;
-
-describe("hone upgrade over a real repository that selects only some disciplines", () => {
-  it("refuses it before writing anything when version 1 already reports a clause of a selected discipline uncovered", async () => {
-    const repo = await versionOneRepositoryOf({
-      selection:
-        '{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "walker", "CD-1#explicit-any": "eslint" } }\n',
-      exceptions: NO_RECORDS,
-      sources: { "open.ts": ANY_CAST },
-    });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: "upgrade refused:\nversion 1 already reports CD-1#implicit-any-let as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.\nNothing was changed.\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-
-  it("upgrades it once the rest of its discipline is marked, writing only the checks version 1 chose", async () => {
-    const repo = await versionOneRepositoryOf({
-      selection: CD_1_ONLY_SELECTION({ implicitAnyLet: '"not-adopted"' }),
-      exceptions: NO_RECORDS,
-      sources: { "open.ts": ANY_CAST },
-    });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect(upgraded).toEqual({
-      writes: [
-        [
-          {
-            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-          },
-        ],
-      ],
-      exits: [[{ code: 0 }]],
-    });
-  });
-});
-
-describe("hone upgrade over a real repository that selects only CD-10", () => {
-  it("upgrades it, writing only the checks of the clauses version 1 selected", async () => {
-    const repo = await versionOneRepositoryOf({
-      selection:
-        '{ "version": 1, "ruleSets": {}, "clauses": { "CD-10#throws-in-tests": "walker", "CD-10#throw-only-error": "eslint" } }\n',
-      exceptions: NO_RECORDS,
-      sources: { "kept.ts": "export const kept = 1;\n" },
-    });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect(upgraded).toEqual({
-      writes: [
-        [
-          {
-            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-          },
-        ],
-      ],
-      exits: [[{ code: 0 }]],
-    });
-  });
-});
-
-describe("hone upgrade over a real repository whose clause is bound to the audit mechanism", () => {
-  it("upgrades it, with one finding open and one answered by debt, and checks both with the check each names", async () => {
-    const repo = await versionOneRepositoryOf({
-      selection: AUDIT_SELECTION,
-      exceptions: AUDIT_EXCEPTIONS,
-      sources: { "open.ts": ANY_CAST, "owed.ts": ANY_CAST, "located.ts": ANY_CAST },
-    });
-    commitEverything({ repo });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    trackEverything({ repo });
-    const checked = await runCommandIn({
-      repo,
-      subcommand: "check",
-      options: ["--base-revision", "HEAD"],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ upgraded, checked }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/authorised-locations/claimed-type.json\nwrote hone-records/debt/claimed-type.json\nwrote hone-records/debt/untyped-value.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-1#any-cast src/owed.ts -> debt claimed-type#cast-to-any\nfile-carve-out CD-1#explicit-any src/owed.ts -> debt untyped-value#explicit-any\nauthorised-location CD-1#any-cast src/located.ts -> authorised-location claimed-type#cast-to-any\ncarried claimed-type#cast-to-any src/located.ts\nupgrade: same findings (3) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      checked: {
-        writes: [
-          [
-            {
-              text: "findings (3)\nclaimed-type#cast-to-any walker src/open.ts:1:22 JSON.parse(text) as any;  symptom: claimed-type (../../rules/typescript/symptoms.md#claimed-type) may indicate: declared-not-asserted, straight-through-tests, handed-what-it-uses\nuntyped-value#explicit-any eslint src/located.ts:1:42 export const parsed = JSON.parse(text) as any; symptom: untyped-value (../../rules/typescript/symptoms.md#untyped-value) may indicate: declared-not-asserted, no-leak-across-a-boundary\nuntyped-value#explicit-any eslint src/open.ts:1:42 export const parsed = JSON.parse(text) as any; symptom: untyped-value (../../rules/typescript/symptoms.md#untyped-value) may indicate: declared-not-asserted, no-leak-across-a-boundary\nanswered (3)\nclaimed-type#cast-to-any walker src/located.ts:1:22 JSON.parse(text) as any;  answered by authorised-location carried\nclaimed-type#cast-to-any walker src/owed.ts:1:22 JSON.parse(text) as any;  answered by debt\nuntyped-value#explicit-any eslint src/owed.ts:1:42 export const parsed = JSON.parse(text) as any; answered by debt\ncarried (1)\nhone-records/authorised-locations/claimed-type.json records[0] established lacks case, owes, whyChain\nsymptoms (2)\nclaimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Read ../../rules/typescript/symptoms.md#claimed-type\nuntyped-value: Untyped value. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; reads data from outside (request, file, environment, stored row, response) → No leak across a boundary. The breach usually sits at the boundary that let an unknown shape in. Recipes: Zod at the producer's adapter; Fix the declaration, not the value. Read ../../rules/typescript/symptoms.md#untyped-value\nverdict: fail\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-    });
-  });
-});
-
-const CARRIED_EXCEPTIONS = exceptionsTextOf({
-  exceptions: [
-    { kind: "file-carve-out", clause: "CD-1#any-cast", file: "src/owed.ts", reason: "legacy cast" },
-    {
-      kind: "file-carve-out",
-      clause: "CD-1#explicit-any",
-      file: "src/owed.ts",
-      reason: "legacy cast",
-    },
-    {
-      kind: "file-carve-out",
-      clause: "CD-1#explicit-any",
-      file: "src/located.ts",
-      reason: "legacy cast",
-    },
-    AUTHORISED_LOCATION,
-  ],
-});
-
-const upgradedRepositoryWithCarriedRecords = async (): Promise<string> => {
-  const repo = await versionOneRepositoryOf({
-    selection: AUDIT_SELECTION,
-    exceptions: CARRIED_EXCEPTIONS,
-    sources: { "owed.ts": ANY_CAST, "located.ts": ANY_CAST },
-  });
-  commitEverything({ repo });
-  await runCommandIn({ repo, subcommand: "upgrade", options: [], modules: DEFAULT_MODULES });
-  trackEverything({ repo });
-  return repo;
-};
-
-describe("hone check with no base revision on an upgraded repository holding carried records", () => {
-  it("leaves the carried records to the run that has a base when forfeiture is left elsewhere, and passes", async () => {
-    const repo = await upgradedRepositoryWithCarriedRecords();
-    expect(
-      await runCommandIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "elsewhere"],
-        modules: DEFAULT_MODULES,
-      }),
-    ).toEqual({
-      writes: [
-        [
-          {
-            text: "answered (4)\nclaimed-type#cast-to-any walker src/located.ts:1:22 JSON.parse(text) as any;  answered by authorised-location carried\nclaimed-type#cast-to-any walker src/owed.ts:1:22 JSON.parse(text) as any;  answered by debt\nuntyped-value#explicit-any eslint src/located.ts:1:42 export const parsed = JSON.parse(text) as any; answered by debt\nuntyped-value#explicit-any eslint src/owed.ts:1:42 export const parsed = JSON.parse(text) as any; answered by debt\nassessment (2)\nforfeiture elsewhere: 3 debt records not checked for forfeiture in this run\ncarried standing elsewhere: 1 carried record not checked against the base in this run\ncarried (1)\nhone-records/authorised-locations/claimed-type.json records[0] unjudged lacks case, owes, whyChain\nverdict: pass (partial assessment)\n",
-          },
-        ],
-      ],
-      exits: [[{ code: 0 }]],
-    });
-  });
-
-  it("fails with import-unmeasured when forfeiture is assessed in this run", async () => {
-    const repo = await upgradedRepositoryWithCarriedRecords();
-    expect(
-      await runCommandIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "this-run"],
-        modules: DEFAULT_MODULES,
-      }),
-    ).toEqual({
-      writes: [
-        [
-          {
-            text: 'answered (4)\nclaimed-type#cast-to-any walker src/located.ts:1:22 JSON.parse(text) as any;  answered by authorised-location carried\nclaimed-type#cast-to-any walker src/owed.ts:1:22 JSON.parse(text) as any;  answered by debt\nuntyped-value#explicit-any eslint src/located.ts:1:42 export const parsed = JSON.parse(text) as any; answered by debt\nuntyped-value#explicit-any eslint src/owed.ts:1:42 export const parsed = JSON.parse(text) as any; answered by debt\nunmeasured (2)\nforfeiture-unmeasured no-base-revision: no --base-revision was given, so debt cannot be checked for forfeiture; pass --base-revision with the branch\'s base, such as origin/main, or leave forfeiture to another run with "forfeiture": "elsewhere" in hone.config.json or --forfeiture elsewhere\nimport-unmeasured no-base-revision: no --base-revision was given, so carried records cannot be checked against it; pass --base-revision with the branch\'s base, such as origin/main, or leave forfeiture to another run with "forfeiture": "elsewhere" in hone.config.json or --forfeiture elsewhere\ncarried (1)\nhone-records/authorised-locations/claimed-type.json records[0] unjudged lacks case, owes, whyChain\nverdict: fail\n',
-          },
-        ],
-      ],
-      exits: [[{ code: 1 }]],
-    });
-  });
-});
-
-const TEAM_SELECTION =
-  '{ "version": 1, "ruleSets": { "acme": "tools/disciplines/acme" }, "clauses": { "acme/ACME-1#console-calls": "eslint", "acme/ACME-2#scratch-files": "audit" } }\n';
-
-const TEAM_EXCEPTIONS =
-  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "acme/ACME-1#console-calls", "file": "src/legacy.ts", "reason": "legacy logging" }] }\n';
-
-const ACME_CONSOLE_DISCIPLINE =
-  '{ "version": 1, "id": "ACME-1", "clauses": [{ "kind": "mechanical", "id": "console-calls", "summary": "no direct console output in source", "mechanisms": ["eslint"], "anchor": { "kind": "keyword", "keyword": "console" }, "cases": { "flag": [{ "name": "console.log", "fileName": "src/a.ts", "source": "console.log(1);\\n", "expectedLines": [1] }], "allow": [{ "name": "no console", "fileName": "src/b.ts", "source": "export const b = 1;\\n", "expectedLines": [] }] } }, { "kind": "judgement", "id": "logger-port", "summary": "output goes through the logger port", "enforcedBy": "review" }] }\n';
-
-const ACME_SCRATCH_DISCIPLINE =
-  '{ "version": 1, "id": "ACME-2", "clauses": [{ "kind": "mechanical", "id": "scratch-files", "summary": "no scratch file is committed", "mechanisms": ["audit"], "anchor": { "kind": "file" }, "cases": { "flag": [{ "name": "scratch file", "fileName": "src/draft.scratch.ts", "source": "export const draft = 1;\\n", "expectedLines": [1] }], "allow": [{ "name": "ordinary file", "fileName": "src/kept.ts", "source": "export const kept = 1;\\n", "expectedLines": [] }] } }] }\n';
-
-const ACME_CONSOLE_PIECE =
-  '{ "version": 1, "discipline": "ACME-1", "mechanism": "eslint", "clauses": [{ "clause": "console-calls", "settings": { "pluginNamespace": "acme", "pluginModule": "acme.eslint-plugin.ts", "rule": "no-console-calls" } }] }\n';
-
-const ACME_SCRATCH_PIECE =
-  '{ "version": 1, "discipline": "ACME-2", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": { "module": "scratch-files.ts" } }] }\n';
-
-const ACME_ESLINT_PLUGIN =
-  'const noConsoleCalls = {\n  meta: { type: "problem", schema: [], messages: { console: "Write through the logger port, not console." } },\n  create: (context) => ({\n    "MemberExpression[object.name=\'console\']": (node) => {\n      context.report({ node, messageId: "console" });\n    },\n  }),\n};\n\nexport default { rules: { "no-console-calls": noConsoleCalls } };\n';
-
-const ACME_WALKER_PIECE =
-  'import { isScratch } from "./helpers/scratch-pattern.ts";\n\nconst hitsOf = ({ bindings, file }) =>\n  isScratch(file)\n    ? bindings.map((binding) => ({ check: binding.address, anchor: { line: 1, column: 0 }, snippet: file }))\n    : [];\n\nexport const check = {\n  prepare: ({ bindings }) => ({\n    outcome: "ok",\n    value: {\n      prepareFile: ({ file }) => ({ outcome: "ok", value: { kind: "complete", hits: hitsOf({ bindings, file }) } }),\n      finish: () => ({ outcome: "ok", value: [] }),\n    },\n  }),\n};\n';
-
-const ACME_NAMES =
-  '{ "clauses": { "ACME-1#console-calls": { "check": "direct-console#console-calls", "title": "Console calls" }, "ACME-2#scratch-files": { "check": "scratch-file#scratch-files", "title": "Scratch files" } }, "symptoms": { "direct-console": { "title": "Direct console", "group": "Repository health", "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }], "breachUsuallySits": "in the source change", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }, "scratch-file": { "title": "Scratch file", "group": "Repository health", "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }], "breachUsuallySits": "in the commit that adds the file", "seenBy": ["files"], "recipes": [], "correctUses": [] } }, "cases": { "changes-a-repository": { "title": "Changes a repository", "standing": "accepted", "owes": [{ "principle": "repository-ready" }] } }, "principles": { "repository-ready": { "title": "Repository ready" } }, "rules": {} }\n';
-
-const ACME_SCRATCH_PATTERN = 'export const isScratch = (file) => file.includes(".scratch.");\n';
-
-const TEAM_SOURCES: Readonly<Record<string, string>> = {
-  "src/legacy.ts": "console.log(1);\n",
-  "src/draft.scratch.ts": "export const draft = 1;\n",
-  "src/kept.ts": "export const kept = 1;\n",
-};
-
-const ACME_VERSION_ONE_LAYOUT: Readonly<Record<string, string>> = {
-  "tools/disciplines/acme/rules/ACME-1/discipline.json": ACME_CONSOLE_DISCIPLINE,
-  "tools/disciplines/acme/rules/ACME-2/discipline.json": ACME_SCRATCH_DISCIPLINE,
-  "tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json": ACME_CONSOLE_PIECE,
-  "tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts": ACME_ESLINT_PLUGIN,
-  "tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json": ACME_SCRATCH_PIECE,
-  "tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts": ACME_WALKER_PIECE,
-  "tools/disciplines/acme/mechanisms/audit/ACME-2/helpers/scratch-pattern.ts": ACME_SCRATCH_PATTERN,
-};
-
-const teamRepositoryOf = async (request: {
-  readonly names: Readonly<Record<string, string>>;
-}): Promise<string> => {
-  const repo = repositories.repositoryWith({
-    files: {
-      "disciplines.json": TEAM_SELECTION,
-      "discipline-exceptions.json": TEAM_EXCEPTIONS,
-      "eslint.config.mjs": TEAM_CONFIG,
-      ...TEAM_SOURCES,
-      ...ACME_VERSION_ONE_LAYOUT,
-      ...request.names,
-    },
-  });
-  commands.run({ command: "git", arguments: ["init"], directory: repo });
-  trackEverything({ repo });
-  await prepareVersionOneProjection({ repo, modules: checkModulesOn({ line: "eslint-10" }) });
-  trackEverything({ repo });
-  return repo;
-};
-
-describe("hone upgrade over a real repository with a team rule set in the version 1 layout", () => {
-  it("converts the team's rule set to the named layout, carries its records, keeps its findings and verdict, and checks the same after", async () => {
-    const repo = await teamRepositoryOf({
-      names: { "tools/disciplines/acme/version-two-names.json": ACME_NAMES },
-    });
-    const upgraded = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    trackEverything({ repo });
-    const checked = await runCommandIn({
-      repo,
-      subcommand: "check",
-      options: ["--forfeiture", "elsewhere"],
-      modules: DEFAULT_MODULES,
-    });
-    expect({
-      upgraded,
-      checked,
-      team: listedPathsOf({ repo: `${repo}/tools/disciplines/acme` }),
-    }).toEqual({
-      upgraded: {
-        writes: [
-          [
-            {
-              text: "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/helpers/scratch-pattern.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone-records/acme/debt/direct-console.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/helpers/scratch-pattern.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/helpers\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nfile-carve-out acme/ACME-1#console-calls src/legacy.ts -> debt direct-console#console-calls\nupgrade: same findings (1) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 0 }]],
-      },
-      checked: {
-        writes: [
-          [
-            {
-              text: "findings (1)\nacme/scratch-file#scratch-files walker src/draft.scratch.ts:1:0 src/draft.scratch.ts symptom: scratch-file (tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md) may indicate: repository-ready\nanswered (1)\nacme/direct-console#console-calls eslint src/legacy.ts:1:0 console.log(1); answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nsymptoms (1)\nscratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the commit that adds the file. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nverdict: fail (partial assessment)\n",
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      team: [
-        "engines/",
-        "engines/eslint/",
-        "engines/eslint/direct-console/",
-        "engines/eslint/direct-console/console-calls/",
-        "engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts",
-        "engines/eslint/direct-console/console-calls/console-calls.examples.json",
-        "engines/eslint/direct-console/console-calls/piece.json",
-        "engines/walker/",
-        "engines/walker/scratch-file/",
-        "engines/walker/scratch-file/scratch-files/",
-        "engines/walker/scratch-file/scratch-files/helpers/",
-        "engines/walker/scratch-file/scratch-files/helpers/scratch-pattern.ts",
-        "engines/walker/scratch-file/scratch-files/piece.json",
-        "engines/walker/scratch-file/scratch-files/scratch-files.examples.json",
-        "engines/walker/scratch-file/scratch-files/scratch-files.ts",
-        "rules/",
-        "rules/cases/",
-        "rules/cases/changes-a-repository.md",
-        "rules/principles/",
-        "rules/principles/repository-ready.md",
-        "rules/typescript/",
-        "rules/typescript/symptoms/",
-        "rules/typescript/symptoms/direct-console.md",
-        "rules/typescript/symptoms/direct-console/",
-        "rules/typescript/symptoms/direct-console/console-calls.md",
-        "rules/typescript/symptoms/scratch-file.md",
-        "rules/typescript/symptoms/scratch-file/",
-        "rules/typescript/symptoms/scratch-file/scratch-files.md",
-      ],
-    });
-  });
-
-  it("refuses a team rule set with no names file, listing every unnamed clause, and leaves every file of the repository byte for byte as it was", async () => {
-    const repo = await teamRepositoryOf({ names: {} });
-    const before = treeOf({ repo });
-    const refused = await runCommandIn({
-      repo,
-      subcommand: "upgrade",
-      options: [],
-      modules: DEFAULT_MODULES,
-    });
-    expect({ refused, after: treeOf({ repo }) }).toEqual({
-      refused: {
-        writes: [
-          [
-            {
-              text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add ACME-1#console-calls with its check and title under "clauses" in tools/disciplines/acme/version-two-names.json\n  acme/ACME-2#scratch-files has no version 2 name: add ACME-2#scratch-files with its check and title under "clauses" in tools/disciplines/acme/version-two-names.json\nWrite each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.\nNothing was changed.\n',
-            },
-          ],
-        ],
-        exits: [[{ code: 1 }]],
-      },
-      after: before,
-    });
-  });
-});

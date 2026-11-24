@@ -5,6 +5,7 @@ import type {
 } from "../../../domain/records/hone-records/hone-record.ts";
 import type {
   RecordAddition,
+  RecordRepointing,
   RecordsEdit,
 } from "../../../domain/records/hone-records/records-edit.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -23,6 +24,10 @@ export type RecordsEditor = {
     readonly documents: readonly RecordsDocument[];
     readonly addition: RecordAddition;
   }) => RecordPlace;
+  readonly documentsWithRepointed: (request: {
+    readonly documents: readonly RecordsDocument[];
+    readonly repointings: readonly RecordRepointing[];
+  }) => Result<readonly RecordsDocument[], RecordsEditFailure>;
   readonly documentsWithRemoved: (request: {
     readonly documents: readonly RecordsDocument[];
     readonly places: readonly RecordPlace[];

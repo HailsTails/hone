@@ -7,23 +7,11 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/upgrade-command.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/version-two-repository.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
@@ -35,18 +23,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
@@ -55,27 +31,11 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/commands.prune-debt.integration.test.ts"
     }
   ]
 }

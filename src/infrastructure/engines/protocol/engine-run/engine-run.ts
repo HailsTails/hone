@@ -12,8 +12,12 @@ import type {
 import type {
   RunnerInvalid,
   RunnerLocation,
+  RunnerModuleOf,
 } from "../../../../application/ports/engine/runner-location.ts";
-import type { MeasureVersionOneProjection } from "../../../../application/ports/upgrade/version-one-measurement.ts";
+import type {
+  CheckedVersionOneProjection,
+  MeasureVersionOneProjection,
+} from "../../../../application/ports/upgrade/version-one-measurement.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { checkedObservations } from "../../../../domain/runner/checked-observations.ts";
@@ -23,7 +27,6 @@ import {
   type RunnerFailure,
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
-import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
 import {
   checksProjectResultSchema,
   measurementResultSchema,
@@ -50,16 +53,7 @@ const runnerFailed = (request: {
   error: { kind: "runner-failed", mechanism: request.mechanism, failure: request.failure },
 });
 
-const runnerModuleAt = (request: RunnerLocation) =>
-  request.modules.load({
-    path: request.path.join({
-      segments: runnerModuleSegmentsOf({
-        installRoot: request.installRoot,
-        mechanism: request.mechanism,
-        moduleExtension: request.moduleExtension,
-      }),
-    }),
-  });
+type RunnerModulePorts = { readonly runnerModuleOf: RunnerModuleOf };
 
 const returnedBy = (request: { readonly call: () => Promise<unknown> }): Promise<unknown> =>
   Promise.resolve()
@@ -77,17 +71,17 @@ const invalidChecksOutput = (request: {
 
 const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
 
-export const loadedNamedRunnerOf = async (
-  request: RunnerLocation,
-): Promise<Result<ParsedNamedRunner, RunnerInvalid>> => {
-  const loaded = await runnerModuleAt(request);
-  if (loaded.outcome === "failed")
-    return invalid({ mechanism: request.mechanism, detail: loaded.error.detail });
-  const parsed = NAMED_RUNNER_MODULE.safeParse(loaded.value);
-  return parsed.success
-    ? { outcome: "ok", value: parsed.data.namedChecksRunner }
-    : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
-};
+export const loadedNamedRunnerOver =
+  (ports: RunnerModulePorts) =>
+  async (request: RunnerLocation): Promise<Result<ParsedNamedRunner, RunnerInvalid>> => {
+    const loaded = await ports.runnerModuleOf(request);
+    if (loaded.outcome === "failed")
+      return invalid({ mechanism: request.mechanism, detail: loaded.error.detail });
+    const parsed = NAMED_RUNNER_MODULE.safeParse(loaded.value);
+    return parsed.success
+      ? { outcome: "ok", value: parsed.data.namedChecksRunner }
+      : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
+  };
 
 const namedRequestOf = (call: NamedEngineCall): NamedEngineRunRequest => ({
   ...call.request,
@@ -141,13 +135,16 @@ const measureNamedRun = async (call: NamedEngineCall): ReturnType<MeasureVersion
     : { outcome: "ok", value: { report: report.value, unappliedSlices: [] } };
 };
 
-export const measureVersionOneProjection: MeasureVersionOneProjection = async ({
-  call,
-  location,
-  projection,
-}) => {
+const measuredVersionOne = async (
+  request: RunnerModulePorts & {
+    readonly call: NamedEngineCall;
+    readonly location: RunnerLocation;
+    readonly projection: CheckedVersionOneProjection | undefined;
+  },
+): ReturnType<MeasureVersionOneProjection> => {
+  const { call, location, projection } = request;
   if (projection === undefined) return measureNamedRun(call);
-  const loaded = await runnerModuleAt(location);
+  const loaded = await request.runnerModuleOf(location);
   if (loaded.outcome === "failed")
     return invalid({ mechanism: call.mechanism, detail: loaded.error.detail });
   const module = versionOneMeasurementModuleSchema.safeParse(loaded.value);
@@ -196,3 +193,8 @@ export const namedEngineProjectionOf = async (
     ? runnerFailed({ mechanism: call.mechanism, failure: parsed.data.error })
     : parsed.data;
 };
+
+export const measureVersionOneProjectionOver =
+  (ports: RunnerModulePorts): MeasureVersionOneProjection =>
+  (measurement) =>
+    measuredVersionOne({ ...ports, ...measurement });

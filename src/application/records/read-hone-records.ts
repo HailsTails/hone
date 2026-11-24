@@ -4,7 +4,15 @@ import type {
   RecordsAtBase,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
+import {
+  movedPathRefusalsOf,
+  recordsFollowingRenames,
+} from "../../domain/records/hone-records/records-following-renames.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { Result } from "../../domain/result.ts";
+import type { GitPort } from "../ports/git-port.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
@@ -56,4 +64,22 @@ export const readHoneRecords = (request: {
   return reading.outcome === "failed"
     ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } }
     : reading;
+};
+
+export const readingFollowingRenames = (request: {
+  readonly reading: RecordsReading;
+  readonly renamed: RenamedSinceBase;
+  readonly moved: readonly RecordRepointing[];
+}): RecordsReading => {
+  const { reading, renamed } = request;
+  if (renamed.measured === "no") {
+    return reading.base.measured === "no"
+      ? reading
+      : { ...reading, base: { measured: "no", base: renamed.base } };
+  }
+  return {
+    ...reading,
+    records: recordsFollowingRenames({ records: reading.records, moved: request.moved }),
+    refused: [...reading.refused, ...movedPathRefusalsOf({ moved: request.moved })],
+  };
 };

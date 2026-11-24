@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type {
   RecordsEditFailure,
   RecordsEditor,
@@ -8,6 +10,7 @@ import type {
 } from "../../../domain/records/hone-records/hone-record.ts";
 import type {
   RecordAddition,
+  RecordRepointing,
   RecordsEdit,
 } from "../../../domain/records/hone-records/records-edit.ts";
 import { RECORDS_VERSION } from "../../../domain/records/hone-records/records-layout.ts";
@@ -82,6 +85,44 @@ export const placeOfAddition = (request: {
   return { file: request.addition.file, index: held.outcome === "ok" ? held.value.length : 0 };
 };
 
+const entryFieldsSchema = z.record(z.string(), z.json());
+
+const repointedEntryOf = (request: {
+  readonly entry: ReadonlyJsonValue;
+  readonly file: RepoPath | undefined;
+}): ReadonlyJsonValue => {
+  const fields = entryFieldsSchema.safeParse(request.entry);
+  return request.file === undefined || !fields.success
+    ? request.entry
+    : { ...fields.data, file: request.file };
+};
+
+export const documentsWithRepointed = (request: {
+  readonly documents: readonly RecordsDocument[];
+  readonly repointings: readonly RecordRepointing[];
+}): Edited =>
+  [...new Set(request.repointings.map(({ place }) => place.file))].reduce<Edited>(
+    (sofar, file) => {
+      if (sofar.outcome === "failed") {
+        return sofar;
+      }
+      const held = entriesHeldBy({ documents: request.documents, file });
+      if (held.outcome === "failed") {
+        return held;
+      }
+      const repointedAt = new Map(
+        request.repointings
+          .filter(({ place }) => place.file === file)
+          .map(({ place, file: repointedTo }) => [place.index, repointedTo]),
+      );
+      const records = held.value.map((entry, index) =>
+        repointedEntryOf({ entry, file: repointedAt.get(index) }),
+      );
+      return { outcome: "ok", value: [...sofar.value, documentOf({ file, records })] };
+    },
+    { outcome: "ok", value: [] },
+  );
+
 const placesIn = (request: {
   readonly places: readonly RecordPlace[];
   readonly file: RepoPath;
@@ -139,5 +180,6 @@ export const documentsWithRemoved = (request: {
 export const recordsEditor: RecordsEditor = {
   documentsWithAdded,
   placeOfAddition,
+  documentsWithRepointed,
   documentsWithRemoved,
 };

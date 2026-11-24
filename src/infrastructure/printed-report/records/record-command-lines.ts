@@ -7,11 +7,12 @@ import {
 import { siteAddressText } from "../../../domain/records/debt/debt-sites.ts";
 import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { UnrecordableBecause } from "../../../domain/records/debt/unrecordable-site.ts";
+import type { RecordRepointing } from "../../../domain/records/hone-records/records-edit.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../../command-line/nested-configuration-issue.ts";
-import { recordsFileText, refusalText } from "./record-lines.ts";
+import { recordPlaceText, recordsFileText, refusalText } from "./record-lines.ts";
 import { scriptOptionAdviceOf } from "./script-option-advice.ts";
 
 const NO_DETAIL = "";
@@ -81,6 +82,9 @@ export const debtOutcomeLine = (request: { readonly outcome: DebtOutcome }): str
     head: `${siteAddressText({ site: request.outcome })} ${request.outcome.effect} ${request.outcome.file}`,
     detail: detailOf(request),
   });
+
+export const movedRecordLine = (request: { readonly moved: RecordRepointing }): string =>
+  `${recordPlaceText(request.moved)} repointed to ${request.moved.file}`;
 
 export const projectNextLine = (request: { readonly projectCommand: string }): string =>
   `run ${request.projectCommand} to put the recorded debt into effect`;

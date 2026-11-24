@@ -7,6 +7,7 @@ import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
@@ -35,9 +36,16 @@ import { commandOf } from "./composed-command.ts";
 import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
-const versionTwoProjectCommandOf =
-  (ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>) => (command: CommandRequest) =>
-    commandOf({ tool: VERSION_TWO_PROJECT, ports: { ...command, ...ports } })(command);
+const ranVersionTwoProject = (request: {
+  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>;
+  readonly command: CommandRequest;
+}) => {
+  const handler = commandOf({
+    tool: VERSION_TWO_PROJECT,
+    ports: { ...request.command, ...request.ports },
+  });
+  return handler(request.command);
+};
 
 const WALKER: Engine = { name: "walker" };
 
@@ -294,8 +302,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-type Command = CommandRequest;
-
 const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const SETTINGS: NamedSettingsReading = {
@@ -313,7 +319,12 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
-const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+const RECORDS: RecordsReading = {
+  records: [],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", held: [] },
+};
 
 const stagesProjecting = (request: {
   readonly projected: Awaited<ReturnType<VersionTwoStages["projections"]>>;
@@ -330,6 +341,9 @@ const stagesProjecting = (request: {
     .mockReturnValue({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
   engines: vi.fn<VersionTwoStages["engines"]>(),
   projections: vi.fn<VersionTwoStages["projections"]>().mockResolvedValue(request.projected),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
   touched: vi.fn<VersionTwoStages["touched"]>(),
 });
 
@@ -358,7 +372,7 @@ const commandWith = (request: {
   readonly process: ProcessPort;
   readonly moduleUrl: string;
   readonly fileText: FileTextPort;
-}): Command => ({
+}): CommandRequest => ({
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
@@ -381,13 +395,20 @@ const ranWith = async (request: {
 }) => {
   const processPort = processWith({ arguments: request.arguments });
   const { fileText } = request;
-  await versionTwoProjectCommandOf({
-    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
-    gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
-    directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
-    recordsSourceOf: vi.fn<RecordsSourceOf>(),
-    stagesOver: request.stagesOver,
-  })(commandWith({ process: processPort, moduleUrl: request.moduleUrl, fileText }));
+  await ranVersionTwoProject({
+    ports: {
+      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
+      directory: {
+        list: vi.fn<DirectoryPort["list"]>(),
+        create: vi.fn<DirectoryPort["create"]>(),
+      },
+      recordsSourceOf: vi.fn<RecordsSourceOf>(),
+      settingsSourcesOf: vi.fn<SettingsSourcesOf>(),
+      stagesOver: request.stagesOver,
+    },
+    command: commandWith({ process: processPort, moduleUrl: request.moduleUrl, fileText }),
+  });
   return {
     writes: vi.mocked(processPort.writeOut).mock.calls,
     exits: vi.mocked(processPort.exitWith).mock.calls,
