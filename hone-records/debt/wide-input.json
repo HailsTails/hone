@@ -23,19 +23,11 @@
     },
     {
       "answers": "wide-input#unread-parameter",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.ts"
-    },
-    {
-      "answers": "wide-input#unread-parameter",
       "file": "src/infrastructure/disciplines-file/consumer-selection.ts"
     },
     {
       "answers": "wide-input#unread-parameter",
       "file": "src/infrastructure/engines/protocol/engine-port.ts"
-    },
-    {
-      "answers": "wide-input#unread-parameter",
-      "file": "src/infrastructure/git/git-port.ts"
     },
     {
       "answers": "wide-input#unread-parameter",

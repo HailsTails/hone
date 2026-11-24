@@ -35,10 +35,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {
@@ -48,10 +44,6 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/upgrade-command.test.ts"
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
@@ -71,15 +63,7 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
@@ -152,10 +136,6 @@
     {
       "answers": "double-with-a-body#stub-implementation",
       "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/commands.prune-debt.integration.test.ts"
     },
     {
       "answers": "double-with-a-body#stub-implementation",

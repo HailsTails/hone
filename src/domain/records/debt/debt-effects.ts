@@ -1,8 +1,9 @@
 import { checkAddressOf } from "../../language-layer/check-address.ts";
+import { basePathOf, type RenamedPaths } from "../../repository/renamed-path.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
-import type { Debt, PlacedRecord } from "../hone-records/hone-record.ts";
+import type { Debt, PlacedRecord, RecordPlace } from "../hone-records/hone-record.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import {
   type DebtOrigin,
@@ -18,6 +19,7 @@ import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.
 export type DebtEffect =
   | { readonly effect: "recorded" }
   | { readonly effect: "already-recorded"; readonly heldIn: RepoPath }
+  | { readonly effect: "repointed"; readonly held: RecordPlace; readonly was: RepoPath }
   | { readonly effect: "left"; readonly under: RepoPath }
   | { readonly effect: "touched"; readonly of: DebtOrigin }
   | ({ readonly effect: "nested-configuration" } & UnprojectedDebtSite)
@@ -35,6 +37,7 @@ export type DebtEffectsRequest = {
   readonly records: readonly PlacedRecord[];
   readonly leave: readonly RepoPath[];
   readonly touched: TouchedSet;
+  readonly renamed: RenamedPaths;
 };
 
 type HeldDebt = { readonly place: PlacedRecord["place"]; readonly debt: Debt };
@@ -87,6 +90,12 @@ const effectOf = (request: {
   const heldHere = held.get(site.file)?.get(siteAddressText({ site }));
   if (heldHere !== undefined) {
     return { effect: "already-recorded", heldIn: heldHere.place.file };
+  }
+  const was = basePathOf({ file: site.file, basePathOfRenamed: rest.renamed });
+  const heldBeforeRename =
+    was === site.file ? undefined : held.get(was)?.get(siteAddressText({ site }));
+  if (heldBeforeRename !== undefined) {
+    return { effect: "repointed", held: heldBeforeRename.place, was };
   }
   const under = leavingPath({ file: site.file, leave: rest.leave });
   if (under !== undefined) {

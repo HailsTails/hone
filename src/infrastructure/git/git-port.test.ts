@@ -562,7 +562,7 @@ describe("createGitPort renamedSince", () => {
     });
   });
 
-  it("maps each renamed path to its path at the base, passing over every other change", () => {
+  it("maps each renamed path to its path at the base, unchanged only at a 100 score, passing over every other change", () => {
     const renames = gitOver(
       vi.fn<GitSpawn>().mockReturnValue({
         ...EXITED_EMPTY,
@@ -574,8 +574,8 @@ describe("createGitPort renamedSince", () => {
     expect(renames).toEqual({
       outcome: "ok",
       value: new Map([
-        ["src/moved/old.ts", "src/old.ts"],
-        ["lib/b.ts", "lib/a.ts"],
+        ["src/moved/old.ts", { basePath: "src/old.ts", content: "unchanged" }],
+        ["lib/b.ts", { basePath: "lib/a.ts", content: "edited" }],
       ]),
     });
   });

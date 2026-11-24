@@ -285,7 +285,7 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
       inheritedDebtOf({
         ...NOTHING,
         inBase: new Set([BASKET]),
-        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "edited" }]]),
         findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 })],
       }),
     ).toEqual([{ clause: LOOPS, file: MOVED_BASKET, effect: "recorded" }]);
@@ -296,7 +296,7 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
       inheritedDebtOf({
         ...NOTHING,
         inBase: new Set([BASKET]),
-        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "edited" }]]),
         findings: [
           findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 }),
           findingAt({ clause: LOOPS, file: FRESH, line: 1 }),
@@ -313,7 +313,7 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
       inheritedDebtOf({
         ...NOTHING,
         inBase: new Set([LEGACY]),
-        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "edited" }]]),
         findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 })],
       }),
     ).toEqual([{ clause: LOOPS, file: MOVED_BASKET, effect: "new-file" }]);

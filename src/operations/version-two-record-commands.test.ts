@@ -2,20 +2,26 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
+import type { RecordsEditor } from "../application/ports/records/records-editor.ts";
+import type { RecordsReader } from "../application/ports/records/records-reader.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
+  Check,
   RecordKind,
   Symptom,
   SymptomCatalogue,
 } from "../domain/language-layer/symptom-catalogue.ts";
+import type { PlacedRecord } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import {
   type RecordsSourceFor,
+  type RenamedSince,
   type VersionTwoRecordInput,
   versionTwoAuthoriseOf,
   versionTwoPruneDebtOf,
@@ -35,6 +41,8 @@ const AUTHORISING: AuthoriseRequest = {
 };
 
 const PROJECT_COMMAND = "node /tool/hone.js project --repo /repo";
+
+const NOTHING_RENAMED: RenamedSince = () => ({ outcome: "ok", value: new Map() });
 
 const SETTINGS_ABSENT: RunLoadFailure = { kind: "config-absent", repo: "/repo" };
 
@@ -56,6 +64,7 @@ const inputFailingCatalogue = (): VersionTwoRecordInput => ({
   recordsReader: { recordsReadingOf: vi.fn() },
   recordsEditor: {
     documentsWithAdded: vi.fn(),
+    documentsWithRepointed: vi.fn(),
     placeOfAddition: vi.fn(),
     documentsWithRemoved: vi.fn(),
   },
@@ -66,7 +75,12 @@ describe("versionTwoRecordDebtOf", () => {
     const input = inputFailingCatalogue();
 
     expect(
-      await versionTwoRecordDebtOf({ ...input, leave: [], projectCommand: PROJECT_COMMAND }),
+      await versionTwoRecordDebtOf({
+        ...input,
+        leave: [],
+        projectCommand: PROJECT_COMMAND,
+        renamedSince: NOTHING_RENAMED,
+      }),
     ).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
@@ -159,12 +173,200 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
   },
 });
 
+describe("versionTwoRecordDebtOf, renames git cannot list", () => {
+  it("names the git failure and opens no records store", async () => {
+    const input = inputWithOutOfDateProjection();
+    const recorded = await versionTwoRecordDebtOf({
+      ...input,
+      stages: {
+        ...input.stages,
+        engines: vi
+          .fn<VersionTwoStages["engines"]>()
+          .mockResolvedValue({ outcome: "ok", value: [] }),
+      },
+      leave: [],
+      projectCommand: PROJECT_COMMAND,
+      renamedSince: () => ({
+        outcome: "failed",
+        error: { kind: "git-failed", command: "git diff", detail: "bad revision" },
+      }),
+    });
+    expect({ recorded, storeOpened: vi.mocked(input.recordsStoreOf).mock.calls }).toEqual({
+      recorded: {
+        outcome: "failed",
+        error: { kind: "git-failed", detail: "git diff: bad revision" },
+      },
+      storeOpened: [],
+    });
+  });
+});
+
+const CLAIMED_TYPE: Symptom = {
+  ruleSet: TOOL_RULE_SET,
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  engines: [{ name: "walker" }],
+  forms: [],
+};
+
+const BASKET = repoPathOf("src/basket.ts");
+
+const MOVED_BASKET = repoPathOf("src/basket/basket.ts");
+
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
+
+const DEBT_ON_BASKET: PlacedRecord = {
+  place: { file: DEBT_FILE, index: 0 },
+  record: {
+    kind: "debt",
+    symptom: CLAIMED_TYPE,
+    reach: { reaches: "one-check", check: CAST_CHECK },
+    file: BASKET,
+    holding: { held: "stated" },
+  },
+};
+
+const DEBT_FOLLOWED_TO_MOVED_BASKET: PlacedRecord = {
+  place: { file: DEBT_FILE, index: 0 },
+  record: {
+    kind: "debt",
+    symptom: CLAIMED_TYPE,
+    reach: { reaches: "one-check", check: CAST_CHECK },
+    file: MOVED_BASKET,
+    holding: { held: "stated" },
+  },
+};
+
+const CAST_IN_MOVED_BASKET_RUN: NamedEngineRun = {
+  mechanism: "walker",
+  hits: [
+    {
+      check: "claimed-type#cast-expressions",
+      file: MOVED_BASKET,
+      anchor: { line: 3, column: 0 },
+      snippet: "as Basket",
+    },
+  ],
+  nativeExceptions: [],
+  coverableKinds: [],
+  projection: "none",
+  slices: [],
+  measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+  misnamedRuleIds: [],
+};
+
+const HELD_DOCUMENTS = [{ file: DEBT_FILE, document: { version: 2, records: [] } }];
+
+const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
+  const input = inputWithOutOfDateProjection();
+  return {
+    ...input,
+    stages: {
+      ...input.stages,
+      catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
+        outcome: "ok",
+        value: { ...CATALOGUE, symptoms: [CLAIMED_TYPE], checks: [CAST_CHECK] },
+      }),
+      records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          records: [DEBT_FOLLOWED_TO_MOVED_BASKET],
+          refused: [],
+          notes: [],
+          base: { measured: "yes" },
+        },
+      }),
+      engines: vi
+        .fn<VersionTwoStages["engines"]>()
+        .mockResolvedValue({ outcome: "ok", value: [CAST_IN_MOVED_BASKET_RUN] }),
+    },
+    recordsSourceFor: vi.fn<RecordsSourceFor>().mockReturnValue({
+      read: vi.fn().mockReturnValue({ outcome: "ok", value: HELD_DOCUMENTS }),
+      readAt: vi.fn(),
+    }),
+    recordsStoreOf: vi
+      .fn<RecordsStoreOf>()
+      .mockReturnValue({ apply: vi.fn().mockReturnValue({ outcome: "ok", value: undefined }) }),
+    recordsReader: {
+      recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
+        outcome: "ok",
+        value: { records: [DEBT_ON_BASKET], refused: [], notes: [], base: { measured: "yes" } },
+      }),
+    },
+    recordsEditor: {
+      ...input.recordsEditor,
+      documentsWithRepointed: vi
+        .fn<RecordsEditor["documentsWithRepointed"]>()
+        .mockReturnValue({ outcome: "ok", value: HELD_DOCUMENTS }),
+      documentsWithAdded: vi.fn().mockReturnValue({ outcome: "ok", value: [] }),
+    },
+  };
+};
+
+describe("versionTwoRecordDebtOf, debt the run answers across a rename", () => {
+  it("repoints the debt held at the file's path in the base to the path git sees it renamed to", async () => {
+    const input = inputAnsweringAcrossARename();
+    const recorded = await versionTwoRecordDebtOf({
+      ...input,
+      leave: [],
+      projectCommand: PROJECT_COMMAND,
+      renamedSince: () => ({
+        outcome: "ok",
+        value: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
+      }),
+    });
+    expect({
+      recorded,
+      repointed: vi.mocked(input.recordsEditor.documentsWithRepointed).mock.calls,
+    }).toEqual({
+      recorded: {
+        outcome: "ok",
+        value: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: "claimed-type#cast-expressions",
+            file: MOVED_BASKET,
+            effect: "repointed",
+            held: DEBT_ON_BASKET.place,
+            was: BASKET,
+          },
+        ],
+      },
+      repointed: [
+        [
+          {
+            documents: HELD_DOCUMENTS,
+            repointings: [{ place: DEBT_ON_BASKET.place, file: MOVED_BASKET }],
+          },
+        ],
+      ],
+    });
+  });
+});
+
 describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
   it("refuses with projection-stale naming the project command and opens no records store", async () => {
     const input = inputWithOutOfDateProjection();
 
     expect(
-      await versionTwoRecordDebtOf({ ...input, leave: [], projectCommand: PROJECT_COMMAND }),
+      await versionTwoRecordDebtOf({
+        ...input,
+        leave: [],
+        projectCommand: PROJECT_COMMAND,
+        renamedSince: NOTHING_RENAMED,
+      }),
     ).toEqual({
       outcome: "failed",
       error: {

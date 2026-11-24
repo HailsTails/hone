@@ -8,6 +8,6 @@ runReleasePullRequest({
   process: createDefaultProcessPort({}),
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
-  history: createDefaultGitHistoryPort({}),
+  history: createDefaultGitHistoryPort(),
   moduleUrl: import.meta.url,
 });

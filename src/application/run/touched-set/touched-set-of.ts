@@ -26,7 +26,7 @@ export const touchedSetOf = (request: {
   readonly records: readonly PlacedRecord[];
   readonly repoRoot: AbsolutePath;
   readonly baseRevision: string | undefined;
-  readonly git: Pick<GitPort, "changedSince">;
+  readonly git: Pick<GitPort, "changedSince" | "renamedSince">;
 }): TouchedSet => {
   if (request.assessment.forfeiture !== "elsewhere" && measurementOf(request) === "not-needed") {
     return NOTHING_TOUCHED;

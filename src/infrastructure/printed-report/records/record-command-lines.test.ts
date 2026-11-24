@@ -129,6 +129,15 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
     "date-used-directly#clock-sources already-recorded src/orders/charge-order.ts: hone-records/debt/date-used-directly.json already holds debt on this symptom and file; the check says why it does not answer",
   ],
   [
+    {
+      ...SITE,
+      effect: "repointed",
+      held: { file: RECORDS_FILE, index: 0 },
+      was: repoPathOf("src/charges/charge-order.ts"),
+    },
+    "date-used-directly#clock-sources repointed src/orders/charge-order.ts: hone-records/debt/date-used-directly.json held this debt at src/charges/charge-order.ts, which git sees renamed to this file",
+  ],
+  [
     { ...SITE, effect: "left", under: repoPathOf("src/orders") },
     "date-used-directly#clock-sources left src/orders/charge-order.ts: under --leave src/orders; record it as an authorised location with a why chain, or fix it",
   ],

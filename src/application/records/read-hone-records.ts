@@ -4,7 +4,10 @@ import type {
   RecordsAtBase,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
+import { recordsFollowingRenames } from "../../domain/records/hone-records/records-following-renames.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import type { GitPort } from "../ports/git-port.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
@@ -56,4 +59,29 @@ export const readHoneRecords = (request: {
   return reading.outcome === "failed"
     ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } }
     : reading;
+};
+
+export const readingFollowingRenames = (request: {
+  readonly reading: RecordsReading;
+  readonly repoRoot: AbsolutePath;
+  readonly baseRevision: string | undefined;
+  readonly git: Pick<GitPort, "renamedSince">;
+}): RecordsReading => {
+  const { reading, baseRevision } = request;
+  if (baseRevision === undefined) {
+    return reading;
+  }
+  const renamed = request.git.renamedSince({ repoRoot: request.repoRoot, baseRevision });
+  return renamed.outcome === "ok"
+    ? {
+        ...reading,
+        records: recordsFollowingRenames({ records: reading.records, renamed: renamed.value }),
+      }
+    : {
+        ...reading,
+        base: {
+          measured: "no",
+          base: baseRevisionAvailabilityOf({ revision: baseRevision, failure: renamed.error }),
+        },
+      };
 };

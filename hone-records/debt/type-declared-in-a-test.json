@@ -7,23 +7,7 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -115,10 +99,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/commands.version-two-project.test.ts"
     },
     {
@@ -132,10 +112,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/composition/upgrade-command.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -196,10 +172,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

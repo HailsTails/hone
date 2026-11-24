@@ -15,10 +15,6 @@
     },
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/composition/upgrade-command.test.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "delivery/release/changelog.ts"
     },
     {

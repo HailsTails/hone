@@ -69,10 +69,13 @@ const DEBT: PlacedRecord = {
 
 const gitChanging = (request: {
   readonly files: readonly RepoPath[];
-}): Pick<GitPort, "changedSince"> => ({
+}): Pick<GitPort, "changedSince" | "renamedSince"> => ({
   changedSince: vi
     .fn<GitPort["changedSince"]>()
     .mockReturnValue({ outcome: "ok", value: request.files }),
+  renamedSince: vi
+    .fn<GitPort["renamedSince"]>()
+    .mockReturnValue({ outcome: "ok", value: new Map() }),
 });
 
 describe("touchedSetOf", () => {

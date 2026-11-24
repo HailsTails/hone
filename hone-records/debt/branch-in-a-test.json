@@ -47,10 +47,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
     },
     {
@@ -79,15 +75,7 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -108,14 +96,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -208,10 +188,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "src/application/upgrade/patching/projection-patching.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/commands.prune-debt.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",

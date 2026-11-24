@@ -6,13 +6,16 @@ import type {
   SymptomCatalogue,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type {
+  PlacedRecord,
   RecordsDocument,
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { GitPort } from "../ports/git-port.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
-import { readHoneRecords } from "./read-hone-records.ts";
+import { readHoneRecords, readingFollowingRenames } from "./read-hone-records.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
   name: "authorised-location",
@@ -249,6 +252,102 @@ describe("readHoneRecords", () => {
       error: {
         kind: "records-documents",
         refusals: [{ kind: "document-refused", file: FILE, issues: [] }],
+      },
+    });
+  });
+});
+
+const REPO_ROOT = absoluteRootOf("/work/shop");
+
+const DEBT_ON_A: PlacedRecord = {
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+  record: {
+    kind: "debt",
+    symptom: CLAIMED_TYPE,
+    reach: { reaches: "whole-symptom" },
+    file: repoPathOf("src/a.ts"),
+    holding: { held: "stated" },
+  },
+};
+
+const READING_DEBT_ON_A: RecordsReading = {
+  records: [DEBT_ON_A],
+  refused: [],
+  notes: [],
+  base: { measured: "yes" },
+};
+
+describe("readingFollowingRenames", () => {
+  it("points each record on a file git saw renamed since the base at the file's path now", () => {
+    const renamedSince = vi.fn<GitPort["renamedSince"]>().mockReturnValue({
+      outcome: "ok",
+      value: new Map([
+        [repoPathOf("src/moved/a.ts"), { basePath: repoPathOf("src/a.ts"), content: "unchanged" }],
+      ]),
+    });
+    expect({
+      reading: readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        repoRoot: REPO_ROOT,
+        baseRevision: "origin/main",
+        git: { renamedSince },
+      }),
+      asked: renamedSince.mock.calls,
+    }).toEqual({
+      reading: {
+        records: [
+          {
+            place: { file: "hone-records/debt/claimed-type.json", index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "whole-symptom" },
+              file: "src/moved/a.ts",
+              holding: { held: "stated" },
+            },
+          },
+        ],
+        refused: [],
+        notes: [],
+        base: { measured: "yes" },
+      },
+      asked: [[{ repoRoot: REPO_ROOT, baseRevision: "origin/main" }]],
+    });
+  });
+
+  it("follows no rename and asks git nothing when no base revision is given", () => {
+    const renamedSince = vi.fn<GitPort["renamedSince"]>();
+    expect({
+      reading: readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        repoRoot: REPO_ROOT,
+        baseRevision: undefined,
+        git: { renamedSince },
+      }),
+      asked: renamedSince.mock.calls,
+    }).toEqual({ reading: READING_DEBT_ON_A, asked: [] });
+  });
+
+  it("follows no rename and leaves the base unmeasured, carrying git's message, when git cannot list the renames", () => {
+    expect(
+      readingFollowingRenames({
+        reading: READING_DEBT_ON_A,
+        repoRoot: REPO_ROOT,
+        baseRevision: "origin/main",
+        git: {
+          renamedSince: vi.fn<GitPort["renamedSince"]>().mockReturnValue({
+            outcome: "failed",
+            error: { kind: "git-failed", command: "git diff", detail: "fatal: bad object" },
+          }),
+        },
+      }),
+    ).toEqual({
+      records: [DEBT_ON_A],
+      refused: [],
+      notes: [],
+      base: {
+        measured: "no",
+        base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad object" },
       },
     });
   });

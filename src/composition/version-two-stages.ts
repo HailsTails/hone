@@ -6,7 +6,10 @@ import type { ModuleExtension } from "../application/ports/host/module-extension
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import { readHoneRecords } from "../application/records/read-hone-records.ts";
+import {
+  readHoneRecords,
+  readingFollowingRenames,
+} from "../application/records/read-hone-records.ts";
 import { type CheckedTree, checkedTreeOf } from "../application/run/checked-tree-of.ts";
 import {
   type NamedEnginesRequest,
@@ -106,7 +109,15 @@ const recordsStage = (
         outcome: "failed",
         error: runFailureOf({ engines: request.catalogue.engines, source: read.error }),
       }
-    : read;
+    : {
+        outcome: "ok",
+        value: readingFollowingRenames({
+          reading: read.value,
+          repoRoot: request.locations.repoRoot,
+          baseRevision: request.locations.baseRevision,
+          git,
+        }),
+      };
 };
 
 const treeStage = (

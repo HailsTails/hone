@@ -7,10 +7,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/domain/records/discipline-exceptions/exception-baseline.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/exception-entry.ts"
     },
     {

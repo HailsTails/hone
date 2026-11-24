@@ -18,13 +18,18 @@ import {
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
+import { renamedDebtFindingsOf } from "../domain/records/debt/renamed-debt-findings.ts";
 import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { GitFailure } from "../domain/repository/git-failure.ts";
+import type { RenamedPaths } from "../domain/repository/renamed-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 
 export type RecordsSourceFor = (request: { readonly catalogue: SymptomCatalogue }) => RecordsSource;
+
+export type RenamedSince = () => Result<RenamedPaths, GitFailure>;
 
 export type VersionTwoRecordInput = {
   readonly stages: VersionTwoStages;
@@ -49,6 +54,7 @@ export const versionTwoRecordDebtOf = async (
   request: VersionTwoRecordInput & {
     readonly leave: readonly RepoPath[];
     readonly projectCommand: string;
+    readonly renamedSince: RenamedSince;
   },
 ): Promise<Result<readonly DebtOutcome[], RunLoadFailure>> => {
   const run = await versionTwoRunOver({
@@ -69,6 +75,18 @@ export const versionTwoRecordDebtOf = async (
       error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
     };
   }
+  const renamed = request.renamedSince();
+  if (renamed.outcome === "failed") {
+    return recordFailureOf({
+      recorded: {
+        outcome: "failed",
+        error: {
+          kind: "git-failed",
+          detail: `${renamed.error.command}: ${renamed.error.detail}`,
+        },
+      },
+    });
+  }
   return recordFailureOf({
     recorded: recordDebtOf({
       ports: {
@@ -79,10 +97,14 @@ export const versionTwoRecordDebtOf = async (
         recordsEditor: request.recordsEditor,
       },
       run: {
-        findings: report.findings,
+        findings: [
+          ...report.findings,
+          ...renamedDebtFindingsOf({ answered: report.answered, renamed: renamed.value }),
+        ],
         unrecorded: report.unrecorded,
         runs,
         touched,
+        renamed: renamed.value,
         leave: request.leave,
       },
     }),

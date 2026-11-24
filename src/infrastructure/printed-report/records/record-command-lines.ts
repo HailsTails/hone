@@ -62,6 +62,8 @@ const detailOf = (request: { readonly outcome: DebtOutcome }): string => {
       return NO_DETAIL;
     case "already-recorded":
       return `${recordsFileText({ file: outcome.heldIn })} already holds debt on this symptom and file; the check says why it does not answer`;
+    case "repointed":
+      return `${recordsFileText({ file: outcome.held.file })} held this debt at ${outcome.was}, which git sees renamed to this file`;
     case "left":
       return `under --leave ${outcome.under}; record it as an authorised location with a why chain, or fix it`;
     case "touched":

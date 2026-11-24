@@ -11,10 +11,6 @@
     },
     {
       "answers": "type-derived-from-code#factory-return-types",
-      "file": "src/infrastructure/engines/protocol/upgrade/load-version-one-projection.ts"
-    },
-    {
-      "answers": "type-derived-from-code#factory-return-types",
       "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
     },
     {

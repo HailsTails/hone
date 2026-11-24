@@ -51,19 +51,11 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/commands.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/upgrade-command.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",
@@ -107,15 +99,7 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",
@@ -140,14 +124,6 @@
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",

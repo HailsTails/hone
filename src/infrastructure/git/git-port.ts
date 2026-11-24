@@ -9,6 +9,7 @@ import type {
 } from "../../application/ports/git-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
+import type { RenamedPath, RenamedPaths } from "../../domain/repository/renamed-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
@@ -280,7 +281,13 @@ const NAME_STATUS_ENTRY =
 
 const RENAME_STATUS = /^R/;
 
-type ListedRename = { readonly from: string; readonly to: string };
+const UNCHANGED_RENAME_STATUS = "R100";
+
+type ListedRename = {
+  readonly from: string;
+  readonly to: string;
+  readonly content: RenamedPath["content"];
+};
 
 const listedRenamesOf = (request: {
   readonly stdout: string;
@@ -297,7 +304,13 @@ const listedRenamesOf = (request: {
       RENAME_STATUS.test(groups.pairedStatus) &&
       groups.from !== undefined &&
       groups.to !== undefined
-        ? [{ from: groups.from, to: groups.to }]
+        ? [
+            {
+              from: groups.from,
+              to: groups.to,
+              content: groups.pairedStatus === UNCHANGED_RENAME_STATUS ? "unchanged" : "edited",
+            },
+          ]
         : [],
     ),
   };
@@ -305,20 +318,23 @@ const listedRenamesOf = (request: {
 
 const basePathByHeadPathOf = (request: {
   readonly rename: ListedRename;
-}): Result<readonly [RepoPath, RepoPath], string> => {
+}): Result<readonly [RepoPath, RenamedPath], string> => {
   const from = repoPathSchema.safeParse(request.rename.from);
   if (!from.success) {
     return { outcome: "failed", error: request.rename.from };
   }
   const to = repoPathSchema.safeParse(request.rename.to);
   return to.success
-    ? { outcome: "ok", value: [to.data, from.data] }
+    ? {
+        outcome: "ok",
+        value: [to.data, { basePath: from.data, content: request.rename.content }],
+      }
     : { outcome: "failed", error: request.rename.to };
 };
 
 const renamedPaths = (
   request: GitContext & { readonly baseRevision: string },
-): Result<ReadonlyMap<RepoPath, RepoPath>, GitFailure> => {
+): Result<RenamedPaths, GitFailure> => {
   const output = gitOutput({
     ...request,
     gitArguments: ["diff", "--name-status", "-M", "-z", "--end-of-options", request.baseRevision],
@@ -353,7 +369,7 @@ const renamedPaths = (
   return {
     outcome: "ok",
     value: new Map(
-      parsed.flatMap((rename): readonly (readonly [RepoPath, RepoPath])[] =>
+      parsed.flatMap((rename): readonly (readonly [RepoPath, RenamedPath])[] =>
         rename.outcome === "ok" ? [rename.value] : [],
       ),
     ),
@@ -483,7 +499,7 @@ export const createGitHistoryPort = (options: {
   };
 };
 
-const defaultGitSpawn = (_options: Record<string, never>): GitSpawn => {
+const defaultGitSpawn = (): GitSpawn => {
   const execution = createDefaultExecutionPort({ policy: GIT_EXECUTION_POLICY });
   return (request) => {
     const executed = execution.run({ arguments: request.arguments });
@@ -500,11 +516,11 @@ const defaultGitSpawn = (_options: Record<string, never>): GitSpawn => {
   };
 };
 
-export const createDefaultGitPort = (_options: Record<string, never>): GitPort =>
-  createGitPort({ spawn: defaultGitSpawn({}), ambientEnvironment: {} });
+export const createDefaultGitPort = (): GitPort =>
+  createGitPort({ spawn: defaultGitSpawn(), ambientEnvironment: {} });
 
-export const createDefaultGitTreePort = (_options: Record<string, never>): GitTreePort =>
-  createGitTreePort({ spawn: defaultGitSpawn({}), ambientEnvironment: {} });
+export const createDefaultGitTreePort = (): GitTreePort =>
+  createGitTreePort({ spawn: defaultGitSpawn(), ambientEnvironment: {} });
 
-export const createDefaultGitHistoryPort = (_options: Record<string, never>): GitHistoryPort =>
-  createGitHistoryPort({ spawn: defaultGitSpawn({}), ambientEnvironment: {} });
+export const createDefaultGitHistoryPort = (): GitHistoryPort =>
+  createGitHistoryPort({ spawn: defaultGitSpawn(), ambientEnvironment: {} });

@@ -7,14 +7,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/application/records/record-commands.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/composition/settings-pair.integration.test.ts"
     },
     {

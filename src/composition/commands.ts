@@ -242,6 +242,10 @@ export const VERSION_TWO_RECORD_DEBT: ToolCommand<
       }),
       leave: parsed.leave,
       projectCommand: projectCommand.value,
+      renamedSince: () =>
+        parsed.baseRevision === undefined
+          ? { outcome: "ok", value: new Map() }
+          : ports.git.renamedSince({ repoRoot, baseRevision: parsed.baseRevision }),
     });
     if (recorded.outcome === "failed") {
       return runFailed({ failure: recorded.error, repoRoot });

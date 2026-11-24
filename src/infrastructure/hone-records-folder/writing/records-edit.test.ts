@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { documentsWithAdded, documentsWithRemoved, placeOfAddition } from "./records-edit.ts";
+import {
+  documentsWithAdded,
+  documentsWithRemoved,
+  documentsWithRepointed,
+  placeOfAddition,
+} from "./records-edit.ts";
 
 const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
@@ -125,6 +130,78 @@ describe("removing records from the documents hone-records holds", () => {
       error: {
         kind: "records-documents",
         refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }],
+      },
+    });
+  });
+});
+
+describe("repointing records at the path their file moved to", () => {
+  const MOVED = repoPathOf("src/moved/b.ts");
+
+  it("changes only the file of each record repointed, keeping every other field and record as it was", () => {
+    const noted = { answers: "claimed-type", file: "src/c.ts", note: "kept" };
+    expect(
+      documentsWithRepointed({
+        documents: [{ file: DEBT_FILE, document: { version: 2, records: [FIRST, noted] } }],
+        repointings: [{ place: { file: DEBT_FILE, index: 1 }, file: MOVED }],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: DEBT_FILE,
+          document: {
+            version: 2,
+            records: [FIRST, { answers: "claimed-type", file: MOVED, note: "kept" }],
+          },
+        },
+      ],
+    });
+  });
+
+  it("returns one document for each records file it repointed in", () => {
+    const repointed = documentsWithRepointed({
+      documents: [HELD, { file: OTHER_FILE, document: { version: 2, records: [THIRD] } }],
+      repointings: [
+        { place: { file: OTHER_FILE, index: 0 }, file: MOVED },
+        { place: { file: DEBT_FILE, index: 0 }, file: MOVED },
+      ],
+    });
+    expect(repointed).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: OTHER_FILE,
+          document: { version: 2, records: [{ answers: "claimed-type", file: MOVED }] },
+        },
+        {
+          file: DEBT_FILE,
+          document: {
+            version: 2,
+            records: [{ answers: "claimed-type", file: MOVED }, SECOND],
+          },
+        },
+      ],
+    });
+  });
+
+  it("refuses to repoint in a document that is not a records document, so it never rewrites what it cannot read", () => {
+    expect(
+      documentsWithRepointed({
+        documents: [{ file: DEBT_FILE, document: { records: [FIRST] } }],
+        repointings: [{ place: { file: DEBT_FILE, index: 0 }, file: MOVED }],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "records-documents",
+        refusals: [
+          {
+            kind: "document-refused",
+            file: DEBT_FILE,
+            issues: [expect.objectContaining({ path: ["version"] })],
+          },
+        ],
       },
     });
   });

@@ -7,23 +7,7 @@
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",

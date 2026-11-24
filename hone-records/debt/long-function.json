@@ -19,10 +19,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
     },
     {
@@ -68,14 +64,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.ts"
     },
     {
       "answers": "long-function#function-length",
