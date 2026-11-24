@@ -133,6 +133,44 @@ describe("checksPageOf", () => {
   });
 });
 
+describe("checksPageOf, over a check that declares forms", () => {
+  it("lists the forms its clause sees under its symptom, between its engines and its margin", () => {
+    const clause = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-1"),
+      clause: clauseIdOf("any-cast"),
+    };
+
+    const page = checksPageOf({
+      bindings: new Map([["claimed-type#cast-to-any", [{ name: "walker" }]]]),
+      file: {
+        ...FILE,
+        clauses: [
+          {
+            clause,
+            sight: {
+              kind: "symptom-by-form",
+              forms: [
+                { form: "an-as-cast", symptom: "claimed-type" },
+                { form: "a-null", symptom: "absence-as-state" },
+                { form: "an-angle-cast", symptom: "claimed-type" },
+              ],
+            },
+          },
+        ],
+        checks: [{ symptom: "claimed-type", name: "cast-to-any", clause, misses: "strings." }],
+      },
+      path: PATH,
+      prose: new Map(),
+    });
+
+    expect(page).toEqual({
+      path: "rules/typescript/checks.md",
+      text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Engines:** `walker`\n- **Forms:** `an-as-cast`, `an-angle-cast`\n- **Misses:** strings.\n",
+    });
+  });
+});
+
 describe("addressedCheckOf", () => {
   it("addresses a check by its name and its symptom's name", () => {
     expect(addressedCheckOf({ symptom: "claimed-type", name: "cast-to-any" })).toEqual({

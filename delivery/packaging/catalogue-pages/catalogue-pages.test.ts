@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { EngineBindingsRepository } from "../../../src/application/ports/engine-bindings-repository.ts";
+import type { ClauseAddress } from "../../../src/domain/rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import type { CatalogueClausesPort } from "./catalogue-clauses-port.ts";
 import { cataloguePagesOf } from "./catalogue-pages.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
@@ -21,6 +26,8 @@ const README = { path: "rules/README.md", text: "# Rules\n\nNo item.\n" };
 const OUTSIDE_RULES = { path: "docs/principles/elsewhere.md", text: "Not an item." };
 
 const NO_ENGINES: EngineBindingsRepository = { read: () => ({ outcome: "ok", value: new Map() }) };
+
+const NO_CLAUSES: CatalogueClausesPort = { read: () => ({ outcome: "ok", value: [] }) };
 
 const CASE = {
   path: "rules/cases/does-one-job.md",
@@ -43,6 +50,7 @@ describe("cataloguePagesOf", () => {
       cataloguePagesOf({
         path: PATH,
         engineBindings: NO_ENGINES,
+        clauses: NO_CLAUSES,
         files: [NAMES, README, PRINCIPLE, OUTSIDE_RULES],
       }),
     ).toEqual({
@@ -65,6 +73,7 @@ describe("cataloguePagesOf", () => {
     expect(
       cataloguePagesOf({
         path: PATH,
+        clauses: NO_CLAUSES,
         engineBindings: {
           read: () => ({
             outcome: "ok",
@@ -93,6 +102,7 @@ describe("cataloguePagesOf", () => {
     expect(
       cataloguePagesOf({
         path: PATH,
+        clauses: NO_CLAUSES,
         engineBindings: {
           read: () => ({
             outcome: "failed",
@@ -113,9 +123,82 @@ describe("cataloguePagesOf", () => {
     });
   });
 
+  it("lists on the checks page the forms the clauses give each check, reading the clauses with the version 1 names", () => {
+    const clause: ClauseAddress = {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-27"),
+      clause: clauseIdOf("test-body-logic"),
+    };
+    const read = vi.fn<CatalogueClausesPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value: [
+        {
+          clause,
+          sight: {
+            kind: "symptom-by-form",
+            forms: [{ form: "a-math-call", symptom: "ambient-randomness" }],
+          },
+        },
+      ],
+    });
+    const names = {
+      path: NAMES.path,
+      text: '{ "version": 1, "clauses": [{ "clause": "CD-27#test-body-logic", "sight": "piece-forms", "checks": ["ambient-randomness#random-call"], "anchor": { "kind": "file" } }], "recordKinds": {} }',
+    };
+
+    const pages = cataloguePagesOf({
+      path: PATH,
+      engineBindings: NO_ENGINES,
+      clauses: { read },
+      files: [names, PRINCIPLE, CASE, SYMPTOM, CHECK],
+    });
+
+    expect(pages).toMatchObject({
+      outcome: "ok",
+      value: [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {
+          path: "rules/typescript/checks.md",
+          text: "# Checks in TypeScript\n\n## Ambient randomness\n\n### random-call\n\n- **Forms:** `a-math-call`\n",
+        },
+      ],
+    });
+    expect(read).toHaveBeenCalledExactlyOnceWith({
+      names: expect.objectContaining({ claimsPieceForms: [clause] }),
+    });
+  });
+
+  it("fails naming the piece when the clauses cannot be read", () => {
+    const pages = cataloguePagesOf({
+      path: PATH,
+      engineBindings: NO_ENGINES,
+      clauses: {
+        read: () => ({
+          outcome: "failed",
+          error: { kind: "file-malformed", path: "/package/piece.json", detail: "no anchor" },
+        }),
+      },
+      files: [NAMES, PRINCIPLE],
+    });
+
+    expect(pages).toEqual({
+      outcome: "failed",
+      error: expect.stringContaining("/package/piece.json"),
+    });
+  });
+
   it("fails when the version 1 names are not among the files", () => {
     expect(
-      cataloguePagesOf({ path: PATH, engineBindings: NO_ENGINES, files: [PRINCIPLE] }),
+      cataloguePagesOf({
+        path: PATH,
+        engineBindings: NO_ENGINES,
+        clauses: NO_CLAUSES,
+        files: [PRINCIPLE],
+      }),
     ).toEqual({
       outcome: "failed",
       error: "src/infrastructure/disciplines-file/version-one-names.json is not among the files",
@@ -127,6 +210,7 @@ describe("cataloguePagesOf", () => {
       cataloguePagesOf({
         path: PATH,
         engineBindings: NO_ENGINES,
+        clauses: NO_CLAUSES,
         files: [
           NAMES,
           {

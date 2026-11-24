@@ -36,7 +36,7 @@ describe("itemFactsOf", () => {
     {
       kind: "recipe",
       facts: {
-        serves: { rule: "written-out-answers" },
+        serves: [{ rule: "written-out-answers" }],
         standing: "proposed",
         reason: { text: "stub with vi.fn", standing: "accepted" },
       },
@@ -80,6 +80,36 @@ describe("itemFactsOf", () => {
     { kind: "principle", facts: { lenses: ["zod-boundary"] } },
   ])("accepts the facts of a $kind as they are written", ({ kind, facts }) => {
     expect(itemFactsOf({ kind, facts })).toEqual({ outcome: "ok", value: { kind, facts } });
+  });
+
+  it("reads each check a recipe's example answers into its symptom and its name", () => {
+    const recipeFacts = itemFactsOf({
+      kind: "recipe",
+      facts: {
+        serves: [{ rule: "written-out-answers" }],
+        standing: "accepted",
+        reason: { text: "stub with vi.fn", standing: "accepted" },
+        examples: [{ anchor: "a-let", answers: [{ check: "rebinding#test-body", form: "a-let" }] }],
+      },
+    });
+
+    expect(recipeFacts).toEqual({
+      outcome: "ok",
+      value: {
+        kind: "recipe",
+        facts: {
+          serves: [{ rule: "written-out-answers" }],
+          standing: "accepted",
+          reason: { text: "stub with vi.fn", standing: "accepted" },
+          examples: [
+            {
+              anchor: "a-let",
+              answers: [{ check: { symptom: "rebinding", check: "test-body" }, form: "a-let" }],
+            },
+          ],
+        },
+      },
+    });
   });
 
   it.each<{ readonly name: string; readonly kind: ItemKind; readonly facts: unknown }>([

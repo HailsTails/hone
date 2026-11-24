@@ -85,7 +85,7 @@ const DOCUMENT = {
     {
       name: "functional-iteration",
       title: "Functional iteration",
-      serves: { rule: "doer-or-orchestrator" },
+      serves: [{ rule: "doer-or-orchestrator" }],
       standing: "accepted",
       reason: { text: '"For of mutates by its nature."', standing: "proposed" },
     },
@@ -287,6 +287,61 @@ describe("catalogueContentOf", () => {
       value: {
         recipes: [recipe],
         symptoms: [{ ...LOOP_KEYWORD, ruleSet: acme, recipes: [recipe] }],
+      },
+    });
+  });
+
+  it("keeps a recipe's examples, each naming the checks it answers by address", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const document = {
+      ...SYMPTOM_HOLDING_DOCUMENT,
+      clauses: [],
+      recipes: [
+        {
+          name: "guard-clauses",
+          title: "Guard clauses",
+          serves: [{ principle: "no-hidden-effects" }, { principle: "one-place-decides" }],
+          standing: "accepted",
+          reason: { text: '"it reads flat"', standing: "accepted" },
+          examples: [
+            {
+              anchor: "an-else",
+              answers: [{ check: "work-inside-a-condition#useless-else", form: "an-else" }],
+            },
+          ],
+        },
+      ],
+      checks: [{ symptom: "work-inside-a-condition", name: "useless-else" }],
+    };
+
+    const content = catalogueContentOf({ ruleSet: acme, document });
+
+    expect(content).toMatchObject({
+      outcome: "ok",
+      value: {
+        recipes: [
+          {
+            ruleSet: acme,
+            name: "guard-clauses",
+            title: "Guard clauses",
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+            examples: [
+              {
+                anchor: "an-else",
+                answers: [
+                  {
+                    check: {
+                      name: "useless-else",
+                      symptom: { ruleSet: acme, name: "work-inside-a-condition" },
+                    },
+                    form: "an-else",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
   });
@@ -1043,7 +1098,7 @@ describe("catalogueContentOf", () => {
           {
             name: "guard-clauses",
             title: "Guard clauses",
-            serves: { principle: "no-hidden-effects" },
+            serves: [{ principle: "no-hidden-effects" }],
             standing: "accepted",
           },
         ],
@@ -1058,7 +1113,7 @@ describe("catalogueContentOf", () => {
           {
             name: "guard-clauses",
             title: "Guard clauses",
-            serves: { principle: "no-hidden-effects" },
+            serves: [{ principle: "no-hidden-effects" }],
             standing: "accepted",
             reason: { text: '"it reads flat"' },
           },
@@ -1075,13 +1130,141 @@ describe("catalogueContentOf", () => {
           {
             name: "guard-clauses",
             title: "Guard clauses",
-            serves: { rule: "guard-first" },
+            serves: [{ rule: "guard-first" }],
             standing: "accepted",
             reason: { text: '"it reads flat"', standing: "accepted" },
           },
         ],
       },
       refusal: "✖ recipes names guard-first, which the catalogue does not hold",
+    },
+    {
+      name: "a recipe with two examples at one anchor",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [{ principle: "one-place-decides" }],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+            examples: [
+              {
+                anchor: "an-else",
+                answers: [{ check: "work-inside-a-condition#useless-else", form: "an-else" }],
+              },
+              {
+                anchor: "an-else",
+                answers: [{ check: "work-inside-a-condition#useless-else", form: "a-nested-else" }],
+              },
+            ],
+          },
+        ],
+      },
+      refusal: "✖ the examples of guard-clauses holds an-else more than once",
+    },
+    {
+      name: "a recipe example answering something that is not a check address",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [{ principle: "one-place-decides" }],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+            examples: [
+              { anchor: "an-else", answers: [{ check: "useless-else", form: "an-else" }] },
+            ],
+          },
+        ],
+      },
+      refusal:
+        "✖ is not a check address, <symptom>#<check>\n  → at recipes[0].examples[0].answers[0].check",
+    },
+    {
+      name: "a recipe example answering a check the catalogue does not hold",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [{ principle: "one-place-decides" }],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+            examples: [
+              {
+                anchor: "an-else",
+                answers: [{ check: "work-inside-a-condition#useless-else", form: "an-else" }],
+              },
+            ],
+          },
+        ],
+      },
+      refusal:
+        "✖ the example an-else of guard-clauses answers work-inside-a-condition#useless-else, which the catalogue does not hold",
+    },
+    {
+      name: "a recipe example whose recipe serves no rule the form's symptom indicates",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [{ principle: "no-hidden-effects" }],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+            examples: [
+              {
+                anchor: "an-else",
+                answers: [{ check: "work-inside-a-condition#useless-else", form: "an-else" }],
+              },
+            ],
+          },
+        ],
+        checks: [{ symptom: "work-inside-a-condition", name: "useless-else" }],
+        clauses: [],
+      },
+      refusal:
+        "✖ the example an-else of guard-clauses answers work-inside-a-condition#useless-else, but guard-clauses serves no-hidden-effects, none of which work-inside-a-condition indicates",
+    },
+    {
+      name: "a symptom listing a recipe that serves no rule the symptom indicates",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [{ principle: "no-hidden-effects" }],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+          },
+        ],
+        symptoms: [{ ...SYMPTOM_DOCUMENT, recipes: ["guard-clauses"] }],
+      },
+      refusal:
+        "✖ work-inside-a-condition lists the recipe guard-clauses, but guard-clauses serves no-hidden-effects, none of which work-inside-a-condition indicates",
+    },
+    {
+      name: "a recipe serving nothing",
+      document: {
+        ...EMPTY_DOCUMENT,
+        recipes: [
+          {
+            name: "guard-clauses",
+            title: "Guard clauses",
+            serves: [],
+            standing: "accepted",
+            reason: { text: '"it reads flat"', standing: "accepted" },
+          },
+        ],
+      },
+      refusal: "✖ Too small: expected array to have >=1 items\n  → at recipes[0].serves",
     },
     {
       name: "a symptom seen by nothing",
@@ -1171,7 +1354,7 @@ describe("catalogueContentOf", () => {
           {
             name: "result-union",
             title: "Result union",
-            serves: { principle: "no-hidden-effects" },
+            serves: [{ principle: "no-hidden-effects" }],
             standing: "accepted",
             reason: { text: '"it makes the output clear"', standing: "accepted" },
           },

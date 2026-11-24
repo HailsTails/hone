@@ -421,7 +421,7 @@ describe("findingLine", () => {
     );
   });
 
-  it("ends with the fix and the page that shows it when the check names one, and keeps a line break in the snippet on one line", () => {
+  it("ends with the form and its check's page, then the fix, when no recipe example answers the form, and keeps a line break in the snippet on one line", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
@@ -430,7 +430,45 @@ describe("findingLine", () => {
         symptomPage: SYMPTOM_PAGE,
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (branch-in-a-test/test-body.md#branching-with-if)`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table`,
+    );
+  });
+
+  it("names after the fix each recipe example that answers the form, a team's by its own file", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const answer = {
+      check: {
+        name: "test-body",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+      },
+      form: "branching-with-if",
+    };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      recipes: [
+        WORLD_VALUES_THROUGH_A_PORT,
+        { ...ASSERT_TO_NARROW, examples: [{ anchor: "an-if", answers: [answer] }] },
+        {
+          ...IT_EACH_OVER_TYPED_ROWS,
+          ruleSet: acme,
+          sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+          examples: [
+            { anchor: "a-ternary", answers: [{ ...answer, form: "a-ternary" }] },
+            { anchor: "branching", answers: [answer] },
+          ],
+        },
+      ],
+    };
+
+    const line = findingLine({
+      catalogue,
+      content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (assert-to-narrow.md#an-if, team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)`,
     );
   });
 
@@ -545,14 +583,14 @@ describe("answeredLine", () => {
     );
   });
 
-  it("names the fix and the page that shows it before the records when any answering record is a debt and the check names one, and names no indications", () => {
+  it("names the form and the fix before the records when any answering record is a debt and the check names one, and names no indications", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; fix: write one test per case, or one it.each table (branch-in-a-test/test-body.md#branching-with-if) answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test answered by debt`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test answered by debt`,
     );
   });
 

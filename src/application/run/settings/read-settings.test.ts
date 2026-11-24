@@ -519,7 +519,7 @@ describe("readNamedSettings", () => {
     });
   });
 
-  it("places a folder team's symptom and check files under the team's folder", () => {
+  it("places a folder team's symptom, recipe and check files under the team's folder", () => {
     const acme = { name: ruleSetNameOf("acme") };
     const teamLoop: Symptom = {
       ...LOOP_KEYWORD,
@@ -536,6 +536,16 @@ describe("readNamedSettings", () => {
           catalogue: {
             ...SETTINGS_CATALOGUE,
             symptoms: [teamLoop],
+            recipes: [
+              {
+                ruleSet: acme,
+                name: "team-iteration",
+                sourceFile: "rules/typescript/recipes/team-iteration.md",
+                title: "Team iteration",
+                standing: "accepted",
+                reason: { text: "It reads flat.", standing: "accepted" },
+              },
+            ],
             clauses: [],
             checks: [
               {
@@ -581,6 +591,7 @@ describe("readNamedSettings", () => {
           {
             ruleSet: acme,
             catalogue: {
+              recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
               symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
               checks: [
                 {

@@ -745,6 +745,34 @@ describe("buildPackage", () => {
     });
   });
 
+  it("ships the checks page naming the forms a check's piece declaration in the source gives", async () => {
+    const { files, built } = builtWith({
+      source: {
+        ...SOURCE,
+        "/package/src/infrastructure/disciplines-file/version-one-names.json":
+          '{ "version": 1, "clauses": [{ "clause": "CD-27#test-body-logic", "sight": "piece-forms", "checks": ["rebinding#test-body"], "anchor": { "kind": "file" } }], "recordKinds": {} }',
+        "/package/rules/principles/one-place-decides.md":
+          "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n",
+        "/package/rules/cases/does-one-job.md":
+          '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "one-place-decides" }] }\n```\n',
+        "/package/rules/typescript/symptoms/rebinding.md":
+          '# Rebinding\n\n```json\n{ "group": "State", "seen": "A let.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "principle": "one-place-decides" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n',
+        "/package/rules/typescript/symptoms/rebinding/test-body.md":
+          "# test-body\n\n```json\n{}\n```\n",
+        "/package/src/infrastructure/engines/walker/rebinding/test-body/piece.json":
+          '{ "version": 2, "anchor": { "kind": "file" }, "settings": {}, "forms": { "a-let": { "symptom": "rebinding", "check": "test-body" } } }',
+      },
+      bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+    });
+
+    await built;
+
+    expect(files.textsUnder({ folder: "/out/rules" })).toMatchObject({
+      "/out/rules/typescript/checks.md":
+        "# Checks in TypeScript\n\n## Rebinding\n\n### test-body\n\n- **Engines:** `walker`\n- **Forms:** `a-let`\n",
+    });
+  });
+
   it("fails naming a piece declaration the checks page cannot read, writing nothing", async () => {
     const { files, built } = builtWith({
       source: {

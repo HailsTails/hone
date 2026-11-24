@@ -30,8 +30,8 @@ const casesServedOf = (request: { readonly file: CatalogueFile; readonly rule: R
 };
 
 const recipesOf = (request: { readonly file: CatalogueFile; readonly rule: Rule }): string => {
-  const recipes = request.file.recipes.filter(
-    (recipe) => "rule" in recipe.serves && recipe.serves.rule === request.rule.name,
+  const recipes = request.file.recipes.filter(({ serves }) =>
+    serves.some((point) => "rule" in point && point.rule === request.rule.name),
   );
   return recipes.length === 0
     ? ""

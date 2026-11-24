@@ -52,7 +52,7 @@ const WRITTEN_OUT_ANSWERS =
   '# Written-out answers\n\n```json\n{ "principle": "tests-are-ours", "standing": "accepted" }\n```\n';
 
 const WORLD_VALUES =
-  '# World values through a port\n\n```json\n{ "serves": { "rule": "written-out-answers" }, "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
+  '# World values through a port\n\n```json\n{ "serves": [{ "rule": "written-out-answers" }], "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
 
 const DATE_USED_DIRECTLY =
   '# Date used directly\n\n```json\n{ "group": "The outside world reached directly", "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
@@ -120,7 +120,13 @@ const ASSEMBLED_CONTENT = {
     },
   ],
   cases: [{ name: "does-one-job", title: "Does one job" }],
-  recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
+  recipes: [
+    {
+      name: "world-values-through-a-port",
+      sourceFile: "rules/typescript/recipes/world-values-through-a-port.md",
+      title: "World values through a port",
+    },
+  ],
   recordKinds: [
     { name: "authorised-location", todaysFormat: "authorised-location" },
     { name: "debt", todaysFormat: "none-yet" },
@@ -146,7 +152,7 @@ const ASSEMBLED_CONTENT = {
 };
 
 describe("createItemFolderCatalogueRepository", () => {
-  it("assembles a catalogue from the item files under its kind folders, each named by its file, titled by its heading and owned by the rule set it reads for, with each symptom and check placed by its file under the source prefix, reading no other file", () => {
+  it("assembles a catalogue from the item files under its kind folders, each named by its file, titled by its heading and owned by the rule set it reads for, with each symptom, recipe and check placed by its file under the source prefix, reading no other file", () => {
     const fileText = fileTextReading(
       vi
         .fn<FileTextPort["read"]>()

@@ -5,6 +5,7 @@ import {
 } from "../../../domain/language-layer/check-address-text.ts";
 import type {
   Check,
+  Recipe,
   Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -164,11 +165,16 @@ const withNamedSource = (request: {
       ? { ...symptom, sourceFile: `${folder}/${symptom.sourceFile}` }
       : symptom,
   );
+  const recipes = catalogue.recipes.map((recipe): Recipe =>
+    folder !== undefined && recipe.sourceFile !== undefined
+      ? { ...recipe, sourceFile: `${folder}/${recipe.sourceFile}` }
+      : recipe,
+  );
   const checks = catalogue.checks.map((check) => ({
     ...check,
     page: folder === undefined ? check.page : `${folder}/${check.page}`,
   }));
-  return { ruleSet, catalogue: { ...catalogue, symptoms, checks } };
+  return { ruleSet, catalogue: { ...catalogue, symptoms, recipes, checks } };
 };
 
 type NamedSettingsRequest = {
