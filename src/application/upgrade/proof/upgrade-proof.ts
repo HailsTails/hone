@@ -245,8 +245,6 @@ const projectionsRefusalOf = (request: { readonly refusal: ProjectionsRefusal })
         detail: refusal.detail,
         removedByVersionOne: [],
       };
-    case "project-rewrote":
-      return { kind: "version-one-project-rewrote", files: refusal.files, removedByVersionOne: [] };
     case "team-config-refused":
     case "slice-left-in-place":
       return { kind: "plan-refused", refusal, removedByVersionOne: [] };
@@ -409,12 +407,13 @@ const writtenAndChecked = async (
     : removedAfterPassing({ ...written, passing: passing.value });
 };
 
+type Projected = {
+  readonly projections: readonly VersionOneProjection[];
+  readonly removed: readonly AbsolutePath[];
+};
+
 const afterProjecting = async (
-  request: UpgradeProofRequest & {
-    readonly plan: UpgradePlan;
-    readonly projections: readonly VersionOneProjection[];
-    readonly removed: readonly AbsolutePath[];
-  },
+  request: UpgradeProofRequest & Projected & { readonly plan: UpgradePlan },
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const replacements = replacementsOf({
     projections: request.projections,
@@ -448,52 +447,22 @@ const withRemovedByVersionOne = <Value>(request: {
     return request.result;
   }
   const { error } = request.result;
-  return error.kind === "oracle-failed" || error.kind === "removal-failed"
+  return error.kind === "removal-failed"
     ? request.result
     : { outcome: "failed", error: { ...error, removedByVersionOne: request.removed } };
 };
 
-const projectedOver = async (
-  request: UpgradeProofRequest & { readonly plan: UpgradePlan },
-): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
-  const reading = await request.versionOneProjectionsOf();
-  const carried = await afterReading({ ...request, projectionsReading: reading });
-  return withRemovedByVersionOne({ result: carried, removed: reading.removed });
-};
-
-const afterReading = async (
-  request: UpgradeProofRequest & {
-    readonly plan: UpgradePlan;
-    readonly projectionsReading: VersionOneProjectionsReading;
-  },
-): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
-  const reading = request.projectionsReading;
-  const removed = removedPlacedOf({
-    queries: request.queries,
-    repoRoot: request.repoRoot,
-    removed: reading.removed,
-  });
-  if (removed.outcome === "failed") {
-    return removed;
-  }
-  if (reading.outcome.outcome === "failed") {
-    return { outcome: "failed", error: projectionsRefusalOf({ refusal: reading.outcome.error }) };
-  }
-  return afterProjecting({
-    ...request,
-    projections: reading.outcome.value,
-    removed: removed.value,
-  });
-};
-
 const provenOver = async (
-  request: UpgradeProofRequest,
+  request: UpgradeProofRequest & Projected,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const answered = await request.oracle.answer({
     records: request.reading.heads.map(({ record }) => record),
   });
   if (answered.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "oracle-failed", failure: answered.error } };
+    return {
+      outcome: "failed",
+      error: { kind: "oracle-failed", failure: answered.error, removedByVersionOne: [] },
+    };
   }
   const plan = await upgradePlanOf({
     reading: request.reading,
@@ -525,7 +494,29 @@ const provenOver = async (
       },
     };
   }
-  return projectedOver({ ...request, plan: plan.value });
+  return afterProjecting({ ...request, plan: plan.value });
+};
+
+const afterReading = async (
+  request: UpgradeProofRequest & { readonly projectionsReading: VersionOneProjectionsReading },
+): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
+  const reading = request.projectionsReading;
+  const removed = removedPlacedOf({
+    queries: request.queries,
+    repoRoot: request.repoRoot,
+    removed: reading.removed,
+  });
+  if (removed.outcome === "failed") {
+    return removed;
+  }
+  if (reading.outcome.outcome === "failed") {
+    return { outcome: "failed", error: projectionsRefusalOf({ refusal: reading.outcome.error }) };
+  }
+  return provenOver({
+    ...request,
+    projections: reading.outcome.value,
+    removed: removed.value,
+  });
 };
 
 export const upgradeProof = async (
@@ -536,7 +527,11 @@ export const upgradeProof = async (
   if (patches.outcome === "failed") {
     return patches;
   }
-  const proven = await provenOver(request);
+  const projectionsReading = await request.versionOneProjectionsOf();
+  const proven = withRemovedByVersionOne({
+    result: await afterReading({ ...request, projectionsReading }),
+    removed: projectionsReading.removed,
+  });
   return proven.outcome === "ok"
     ? proven
     : {
@@ -545,7 +540,7 @@ export const upgradeProof = async (
           queries,
           effects,
           repoRoot,
-          patches: patches.value,
+          writes: [...patches.value, ...projectionsReading.written],
           refusal: proven.error,
         }),
       };

@@ -478,7 +478,11 @@ describe("upgradeOf", () => {
 
     const ORACLE_FAILED = {
       outcome: "failed",
-      error: { kind: "oracle-failed", failure: { kind: "version-one-run-failed", detail: "x" } },
+      error: {
+        kind: "oracle-failed",
+        failure: { kind: "version-one-run-failed", detail: "x" },
+        removedByVersionOne: [],
+      },
     } as const;
 
     it("applies each kind of effect through the ports the upgrade was given", async () => {
@@ -575,6 +579,55 @@ describe("upgradeOf", () => {
         [[{ path: FOLDER }]],
       ]);
     });
+  });
+
+  it("records what version 1's own project writes through the ports the upgrade was given, for the proof to put back", async () => {
+    const git = gitListing({ tracked: TRACKED });
+    const command = commandOver({ git });
+    const projection = absoluteRootOf("/repo/disciplines.eslint.mjs");
+    const write = vi
+      .fn<FileTextPort["write"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+    const versionOneProjectionOf = vi
+      .fn<UpgradePorts["versionOneProjectionOf"]>()
+      .mockReturnValue({ inspect: vi.fn(), prepare: vi.fn() });
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "unplaceable-path", file: repoPathOf("a"), removedByVersionOne: [] },
+    });
+    await upgradeOf(
+      inputWith({
+        git,
+        command: {
+          ...command,
+          fileText: { read: vi.fn(), exists: () => "absent", write },
+          selectionRepositoryOf: () => ({
+            read: () => ({ outcome: "failed", error: SELECTION_ABSENT }),
+          }),
+        },
+        ports: { ...PORTS, versionOneProjectionOf, loadFailureDetail: () => "selection is absent" },
+        recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+        versionOneReadOf: vi
+          .fn<VersionOneReadOf>()
+          .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+        proofOf,
+      }),
+    );
+    const [[platform]] = versionOneProjectionOf.mock.calls;
+    const [[proofRequest]] = proofOf.mock.calls;
+
+    platform.fileText.write({ path: projection, text: "projected" });
+    const reading = await proofRequest.versionOneProjectionsOf();
+
+    expect(reading).toEqual({
+      written: [{ kind: "file-created", path: projection }],
+      removed: [],
+      outcome: {
+        outcome: "failed",
+        error: { kind: "project-failed", detail: "selection is absent" },
+      },
+    });
+    expect(write.mock.calls).toEqual([[{ path: projection, text: "projected" }]]);
   });
 
   it("runs the version 2 proof and the smoothing commands over the found tree with the team layout and the files the upgrade wrote, less those the layout removes, handing the check the report pointers", async () => {

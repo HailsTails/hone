@@ -7,6 +7,7 @@ import type { ProjectionWrite } from "../../../domain/runner/runner-result-types
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
+import type { ProofWrites } from "../proof-writes/proof-writes.ts";
 import {
   type VersionOneProject,
   versionOneProjectionsOfRepository,
@@ -41,11 +42,16 @@ const fileTextHolding = (request: { readonly configText: string }): FileTextPort
   write: vi.fn<FileTextPort["write"]>(),
 });
 
+const RECORDED: ProofWrites = [
+  { kind: "file-created", path: absoluteRootOf("/repo/disciplines.eslint.mjs") },
+];
+
 const requestOver = (request: {
   readonly project: VersionOneProject;
   readonly fileText: FileTextPort;
 }) => ({
   project: request.project,
+  writes: () => RECORDED,
   loadFailureDetail,
   fileText: request.fileText,
   path,
@@ -70,10 +76,24 @@ describe("versionOneProjectionsOfRepository", () => {
     await expect(
       versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
     ).resolves.toEqual({
+      written: RECORDED,
       removed: [],
       outcome: { outcome: "ok", value: FOUND },
     });
     expect(project).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it("pairs a projection version 1's project created with the config that imports it", async () => {
+    const project = projecting({ writes: [{ path: PROJECTION, effect: "written" }] });
+    const fileText = fileTextHolding({ configText: CONFIG_TEXT });
+
+    const reading = await versionOneProjectionsOfRepository(requestOver({ project, fileText }))();
+
+    expect(reading).toEqual({
+      written: RECORDED,
+      removed: [],
+      outcome: { outcome: "ok", value: FOUND },
+    });
   });
 
   it("names the slice version 1's project removed, and lists no projection for it", async () => {
@@ -87,6 +107,7 @@ describe("versionOneProjectionsOfRepository", () => {
     await expect(
       versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
     ).resolves.toEqual({
+      written: RECORDED,
       removed: ["old/disciplines.eslint.mjs"],
       outcome: { outcome: "ok", value: FOUND },
     });
@@ -98,6 +119,7 @@ describe("versionOneProjectionsOfRepository", () => {
     await expect(
       versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
     ).resolves.toEqual({
+      written: RECORDED,
       removed: [],
       outcome: {
         outcome: "failed",
@@ -121,6 +143,7 @@ describe("versionOneProjectionsOfRepository", () => {
     await expect(
       versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
     ).resolves.toEqual({
+      written: RECORDED,
       removed: [],
       outcome: {
         outcome: "failed",

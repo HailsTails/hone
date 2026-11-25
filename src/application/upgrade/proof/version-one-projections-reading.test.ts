@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
+import type { ProofWrites } from "../proof-writes/proof-writes.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import {
   type VersionOneProjectionSources,
@@ -23,6 +25,14 @@ const REMOVED_WRITE: ProjectionWrite = {
   effect: "removed",
 };
 
+const RECORDED: ProofWrites = [
+  {
+    kind: "file-replaced",
+    path: absoluteRootOf("/repo/disciplines.eslint.mjs"),
+    original: "export default [];\n",
+  },
+];
+
 const FOUND: readonly VersionOneProjection[] = [
   {
     projection: repoPathOf("disciplines.eslint.mjs"),
@@ -33,6 +43,7 @@ const FOUND: readonly VersionOneProjection[] = [
 const sourcesOver = (request: {
   readonly writes: readonly ProjectionWrite[];
 }): VersionOneProjectionSources => ({
+  writes: vi.fn<VersionOneProjectionSources["writes"]>().mockReturnValue(RECORDED),
   project: vi
     .fn<VersionOneProjectionSources["project"]>()
     .mockResolvedValue({ outcome: "ok", value: request.writes }),
@@ -45,6 +56,7 @@ describe("versionOneProjectionsOver", () => {
   it("takes the projections from the files version 1 left unchanged and removed nothing", async () => {
     const sources = sourcesOver({ writes: [ROOT_WRITE, SLICE_WRITE] });
     expect(await versionOneProjectionsOver(sources)()).toEqual({
+      written: RECORDED,
       removed: [],
       outcome: { outcome: "ok", value: FOUND },
     });
@@ -56,6 +68,7 @@ describe("versionOneProjectionsOver", () => {
   it("names a slice version 1 removed, and does not list it as a projection", async () => {
     const sources = sourcesOver({ writes: [ROOT_WRITE, REMOVED_WRITE] });
     expect(await versionOneProjectionsOver(sources)()).toEqual({
+      written: RECORDED,
       removed: ["gone/disciplines.eslint.mjs"],
       outcome: { outcome: "ok", value: FOUND },
     });
@@ -64,25 +77,21 @@ describe("versionOneProjectionsOver", () => {
     ]);
   });
 
-  it("refuses naming each file version 1's project rewrote, since the run measured it before that, and still reports what it removed", async () => {
+  it("takes the projections from the files version 1 rewrote or created as from those it left unchanged, naming what it recorded writing", async () => {
     const sources = sourcesOver({
-      writes: [
-        { ...ROOT_WRITE, effect: "written" },
-        { ...SLICE_WRITE, effect: "written" },
-        REMOVED_WRITE,
-      ],
+      writes: [{ ...ROOT_WRITE, effect: "written" }, SLICE_WRITE, REMOVED_WRITE],
     });
-    expect(await versionOneProjectionsOver(sources)()).toEqual({
+
+    const reading = await versionOneProjectionsOver(sources)();
+
+    expect(reading).toEqual({
+      written: RECORDED,
       removed: ["gone/disciplines.eslint.mjs"],
-      outcome: {
-        outcome: "failed",
-        error: {
-          kind: "project-rewrote",
-          files: ["disciplines.eslint.mjs", "packages/a/disciplines.eslint.mjs"],
-        },
-      },
+      outcome: { outcome: "ok", value: FOUND },
     });
-    expect(sources.teamConfigsOf).not.toHaveBeenCalled();
+    expect(vi.mocked(sources.teamConfigsOf).mock.calls).toEqual([
+      [{ projections: ["disciplines.eslint.mjs", "packages/a/disciplines.eslint.mjs"] }],
+    ]);
   });
 
   it("refuses naming each slice version 1 left in place, and still reports what it removed", async () => {
@@ -94,6 +103,7 @@ describe("versionOneProjectionsOver", () => {
       ],
     });
     expect(await versionOneProjectionsOver(sources)()).toEqual({
+      written: RECORDED,
       removed: ["gone/disciplines.eslint.mjs"],
       outcome: {
         outcome: "failed",
@@ -105,6 +115,7 @@ describe("versionOneProjectionsOver", () => {
 
   it("refuses with the team config refusal, still reporting what version 1 removed", async () => {
     const sources: VersionOneProjectionSources = {
+      writes: vi.fn<VersionOneProjectionSources["writes"]>().mockReturnValue(RECORDED),
       project: vi
         .fn<VersionOneProjectionSources["project"]>()
         .mockResolvedValue({ outcome: "ok", value: [ROOT_WRITE, REMOVED_WRITE] }),
@@ -117,6 +128,7 @@ describe("versionOneProjectionsOver", () => {
       }),
     };
     expect(await versionOneProjectionsOver(sources)()).toEqual({
+      written: RECORDED,
       removed: ["gone/disciplines.eslint.mjs"],
       outcome: {
         outcome: "failed",
@@ -130,12 +142,14 @@ describe("versionOneProjectionsOver", () => {
 
   it("refuses with the detail when version 1's project fails, removing nothing", async () => {
     const sources: VersionOneProjectionSources = {
+      writes: vi.fn<VersionOneProjectionSources["writes"]>().mockReturnValue(RECORDED),
       project: vi
         .fn<VersionOneProjectionSources["project"]>()
         .mockResolvedValue({ outcome: "failed", error: { detail: "disk full" } }),
       teamConfigsOf: vi.fn<VersionOneProjectionSources["teamConfigsOf"]>(),
     };
     expect(await versionOneProjectionsOver(sources)()).toEqual({
+      written: RECORDED,
       removed: [],
       outcome: { outcome: "failed", error: { kind: "project-failed", detail: "disk full" } },
     });
