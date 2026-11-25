@@ -11,7 +11,7 @@ import type { ConsumerSelectionFile } from "../../../domain/settings/selection/s
 import { createPathPort } from "../../node/path-port.ts";
 import { upgradeRuleSetCataloguesOf } from "./upgrade-rule-set-catalogues.ts";
 
-const NAMES_PATH = "/repo/acme/version-two-names.json";
+const NAMES_PATH = "/repo/acme/rules/version-one-names.json";
 
 const SELECTION: ConsumerSelectionFile = {
   version: 1,
@@ -69,7 +69,7 @@ describe("upgradeRuleSetCataloguesOf", () => {
     expect(fileText.read).not.toHaveBeenCalled();
   });
 
-  it("refuses at the team's names file when it is malformed", () => {
+  it("refuses at the team's version 1 names when it is malformed", () => {
     const fileText: FileTextPort = {
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
       read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: "{" }),

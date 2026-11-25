@@ -399,36 +399,6 @@ export const readVersionOneTeamLayout = (
       });
 };
 
-export const teamUpgradeNamesOf = (request: {
-  readonly layout: VersionOneTeamLayout;
-  readonly namesPath: string;
-}): Read<VersionOneNames> => {
-  const names = versionOneNamesOf({
-    document: {
-      version: 1,
-      clauses: request.layout.clauses.flatMap(({ clause, naming, anchor }) =>
-        naming.naming === "named"
-          ? [
-              {
-                clause: clauseAddressText({ address: clause }),
-                sight: { kind: "one-symptom", symptom: naming.check.symptom },
-                checks: [checkAddressOfNames(naming.check)],
-                anchor,
-              },
-            ]
-          : [],
-      ),
-      recordKinds: {},
-    },
-  });
-  return names.outcome === "failed"
-    ? {
-        outcome: "failed",
-        error: { kind: "file-malformed", path: request.namesPath, detail: names.error },
-      }
-    : names;
-};
-
 export const usedTeamRuleSetsOf = (selection: ConsumerSelectionFile): readonly TeamRuleSet[] => {
   const used = new Set(
     selection.clauses.flatMap(([{ ruleSet }]) => (ruleSet === TOOL_RULE_SET ? [] : [ruleSet.name])),
@@ -503,16 +473,4 @@ export const versionOneTeamLayoutsOf = (
     },
   });
   return layouts.outcome === "failed" ? layouts : { outcome: "ok", value: layouts.value.flat() };
-};
-
-export const teamUpgradeNamesAt = (
-  request: TeamLayoutSources & { readonly ruleSet: TeamRuleSet; readonly root: AbsolutePath },
-): Read<VersionOneNames> => {
-  const layout = readVersionOneTeamLayout(request);
-  return layout.outcome === "failed"
-    ? layout
-    : teamUpgradeNamesOf({
-        layout: layout.value,
-        namesPath: request.path.join({ segments: [request.root, VERSION_TWO_NAMES_FILE] }),
-      });
 };

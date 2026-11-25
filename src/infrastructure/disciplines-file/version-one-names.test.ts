@@ -4,8 +4,10 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import SHIPPED_NAMES from "./version-one-names.json" with { type: "json" };
 import {
+  locateVersionOneNames,
   readVersionOneNames,
   VERSION_ONE_NAMES_SEGMENTS,
   versionOneNamesOf,
@@ -293,11 +295,66 @@ describe("versionOneNamesOf", () => {
   });
 });
 
+describe("locateVersionOneNames", () => {
+  it("finds the install's own names among its version 1 files", () => {
+    const located = locateVersionOneNames({ ruleSetRoot: "/install", installRoot: "/install" });
+
+    expect(located).toEqual(VERSION_ONE_NAMES_SEGMENTS);
+  });
+
+  it("finds any other rule set's names in its rules folder", () => {
+    const located = locateVersionOneNames({ ruleSetRoot: "/repo/acme", installRoot: "/install" });
+
+    expect(located).toEqual(["rules", "version-one-names.json"]);
+  });
+});
+
 describe("readVersionOneNames", () => {
+  it("fails file-malformed naming each clause of another rule set, for Hone's names as for a team's", () => {
+    const text =
+      '{ "version": 1, "clauses": [{ "clause": "acme/ACME-1#console-calls", "sight": { "kind": "one-symptom", "symptom": "direct-console" }, "checks": ["direct-console#console-calls"], "anchor": { "kind": "file" } }, { "clause": "CD-15#loops", "sight": { "kind": "one-symptom", "symptom": "loop-keyword" }, "checks": ["loop-keyword#loops"], "anchor": { "kind": "file" } }], "recordKinds": {} }';
+
+    const asTeam = readVersionOneNames({
+      fileText: fileTextHolding({ text }),
+      path: PATH,
+      ruleSet: { name: ruleSetNameOf("acme") },
+    });
+    const asTool = readVersionOneNames({
+      fileText: fileTextHolding({ text }),
+      path: PATH,
+      ruleSet: TOOL_RULE_SET,
+    });
+
+    expect([asTeam, asTool]).toEqual([
+      {
+        outcome: "failed",
+        error: {
+          kind: "file-malformed",
+          path: PATH,
+          detail: "✖ CD-15#loops is not a clause of this rule set",
+        },
+      },
+      {
+        outcome: "failed",
+        error: {
+          kind: "file-malformed",
+          path: PATH,
+          detail: "✖ acme/ACME-1#console-calls is not a clause of this rule set",
+        },
+      },
+    ]);
+  });
+
   it("gives the names the map's text holds", () => {
     const text =
       '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "one-symptom", "symptom": "date-used-directly" }, "checks": ["date-used-directly#clock-sources"], "anchor": { "kind": "file" } }], "recordKinds": {} }';
-    expect(readVersionOneNames({ fileText: fileTextHolding({ text }), path: PATH })).toEqual({
+    expect(
+      readVersionOneNames({
+        fileText: fileTextHolding({ text }),
+        path: PATH,
+        ruleSet: TOOL_RULE_SET,
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
         clauses: [
@@ -347,14 +404,16 @@ describe("readVersionOneNames", () => {
       }),
       write: vi.fn<FileTextPort["write"]>(),
     };
-    expect(readVersionOneNames({ fileText, path: PATH })).toEqual({
+    expect(readVersionOneNames({ fileText, path: PATH, ruleSet: TOOL_RULE_SET })).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", path: PATH, detail: "ENOENT" },
     });
   });
 
   it("fails file-unreadable when the map cannot be read", () => {
-    expect(readVersionOneNames({ fileText: UNREADABLE, path: PATH })).toEqual({
+    expect(
+      readVersionOneNames({ fileText: UNREADABLE, path: PATH, ruleSet: TOOL_RULE_SET }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", path: PATH, detail: "EACCES" },
     });
@@ -363,7 +422,13 @@ describe("readVersionOneNames", () => {
   it("fails file-malformed with the reason when the map's text is not the names map", () => {
     const text =
       '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"], "anchor": { "kind": "file" } }, { "clause": "CD-18#other", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"], "anchor": { "kind": "file" } }], "recordKinds": {} }';
-    expect(readVersionOneNames({ fileText: fileTextHolding({ text }), path: PATH })).toEqual({
+    expect(
+      readVersionOneNames({
+        fileText: fileTextHolding({ text }),
+        path: PATH,
+        ruleSet: TOOL_RULE_SET,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-malformed",

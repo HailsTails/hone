@@ -170,6 +170,27 @@ describe("upgradeSuccessOutcomeOf", () => {
     });
   });
 
+  it("says when each rule set's version 1 names it wrote can be deleted", () => {
+    const outcome = upgradeSuccessOutcomeOf({
+      repoRoot: REPO,
+      path: PATH,
+      carried: {
+        written: [repoPathOf("acme/rules/version-one-names.json"), repoPathOf("hone.config.json")],
+        replaced: [],
+        removed: { files: [], folders: [] },
+        records: [],
+        smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
+        mentions: [],
+        unread: [],
+      },
+    });
+
+    expect(outcome).toEqual({
+      code: 0,
+      text: "upgraded to version 2\nwrote acme/rules/version-one-names.json\nwrote hone.config.json\nkeep acme/rules/version-one-names.json until your main branch is on version 2, then you can delete it: until then the check judges carried records by it\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
+    });
+  });
+
   it("names no rewrite when the repository had no team config", () => {
     expect(
       upgradeSuccessOutcomeOf({

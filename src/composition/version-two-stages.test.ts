@@ -496,13 +496,13 @@ describe("versionTwoStagesOver", () => {
     ]);
   });
 
-  it("fails as a catalogue not read, unreadable, when the install holds nothing, not even its version 1 names", () => {
+  it("fails as a catalogue not read, absent, when the install holds nothing", () => {
     expect(stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).catalogue()).toEqual({
       outcome: "failed",
       error: {
         kind: "catalogue-not-read",
         path: "/install/rules",
-        reason: { reason: "unreadable", detail: "ENOENT" },
+        reason: { reason: "absent" },
       },
     });
   });

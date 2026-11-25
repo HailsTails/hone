@@ -10,6 +10,7 @@ import {
   packageManagerPinOf,
   packagedConsumerManifest,
   packagedScriptsOf,
+  type ConsumerSetup,
   type ProofAction,
   type StepExpectation,
   toolchainPinsOf,
@@ -403,6 +404,31 @@ const WRONG_FIELDS_REJECTED: ProofAction = {
   expectation: { exitCode: 2, output: WRONG_FIELD_REPORT },
 };
 
+const TEAM_SETUP: ConsumerSetup = {
+  replace: [],
+  files: [
+    {
+      name: "discipline-exceptions.json",
+      text: '{"version":1,"exceptions":[{"kind":"authorised-location","clause":"acme/ACME-2#scratch-files","file":"plan.scratch.md","reason":"the one plan kept in the repository","whyChain":{"whys":[{"why":"Why is plan.scratch.md committed?","because":"It is the page the build plan is read from","evidence":"plan.scratch.md line 1"},{"why":"Why read the plan from a page?","because":"Reviewers open it beside the change","evidence":"The review guide links it"},{"why":"Why one page rather than many?","because":"A single page is checked in one sitting","evidence":"The weekly agenda names one page"},{"why":"Why not a tracker?","because":"Releases embed the page they were built from","evidence":"Release notes quote it"},{"why":"Why does it stay?","because":"Every release ships its own plan","evidence":"The release checklist asks for it"}],"rootCause":"The release process embeds one plan page","owner":"Team"}},{"kind":"file-carve-out","clause":"acme/ACME-2#scratch-files","file":"legacy.scratch.md","reason":"kept from before the rule","whyChain":{"whys":[{"why":"Why is legacy.scratch.md committed?","because":"It predates the scratch rule","evidence":"legacy.scratch.md line 1"},{"why":"Why was it never moved?","because":"An importer reads it by name","evidence":"The importer configuration"},{"why":"Why does the importer name it?","because":"Its path is fixed in a partner contract","evidence":"The contract\'s appendix"},{"why":"Why is the contract fixed?","because":"Renewal happens once a year","evidence":"The renewal calendar"},{"why":"Why wait for renewal?","because":"The partner changes paths only then","evidence":"Their support reply"}],"rootCause":"A partner contract fixes the path until renewal","owner":"Team"}}]}\n',
+    },
+    { name: "plan.scratch.md", text: "plan\n" },
+    { name: "legacy.scratch.md", text: "legacy\n" },
+  ],
+};
+
+const TEAM_ANSWERED_REPORT = `editions (1)
+acme/scratch-file#scratch-files walker edition 1 of 2
+answered (4)
+acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); answered by debt
+acme/scratch-file#scratch-files walker legacy.scratch.md:1:0 legacy.scratch.md answered by debt carried
+acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md answered by debt
+acme/scratch-file#scratch-files walker plan.scratch.md:1:0 plan.scratch.md answered by authorised-location carried
+carried (2)
+hone-records/acme/authorised-locations/scratch-file.json records[0] established lacks case, owes, whyChain
+hone-records/acme/debt/scratch-file.json records[0] established
+verdict: pass
+`;
+
 const TEAM_ACTIONS: readonly ProofAction[] = [
   {
     kind: "typecheck",
@@ -414,9 +440,10 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 0,
       output:
-        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote hone-records/acme/debt/scratch-file.json\nwrote hone-records/acme/debt/direct-console.json\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nacme/scratch-file#scratch-files recorded notes.scratch.md\nacme/direct-console#console-calls recorded src/start-banner.ts\nprojected hone.eslint.mjs\nupgrade: records written 0, carried records removed 0, debt recorded 2, debt pruned 0; version 2's check passes\n",
+        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/rules/version-one-names.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone-records/acme/authorised-locations/scratch-file.json\nwrote hone-records/acme/debt/scratch-file.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote hone-records/acme/debt/direct-console.json\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nauthorised-location acme/ACME-2#scratch-files plan.scratch.md -> authorised-location scratch-file#scratch-files\nfile-carve-out acme/ACME-2#scratch-files legacy.scratch.md -> debt scratch-file#scratch-files\ncarried scratch-file#scratch-files plan.scratch.md\ncarried scratch-file#scratch-files legacy.scratch.md\nkeep tools/disciplines/acme/rules/version-one-names.json until your main branch is on version 2, then you can delete it: until then the check judges carried records by it\nacme/scratch-file#scratch-files recorded notes.scratch.md\nacme/direct-console#console-calls recorded src/start-banner.ts\nprojected hone.eslint.mjs\nupgrade: records written 2, carried records removed 0, debt recorded 2, debt pruned 0; version 2's check passes\n",
     },
   },
+  { kind: "check", expectation: { exitCode: 0, output: TEAM_ANSWERED_REPORT } },
   { kind: "commit", message: "upgrade" },
   {
     kind: "typecheck",
@@ -440,16 +467,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   },
   {
     kind: "check",
-    expectation: {
-      exitCode: 0,
-      output: `editions (1)
-acme/scratch-file#scratch-files walker edition 1 of 2
-answered (2)
-acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); answered by debt
-acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md answered by debt
-verdict: pass
-`,
-    },
+    expectation: { exitCode: 0, output: TEAM_ANSWERED_REPORT },
   },
 ];
 
@@ -500,6 +518,7 @@ describe("the proof cases", () => {
         fixture: "team",
         toolchain: "current",
         typeStripping: "enabled",
+        setup: TEAM_SETUP,
         actions: TEAM_ACTIONS,
       },
       {

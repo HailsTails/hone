@@ -12,8 +12,9 @@ import {
 } from "../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress, RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
+import { RULE_SET_NAMES_SEGMENTS } from "../../domain/rule-set/version-one-names-location.ts";
 import {
   anchorKindSchema,
   readVersionOneJson,
@@ -32,6 +33,14 @@ export const VERSION_ONE_NAMES_SEGMENTS: readonly string[] = [
   "disciplines-file",
   "version-one-names.json",
 ];
+
+export const locateVersionOneNames = (request: {
+  readonly ruleSetRoot: string;
+  readonly installRoot: string;
+}): readonly string[] =>
+  request.ruleSetRoot === request.installRoot
+    ? VERSION_ONE_NAMES_SEGMENTS
+    : RULE_SET_NAMES_SEGMENTS;
 
 const formatOfTodaySchema = recordKindWireSchema.shape.todaysFormat.exclude(["none-yet"]);
 
@@ -158,7 +167,19 @@ export const versionOneNamesOf = (request: {
     : { outcome: "failed", error: z.prettifyError(parsed.error) };
 };
 
-export const readVersionOneNames = (request: {
+const listOtherClauses = (request: {
+  readonly names: Pick<VersionOneNames, "namedClauses">;
+  readonly ruleSet: RuleSetIdentity;
+}): readonly ClauseAddress[] =>
+  request.names.namedClauses
+    .map(({ clause }) => clause)
+    .filter(
+      (clause) =>
+        sameClauseAddress({ left: clause, right: { ...clause, ruleSet: request.ruleSet } }) ===
+        "different",
+    );
+
+const readNamesText = (request: {
   readonly fileText: FileTextPort;
   readonly path: string;
 }): Result<VersionOneNames, VersionTwoLoadFailure> => {
@@ -171,6 +192,33 @@ export const readVersionOneNames = (request: {
     ? {
         outcome: "failed",
         error: { kind: "file-malformed", path: request.path, detail: names.error },
+      }
+    : names;
+};
+
+export const readVersionOneNames = (request: {
+  readonly fileText: FileTextPort;
+  readonly path: string;
+  readonly ruleSet: RuleSetIdentity;
+}): Result<VersionOneNames, VersionTwoLoadFailure> => {
+  const names = readNamesText(request);
+  if (names.outcome === "failed") {
+    return names;
+  }
+  const others = listOtherClauses({ names: names.value, ruleSet: request.ruleSet });
+  return others.length > 0
+    ? {
+        outcome: "failed",
+        error: {
+          kind: "file-malformed",
+          path: request.path,
+          detail: others
+            .map(
+              (clause) =>
+                `✖ ${clauseAddressText({ address: clause })} is not a clause of this rule set`,
+            )
+            .join("\n"),
+        },
       }
     : names;
 };

@@ -632,6 +632,7 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
             .mockReturnValueOnce("absent")
             .mockReturnValueOnce("absent")
             .mockReturnValueOnce("present")
+            .mockReturnValueOnce("present")
             .mockReturnValue("absent"),
           read: vi
             .fn<FileTextPort["read"]>()

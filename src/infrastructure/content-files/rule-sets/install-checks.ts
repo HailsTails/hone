@@ -8,7 +8,7 @@ import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import { sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
+import { sameClauseAddress, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import {
   type NamedClause,
   readVersionOneNames,
@@ -36,6 +36,7 @@ export const readInstallChecks = (request: {
   const names = readVersionOneNames({
     fileText: request.fileText,
     path: request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] }),
+    ruleSet: TOOL_RULE_SET,
   });
   return names.outcome === "failed"
     ? names

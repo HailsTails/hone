@@ -200,7 +200,7 @@ describe("createClauseChecks", () => {
     const teamCheck: Check = { ...LOOP_KEYWORD_LOOPS, clause: teamClause };
 
     const clauseChecks = createClauseChecks({
-      catalogues: [{ ruleSet: team, catalogue: { ...SETTINGS_CATALOGUE, checks: [teamCheck] } }],
+      catalogues: [{ catalogue: { ...SETTINGS_CATALOGUE, checks: [teamCheck] } }],
     });
 
     expect(clauseChecks).toEqual(new Map([["team/TM-1#no-tmp-files", [teamCheck]]]));

@@ -12,7 +12,6 @@ import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
-import type { VersionOneNames } from "../../disciplines-file/version-one-names.ts";
 import { createEngineBindingsRepository } from "../../engines/piece-engines.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 
@@ -24,7 +23,6 @@ type BoundCatalogueSource = {
   readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
   readonly inheritedRecordKinds: readonly RecordKind[];
-  readonly upgradeNames?: VersionOneNames;
 };
 
 export const readBoundCatalogue = (

@@ -641,6 +641,7 @@ describe("upgradeOf", () => {
             kindOf: vi
               .fn<EntryKindPort["kindOf"]>()
               .mockReturnValueOnce("absent")
+              .mockReturnValueOnce("absent")
               .mockReturnValue("directory"),
           },
           fileCreation: {
@@ -687,6 +688,7 @@ describe("upgradeOf", () => {
           {
             written: [
               repoPathOf("acme/rules/principles/repository-ready.md"),
+              repoPathOf("acme/rules/version-one-names.json"),
               repoPathOf("hone.eslint.d.mts"),
             ],
             removed: [
@@ -699,6 +701,7 @@ describe("upgradeOf", () => {
           {
             written: [
               repoPathOf("acme/rules/principles/repository-ready.md"),
+              repoPathOf("acme/rules/version-one-names.json"),
               repoPathOf("hone.eslint.d.mts"),
             ],
             removed: [
