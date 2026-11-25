@@ -116,6 +116,5 @@
     "src/infrastructure/engines/eslint/runner/projection/projection-pair/before",
     "src/operations/prune-debt/prune-debt-answered"
   ],
-  "forfeiture": "elsewhere",
   "reportOutput": "actionable"
 }
