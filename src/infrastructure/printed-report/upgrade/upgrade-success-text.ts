@@ -26,20 +26,23 @@ const shownOf = (request: {
 
 const SEPARATE_WORDS = /\s+/;
 
+const mapTextToOneLine = (request: { readonly text: string }): string =>
+  request.text.trim().split(SEPARATE_WORDS).join(" ");
+
 const recordLineOf = (request: { readonly record: RecordLine }): string => {
   const { record } = request;
   const clause = clauseAddressText({ address: record.clause });
-  if ("reason" in record) {
-    return `reason ${clause}: ${record.reason.trim().split(SEPARATE_WORDS).join(" ")}`;
+  switch (record.newKind) {
+    case "debt-by-file":
+      return `${record.recordKind} ${clause} -> debt for each file with a finding; owner: ${mapTextToOneLine({ text: record.owner })}; reason: ${mapTextToOneLine({ text: record.reason })}`;
+    case "not-carried":
+      return `${record.recordKind} ${clause} ${record.file} -> nothing it answers; not carried`;
+    case "debt":
+    case "authorised-location": {
+      const party = record.outsideParty === undefined ? "" : ` for ${record.outsideParty}`;
+      return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}${party}`;
+    }
   }
-  if (record.newKind === "not-carried") {
-    return `${record.recordKind} ${clause} ${record.file} -> nothing it answers; not carried`;
-  }
-  if ("file" in record) {
-    const party = record.outsideParty === undefined ? "" : ` for ${record.outsideParty}`;
-    return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}${party}`;
-  }
-  return `${record.recordKind} ${clause} -> ${record.newKind} ${checkAddressOf({ check: record.check })}`;
 };
 
 const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): readonly string[] =>

@@ -158,6 +158,26 @@ const PACKAGE_TRACKED =
 const DECLARED_TRACKED =
   "eslint.config.mjs\nhone-records/debt/authored-class-or-this.json\nhone.config.json\nhone.eslint.d.mts\nhone.eslint.mjs\nkept.ts\npackages/a/eslint.config.mjs\npackages/a/hone.eslint.d.mts\npackages/a/hone.eslint.mjs\npackages/a/kept.ts\n";
 
+const CLAUSE_WIDE_SELECTION =
+  '{ "version": 1, "ruleSets": {}, "clauses": { "CD-19#import-boundaries": "walker" }, "clauseSettings": { "CD-19#import-boundaries": { "confinedPackages": ["uuid"] } } }';
+
+const CLAUSE_WIDE_RECORDS =
+  '{ "version": 1, "exceptions": [{ "kind": "clause-wide-carve-out", "clause": "CD-19#import-boundaries", "reason": "the imports predate the boundary", "whyChain": { "whys": [{ "why": "Why import it?", "because": "it is the adapter", "evidence": "src/ids.ts:1" }, { "why": "Why an adapter?", "because": "the port needs one", "evidence": "src/ids.ts:1" }, { "why": "Why one?", "because": "each party has one wrapper", "evidence": "src/ids.ts:1" }, { "why": "Why one wrapper?", "because": "a swap touches one file", "evidence": "src/ids.ts:1" }, { "why": "Why swap?", "because": "parties change on their own", "evidence": "src/ids.ts:1" }], "rootCause": "an outside party needs exactly one adapter", "owner": "ids-team" } }, { "kind": "file-carve-out", "clause": "CD-19#import-boundaries", "file": "src/held.ts", "reason": "the old import" }, { "kind": "authorised-location", "clause": "CD-19#import-boundaries", "file": "src/ids.ts", "reason": "the uuid adapter", "whyChain": { "whys": [{ "why": "Why import it?", "because": "it is the adapter", "evidence": "src/ids.ts:1" }, { "why": "Why an adapter?", "because": "the port needs one", "evidence": "src/ids.ts:1" }, { "why": "Why one?", "because": "each party has one wrapper", "evidence": "src/ids.ts:1" }, { "why": "Why one wrapper?", "because": "a swap touches one file", "evidence": "src/ids.ts:1" }, { "why": "Why swap?", "because": "parties change on their own", "evidence": "src/ids.ts:1" }], "rootCause": "an outside party needs exactly one adapter", "owner": "ids-team" } }] }';
+
+const UUID_IMPORT = 'import { v4 } from "uuid";\n\nexport const createId = v4;\n';
+
+const UPGRADED_CLAUSE_WIDE =
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/authorised-locations/outside-import-past-a-boundary.json\nwrote hone-records/debt/outside-import-past-a-boundary.json\nremoved discipline-exceptions.json\nremoved disciplines.json\nclause-wide-carve-out CD-19#import-boundaries -> debt for each file with a finding; owner: ids-team; reason: the imports predate the boundary\nfile-carve-out CD-19#import-boundaries src/held.ts -> debt outside-import-past-a-boundary#import-or-require\nauthorised-location CD-19#import-boundaries src/ids.ts -> authorised-location outside-import-past-a-boundary#import-or-require for uuid\nauthorised-location CD-19#import-boundaries src/ids.ts -> authorised-location outside-import-past-a-boundary#import-or-require for node:\ncarried outside-import-past-a-boundary#import-or-require src/ids.ts\ncarried outside-import-past-a-boundary#import-or-require src/ids.ts\nremoved outside-import-past-a-boundary#import-or-require authorised-location src/ids.ts for node: carried: it answers nothing\noutside-import-past-a-boundary#import-or-require recorded src/wide.ts\nupgrade: records written 3, carried records removed 1, debt recorded 1, debt pruned 0; version 2's check passes\n";
+
+const CLAUSE_WIDE_CONFIGURATION =
+  '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "outside-import-past-a-boundary#import-or-require": "walker"\n  },\n  "checkSettings": {\n    "outside-import-past-a-boundary#import-or-require": {\n      "confinedOutsideDependencies": [\n        "uuid"\n      ]\n    }\n  }\n}\n';
+
+const CLAUSE_WIDE_DEBT =
+  '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "outside-import-past-a-boundary#import-or-require",\n      "file": "src/held.ts",\n      "note": "the old import"\n    },\n    {\n      "answers": "outside-import-past-a-boundary#import-or-require",\n      "file": "src/wide.ts"\n    }\n  ]\n}\n';
+
+const CHECKED_CLAUSE_WIDE =
+  "answered (3)\noutside-import-past-a-boundary#import-or-require walker src/held.ts:1:0 banned third-party import: uuid — use its recorded wrapping boundary answered by debt\noutside-import-past-a-boundary#import-or-require walker src/ids.ts:1:0 banned third-party import: uuid — use its recorded wrapping boundary answered by authorised-location for uuid carried\noutside-import-past-a-boundary#import-or-require walker src/wide.ts:1:0 banned third-party import: uuid — use its recorded wrapping boundary answered by debt\ncarried (1)\nhone-records/authorised-locations/outside-import-past-a-boundary.json records[0] established lacks case, owes, whyChain\nverdict: pass\n";
+
 const NOTHING_TO_UPGRADE = "already on version 2; nothing to upgrade\n";
 
 const runCommandIn = async (request: {
@@ -458,6 +478,45 @@ describe("hone upgrade over a real repository, through the real ports", () => {
           '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "outside-import-past-a-boundary#import-or-require",\n      "file": "src/ids.ts",\n      "outsideParty": "uuid",\n      "carried": {\n        "kind": "authorised-location",\n        "clause": "CD-19#import-boundaries",\n        "file": "src/ids.ts",\n        "reason": "the uuid adapter",\n        "whyChain": {\n          "whys": [\n            {\n              "why": "Why import it?",\n              "because": "it is the adapter",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why an adapter?",\n              "because": "the port needs one",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why one?",\n              "because": "each party has one wrapper",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why one wrapper?",\n              "because": "a swap touches one file",\n              "evidence": "src/ids.ts:1"\n            },\n            {\n              "why": "Why swap?",\n              "because": "parties change on their own",\n              "evidence": "src/ids.ts:1"\n            }\n          ],\n          "rootCause": "an outside party needs exactly one adapter",\n          "owner": "ids-team"\n        }\n      }\n    }\n  ]\n}\n',
       },
       checkExits: [[{ code: 0 }]],
+    });
+  });
+
+  it("records a clause-wide carve-out's findings as debt by file, and keeps the settings, the file carve-out and the authorised location on its clause, in a repository that passes the check at its version 1 base", async () => {
+    const repo = `${INSTALL_ROOT}/artefacts/upgrade-command-clause-wide`;
+    const engines = INSTALLED_PORTS;
+    onTestFinished(() => {
+      scratch.removeTree({ path: repo });
+    });
+    scratch.removeTree({ path: repo });
+    scratch.makeDirectory({ path: `${repo}/src` });
+    fileText.write({ path: `${repo}/disciplines.json`, text: CLAUSE_WIDE_SELECTION });
+    fileText.write({ path: `${repo}/discipline-exceptions.json`, text: CLAUSE_WIDE_RECORDS });
+    fileText.write({ path: `${repo}/src/ids.ts`, text: UUID_IMPORT });
+    fileText.write({ path: `${repo}/src/held.ts`, text: UUID_IMPORT });
+    fileText.write({ path: `${repo}/src/wide.ts`, text: UUID_IMPORT });
+    commands.run({ command: "git", arguments: GIT_INIT, directory: repo });
+    commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo });
+
+    const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], engines });
+    commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo });
+    const settings = fileText.read({ path: `${repo}/hone.config.json` });
+    const debt = fileText.read({
+      path: `${repo}/hone-records/debt/outside-import-past-a-boundary.json`,
+    });
+    const checked = await runCommandIn({
+      repo,
+      subcommand: "check",
+      options: ["--base-revision", "HEAD~1"],
+      engines,
+    });
+
+    expect({ upgraded, settings, debt, checked }).toEqual({
+      upgraded: { writes: [[{ text: UPGRADED_CLAUSE_WIDE }]], exits: [[{ code: 0 }]] },
+      settings: { outcome: "ok", value: CLAUSE_WIDE_CONFIGURATION },
+      debt: { outcome: "ok", value: CLAUSE_WIDE_DEBT },
+      checked: { writes: [[{ text: CHECKED_CLAUSE_WIDE }]], exits: [[{ code: 0 }]] },
     });
   });
 

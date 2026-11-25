@@ -15,7 +15,7 @@ import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
-import { clausesCarriedAsNotAdopted, mappedRecords } from "./records-mapping.ts";
+import { mappedRecords } from "./records-mapping.ts";
 
 const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
@@ -679,67 +679,6 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   });
 });
 
-const SIX_TEST_BODY_CHECKS: readonly Check[] = [
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "rebinding" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "loop-keyword" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "branch-in-a-test" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "text-past-its-reader" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "computed-value-in-a-test" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-  {
-    name: "test-body",
-    symptom: { ...LOOP_KEYWORD, name: "claimed-type" },
-    page: "loop-keyword/test-body.md",
-    clause: TEST_BODY_CLAUSE,
-    engines: [WALKER],
-    forms: [],
-    findingSpecifics: [],
-  },
-];
-
-const SIX_CHECK_CLAUSE_CHECKS: ClauseChecks = new Map([
-  ["CD-27#test-body-logic", SIX_TEST_BODY_CHECKS],
-]);
-
 const CLAUSE_WIDE_ON_LOOPS = {
   kind: "clause-wide-carve-out",
   record: {
@@ -747,17 +686,6 @@ const CLAUSE_WIDE_ON_LOOPS = {
     clause: LOOPS_CLAUSE,
     mechanism: AUDIT,
     reason: "generated code",
-    whyChain: WHY_CHAIN,
-  },
-} as const;
-
-const CLAUSE_WIDE_ON_TEST_BODY = {
-  kind: "clause-wide-carve-out",
-  record: {
-    kind: "clause-wide-carve-out",
-    clause: TEST_BODY_CLAUSE,
-    mechanism: AUDIT,
-    reason: "the tests are generated",
     whyChain: WHY_CHAIN,
   },
 } as const;
@@ -792,25 +720,39 @@ describe("mappedRecords carrying an authorised location on outside imports", () 
     forms: [],
     findingSpecifics: ["outside-party"],
   };
+  const IMPORT_CLAUSE_CHECKS: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
+  const IDS_ENTRY = {
+    kind: "authorised-location",
+    clause: "CD-19#import-or-require",
+    file: "src/adapters/ids.ts",
+    reason: "the ids adapter",
+  } as const;
+  const IDS_INPUT = {
+    kind: "authorised-location",
+    record: { clause: IMPORTS_CLAUSE, file: repoPathOf("src/adapters/ids.ts") },
+    entry: IDS_ENTRY,
+    answer: WHOLE_CLAUSE,
+  } as const;
+  const IDS_RECORD = {
+    answers: "outside-import-past-a-boundary#import-or-require",
+    file: "src/adapters/ids.ts",
+    carried: IDS_ENTRY,
+  };
+  const IDS_LINE = {
+    recordKind: "authorised-location",
+    clause: IMPORTS_CLAUSE,
+    file: "src/adapters/ids.ts",
+    newKind: "authorised-location",
+    check: IMPORT_CHECK,
+    holding: "carried",
+  };
+
   it("carries one record for each confined package, in the order configured, then one for node modules", () => {
-    const clauseChecks: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
-    const entry = {
-      kind: "authorised-location",
-      clause: "CD-19#import-or-require",
-      file: "src/adapters/ids.ts",
-      reason: "the ids adapter",
-    } as const;
-    const input = {
-      kind: "authorised-location",
-      record: { clause: IMPORTS_CLAUSE, file: repoPathOf("src/adapters/ids.ts") },
-      entry,
-      answer: WHOLE_CLAUSE,
-    } as const;
     const mapped = mappedRecords({
       confinedOutsideDependencies: ["uuid", "zod"],
-      clauseChecks,
+      clauseChecks: IMPORT_CLAUSE_CHECKS,
       content: IMPORT_CONTENT,
-      inputs: [input],
+      inputs: [IDS_INPUT],
     });
 
     expect(mapped).toEqual({
@@ -821,79 +763,27 @@ describe("mappedRecords carrying an authorised location on outside imports", () 
             file: "hone-records/authorised-locations/outside-import-past-a-boundary.json",
             version: 2,
             records: [
-              {
-                answers: "outside-import-past-a-boundary#import-or-require",
-                file: "src/adapters/ids.ts",
-                outsideParty: "uuid",
-                carried: entry,
-              },
-              {
-                answers: "outside-import-past-a-boundary#import-or-require",
-                file: "src/adapters/ids.ts",
-                outsideParty: "zod",
-                carried: entry,
-              },
-              {
-                answers: "outside-import-past-a-boundary#import-or-require",
-                file: "src/adapters/ids.ts",
-                outsideParty: "node:",
-                carried: entry,
-              },
+              { ...IDS_RECORD, outsideParty: "uuid" },
+              { ...IDS_RECORD, outsideParty: "zod" },
+              { ...IDS_RECORD, outsideParty: "node:" },
             ],
           },
         ],
         lines: [
-          {
-            recordKind: "authorised-location",
-            clause: IMPORTS_CLAUSE,
-            file: "src/adapters/ids.ts",
-            newKind: "authorised-location",
-            check: IMPORT_CHECK,
-            holding: "carried",
-            outsideParty: "uuid",
-          },
-          {
-            recordKind: "authorised-location",
-            clause: IMPORTS_CLAUSE,
-            file: "src/adapters/ids.ts",
-            newKind: "authorised-location",
-            check: IMPORT_CHECK,
-            holding: "carried",
-            outsideParty: "zod",
-          },
-          {
-            recordKind: "authorised-location",
-            clause: IMPORTS_CLAUSE,
-            file: "src/adapters/ids.ts",
-            newKind: "authorised-location",
-            check: IMPORT_CHECK,
-            holding: "carried",
-            outsideParty: "node:",
-          },
+          { ...IDS_LINE, outsideParty: "uuid" },
+          { ...IDS_LINE, outsideParty: "zod" },
+          { ...IDS_LINE, outsideParty: "node:" },
         ],
       },
     });
   });
 
   it("carries one record for node modules alone when no package is confined", () => {
-    const clauseChecks: ClauseChecks = new Map([["CD-19#import-or-require", [IMPORT_CHECK]]]);
-    const entry = {
-      kind: "authorised-location",
-      clause: "CD-19#import-or-require",
-      file: "src/adapters/ids.ts",
-      reason: "the ids adapter",
-    } as const;
-    const input = {
-      kind: "authorised-location",
-      record: { clause: IMPORTS_CLAUSE, file: repoPathOf("src/adapters/ids.ts") },
-      entry,
-      answer: WHOLE_CLAUSE,
-    } as const;
     const mapped = mappedRecords({
       confinedOutsideDependencies: [],
-      clauseChecks,
+      clauseChecks: IMPORT_CLAUSE_CHECKS,
       content: IMPORT_CONTENT,
-      inputs: [input],
+      inputs: [IDS_INPUT],
     });
 
     expect(mapped).toEqual({
@@ -903,27 +793,10 @@ describe("mappedRecords carrying an authorised location on outside imports", () 
           {
             file: "hone-records/authorised-locations/outside-import-past-a-boundary.json",
             version: 2,
-            records: [
-              {
-                answers: "outside-import-past-a-boundary#import-or-require",
-                file: "src/adapters/ids.ts",
-                outsideParty: "node:",
-                carried: entry,
-              },
-            ],
+            records: [{ ...IDS_RECORD, outsideParty: "node:" }],
           },
         ],
-        lines: [
-          {
-            recordKind: "authorised-location",
-            clause: IMPORTS_CLAUSE,
-            file: "src/adapters/ids.ts",
-            newKind: "authorised-location",
-            check: IMPORT_CHECK,
-            holding: "carried",
-            outsideParty: "node:",
-          },
-        ],
+        lines: [{ ...IDS_LINE, outsideParty: "node:" }],
       },
     });
   });
@@ -984,7 +857,7 @@ describe("mappedRecords carrying an authorised location on outside imports", () 
 
     const mapped = mappedRecords({
       confinedOutsideDependencies: ["uuid"],
-      clauseChecks,
+      clauseChecks: IMPORT_CLAUSE_CHECKS,
       content: IMPORT_CONTENT,
       inputs: [
         {
@@ -1008,8 +881,8 @@ describe("mappedRecords carrying an authorised location on outside imports", () 
   });
 });
 
-describe("mappedRecords carrying a clause-wide carve-out as a choice, not a record", () => {
-  it("writes no record for it", () => {
+describe("mappedRecords leaving a clause-wide carve-out to the debt recorded by file", () => {
+  it("writes no record for a clause-wide carve-out, and names its owner and its reason", () => {
     const mapped = mappedRecords({
       confinedOutsideDependencies: [],
       clauseChecks: CLAUSE_CHECKS,
@@ -1017,38 +890,73 @@ describe("mappedRecords carrying a clause-wide carve-out as a choice, not a reco
       inputs: [CLAUSE_WIDE_ON_LOOPS],
     });
 
-    expect(mapped).toMatchObject({
+    expect(mapped).toEqual({
       outcome: "ok",
-      value: { documents: [] },
-    });
-  });
-
-  it("refuses a clause that has no check to not adopt, naming the clause", () => {
-    expect(
-      mappedRecords({
-        confinedOutsideDependencies: [],
-        clauseChecks: new Map(),
-        content: CONTENT,
-        inputs: [CLAUSE_WIDE_ON_LOOPS],
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: [{ kind: "clause-without-check", clause: "CD-15#loops" }],
-    });
-  });
-});
-
-describe("clausesCarriedAsNotAdopted", () => {
-  it("names the clause of each clause-wide carve-out and no other record", () => {
-    expect(
-      clausesCarriedAsNotAdopted({
-        inputs: [
-          { kind: "clause-wide-carve-out", record: { clause: LOOPS_CLAUSE } },
-          { kind: "authorised-location", record: { clause: TEST_BODY_CLAUSE } },
-          { kind: "file-carve-out", record: { clause: LAYERING_CLAUSE } },
+      value: {
+        documents: [],
+        lines: [
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: LOOPS_CLAUSE,
+            newKind: "debt-by-file",
+            reason: "generated code",
+            owner: WHY_CHAIN.owner,
+          },
         ],
-      }),
-    ).toEqual([LOOPS_CLAUSE]);
+      },
+    });
+  });
+
+  it("writes the file carve-out on the same clause beside it", () => {
+    const mapped = mappedRecords({
+      confinedOutsideDependencies: [],
+      clauseChecks: CLAUSE_CHECKS,
+      content: CONTENT,
+      inputs: [
+        CLAUSE_WIDE_ON_LOOPS,
+        {
+          kind: "file-carve-out",
+          record: {
+            kind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            mechanism: AUDIT,
+            file: SRC_A,
+          },
+          entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts" },
+          answer: { credit: "findings", checks: [LOOP_KEYWORD_LOOPS] },
+        },
+      ],
+    });
+
+    expect(mapped).toEqual({
+      outcome: "ok",
+      value: {
+        documents: [
+          {
+            file: "hone-records/debt/loop-keyword.json",
+            version: 2,
+            records: [{ answers: "loop-keyword#loops", file: "src/a.ts" }],
+          },
+        ],
+        lines: [
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: LOOPS_CLAUSE,
+            newKind: "debt-by-file",
+            reason: "generated code",
+            owner: WHY_CHAIN.owner,
+          },
+          {
+            recordKind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            file: SRC_A,
+            newKind: "debt",
+            check: LOOP_KEYWORD_LOOPS,
+            holding: "stated",
+          },
+        ],
+      },
+    });
   });
 });
 
@@ -1372,90 +1280,6 @@ describe("mappedRecords lines", () => {
             newKind: "authorised-location",
             check: CATALOGUE_REBINDING_TEST_BODY,
             holding: "carried",
-          },
-        ],
-      },
-    });
-  });
-
-  it("gives a clause-wide carve-out its reason, then one not-adopted line for the check of its clause", () => {
-    const mapped = mappedRecords({
-      confinedOutsideDependencies: [],
-      clauseChecks: CLAUSE_CHECKS,
-      content: CONTENT,
-      inputs: [CLAUSE_WIDE_ON_LOOPS],
-    });
-
-    expect(mapped).toMatchObject({
-      outcome: "ok",
-      value: {
-        documents: [],
-        lines: [
-          { recordKind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, reason: "generated code" },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: LOOPS_CLAUSE,
-            newKind: "not-adopted",
-            check: LOOP_KEYWORD_LOOPS,
-          },
-        ],
-      },
-    });
-  });
-
-  it("gives a clause-wide carve-out on CD-27 one not-adopted line at each of its six checks", () => {
-    expect(
-      mappedRecords({
-        confinedOutsideDependencies: [],
-        clauseChecks: SIX_CHECK_CLAUSE_CHECKS,
-        content: CONTENT,
-        inputs: [CLAUSE_WIDE_ON_TEST_BODY],
-      }),
-    ).toMatchObject({
-      outcome: "ok",
-      value: {
-        documents: [],
-        lines: [
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            reason: "the tests are generated",
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[0],
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[1],
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[2],
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[3],
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[4],
-          },
-          {
-            recordKind: "clause-wide-carve-out",
-            clause: TEST_BODY_CLAUSE,
-            newKind: "not-adopted",
-            check: SIX_TEST_BODY_CHECKS[5],
           },
         ],
       },

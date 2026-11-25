@@ -122,7 +122,7 @@ Records today are written in these formats. Each answers one of the kinds.
 |---|---|---|
 | `authorised-location` (clause, file, reason, whyChain) | Authorised location, one per outside party for Outside import past a boundary | Names a clause, not a symptom. The site is a file. It does not name the case, the rule owed or the outside party. |
 | `file-carve-out` (clause, file, optional reason) | Debt | Names a clause, not a symptom. One record on the test-logic clause covers up to four symptoms. |
-| `clause-wide-carve-out` | Not a record: the clause is not adopted | Today it is a record that keeps the clause running, with its why-chain; with 2.0 it becomes the check marked not adopted. |
+| `clause-wide-carve-out` | Debt, one record for each check and file | Names a whole clause and no file. It keeps the clause running, with its why-chain. |
 | `provenance` (imported) | The same kind, imported | Nothing. |
 | Legacy why-chains | The kind of the record that holds them | Accepted while unchanged against the base. |
 | Inline disables and `@ts-*` directives | Held by a record of their symptom | The record names the clause, not the symptom. |

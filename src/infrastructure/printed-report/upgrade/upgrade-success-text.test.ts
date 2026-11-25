@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import type { Smoothed } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
@@ -28,12 +30,78 @@ const LOOP_KEYWORD_LOOPS: Check = {
   findingSpecifics: [],
 };
 
-const REBINDING_LOOPS: Check = {
-  ...LOOP_KEYWORD_LOOPS,
-  symptom: { ...LOOP_KEYWORD_LOOPS.symptom, name: "rebinding" },
-};
-
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+
+const REMOVED_LOCATION: Smoothed["removedCarried"] = [
+  {
+    place: {
+      file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
+      index: 0,
+    },
+    record: {
+      kind: "authorised-location",
+      symptom: LOOP_KEYWORD_LOOPS.symptom,
+      reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+      file: repoPathOf("src/b.ts"),
+      holding: {
+        held: "carried",
+        entry: {},
+        lacks: ["case"],
+        standing: "unjudged",
+        binding: { binds: "check-and-file" },
+      },
+    },
+  },
+];
+
+const RECORDED_DEBT: Smoothed["recordedDebt"] = [
+  {
+    address: "loop-keyword#loops",
+    file: repoPathOf("src/c.ts"),
+    ruleSet: TOOL_RULE_SET,
+    effect: "recorded",
+  },
+  {
+    address: "loop-keyword#loops",
+    file: repoPathOf("src/a.ts"),
+    ruleSet: TOOL_RULE_SET,
+    effect: "already-recorded",
+    heldIn: repoPathOf("hone-records/debt/loop-keyword.json"),
+  },
+];
+
+const PRUNED_DEBT: Smoothed["prunedDebt"] = [
+  {
+    place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 },
+    debt: {
+      kind: "debt",
+      symptom: LOOP_KEYWORD_LOOPS.symptom,
+      reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+      file: repoPathOf("src/gone.ts"),
+      holding: { held: "stated" },
+    },
+    reason: "file-gone",
+  },
+];
+
+const DEBT_AND_LOCATION: readonly RecordLine[] = [
+  {
+    recordKind: "file-carve-out",
+    clause: LOOPS_CLAUSE,
+    file: repoPathOf("src/a.ts"),
+    newKind: "debt",
+    check: LOOP_KEYWORD_LOOPS,
+    holding: "stated",
+  },
+  {
+    recordKind: "authorised-location",
+    clause: LOOPS_CLAUSE,
+    file: repoPathOf("src/b.ts"),
+    newKind: "authorised-location",
+    check: LOOP_KEYWORD_LOOPS,
+    holding: "carried",
+  },
+];
 
 describe("upgradeSuccessOutcomeOf", () => {
   it("lists what was written, rewritten and removed, relative to the repository, then what the smoothing removed, recorded, pruned and projected, with their counts", () => {
@@ -54,74 +122,11 @@ describe("upgradeSuccessOutcomeOf", () => {
             ],
             folders: [absoluteRootOf("/repo/discipline-exceptions")],
           },
-          records: [
-            {
-              recordKind: "file-carve-out",
-              clause: LOOPS_CLAUSE,
-              file: repoPathOf("src/a.ts"),
-              newKind: "debt",
-              check: LOOP_KEYWORD_LOOPS,
-              holding: "stated",
-            },
-            {
-              recordKind: "authorised-location",
-              clause: LOOPS_CLAUSE,
-              file: repoPathOf("src/b.ts"),
-              newKind: "authorised-location",
-              check: LOOP_KEYWORD_LOOPS,
-              holding: "carried",
-            },
-          ],
+          records: DEBT_AND_LOCATION,
           smoothed: {
-            removedCarried: [
-              {
-                place: {
-                  file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
-                  index: 0,
-                },
-                record: {
-                  kind: "authorised-location",
-                  symptom: LOOP_KEYWORD_LOOPS.symptom,
-                  reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
-                  file: repoPathOf("src/b.ts"),
-                  holding: {
-                    held: "carried",
-                    entry: {},
-                    lacks: ["case"],
-                    standing: "unjudged",
-                    binding: { binds: "check-and-file" },
-                  },
-                },
-              },
-            ],
-            recordedDebt: [
-              {
-                address: "loop-keyword#loops",
-                file: repoPathOf("src/c.ts"),
-                ruleSet: TOOL_RULE_SET,
-                effect: "recorded",
-              },
-              {
-                address: "loop-keyword#loops",
-                file: repoPathOf("src/a.ts"),
-                ruleSet: TOOL_RULE_SET,
-                effect: "already-recorded",
-                heldIn: repoPathOf("hone-records/debt/loop-keyword.json"),
-              },
-            ],
-            prunedDebt: [
-              {
-                place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 },
-                debt: {
-                  kind: "debt",
-                  symptom: LOOP_KEYWORD_LOOPS.symptom,
-                  reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
-                  file: repoPathOf("src/gone.ts"),
-                  holding: { held: "stated" },
-                },
-                reason: "file-gone",
-              },
-            ],
+            removedCarried: REMOVED_LOCATION,
+            recordedDebt: RECORDED_DEBT,
+            prunedDebt: PRUNED_DEBT,
             projected: [repoPathOf("hone.eslint.mjs")],
           },
           mentions: [
@@ -212,7 +217,7 @@ describe("upgradeSuccessOutcomeOf", () => {
     });
   });
 
-  it("names a clause-wide carve-out's reason, then each check of its clause it now leaves not adopted", () => {
+  it("says once that a clause-wide carve-out's findings are now debt by file, with its owner and its reason on the one line", () => {
     expect(
       upgradeSuccessOutcomeOf({
         repoRoot: REPO,
@@ -225,19 +230,9 @@ describe("upgradeSuccessOutcomeOf", () => {
             {
               recordKind: "clause-wide-carve-out",
               clause: LOOPS_CLAUSE,
+              newKind: "debt-by-file",
               reason: "the tests are\ngenerated  by a tool",
-            },
-            {
-              recordKind: "clause-wide-carve-out",
-              clause: LOOPS_CLAUSE,
-              newKind: "not-adopted",
-              check: REBINDING_LOOPS,
-            },
-            {
-              recordKind: "clause-wide-carve-out",
-              clause: LOOPS_CLAUSE,
-              newKind: "not-adopted",
-              check: LOOP_KEYWORD_LOOPS,
+              owner: "the\ntest team",
             },
           ],
           smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
@@ -247,7 +242,7 @@ describe("upgradeSuccessOutcomeOf", () => {
       }),
     ).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nreason CD-15#loops: the tests are generated by a tool\nclause-wide-carve-out CD-15#loops -> not-adopted rebinding#loops\nclause-wide-carve-out CD-15#loops -> not-adopted loop-keyword#loops\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nclause-wide-carve-out CD-15#loops -> debt for each file with a finding; owner: the test team; reason: the tests are generated by a tool\nupgrade: records written 0, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n",
     });
   });
 
