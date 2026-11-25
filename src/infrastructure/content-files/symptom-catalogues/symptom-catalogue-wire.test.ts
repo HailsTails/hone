@@ -293,6 +293,13 @@ describe("catalogueContentOf", () => {
 
   it("keeps a recipe's examples, each naming the checks it answers by address", () => {
     const acme = { name: ruleSetNameOf("acme") };
+    const onePlaceDecides: Principle = { name: "one-place-decides", title: "One place decides" };
+    const checksConditionsBeforeItsWork: Case = {
+      name: "checks-conditions-before-its-work",
+      title: "Checks conditions before its work",
+      standing: "accepted",
+      owes: [{ kind: "principle", principle: onePlaceDecides }],
+    };
     const document = {
       ...SYMPTOM_HOLDING_DOCUMENT,
       clauses: [],
@@ -316,9 +323,42 @@ describe("catalogueContentOf", () => {
 
     const content = catalogueContentOf({ ruleSet: acme, document });
 
-    expect(content).toMatchObject({
+    expect(content).toEqual({
       outcome: "ok",
       value: {
+        principles: [NO_HIDDEN_EFFECTS, onePlaceDecides],
+        rules: [],
+        cases: [checksConditionsBeforeItsWork],
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+        engines: [ESLINT],
+        symptoms: [
+          {
+            ruleSet: acme,
+            name: "work-inside-a-condition",
+            title: "Work inside a condition",
+            seen: "An `if` inside another `if`.",
+            mayIndicate: [
+              {
+                case: checksConditionsBeforeItsWork,
+                points: [{ kind: "principle", principle: onePlaceDecides }],
+              },
+            ],
+            breachUsuallySits: "in the unit's questions",
+            recipes: [],
+            correctUses: [],
+          },
+        ],
+        clauses: [],
+        checks: [
+          {
+            name: "useless-else",
+            symptom: { ruleSet: acme, name: "work-inside-a-condition" },
+            page: "work-inside-a-condition/useless-else.md",
+            forms: [],
+            findingSpecifics: [],
+          },
+        ],
+        namedBans: [],
         recipes: [
           {
             ruleSet: acme,

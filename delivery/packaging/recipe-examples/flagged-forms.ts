@@ -16,7 +16,6 @@ type FlaggedFormsSource = {
   readonly repoRoot: AbsolutePath;
   readonly fileText: FileTextPort;
   readonly path: PathPort;
-  readonly bindings: readonly CheckBinding[];
 };
 
 const createBlockFileText = (request: {
@@ -34,7 +33,11 @@ const createBlockFileText = (request: {
 });
 
 const readFlaggedForms = async (
-  request: FlaggedFormsSource & { readonly source: string; readonly check: CheckAddressText },
+  request: FlaggedFormsSource & {
+    readonly source: string;
+    readonly check: CheckAddressText;
+    readonly bindings: readonly CheckBinding[];
+  },
 ): Promise<Result<readonly string[], string>> => {
   const { repoRoot, path, parse, source, check } = request;
   const runner = createWalkerRunner({

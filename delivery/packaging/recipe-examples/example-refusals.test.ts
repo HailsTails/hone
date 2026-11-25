@@ -1,14 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../src/domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../src/domain/runner/check-binding.ts";
 import type { BlockFlagsPort, FlaggedFormsPort, TypeErrorsPort } from "./block-verdicts-port.ts";
 import { type ExampleRefusal, findExampleRefusals } from "./example-refusals.ts";
+import type { ListedPiece } from "./listed-piece.ts";
 import type { RecipePage } from "./recipe-pages.ts";
 
 const REBINDING_TEST_BODY = {
   name: "test-body",
   symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
   forms: ["a-let"],
+};
+
+const LET_PIECE: ListedPiece = {
+  engine: "walker",
+  check: "rebinding#test-body",
+  editions: [editionOf("1")],
+};
+
+const LET_BINDING: CheckBinding = {
+  address: "rebinding#test-body",
+  ruleSet: TOOL_RULE_SET,
+  engine: "walker",
+  edition: editionOf("1"),
+  settings: {},
+  pieceRoot: "/repo/rebinding/test-body",
+  anchor: { kind: "file" },
+  checkSettings: {},
 };
 
 const STUB_PAGE: RecipePage = {
@@ -48,6 +68,8 @@ describe("findExampleRefusals", () => {
 
     const refusals = await findExampleRefusals({
       checks: [REBINDING_TEST_BODY],
+      pieces: [LET_PIECE],
+      bindings: [LET_BINDING],
       pages: [STUB_PAGE],
       typeErrors,
       flags,
@@ -56,10 +78,11 @@ describe("findExampleRefusals", () => {
 
     expect(refusals).toEqual([]);
     expect(typeErrors.read).toHaveBeenCalledExactlyOnceWith({ blocks });
-    expect(flags.read).toHaveBeenCalledExactlyOnceWith({ blocks });
+    expect(flags.read).toHaveBeenCalledExactlyOnceWith({ blocks, bindings: [LET_BINDING] });
     expect(flaggedForms.read).toHaveBeenCalledExactlyOnceWith({
       source: "let a = 1;\n",
       check: "rebinding#test-body",
+      bindings: [LET_BINDING],
     });
   });
 
@@ -147,6 +170,8 @@ describe("findExampleRefusals", () => {
   ])("refuses $name", async ({ pages, refusals }) => {
     const found = await findExampleRefusals({
       checks: [REBINDING_TEST_BODY],
+      pieces: [LET_PIECE],
+      bindings: [LET_BINDING],
       pages,
       typeErrors: { read: vi.fn<TypeErrorsPort["read"]>().mockReturnValue([]) },
       flags: {
@@ -172,6 +197,8 @@ describe("findExampleRefusals", () => {
 
     const refusals = await findExampleRefusals({
       checks: [REBINDING_TEST_BODY],
+      pieces: [LET_PIECE],
+      bindings: [LET_BINDING],
       pages: [STUB_PAGE],
       typeErrors: {
         read: vi.fn<TypeErrorsPort["read"]>().mockReturnValue([
@@ -220,9 +247,38 @@ describe("findExampleRefusals", () => {
     ]);
   });
 
+  it("refuses a listed piece that the bindings it runs the blocks over leave out", async () => {
+    const refusals = await findExampleRefusals({
+      checks: [REBINDING_TEST_BODY],
+      pieces: [LET_PIECE],
+      bindings: [],
+      pages: [STUB_PAGE],
+      typeErrors: { read: vi.fn<TypeErrorsPort["read"]>().mockReturnValue([]) },
+      flags: {
+        read: vi.fn<BlockFlagsPort["read"]>().mockResolvedValue({ outcome: "ok", value: [] }),
+      },
+      flaggedForms: {
+        read: vi
+          .fn<FlaggedFormsPort["read"]>()
+          .mockResolvedValue({ outcome: "ok", value: ["a-let"] }),
+      },
+    });
+
+    expect(refusals).toEqual([
+      {
+        kind: "piece-not-run",
+        engine: "walker",
+        check: "rebinding#test-body",
+        edition: editionOf("1"),
+      },
+    ]);
+  });
+
   it("refuses with each engine's failure when the checks cannot run", async () => {
     const refusals = await findExampleRefusals({
       checks: [REBINDING_TEST_BODY],
+      pieces: [LET_PIECE],
+      bindings: [LET_BINDING],
       pages: [STUB_PAGE],
       typeErrors: { read: vi.fn<TypeErrorsPort["read"]>().mockReturnValue([]) },
       flags: {

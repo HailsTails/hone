@@ -8,6 +8,7 @@ import type {
   RecipeExample,
 } from "../../../src/domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../src/domain/result.ts";
+import type { CheckBinding } from "../../../src/domain/runner/check-binding.ts";
 import type {
   BlockFlag,
   BlockFlagsPort,
@@ -16,7 +17,9 @@ import type {
   TypeErrorsPort,
 } from "./block-verdicts-port.ts";
 import type { ExampleBlock } from "./example-block.ts";
+import type { ListedPiece } from "./listed-piece.ts";
 import type { PageExample } from "./page-examples.ts";
+import { findPiecesNotRun, type PieceRefusal } from "./pieces-not-run.ts";
 import type { ReadRecipePage, RecipePage } from "./recipe-pages.ts";
 
 type Located = { readonly recipe: string; readonly anchor: string };
@@ -24,6 +27,7 @@ type Located = { readonly recipe: string; readonly anchor: string };
 type Addressed = { readonly check: CheckAddressText; readonly form: string };
 
 export type ExampleRefusal =
+  | PieceRefusal
   | { readonly kind: "page-unreadable"; readonly recipe: string; readonly detail: string }
   | (Addressed & { readonly kind: "form-without-an-example" })
   | (Located & Addressed & { readonly kind: "example-answers-no-form" })
@@ -59,6 +63,8 @@ export type ExamplesProof = {
   readonly checks: readonly FormedCheck[];
   readonly pages: readonly RecipePage[];
   readonly typeErrors: TypeErrorsPort;
+  readonly pieces: readonly ListedPiece[];
+  readonly bindings: readonly CheckBinding[];
   readonly flags: BlockFlagsPort;
   readonly flaggedForms: FlaggedFormsPort;
 };
@@ -206,9 +212,14 @@ const mapExampleToProvenAnswers = (request: {
 const listUnnamed = async (request: {
   readonly proven: ProvenAnswer;
   readonly flaggedForms: FlaggedFormsPort;
+  readonly bindings: readonly CheckBinding[];
 }): Promise<readonly ExampleRefusal[]> => {
   const { recipe, anchor, source, check, form } = request.proven;
-  const named = await request.flaggedForms.read({ source, check });
+  const named = await request.flaggedForms.read({
+    source,
+    check,
+    bindings: request.bindings,
+  });
   if (named.outcome === "failed") {
     return [{ kind: "verdicts-failed", detail: named.error }];
   }
@@ -234,12 +245,11 @@ export const findExampleRefusals = async (
     page.declared.flatMap((example) => mapExampleToProvenAnswers({ page, example })),
   );
   const [flags, unnamed] = await Promise.all([
-    proof.flags.read({ blocks }),
-    Promise.all(
-      proven.map((each) => listUnnamed({ proven: each, flaggedForms: proof.flaggedForms })),
-    ),
+    proof.flags.read({ blocks, bindings: proof.bindings }),
+    Promise.all(proven.map((each) => listUnnamed({ ...proof, proven: each }))),
   ]);
   return [
+    ...findPiecesNotRun(proof),
     ...proof.pages.flatMap((page) => listUnreadable({ page })),
     ...listUnanswered({ declared, answered }),
     ...pages.flatMap((page) => listFormless({ declared, page })),

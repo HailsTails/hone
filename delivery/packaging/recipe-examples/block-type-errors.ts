@@ -2,6 +2,7 @@ import type {
   CompilerOptions,
   SyntaxApi,
 } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+import { type BlockFile, mapDiagnosticsToTypeErrors } from "./block-diagnostics.ts";
 import { createBlockText } from "./block-text.ts";
 import type { BlockTypeError, TypeErrorsPort } from "./block-verdicts-port.ts";
 import type { ExampleBlock } from "./example-block.ts";
@@ -27,7 +28,7 @@ const createStrictOptions = (request: { readonly syntaxApi: SyntaxApi }): Compil
 const mapPathToSlashes = (request: { readonly path: string }): string =>
   request.path.replaceAll("\\", "/");
 
-type BlockFile = { readonly block: ExampleBlock; readonly path: string; readonly text: string };
+type TextFile = BlockFile & { readonly text: string };
 
 const readTypeErrors = (
   request: TypeErrorsSource & { readonly blocks: readonly ExampleBlock[] },
@@ -35,12 +36,12 @@ const readTypeErrors = (
   const { syntaxApi } = request;
   const options = createStrictOptions({ syntaxApi });
   const root = mapPathToSlashes({ path: request.repoRoot });
-  const files = request.blocks.map((block, index): BlockFile => ({
+  const files = request.blocks.map((block, index): TextFile => ({
     block,
     path: `${root}/recipe-example-${index}.test.ts`,
     text: createBlockText(block),
   }));
-  const findFile = (path: string): BlockFile | undefined =>
+  const findFile = (path: string): TextFile | undefined =>
     files.find((file) => file.path === mapPathToSlashes({ path }));
   const host = syntaxApi.createCompilerHost(options);
   const { readFile, getSourceFile, fileExists } = host;
@@ -59,17 +60,15 @@ const readTypeErrors = (
       },
     },
   });
-  return syntaxApi.getPreEmitDiagnostics(program).map((diagnostic): BlockTypeError => {
-    const message = syntaxApi.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-    const path = diagnostic.file?.fileName;
-    const file = path === undefined ? undefined : findFile(path);
-    if (file !== undefined) {
-      return { kind: "in-a-block", block: file.block, message };
-    }
-    return {
-      kind: "outside-the-blocks",
-      message: path === undefined ? message : `${mapPathToSlashes({ path })}: ${message}`,
-    };
+  return mapDiagnosticsToTypeErrors({
+    files,
+    diagnostics: syntaxApi.getPreEmitDiagnostics(program).map((diagnostic) => ({
+      path:
+        diagnostic.file === undefined
+          ? undefined
+          : mapPathToSlashes({ path: diagnostic.file.fileName }),
+      message: syntaxApi.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+    })),
   });
 };
 

@@ -9,15 +9,17 @@ import {
 import { createDefaultDirectoryPort } from "../../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import { createBlockFlagsPort } from "./block-flags.ts";
+import { BLOCK_FLAGS } from "./block-flags.ts";
 import { createTypeErrorsPort } from "./block-type-errors.ts";
 import { readCheckBindings } from "./check-bindings.ts";
 import { findExampleRefusals } from "./example-refusals.ts";
 import { createFlaggedFormsPort } from "./flagged-forms.ts";
+import { readListedPieces } from "./piece-listing.ts";
 import { readRecipePages } from "./recipe-pages.ts";
 
 describe("the examples on this repository's recipe pages", () => {
   it("answer every form of every check, each before block is flagged with the form it answers, and each after block compiles and is flagged by no check", async () => {
+    const directory = createDefaultDirectoryPort({});
     const fileText = createDefaultFileTextPort({});
     const path = createDefaultPathPort({});
     const repoRoot = absolutePathSchema.parse(
@@ -26,7 +28,7 @@ describe("the examples on this repository's recipe pages", () => {
     const holding = readBoundCatalogue({
       ruleSet: "hone",
       inheritedRecordKinds: [],
-      directory: createDefaultDirectoryPort({}),
+      directory,
       fileText,
       path,
       ruleSetRoot: repoRoot,
@@ -42,17 +44,21 @@ describe("the examples on this repository's recipe pages", () => {
     const bindings = readCheckBindings({ checks, repoRoot, fileText, path });
     assert(bindings.outcome === "ok", "the pieces of the checks read");
 
+    const pieces = readListedPieces({ repoRoot, directory, fileText, path });
+    assert(pieces.outcome === "ok", "the piece files list");
+
     const refusals = await findExampleRefusals({
       checks,
+      pieces: pieces.value,
+      bindings: bindings.value,
       pages: readRecipePages({ recipes, ruleSetRoot: repoRoot, fileText, path }),
       typeErrors: createTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }),
-      flags: createBlockFlagsPort({ bindings: bindings.value }),
+      flags: BLOCK_FLAGS,
       flaggedForms: createFlaggedFormsPort({
         parse: parse.value,
         repoRoot,
         fileText,
         path,
-        bindings: bindings.value,
       }),
     });
 

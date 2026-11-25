@@ -40,12 +40,12 @@ describe("createFlaggedFormsPort, over the real walker", () => {
       repoRoot,
       fileText,
       path,
-      bindings: bindings.value,
     });
 
     const named = await flaggedForms.read({
       source: "declare const a: boolean;\nlet b = a && a;\nif (b) {\n  expect(b).toBe(true);\n}\n",
       check: "branch-in-a-test#test-body",
+      bindings: bindings.value,
     });
 
     expect(named).toEqual({ outcome: "ok", value: ["a-short-circuit", "branching-with-if"] });

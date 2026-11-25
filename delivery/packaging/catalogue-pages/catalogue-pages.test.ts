@@ -153,14 +153,23 @@ describe("cataloguePagesOf", () => {
       files: [names, PRINCIPLE, CASE, SYMPTOM, CHECK],
     });
 
-    expect(pages).toMatchObject({
+    expect(pages).toEqual({
       outcome: "ok",
       value: [
-        {},
-        {},
-        {},
-        {},
-        {},
+        {
+          path: "rules/principles.md",
+          text: "# Principles\n\n## One place decides\n\n- **Must hold:** One decision, one unit.\n\n- **Rules under it:** none. The principle decides.\n",
+        },
+        { path: "rules/rules.md", text: "# Rules\n" },
+        {
+          path: "rules/cases.md",
+          text: "# Cases\n\n## One place decides\n\n| Case | Owes | What to do |\n|---|---|---|\n| Does one job | One place decides |  |\n",
+        },
+        { path: "rules/typescript/recipes.md", text: "# Recipes for TypeScript\n" },
+        {
+          path: "rules/typescript/symptoms.md",
+          text: "# Symptoms in TypeScript\n\n## World\n\n### Ambient randomness\n\n- **Seen:** A call.\n- **May indicate:** Does one job → One place decides.\n- **Breach usually sits:** in the unit.\n- **Seen by:** syntax.\n- **Check today:** reuse.\n- **Checks:** [random-call](symptoms/ambient-randomness/random-call.md).\n",
+        },
         {
           path: "rules/typescript/checks.md",
           text: "# Checks in TypeScript\n\n## Ambient randomness\n\n### random-call\n\n- **Forms:** `a-math-call`\n",
@@ -168,7 +177,20 @@ describe("cataloguePagesOf", () => {
       ],
     });
     expect(read).toHaveBeenCalledExactlyOnceWith({
-      names: expect.objectContaining({ claimsPieceForms: [clause] }),
+      names: {
+        clauses: [],
+        claimsPieceForms: [clause],
+        namedClauses: [
+          {
+            kind: "mechanical",
+            clause,
+            checks: [{ name: "random-call", symptom: { name: "ambient-randomness" } }],
+            anchor: { kind: "file" },
+          },
+        ],
+        clauseOfCheck: new Map([["ambient-randomness#random-call", clause]]),
+        formatsOfToday: {},
+      },
     });
   });
 
@@ -187,7 +209,7 @@ describe("cataloguePagesOf", () => {
 
     expect(pages).toEqual({
       outcome: "failed",
-      error: expect.stringContaining("/package/piece.json"),
+      error: "load failure: file-malformed /package/piece.json no anchor\n",
     });
   });
 

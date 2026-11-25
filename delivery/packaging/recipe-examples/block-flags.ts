@@ -62,8 +62,4 @@ const readFlags = async (request: {
   return gatheredOutcomes({ outcomes: flagged });
 };
 
-export const createBlockFlagsPort = (source: {
-  readonly bindings: readonly CheckBinding[];
-}): BlockFlagsPort => ({
-  read: ({ blocks }) => readFlags({ ...source, blocks }),
-});
+export const BLOCK_FLAGS: BlockFlagsPort = { read: readFlags };

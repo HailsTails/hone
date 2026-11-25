@@ -85,12 +85,12 @@ const PASSED_ON_FUNCTION_REMEDY: Remedy = {
 };
 
 const COMPUTING_METHOD_REMEDY: Remedy = {
-  fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value or the relevant properties explicitly.",
+  fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value out.",
   form: "a-method-that-computes-a-value",
 };
 
 const PICKING_METHOD_REMEDY: Remedy = {
-  fix: "Selecting an element can discard data the caller should see. Assert the relevant membership or structure of the returned collection directly.",
+  fix: "Selecting an element can discard data the caller should see. Assert the whole returned collection.",
   form: "a-method-that-picks-or-tests-an-element",
 };
 
@@ -410,7 +410,7 @@ describe("testBodyFormOf", () => {
     expect(named).toEqual({
       introducedIn: "2",
       remedy: {
-        fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
+        fix: "Optional access hides whether the expected element exists. Assert the whole collection, or assert that the element is defined and then read it.",
         form: "an-optional-chain-after-an-index",
       },
     });
@@ -458,7 +458,7 @@ describe("TEST_BODY_REMEDIES", () => {
     {
       index: 1,
       remedy: {
-        fix: "Catching inside the test can let it pass when no error occurs. Assert the failure the caller should observe, whether it is returned or thrown.",
+        fix: "Catching inside the test can let it pass when no error occurs. Assert the failure the unit returns. Where an adapter's caller relies on a throw, assert the throw.",
         form: "a-try-block",
       },
     },
@@ -479,14 +479,14 @@ describe("TEST_BODY_REMEDIES", () => {
     {
       index: 4,
       remedy: {
-        fix: "Selecting an element can discard data the caller should see. Assert the relevant membership or structure of the returned collection directly.",
+        fix: "Selecting an element can discard data the caller should see. Assert the whole returned collection.",
         form: "a-method-that-picks-or-tests-an-element",
       },
     },
     {
       index: 5,
       remedy: {
-        fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value or the relevant properties explicitly.",
+        fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value out.",
         form: "a-method-that-computes-a-value",
       },
     },
@@ -507,7 +507,7 @@ describe("TEST_BODY_REMEDIES", () => {
     {
       index: 8,
       remedy: {
-        fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
+        fix: "Optional access hides whether the expected element exists. Assert the whole collection, or assert that the element is defined and then read it.",
         form: "an-optional-chain-after-an-index",
       },
     },
@@ -521,7 +521,7 @@ describe("TEST_BODY_REMEDIES", () => {
     {
       index: 10,
       remedy: {
-        fix: "Optional access hides whether the dependency returned a value. Assert the return from the expected call.",
+        fix: "Optional access hides whether the dependency returned a value. Write out what the collaborator gives back, then check what the unit returns and the call it makes.",
         form: "an-optional-chain-on-a-mock-result",
       },
     },
@@ -563,14 +563,14 @@ describe("TEST_BODY_REMEDIES", () => {
     {
       index: 16,
       remedy: {
-        fix: "Building the expected object from entries hides the shape the assertion promises. Write out the relevant fields and values.",
+        fix: "Building the expected object from entries hides the shape the assertion promises. Write the whole object out.",
         form: "building-an-object-from-entries",
       },
     },
     {
       index: 17,
       remedy: {
-        fix: "Generating the expected array hides the sequence being asserted. State the relevant elements, length, or ordering directly.",
+        fix: "Generating the expected array hides the sequence being asserted. Write the array out.",
         form: "building-an-array-from-a-length",
       },
     },
