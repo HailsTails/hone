@@ -82,4 +82,32 @@ describe("readInstallChecks", () => {
       error: { kind: "file-unreadable", path: NAMES_PATH, detail: "EACCES" },
     });
   });
+
+  it("fails file-malformed at the names path when the names hold a team's clause", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
+        outcome: "ok",
+        value:
+          '{ "version": 1, "clauses": [{ "clause": "acme/ACME-1#console-calls", "sight": { "kind": "one-symptom", "symptom": "direct-console" }, "checks": ["direct-console#console-calls"], "anchor": { "kind": "file" } }], "recordKinds": {} }',
+      }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const checks = readInstallChecks({
+      fileText,
+      path: PATH,
+      installRoot: INSTALL_ROOT,
+      clause: CLASS_SYNTAX,
+    });
+
+    expect(checks).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: NAMES_PATH,
+        detail: "✖ acme/ACME-1#console-calls is not a clause of this rule set",
+      },
+    });
+  });
 });

@@ -4,7 +4,6 @@ import type { FoundTreeRecordsSourceOf } from "../../application/ports/records/r
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { baseStandingRecordsSource } from "./base-standing-records-source.ts";
 import { versionOneEntriesOf } from "./version-one-entries.ts";
 
@@ -22,7 +21,7 @@ export const foundTreeRecordsSourceOver = (request: {
       git: request.git,
       repoRoot: request.repoRoot,
     }),
-    catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: request.catalogue }],
+    catalogue: request.catalogue,
   });
 
 export const foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf = (request) => (folder) =>

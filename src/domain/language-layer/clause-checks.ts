@@ -18,7 +18,7 @@ export const checksOfClause = (request: {
 export type ClauseChecks = ReadonlyMap<string, readonly Check[]>;
 
 export const createClauseChecks = (request: {
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly catalogues: readonly Pick<RuleSetCatalogue, "catalogue">[];
 }): ClauseChecks =>
   new Map(
     request.catalogues.flatMap(({ catalogue }) =>

@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
-import { checksOfClause } from "../../domain/language-layer/clause-checks.ts";
+import {
+  type ClauseChecks,
+  readChecksOfClause,
+} from "../../domain/language-layer/clause-checks.ts";
 import type { Check } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import {
@@ -9,7 +12,6 @@ import {
   namedRecordsFileOf,
 } from "../../domain/records/hone-records/records-layout.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
@@ -55,22 +57,23 @@ const debtAt = (request: {
 
 const debtOf = (request: {
   readonly entry: VersionOneEntry;
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly clauseChecks: ClauseChecks;
 }): readonly PlacedDebt[] => {
   const parsed = carveOutEntrySchema.safeParse(request.entry);
   return parsed.success
-    ? checksOfClause({ catalogues: request.catalogues, clause: parsed.data.clause }).flatMap(
-        (check) => debtAt({ check, entry: request.entry, file: parsed.data.file }),
-      )
+    ? readChecksOfClause({
+        clauseChecks: request.clauseChecks,
+        clause: parsed.data.clause,
+      }).flatMap((check) => debtAt({ check, entry: request.entry, file: parsed.data.file }))
     : [];
 };
 
 export const carriedDebtDocumentsAtBaseOf = (request: {
   readonly entries: readonly VersionOneEntry[];
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly clauseChecks: ClauseChecks;
 }): readonly RecordsDocument[] => {
   const placed = request.entries.flatMap((entry) =>
-    debtOf({ entry, catalogues: request.catalogues }),
+    debtOf({ entry, clauseChecks: request.clauseChecks }),
   );
   return [...new Set(placed.map(({ file }) => file))].map((file) => ({
     file,

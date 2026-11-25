@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { GitPort } from "../../application/ports/git-port.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
@@ -16,11 +16,13 @@ import type {
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
 import { carriedStandingOf } from "../hone-records-folder/reading/carried-standing.ts";
 import {
   baseStandingRecordsSource,
@@ -135,10 +137,6 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE },
-];
-
 const LOOP_KEYWORD_AUTHORISED = repoPathOf("hone-records/authorised-locations/loop-keyword.json");
 
 const REBINDING_AUTHORISED = repoPathOf("hone-records/authorised-locations/rebinding.json");
@@ -190,7 +188,7 @@ const readAtBaseHolding = (request: {
   baseStandingRecordsSource({
     source: sourceReadingBase({ base: request.base }),
     entries: entriesAtBase({ read: request.entries }),
-    catalogues: CATALOGUES,
+    catalogue: SETTINGS_CATALOGUE,
   }).readAt({ revision: "origin/main" });
 
 const readAtBaseWith = (request: { readonly entries: ReturnType<VersionOneEntries["atBase"]> }) =>
@@ -387,18 +385,17 @@ describe("baseStandingRecordsSource writing the records the base's version 1 ent
   });
 
   it("holds nothing at the base for an authorised location at a check whose symptom no catalogue holds", () => {
-    const symptomUnheldCatalogues: readonly RuleSetCatalogue[] = [
-      {
-        ruleSet: TOOL_RULE_SET,
-        catalogue: { ...SETTINGS_CATALOGUE, symptoms: [REBINDING], checks: [LOOP_KEYWORD_LOOPS] },
-      },
-    ];
+    const symptomUnheldCatalogue: SymptomCatalogue = {
+      ...SETTINGS_CATALOGUE,
+      symptoms: [REBINDING],
+      checks: [LOOP_KEYWORD_LOOPS],
+    };
     const source = baseStandingRecordsSource({
       source: sourceReadingBase({ base: NO_DOCUMENTS }),
       entries: entriesAtBase({
         read: { outcome: "ok", value: [{ entry: LOOPS_ENTRY, carried: LOOPS_ENTRY }] },
       }),
-      catalogues: symptomUnheldCatalogues,
+      catalogue: symptomUnheldCatalogue,
     });
 
     const read = source.readAt({ revision: "origin/main" });
@@ -509,7 +506,7 @@ describe("baseStandingRecordsSource beside the records the base already holds", 
       baseStandingRecordsSource({
         source,
         entries: entriesAtBase({ read: NO_DOCUMENTS }),
-        catalogues: CATALOGUES,
+        catalogue: SETTINGS_CATALOGUE,
       }).read,
     ).toBe(source.read);
   });
@@ -751,7 +748,7 @@ describe("baseStandingRecordsSource carrying the outside parties the base's vers
           },
         }),
       },
-      catalogues: CATALOGUES,
+      catalogue: SETTINGS_CATALOGUE,
     });
 
     const read = source.readAt({ revision: "origin/main" });
@@ -844,33 +841,215 @@ describe("baseStandingRecordsSource carrying the outside parties the base's vers
           .fn<VersionOneEntries["selectionAtBase"]>()
           .mockReturnValue({ outcome: "ok", value: { presence: "unreadable-in-base" } }),
       },
-      catalogues: [
-        {
-          ruleSet: TOOL_RULE_SET,
-          catalogue: {
-            ...SETTINGS_CATALOGUE,
-            symptoms: [outsideImport],
-            clauses: [
-              { clause: importBoundaries, sight: { kind: "one-symptom", symptom: outsideImport } },
-            ],
-            checks: [
-              {
-                name: "import-or-require",
-                symptom: outsideImport,
-                page: "outside-import-past-a-boundary/import-or-require.md",
-                clause: importBoundaries,
-                engines: [WALKER],
-                forms: [],
-                findingSpecifics: ["outside-party"],
-              },
-            ],
+      catalogue: {
+        ...SETTINGS_CATALOGUE,
+        symptoms: [outsideImport],
+        clauses: [
+          { clause: importBoundaries, sight: { kind: "one-symptom", symptom: outsideImport } },
+        ],
+        checks: [
+          {
+            name: "import-or-require",
+            symptom: outsideImport,
+            page: "outside-import-past-a-boundary/import-or-require.md",
+            clause: importBoundaries,
+            engines: [WALKER],
+            forms: [],
+            findingSpecifics: ["outside-party"],
           },
-        },
-      ],
+        ],
+      },
     });
 
     const read = source.readAt({ revision: "origin/main" });
 
     expect(read).toEqual(NO_DOCUMENTS);
+  });
+});
+
+describe("baseStandingRecordsSource over a catalogue that holds a team's clauses beside Hone's", () => {
+  const acme = { name: ruleSetNameOf("acme") };
+
+  const directConsole: Symptom = {
+    ...LOOP_KEYWORD,
+    ruleSet: acme,
+    name: "direct-console",
+    title: "Direct console",
+  };
+
+  const consoleClause: ClauseAddress = {
+    ruleSet: acme,
+    discipline: disciplineIdOf("ACME-1"),
+    clause: clauseIdOf("console-calls"),
+  };
+
+  const consoleCalls: Check = {
+    name: "console-calls",
+    symptom: directConsole,
+    page: "direct-console/console-calls.md",
+    clause: consoleClause,
+    engines: [WALKER],
+    forms: [],
+    findingSpecifics: [],
+  };
+
+  const draftCalls: Check = {
+    ...consoleCalls,
+    name: "draft-calls",
+    page: "direct-console/draft-calls.md",
+    clause: { ...consoleClause, clause: clauseIdOf("draft-calls") },
+  };
+
+  const named: SymptomCatalogue = {
+    ...SETTINGS_CATALOGUE,
+    symptoms: [...SETTINGS_CATALOGUE.symptoms, directConsole],
+    checks: [...SETTINGS_CATALOGUE.checks, consoleCalls, draftCalls],
+  };
+
+  const location = {
+    kind: "authorised-location",
+    clause: "acme/ACME-1#console-calls",
+    file: "src/a.ts",
+    reason: "the one place",
+  } as const;
+
+  const carveOut = {
+    kind: "file-carve-out",
+    clause: "acme/ACME-1#console-calls",
+    file: "src/b.ts",
+    reason: "legacy",
+  } as const;
+
+  const locationFile = repoPathOf("hone-records/acme/authorised-locations/direct-console.json");
+
+  it("holds a team's location and carve-out at the team's check, in the team's records folder, and Hone's location where it was", () => {
+    const source = baseStandingRecordsSource({
+      source: sourceReadingBase({ base: NO_DOCUMENTS }),
+      entries: entriesAtBase({
+        read: {
+          outcome: "ok",
+          value: [
+            { entry: location, carried: location },
+            { entry: carveOut, carried: carveOut },
+            { entry: LOOPS_ENTRY, carried: LOOPS_ENTRY },
+          ],
+        },
+      }),
+      catalogue: named,
+    });
+
+    const read = source.readAt({ revision: "origin/main" });
+
+    expect(read).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: locationFile,
+          document: {
+            version: 2,
+            records: [
+              { answers: "direct-console#console-calls", file: "src/a.ts", carried: location },
+            ],
+          },
+        },
+        LOOPS_DOCUMENT,
+        {
+          file: "hone-records/acme/debt/direct-console.json",
+          document: {
+            version: 2,
+            records: [
+              { answers: "direct-console#console-calls", file: "src/b.ts", carried: carveOut },
+            ],
+          },
+        },
+      ],
+    });
+  });
+
+  it("holds nothing for a team's entries when its checks name no clause, as when its names file is missing", () => {
+    const unnamed: Check = {
+      name: "console-calls",
+      symptom: directConsole,
+      page: "direct-console/console-calls.md",
+      engines: [WALKER],
+      forms: [],
+      findingSpecifics: [],
+    };
+    const source = baseStandingRecordsSource({
+      source: sourceReadingBase({ base: NO_DOCUMENTS }),
+      entries: entriesAtBase({
+        read: {
+          outcome: "ok",
+          value: [
+            { entry: location, carried: location },
+            { entry: carveOut, carried: carveOut },
+          ],
+        },
+      }),
+      catalogue: { ...SETTINGS_CATALOGUE, symptoms: [directConsole], checks: [unnamed] },
+    });
+
+    const read = source.readAt({ revision: "origin/main" });
+
+    expect(read).toEqual(NO_DOCUMENTS);
+  });
+
+  it.each<{
+    readonly name: string;
+    readonly file: RepoPath;
+    readonly entry: ReadonlyJsonValue;
+  }>([
+    {
+      name: "repointed alone to another check of the set",
+      file: locationFile,
+      entry: { answers: "direct-console#draft-calls", file: "src/a.ts", carried: location },
+    },
+    {
+      name: "given an outside party the base did not confine",
+      file: locationFile,
+      entry: {
+        answers: "direct-console#console-calls",
+        file: "src/a.ts",
+        outsideParty: "zod",
+        carried: location,
+      },
+    },
+    {
+      name: "that is a carve-out filed among the authorised locations",
+      file: locationFile,
+      entry: { answers: "direct-console#console-calls", file: "src/b.ts", carried: carveOut },
+    },
+    {
+      name: "filed in Hone's own records folder",
+      file: repoPathOf("hone-records/authorised-locations/direct-console.json"),
+      entry: { answers: "direct-console#console-calls", file: "src/a.ts", carried: location },
+    },
+  ])("refuses a team's carried record $name", ({ file, entry }) => {
+    const source = baseStandingRecordsSource({
+      source: sourceReadingBase({ base: NO_DOCUMENTS }),
+      entries: entriesAtBase({
+        read: {
+          outcome: "ok",
+          value: [
+            { entry: location, carried: location },
+            { entry: carveOut, carried: carveOut },
+          ],
+        },
+      }),
+      catalogue: named,
+    });
+    const base = source.readAt({ revision: "origin/main" });
+    assert(base.outcome === "ok");
+
+    const standing = carriedStandingOf({
+      base: { measured: "yes", documents: base.value },
+      file,
+      entry,
+    });
+
+    expect(standing).toEqual({
+      outcome: "failed",
+      error: [{ kind: "carried-changed-since-base" }],
+    });
   });
 });

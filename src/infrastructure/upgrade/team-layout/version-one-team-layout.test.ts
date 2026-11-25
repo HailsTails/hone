@@ -15,11 +15,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import {
-  readVersionOneTeamLayout,
-  teamUpgradeNamesOf,
-  versionOneTeamLayoutsOf,
-} from "./version-one-team-layout.ts";
+import { readVersionOneTeamLayout, versionOneTeamLayoutsOf } from "./version-one-team-layout.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
@@ -291,52 +287,6 @@ describe("readVersionOneTeamLayout", () => {
         kind: "rule-set-invalid",
         path: "/repo/acme/mechanisms/audit/ACME-1/piece.json",
         detail: "the settings of scratch-files name no piece module",
-      },
-    });
-  });
-});
-
-describe("teamUpgradeNamesOf", () => {
-  it("links each named clause to its check and its one symptom", () => {
-    const names = teamUpgradeNamesOf({
-      layout: {
-        ruleSet: { name: ruleSetNameOf("acme") },
-        location: { location: "folder", path: repoPathOf("acme") },
-        namesFile: repoPathOf("acme/version-two-names.json"),
-        clauses: [
-          {
-            clause: SCRATCH_CLAUSE_ADDRESS,
-            naming: {
-              naming: "named",
-              check: {
-                symptom: catalogueNameOf("scratch-file"),
-                check: catalogueNameOf("scratch-files"),
-              },
-              title: "Scratch files",
-            },
-            summary: "no scratch file is committed",
-            anchor: { kind: "file" },
-            exceptions: "allowed",
-            cases: { flag: [], allow: [] },
-            pieces: [],
-          },
-          UNNAMED_CLAUSE,
-        ],
-        definitions: [],
-        versionOneFiles: [],
-      },
-      namesPath: "/repo/acme/version-two-names.json",
-    });
-    expect(names).toMatchObject({
-      outcome: "ok",
-      value: {
-        clauses: [
-          {
-            clause: SCRATCH_CLAUSE,
-            sight: { kind: "one-symptom", symptom: "scratch-file" },
-          },
-        ],
-        clauseOfCheck: new Map([["scratch-file#scratch-files", SCRATCH_CLAUSE]]),
       },
     });
   });
