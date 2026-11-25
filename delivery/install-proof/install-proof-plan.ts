@@ -54,6 +54,7 @@ const V2_PROJECTION = "hone.eslint.mjs";
 const namedSettings = (request: {
   readonly checks: Readonly<Record<string, "walker" | "eslint">>;
   readonly forfeiture?: "elsewhere";
+  readonly eslintConfigLookup?: "nearest-to-file";
 }): string => `${JSON.stringify({ version: 2, ruleSets: {}, ...request }, null, 2)}\n`;
 
 const CONFIG_WITH_HONE =
@@ -106,8 +107,34 @@ const WORKSPACE_SETUP: ConsumerSetup = {
   ],
 };
 
+const PACKAGE_CONFIG_PARSING_TS =
+  'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n';
+
+const WORKSPACE_PACKAGE_CONFIG_SETUP: ConsumerSetup = {
+  replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs", "package.json"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: namedSettings({
+        checks: { "authored-class-or-this#class-keyword": "eslint" },
+        forfeiture: "elsewhere",
+        eslintConfigLookup: "nearest-to-file",
+      }),
+    },
+    { name: "packages/web/eslint.config.mjs", text: PACKAGE_CONFIG_PARSING_TS },
+    {
+      name: "packages/web/package.json",
+      text: '{"name":"web","private":true,"type":"module","scripts":{"lint":"node lint.mjs ."}}\n',
+    },
+    {
+      name: "hone-records/debt/authored-class-or-this.json",
+      text: '{"version":2,"records":[{"answers":"authored-class-or-this#class-keyword","file":"packages/web/src/legacy.ts","note":"existing debt in a legacy file, recorded at adoption"}]}\n',
+    },
+  ],
+};
+
 const ESLINT_PROJECTION = `import hone from "${TOOL_IDENTITY.packageName}/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
 `;
 
 const CLASS_SYMPTOM =
@@ -161,7 +188,7 @@ const ESLINT_MISSING_ACTIONS: readonly ProofAction[] = [
 ];
 
 const WORKSPACE_SLICE = `import hone from "${TOOL_IDENTITY.packageName}/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["src/legacy.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `;
 
@@ -414,6 +441,14 @@ export const PROOF_CASES: readonly ProofCase[] = [
     toolchain: "current",
     typeStripping: "disabled",
     setup: WORKSPACE_SETUP,
+    actions: WORKSPACE_ACTIONS,
+  },
+  {
+    consumer: "workspace-package-config",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
     actions: WORKSPACE_ACTIONS,
   },
 ];

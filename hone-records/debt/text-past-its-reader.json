@@ -35,10 +35,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/composition/single-mechanism.integration.test.ts"
     },
     {

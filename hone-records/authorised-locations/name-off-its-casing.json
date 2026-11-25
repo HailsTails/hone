@@ -39,6 +39,45 @@
         "readback": "Git and POSIX define the environment variable names; therefore git reads those keys; therefore the git port decides which reach the subprocess; therefore its test writes them out; therefore the test holds names off the casing convention.",
         "owner": "HailsTails"
       }
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "delivery/install-proof/install-proof-plan.test.ts",
+      "case": "names-something",
+      "owes": "our-code-reads-in-the-common-language",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does install-proof-plan.test.ts hold names off the casing convention?",
+            "because": "It writes out the environment keys that environmentWithoutGit strips or keeps.",
+            "evidence": "delivery/install-proof/install-proof-plan.test.ts:690"
+          },
+          {
+            "why": "Why does environmentWithoutGit strip or keep environment keys?",
+            "because": "The install proof runs git in throwaway consumers with the ambient environment less every GIT_ variable.",
+            "evidence": "delivery/install-proof/install-proof-ports.ts:197"
+          },
+          {
+            "why": "Why does the proof run git in throwaway consumers less every GIT_ variable?",
+            "because": "An inherited GIT_DIR or GIT_INDEX_FILE would point git at another repository.",
+            "evidence": "https://git-scm.com/docs/git#_environment_variables"
+          },
+          {
+            "why": "Why would an inherited GIT_DIR or GIT_INDEX_FILE point git at another repository?",
+            "because": "Git's contract names those variables as its settings, and POSIX names PATH and HOME.",
+            "evidence": "https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html"
+          },
+          {
+            "why": "Why are those names, git's contract and POSIX's, in that casing?",
+            "because": "Git and POSIX define the spelling outside our code.",
+            "evidence": "https://git-scm.com/docs/git#_environment_variables"
+          }
+        ],
+        "rootCause": "Git and POSIX define the spelling of these environment variables outside our code.",
+        "rootEvidence": "Read 25 Nov 2026: `delivery/install-proof/install-proof-plan.ts:648` drops names starting GIT_.",
+        "readback": "Git and POSIX define the spelling of the environment variables; therefore an inherited GIT_DIR redirects git; therefore the proof runs git less every GIT_ variable; therefore environmentWithoutGit strips or keeps those keys; therefore install-proof-plan.test.ts holds names off the casing convention.",
+        "owner": "HailsTails"
+      }
     }
   ]
 }

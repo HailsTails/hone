@@ -11,10 +11,6 @@
     },
     {
       "answers": "loop-keyword#loop-statement",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts"
-    },
-    {
-      "answers": "loop-keyword#loop-statement",
       "file": "src/infrastructure/engines/walker/loop-keyword/loop-statement/loops.test.ts"
     },
     {

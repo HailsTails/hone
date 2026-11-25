@@ -124,7 +124,7 @@ describe("teamConfigsOf", () => {
     });
   });
 
-  it("refuses naming the projection when no tracked script imports it", () => {
+  it("refuses naming the projection when no tracked script imports it and an ESLint config sits beside it", () => {
     const request = requestOver({
       trackedPaths: [repoPathOf("eslint.config.mjs")],
       fileText: fileTextHolding({ text: UNRELATED }),
@@ -204,11 +204,40 @@ describe("teamConfigsOf", () => {
     });
   });
 
+  it("gives a projection no team config when nothing imports it and no ESLint config sits in its folder", () => {
+    const request = requestOver({
+      trackedPaths: [
+        repoPathOf("packages/a/eslint.config.mjs"),
+        repoPathOf("my-eslint.config.mjs"),
+      ],
+      projections: [PROJECTION, SLICE],
+      fileText: {
+        read: vi
+          .fn<FileTextPort["read"]>()
+          .mockReturnValueOnce({ outcome: "ok", value: IMPORTING })
+          .mockReturnValueOnce({ outcome: "ok", value: UNRELATED }),
+      },
+    });
+
+    const found = teamConfigsOf(request);
+
+    expect(found).toEqual({
+      outcome: "ok",
+      value: [
+        { projection: "disciplines.eslint.mjs", teamConfigs: [] },
+        {
+          projection: "packages/a/disciplines.eslint.mjs",
+          teamConfigs: [{ file: "packages/a/eslint.config.mjs", text: IMPORTING }],
+        },
+      ],
+    });
+  });
+
   it("reads no script under node_modules", () => {
     const request = requestOver({ trackedPaths: [repoPathOf("node_modules/x/index.js")] });
     expect(teamConfigsOf(request)).toEqual({
-      outcome: "failed",
-      error: { kind: "no-file-imports-projection", projection: "disciplines.eslint.mjs" },
+      outcome: "ok",
+      value: [{ projection: "disciplines.eslint.mjs", teamConfigs: [] }],
     });
     expect(request.fileText.read).not.toHaveBeenCalled();
   });

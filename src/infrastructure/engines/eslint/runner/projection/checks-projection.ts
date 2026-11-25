@@ -74,7 +74,7 @@ const checksBlock = (request: {
   const entries = request.plugins.map(
     ({ namespace }, index) => `${quoted({ text: namespace })}: plugin${index}`,
   );
-  return `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], plugins: { ${[CHECKS_PLUGIN_NAMESPACE, ...entries].join(LIST_SEPARATOR)} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
+  return `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], ignores: [${quoted({ text: CHECKS_DECLARATION_PATH })}], plugins: { ${[CHECKS_PLUGIN_NAMESPACE, ...entries].join(LIST_SEPARATOR)} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
 };
 
 const reachOfAnswer = (request: { readonly answer: AnsweredFile }): string =>

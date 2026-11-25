@@ -1,6 +1,14 @@
 import type { Rule } from "./eslint-instance.ts";
 
-export const PROJECTION_DECLARATION_TEXT = `import type { Linter } from ${JSON.stringify("eslint")};\ndeclare const projection: Linter.Config[];\nexport default projection;\n`;
+export const PROJECTION_DECLARATION_TEXT = `declare const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[];
+export default projection;
+`;
 
 export type ReportDataValue = string | number | bigint | boolean | null | undefined;
 

@@ -126,11 +126,11 @@ const BINDINGS: NamedEngineRunRequest["bindings"] = [
 const ONE_CLASS = "export class Kept {}\n";
 
 const PROJECTION = `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
 const SUB_PROJECTION = `import hone from "../../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
 const TEAM_CONFIG = `import hone from "./hone.eslint.mjs";
@@ -371,7 +371,7 @@ describe.each<EslintLineRow>([
       folder: "answered-root-file",
       config: TEAM_CONFIG,
       projection: `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       source: ONE_CLASS,
@@ -437,6 +437,64 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
     expect(outcome).toEqual({ outcome: "ok", value: report });
   });
 
+  it("measures nothing, and lints no untracked file, when the declaration it compares is the only TypeScript file tracked", async () => {
+    const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-declaration-only`);
+    const toolchain = await loadEslintToolchain({
+      peers: { location: PEER_LOCATION, modules: row.toolchainModules },
+    });
+    assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
+    const eslint = createEslintPort({ toolchain: toolchain.value });
+    const written = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/dist` }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/hone.eslint.mjs`, text: PROJECTION }),
+      fileText.write({
+        path: `${repo}/hone.eslint.d.mts`,
+        text: eslint.boundary.declarationText,
+      }),
+      fileText.write({ path: `${repo}/dist/x.d.ts`, text: ONE_CLASS }),
+    ];
+    const runner = createChecksRunner({
+      fileText,
+      fileRemoval,
+      modules: row.pieceModules,
+      path,
+      eslint,
+      moduleExtension: ".ts",
+    });
+
+    const outcome = await runner.run({
+      repoRoot: repo,
+      installRoot: INSTALL_ROOT,
+      files: [repoPathOf("hone.eslint.d.mts")],
+      trackedPaths: [repoPathOf("hone.eslint.d.mts"), repoPathOf("hone.eslint.mjs")],
+      checks: CHECKS,
+      bindings: BINDINGS,
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    });
+
+    expect({ written, outcome }).toEqual({
+      written: [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN],
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "current",
+          slices: [],
+        },
+      },
+    });
+  });
+
   it.each<SubfolderRow>([
     {
       name: "reads the root config only when the repository declares a repository-root lookup, whatever a subfolder config holds",
@@ -491,12 +549,12 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       folder: "answered-package-file",
       rootConfig: CONFIG_WITHOUT_THE_CHECKS,
       rootProjection: `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["sub/kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       subConfig: `import hone from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"] }, ...hone];\n`,
       subProjection: `import hone from "../../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       tracked: [

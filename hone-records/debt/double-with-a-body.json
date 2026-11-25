@@ -43,10 +43,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/engines/eslint/runner/config-roots/config-lookup.test.ts"
     },
     {
@@ -60,10 +56,6 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",

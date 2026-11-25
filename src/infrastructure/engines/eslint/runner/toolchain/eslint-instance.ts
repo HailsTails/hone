@@ -587,11 +587,13 @@ export const createEslintPort = (options: { readonly toolchain: EslintToolchain 
     });
     return {
       lintFiles: (lint) =>
-        onSurface({
-          surface,
-          act: (eslint) => eslint.lintFiles({ filePaths: lint.files }),
-          onRejected: toolFailed,
-        }),
+        lint.files.length === 0
+          ? Promise.resolve({ outcome: "ok", value: [] })
+          : onSurface({
+              surface,
+              act: (eslint) => eslint.lintFiles({ filePaths: lint.files }),
+              onRejected: toolFailed,
+            }),
     };
   },
   ignoredByConfig: (request) =>

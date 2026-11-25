@@ -15,14 +15,6 @@
     },
     {
       "answers": "code-or-prose-read-as-text-in-a-test#raw-read",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "code-or-prose-read-as-text-in-a-test#raw-read",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "code-or-prose-read-as-text-in-a-test#raw-read",
       "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-floor-syntax.test.ts"
     },
     {

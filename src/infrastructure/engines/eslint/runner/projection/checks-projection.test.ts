@@ -72,7 +72,7 @@ describe("checksProjectionText", () => {
       ],
     });
     expect(projection).toBe(
-      'import hone from "@hailstails/hone/eslint-plugin";\nimport plugin0 from "./tools/plugin.ts";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone, "team": plugin0 }, rules: { "hone/test-switched-off#skipped-tests": "error", "team/no-skips": "error" } },\n{ name: "hone/answered/team/test-switched-off#skipped-tests", files: ["src/a.ts"], rules: { "team/no-skips": "off" } },\n{ name: "hone/answered/test-switched-off#skipped-tests", files: ["src/b.ts"], rules: { "hone/test-switched-off#skipped-tests": "off" } }];\n',
+      'import hone from "@hailstails/hone/eslint-plugin";\nimport plugin0 from "./tools/plugin.ts";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone, "team": plugin0 }, rules: { "hone/test-switched-off#skipped-tests": "error", "team/no-skips": "error" } },\n{ name: "hone/answered/team/test-switched-off#skipped-tests", files: ["src/a.ts"], rules: { "team/no-skips": "off" } },\n{ name: "hone/answered/test-switched-off#skipped-tests", files: ["src/b.ts"], rules: { "hone/test-switched-off#skipped-tests": "off" } }];\n',
     );
   });
 
@@ -80,7 +80,7 @@ describe("checksProjectionText", () => {
     expect(
       checksProjectionText({ pluginImport: PACKAGE_IMPORT, checks: [SKIPPED_TESTS], answered: [] }),
     ).toBe(
-      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
+      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
     );
   });
 
@@ -92,7 +92,7 @@ describe("checksProjectionText", () => {
         answered: [],
       }),
     ).toBe(
-      'import hone from "./api/eslint-plugin.ts";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/positional-parameters#parameter-count": ["error",{"max":2,"countVoidThis":true}], "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } }];\n',
+      'import hone from "./api/eslint-plugin.ts";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/positional-parameters#parameter-count": ["error",{"max":2,"countVoidThis":true}], "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } }];\n',
     );
   });
 
@@ -110,7 +110,7 @@ describe("checksProjectionText", () => {
       }),
     ).toBe(
       `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/claimed-type#non-null-assertions": "error", "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/claimed-type#non-null-assertions": "error", "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } },
 { name: "hone/answered/claimed-type, test-switched-off", files: ["src/c.ts"], rules: { "hone/claimed-type#non-null-assertions": "off", "hone/test-switched-off#focused-tests": "off", "hone/test-switched-off#skipped-tests": "off" } },
 { name: "hone/answered/test-switched-off", files: ["src/a.test.ts", "src/b.test.ts"], rules: { "hone/test-switched-off#focused-tests": "off", "hone/test-switched-off#skipped-tests": "off" } }];
 `,
@@ -134,7 +134,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       }),
     ).toBe(
       `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/test-switched-off#focused-tests": "error", "hone/test-switched-off#skipped-tests": "error" } },
 { name: "hone/answered/test-switched-off", files: ["src/b.test.ts"], rules: { "hone/test-switched-off#focused-tests": "off", "hone/test-switched-off#skipped-tests": "off" } },
 { name: "hone/answered/test-switched-off#skipped-tests", files: ["src/a.test.ts"], rules: { "hone/test-switched-off#skipped-tests": "off" } }];
 `,
@@ -156,7 +156,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
         ],
       }),
     ).toBe(
-      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
+      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
     );
   });
 
@@ -182,13 +182,13 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
         answered: [{ ruleSet: "hone", symptom: "loop-keyword", file: repoPathOf("src/a.ts") }],
       }),
     ).toBe(
-      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
+      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
     );
   });
 
   it("writes an empty rule set when no check runs on ESLint", () => {
     expect(checksProjectionText({ pluginImport: PACKAGE_IMPORT, checks: [], answered: [] })).toBe(
-      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: {} }];\n',
+      'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: {} }];\n',
     );
   });
 });

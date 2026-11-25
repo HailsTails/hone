@@ -6,6 +6,7 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { TeamConfigRefusal } from "../../ports/upgrade/plan-refusal.ts";
 import { projectionImportingOf } from "../writing/config-import-rewrite.ts";
+import { mapFileToFolder } from "./file-folder.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 
 export type VersionOneProjection = {
@@ -22,6 +23,8 @@ export type TeamConfigsRequest = {
 };
 
 const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
+
+const ESLINT_CONFIG_FILE = /(?:^|\/)eslint\.config\.[cm]?[jt]s$/;
 
 const IN_NODE_MODULES = /(?:^|\/)node_modules\//;
 
@@ -65,13 +68,24 @@ const importersOf = (request: {
       }) === "imports",
   );
 
+const findConfigInFolder = (request: {
+  readonly trackedPaths: readonly RepoPath[];
+  readonly projection: RepoPath;
+}): RepoPath | undefined => {
+  const folder = mapFileToFolder({ file: request.projection });
+  return request.trackedPaths.find(
+    (file) => ESLINT_CONFIG_FILE.test(file) && mapFileToFolder({ file }) === folder,
+  );
+};
+
 const teamConfigFor = (request: {
+  readonly trackedPaths: readonly RepoPath[];
   readonly candidates: readonly PlannedRepoFile[];
   readonly projection: RepoPath;
 }): Result<VersionOneProjection, TeamConfigRefusal> => {
   const { projection } = request;
   const teamConfigs = importersOf(request);
-  return teamConfigs.length === 0
+  return teamConfigs.length === 0 && findConfigInFolder(request) !== undefined
     ? { outcome: "failed", error: { kind: "no-file-imports-projection", projection } }
     : { outcome: "ok", value: { projection, teamConfigs } };
 };
@@ -92,7 +106,13 @@ export const teamConfigsOf = (
   }
   return gatheredOutcomes({
     outcomes: request.projections.map((projection) =>
-      listedOutcome({ outcome: teamConfigFor({ candidates: candidates.value, projection }) }),
+      listedOutcome({
+        outcome: teamConfigFor({
+          trackedPaths: request.trackedPaths,
+          candidates: candidates.value,
+          projection,
+        }),
+      }),
     ),
   });
 };

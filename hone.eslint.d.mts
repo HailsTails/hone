@@ -1,3 +1,8 @@
-import type { Linter } from "eslint";
-declare const projection: Linter.Config[];
+declare const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[];
 export default projection;

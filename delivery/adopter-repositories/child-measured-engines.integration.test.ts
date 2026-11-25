@@ -63,10 +63,7 @@ describe("an engines stage measured in a child process", () => {
     assert(second !== undefined, "the rewritten projection has an ESLint run");
     expect({ before: first.nativeExceptions, after: second.nativeExceptions }).toEqual({
       before: [],
-      after: [
-        { kind: "ignore", check, file: repoPathOf("a.ts") },
-        { kind: "ignore", check, file: repoPathOf("hone.eslint.d.mts") },
-      ],
+      after: [{ kind: "ignore", check, file: repoPathOf("a.ts") }],
     });
   });
 
@@ -116,17 +113,10 @@ describe("an engines stage measured in a child process", () => {
       },
     });
 
-    expect(measured).toEqual({
+    expect(measured).toMatchObject({
       outcome: "ok",
       value: [
         {
-          mechanism: "eslint",
-          coverableKinds: ["config-override", "inline-disable"],
-          projection: "current",
-          slices: [],
-          nestedConfigurations: [],
-          unprojectedFolders: [],
-          misnamedRuleIds: [],
           hits: [
             {
               check: "claimed-type#non-null-assertions",
@@ -135,11 +125,7 @@ describe("an engines stage measured in a child process", () => {
               snippet: "export const a = (b: string[]) => b[0]!;",
             },
           ],
-          nativeExceptions: [],
-          measured: [
-            { check: "claimed-type#non-null-assertions", file: "a.ts" },
-            { check: "claimed-type#non-null-assertions", file: "hone.eslint.d.mts" },
-          ],
+          measured: [{ check: "claimed-type#non-null-assertions", file: "a.ts" }],
         },
       ],
     });

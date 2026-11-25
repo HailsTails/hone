@@ -11,10 +11,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
     },
     {
