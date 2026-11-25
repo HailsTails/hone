@@ -30,6 +30,15 @@
           "rule": "failures-are-values"
         }
       ]
+    },
+    {
+      "case": "uses-what-a-collaborator-gives-back",
+      "situation": "reads a double's recorded calls or results",
+      "points": [
+        {
+          "rule": "written-out-answers"
+        }
+      ]
     }
   ],
   "breachUsuallySits": "in the unit's output type, where optional or loose shapes force the test to branch",
@@ -39,7 +48,8 @@
   "reports": "seen-to-breach",
   "recipes": [
     "assert-to-narrow",
-    "it-each-over-typed-rows"
+    "it-each-over-typed-rows",
+    "stub-with-vi-fn"
   ],
   "correctUses": [],
   "breachACheckCouldName": "the type branched on, by types.",

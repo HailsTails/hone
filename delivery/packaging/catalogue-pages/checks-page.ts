@@ -3,6 +3,7 @@ import {
   type AddressedCheck,
   checkAddressTextOf,
 } from "../../../src/domain/language-layer/check-address-text.ts";
+import { sameClauseAddress } from "../../../src/domain/rule-set/clause-address.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import {
   blocksOf,
@@ -24,9 +25,10 @@ type Check = CatalogueFile["checks"][number];
 export type ChecksSource = PageSource & { readonly bindings: EngineBindings };
 
 const MARGIN_LABELS: readonly FactLabel<
-  "engines" | "flagsBeyondTheSymptom" | "misses" | "settingsTracedTo"
+  "engines" | "forms" | "flagsBeyondTheSymptom" | "misses" | "settingsTracedTo"
 >[] = [
   { key: "engines", label: "Engines" },
+  { key: "forms", label: "Forms" },
   { key: "flagsBeyondTheSymptom", label: "Flags beyond the symptom" },
   { key: "misses", label: "Misses" },
   { key: "settingsTracedTo", label: "Settings traced to" },
@@ -43,8 +45,36 @@ const enginesOf = (request: ChecksSource & { readonly check: Check }): string | 
   return engines.length === 0 ? undefined : engines.map(({ name }) => `\`${name}\``).join(", ");
 };
 
+const listFormsOfClause = (request: {
+  readonly clause: CatalogueFile["clauses"][number];
+  readonly check: Check;
+}): readonly string[] => {
+  const { clause, check } = request;
+  return check.clause !== undefined &&
+    clause.sight.kind === "symptom-by-form" &&
+    sameClauseAddress({ left: clause.clause, right: check.clause }) === "same"
+    ? clause.sight.forms.filter(({ symptom }) => symptom === check.symptom).map(({ form }) => form)
+    : [];
+};
+
+const mapCheckToFormsText = (
+  request: ChecksSource & { readonly check: Check },
+): string | undefined => {
+  const forms = request.file.clauses.flatMap((clause) =>
+    listFormsOfClause({ clause, check: request.check }),
+  );
+  return forms.length === 0 ? undefined : forms.map((form) => `\`${form}\``).join(", ");
+};
+
 const marginLinesOf = (request: ChecksSource & { readonly check: Check }): string =>
-  factLines({ facts: { ...request.check, engines: enginesOf(request) }, labels: MARGIN_LABELS });
+  factLines({
+    facts: {
+      ...request.check,
+      engines: enginesOf(request),
+      forms: mapCheckToFormsText(request),
+    },
+    labels: MARGIN_LABELS,
+  });
 
 const checkBlockOf = (request: ChecksSource & { readonly check: Check }): string =>
   blocksOf({

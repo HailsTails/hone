@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "declared-not-asserted"
-  },
+  "serves": [
+    {
+      "rule": "declared-not-asserted"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "A field read from an open context is either cast or defaulted. Both hide a missing capability until run time.",

@@ -38,7 +38,7 @@ const FILE: CatalogueFile = {
     {
       name: "fix-the-declaration",
       title: "Fix the declaration",
-      serves: { rule: "declared-not-asserted" },
+      serves: [{ rule: "declared-not-asserted" }],
       standing: "accepted",
       reason: { text: "The declaration is wrong.", standing: "accepted" },
     },

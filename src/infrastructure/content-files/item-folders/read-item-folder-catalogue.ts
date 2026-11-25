@@ -97,7 +97,7 @@ const createSourceKey = (placed: PlacedItem): string =>
 
 const mapItemsToSourceFiles = (request: {
   readonly items: readonly PlacedItem[];
-  readonly kind: "symptom" | "check";
+  readonly kind: "symptom" | "check" | "recipe";
 }): ReadonlyMap<string, string> =>
   new Map(
     request.items
@@ -119,11 +119,16 @@ const addSourceFiles = (request: {
     const sourceFile = symptomFiles.get(symptom.name);
     return sourceFile === undefined ? symptom : { ...symptom, sourceFile };
   });
+  const recipeFiles = mapItemsToSourceFiles({ items: request.items, kind: "recipe" });
+  const recipes = request.content.recipes.map((recipe) => {
+    const sourceFile = recipeFiles.get(recipe.name);
+    return sourceFile === undefined ? recipe : { ...recipe, sourceFile };
+  });
   const checks = request.content.checks.map((check) => ({
     ...check,
     page: checkFiles.get(checkAddressTextOf({ check })) ?? check.page,
   }));
-  return { ...request.content, symptoms, checks };
+  return { ...request.content, recipes, symptoms, checks };
 };
 
 const holdingOf = (request: {

@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "kinds-are-named"
-  },
+  "serves": [
+    {
+      "rule": "kinds-are-named"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"boolean inputs are a smell, disallowed\"; \"no boolean inputs, breaks clean code\".",

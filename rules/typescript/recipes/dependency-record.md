@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "outside-dependencies-justified"
-  },
+  "serves": [
+    {
+      "rule": "outside-dependencies-justified"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"Packages need a justification for the maintenance they add.\"",

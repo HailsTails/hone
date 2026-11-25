@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "ports-declared-inside"
-  },
+  "serves": [
+    {
+      "rule": "ports-declared-inside"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"date creates non determinism and leaks the world in\"; \"we have a uuid factory, you should not be importing dependencies\".",

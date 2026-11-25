@@ -8,12 +8,25 @@ import {
 import { findCaseNameFaults } from "../../../domain/language-layer/case-name.ts";
 import { mapSymptomToAddress } from "../../../domain/language-layer/catalogue-address.ts";
 import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
+import {
+  type CheckNames,
+  checkNamesOf,
+} from "../../../domain/language-layer/check-address-text.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
 import {
   createUnowedPointFault,
   findOwedPoint,
   type OwedPoint,
 } from "../../../domain/language-layer/owed-points.ts";
+import {
+  type ExampleFault,
+  findExampleFaults,
+} from "../../../domain/language-layer/recipe-examples.ts";
+import {
+  findRecipeFaults,
+  type RecipeFault,
+  type ServingRecipe,
+} from "../../../domain/language-layer/recipe-reach.ts";
 import {
   type Case,
   type CatalogueContent,
@@ -29,6 +42,7 @@ import {
   type Pointed,
   type Principle,
   type Recipe,
+  type RecipeExample,
   type RecordKind,
   type Rule,
   type Symptom,
@@ -160,6 +174,20 @@ export const checkWireSchema = z.strictObject({
   settingsTracedTo: textSchema.optional(),
 });
 
+const checkNamesSchema = z.string().transform((text, context): CheckNames => {
+  const names = checkNamesOf({ text });
+  if (names !== undefined) {
+    return names;
+  }
+  context.addIssue({ code: "custom", message: "is not a check address, <symptom>#<check>" });
+  return z.NEVER;
+});
+
+const recipeExampleWireSchema = z.strictObject({
+  anchor: catalogueNameSchema,
+  answers: z.array(z.strictObject({ check: checkNamesSchema, form: textSchema })).min(1),
+});
+
 export const catalogueFileSchema = z.strictObject({
   version: z.literal(SUPPORTED_VERSION),
   principles: z.array(z.strictObject({ name: catalogueNameSchema, title: textSchema })),
@@ -176,9 +204,10 @@ export const catalogueFileSchema = z.strictObject({
     z.strictObject({
       name: catalogueNameSchema,
       title: textSchema,
-      serves: pointedWireSchema,
+      serves: z.array(pointedWireSchema).min(1),
       standing: standingSchema,
       reason: z.strictObject({ text: textSchema, standing: standingSchema }),
+      examples: z.array(recipeExampleWireSchema).optional(),
     }),
   ),
   recordKinds: z.array(recordKindWireSchema),
@@ -198,6 +227,8 @@ type RuleWire = CatalogueFile["rules"][number];
 type CaseWire = z.infer<typeof caseWireSchema>;
 
 type RecipeWire = CatalogueFile["recipes"][number];
+
+type RecipeExampleWire = z.infer<typeof recipeExampleWireSchema>;
 
 type RecordKindWire = z.infer<typeof recordKindWireSchema>;
 
@@ -272,6 +303,17 @@ type Definitions = Pointable & {
 
 const principleOf = (wire: PrincipleWire): Principle => ({ name: wire.name, title: wire.title });
 
+const mapWireToRecipeExample = (request: {
+  readonly wire: RecipeExampleWire;
+  readonly ruleSet: RuleSetIdentity;
+}): RecipeExample => ({
+  anchor: request.wire.anchor,
+  answers: request.wire.answers.map(({ check, form }) => ({
+    check: { name: check.check, symptom: { ruleSet: request.ruleSet, name: check.symptom } },
+    form,
+  })),
+});
+
 const recipeOf = (request: {
   readonly wire: RecipeWire;
   readonly ruleSet: RuleSetIdentity;
@@ -281,6 +323,13 @@ const recipeOf = (request: {
   title: request.wire.title,
   standing: request.wire.standing,
   reason: { text: request.wire.reason.text, standing: request.wire.reason.standing },
+  ...(request.wire.examples === undefined
+    ? {}
+    : {
+        examples: request.wire.examples.map((wire) =>
+          mapWireToRecipeExample({ wire, ruleSet: request.ruleSet }),
+        ),
+      }),
 });
 
 const recordKindOf = (wire: RecordKindWire): RecordKind => ({
@@ -336,6 +385,16 @@ const pointedOf = (request: {
         }),
         to: (principle): Pointed => ({ kind: "principle", principle }),
       });
+
+const resolveServes = (request: {
+  readonly wire: RecipeWire;
+  readonly pointable: Pointable;
+}): Resolution<readonly Pointed[]> =>
+  allResolved(
+    request.wire.serves.map((point) =>
+      pointedOf({ listing: "recipes", point, pointable: request.pointable }),
+    ),
+  );
 
 const caseOf = (request: {
   readonly wire: CaseWire;
@@ -400,9 +459,7 @@ const definitionsOf = (request: {
   );
   const recordKindFaults = requiredRecordKindFaultsOf(recordKinds);
   const served = allResolved(
-    request.file.recipes.map((wire) =>
-      pointedOf({ listing: "recipes", point: wire.serves, pointable: pointable.value }),
-    ),
+    request.file.recipes.map((wire) => resolveServes({ wire, pointable: pointable.value })),
   );
   return cases.outcome === "failed" || recordKindFaults.length > 0 || served.outcome === "failed"
     ? {
@@ -768,6 +825,64 @@ const resolvedChecksOf = (
   return faults.length > 0 ? { outcome: "failed", error: faults } : checks;
 };
 
+const mapExampleFaultToText = (request: { readonly fault: ExampleFault }): string => {
+  const { fault } = request;
+  switch (fault.kind) {
+    case "check-unheld":
+      return `the example ${fault.anchor} of ${fault.recipe} answers ${fault.check}, which the catalogue does not hold`;
+    case "recipe-not-indicated":
+      return `the example ${fault.anchor} of ${fault.recipe} answers ${fault.check}, but ${fault.recipe} serves ${fault.serves.join(", ")}, none of which ${fault.symptom} indicates`;
+  }
+};
+
+const mapRecipeFaultToText = (request: { readonly fault: RecipeFault }): string => {
+  const { symptom, recipe, serves } = request.fault;
+  return `${symptom} lists the recipe ${recipe}, but ${recipe} serves ${serves.join(", ")}, none of which ${symptom} indicates`;
+};
+
+const listServingRecipes = (request: {
+  readonly file: CatalogueFile;
+  readonly pointable: Pointable;
+}): readonly ServingRecipe[] =>
+  request.file.recipes.flatMap((wire) => {
+    const serves = resolveServes({ wire, pointable: request.pointable });
+    return serves.outcome === "failed" ? [] : [{ name: wire.name, serves: serves.value }];
+  });
+
+const listRecipeFaults = (request: {
+  readonly file: CatalogueFile;
+  readonly pointable: Pointable;
+  readonly symptoms: readonly Symptom[];
+}): readonly string[] => {
+  const serving = listServingRecipes(request);
+  return request.symptoms.flatMap((symptom) => {
+    const listed = symptom.recipes.map(({ name }) => name);
+    const recipes = serving.filter(({ name }) => listed.includes(name));
+    return findRecipeFaults({ symptom, recipes }).map((fault) => mapRecipeFaultToText({ fault }));
+  });
+};
+
+const listExampleFaults = (request: {
+  readonly file: CatalogueFile;
+  readonly ruleSet: RuleSetIdentity;
+  readonly pointable: Pointable;
+  readonly symptoms: readonly Symptom[];
+  readonly checks: readonly CheckContent[];
+}): readonly string[] => {
+  const { symptoms, checks, pointable, ruleSet } = request;
+  return request.file.recipes.flatMap((wire) => {
+    const serves = resolveServes({ wire, pointable });
+    return serves.outcome === "failed"
+      ? serves.error
+      : findExampleFaults({
+          recipe: recipeOf({ wire, ruleSet }),
+          serves: serves.value,
+          symptoms,
+          checks,
+        }).map((fault) => mapExampleFaultToText({ fault }));
+  });
+};
+
 const catalogueOf = (request: {
   readonly file: CatalogueFile;
   readonly ruleSet: RuleSetIdentity;
@@ -790,20 +905,30 @@ const catalogueOf = (request: {
   if (clauses.outcome === "failed") {
     return clauses;
   }
-  return mapped({
-    resolution: resolvedChecksOf({
-      symptoms: symptoms.value,
-      clauses: clauses.value,
-      wires: request.file.checks,
-    }),
-    to: (checks) => ({
-      ...definitions.value,
-      symptoms: symptoms.value,
-      clauses: clauses.value,
-      checks,
-      namedBans: request.file.namedBans.map(namedBanOf),
-    }),
+  const checks = resolvedChecksOf({
+    symptoms: symptoms.value,
+    clauses: clauses.value,
+    wires: request.file.checks,
   });
+  if (checks.outcome === "failed") {
+    return checks;
+  }
+  const chain = {
+    ...request,
+    pointable: definitions.value,
+    symptoms: symptoms.value,
+    checks: checks.value,
+  };
+  const chainFaults = [...listRecipeFaults(chain), ...listExampleFaults(chain)];
+  return chainFaults.length > 0
+    ? { outcome: "failed", error: chainFaults }
+    : resolved({
+        ...definitions.value,
+        symptoms: symptoms.value,
+        clauses: clauses.value,
+        checks: checks.value,
+        namedBans: request.file.namedBans.map(namedBanOf),
+      });
 };
 
 const repeatsIn = (request: {
@@ -822,6 +947,14 @@ const formSectionRepeatsOf = (request: { readonly file: CatalogueFile }): readon
           names: sight.forms.map((form) => form.form),
         })
       : [],
+  );
+
+const listExampleRepeats = (request: { readonly file: CatalogueFile }): readonly string[] =>
+  request.file.recipes.flatMap(({ name, examples }) =>
+    repeatsIn({
+      listing: `the examples of ${name}`,
+      names: (examples ?? []).map(({ anchor }) => anchor),
+    }),
   );
 
 const indicatedCaseRepeatsOf = (request: { readonly file: CatalogueFile }): readonly string[] =>
@@ -877,6 +1010,7 @@ const repeatedNamesOf = (request: { readonly file: CatalogueFile }): readonly st
   }),
   ...checkedClauseRepeatsOf(request),
   ...formSectionRepeatsOf(request),
+  ...listExampleRepeats(request),
   ...indicatedCaseRepeatsOf(request),
 ];
 

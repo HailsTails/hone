@@ -2,6 +2,7 @@ import type { FileTextPort } from "../../../src/application/ports/file-system/fi
 import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import { packageFileStemOf, TOOL_IDENTITY } from "../../../src/domain/rule-set/tool-identity.ts";
+import { catalogueClausesOf } from "../../../src/infrastructure/content-files/rule-sets/installed-pieces.ts";
 import { createEngineBindingsRepository } from "../../../src/infrastructure/engines/piece-engines.ts";
 import type { EntryDisposition } from "../../install-proof/install-proof-plan.ts";
 import type { CopiedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
@@ -422,6 +423,15 @@ const contentFilesOf = (request: {
       ruleSetRoot: sourceRoot.value,
       installRoot: sourceRoot.value,
     }),
+    clauses: {
+      read: ({ names }) =>
+        catalogueClausesOf({
+          fileText: request.context.fileText,
+          path: request.context.path,
+          installRoot: sourceRoot.value,
+          names,
+        }),
+    },
     path: request.context.path,
   });
   if (pages.outcome === "failed") {

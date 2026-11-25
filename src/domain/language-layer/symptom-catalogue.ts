@@ -19,12 +19,25 @@ export type Rule = {
 
 export type RecipeReason = { readonly text: string; readonly standing: Standing };
 
+export type SymptomAddress = OwnedName;
+
+export type CheckAddress = { readonly name: string; readonly symptom: SymptomAddress };
+
+export type AnsweredForm = { readonly check: CheckAddress; readonly form: string };
+
+export type RecipeExample = {
+  readonly anchor: string;
+  readonly answers: readonly AnsweredForm[];
+};
+
 export type Recipe = {
   readonly ruleSet: RuleSetIdentity;
   readonly name: string;
+  readonly sourceFile?: string;
   readonly title: string;
   readonly standing: Standing;
   readonly reason: RecipeReason;
+  readonly examples?: readonly RecipeExample[];
 };
 
 export type RecordKind = {
@@ -87,10 +100,6 @@ export type Symptom = {
   readonly recipes: readonly Recipe[];
   readonly correctUses: readonly CorrectUse[];
 };
-
-export type SymptomAddress = OwnedName;
-
-export type CheckAddress = { readonly name: string; readonly symptom: SymptomAddress };
 
 export type FormSight = { readonly form: string; readonly symptom: SymptomAddress };
 

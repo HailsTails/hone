@@ -10,10 +10,18 @@ export type AuthoredPointed = { readonly rule: string } | { readonly principle: 
 
 export type CaseItem = { readonly standing: Standing; readonly owes: readonly AuthoredPointed[] };
 
+export type AuthoredAnswer = { readonly check: string; readonly form: string };
+
+export type AuthoredRecipeExample = {
+  readonly anchor: string;
+  readonly answers: readonly AuthoredAnswer[];
+};
+
 export type RecipeItem = {
-  readonly serves: AuthoredPointed;
+  readonly serves: readonly AuthoredPointed[];
   readonly standing: Standing;
   readonly reason: { readonly text: string; readonly standing: Standing };
+  readonly examples?: readonly AuthoredRecipeExample[] | undefined;
 };
 
 export type RecordKindItem = { readonly phrase: string };

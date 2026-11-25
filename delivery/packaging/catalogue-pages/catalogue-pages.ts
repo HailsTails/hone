@@ -20,6 +20,7 @@ import {
 import { ENGINE_REGISTRY } from "../../../src/infrastructure/engines/engine-registry.ts";
 import { loadFailureText } from "../../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
 import { casesPageOf } from "./cases-page.ts";
+import type { CatalogueClausesPort } from "./catalogue-clauses-port.ts";
 import type { CataloguePage, ItemPathPort, Rendered } from "./catalogue-page.ts";
 import { addressedCheckOf, checksPageOf } from "./checks-page.ts";
 import { principlesPageOf } from "./principles-page.ts";
@@ -104,6 +105,7 @@ const bindingsOf = (request: {
 export const cataloguePagesOf = (request: {
   readonly files: readonly SourceFile[];
   readonly engineBindings: EngineBindingsRepository;
+  readonly clauses: CatalogueClausesPort;
   readonly path: ItemPathPort;
 }): Rendered<readonly CataloguePage[]> => {
   const names = namesIn(request);
@@ -114,11 +116,15 @@ export const cataloguePagesOf = (request: {
   if (items.outcome === "failed") {
     return items;
   }
+  const clauses = request.clauses.read({ names: names.value });
+  if (clauses.outcome === "failed") {
+    return { outcome: "failed", error: loadFailureText({ failure: clauses.error }) };
+  }
   const file = catalogueFileOf({
     items: items.value.map((each) => each.placed),
     beside: {
       engines: ENGINE_REGISTRY,
-      clauses: names.value.clauses,
+      clauses: clauses.value,
       clauseOfCheck: names.value.clauseOfCheck,
       formatsOfToday: names.value.formatsOfToday,
     },
