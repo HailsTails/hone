@@ -37,6 +37,7 @@
   "reports": "seen",
   "recipes": [
     "world-values-through-a-port",
+    "adapter-per-outside-party",
     "composition-root"
   ],
   "correctUses": [

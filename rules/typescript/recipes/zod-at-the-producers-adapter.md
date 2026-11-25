@@ -5,6 +5,9 @@
   "serves": [
     {
       "principle": "no-leak-across-a-boundary"
+    },
+    {
+      "rule": "declared-not-asserted"
     }
   ],
   "standing": "accepted",

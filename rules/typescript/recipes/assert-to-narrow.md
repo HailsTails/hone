@@ -5,6 +5,9 @@
   "serves": [
     {
       "rule": "straight-through-tests"
+    },
+    {
+      "rule": "declared-not-asserted"
     }
   ],
   "standing": "accepted",
@@ -56,6 +59,8 @@
 - **Method:** A value that may be absent or one of several outcomes is narrowed with the framework's `assert` first. After that, plain `expect` reads it.
 - **You can tell because:** No `?.`, `&&`, `if` or ternary in the test.
 - **Industry name:** Guard Assertion (Meszaros).
+
+The framework's assertion is not a claim of ours.
 
 ## Examples
 

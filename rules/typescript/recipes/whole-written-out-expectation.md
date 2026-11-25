@@ -23,6 +23,15 @@
       ]
     },
     {
+      "anchor": "a-short-circuit",
+      "answers": [
+        {
+          "check": "branch-in-a-test#test-body",
+          "form": "a-short-circuit"
+        }
+      ]
+    },
+    {
       "anchor": "an-optional-chain-after-an-index",
       "answers": [
         {
@@ -127,6 +136,20 @@ Compare the whole result:
 ```ts
 declare const parse: (text: string) => { readonly outcome: "ok"; readonly value: string } | { readonly outcome: "failed" };
 expect(parse("a")).toEqual({ outcome: "ok", value: "a" });
+```
+
+### A short-circuit
+```ts
+declare const assign: (task: { readonly id: string; readonly owner?: string }) => { readonly id: string; readonly owner: string };
+const task: { readonly id: string; readonly owner?: string } = { id: "a" };
+expect(assign(task)).toEqual({ id: "a", owner: task.owner ?? "none" });
+```
+
+Write the expected value out:
+
+```ts
+declare const assign: (task: { readonly id: string; readonly owner?: string }) => { readonly id: string; readonly owner: string };
+expect(assign({ id: "a" })).toEqual({ id: "a", owner: "none" });
 ```
 
 ### An optional chain after an index

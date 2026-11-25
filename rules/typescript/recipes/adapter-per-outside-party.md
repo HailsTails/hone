@@ -5,6 +5,9 @@
   "serves": [
     {
       "rule": "outside-dependencies-stay-at-boundaries"
+    },
+    {
+      "principle": "no-leak-across-a-boundary"
     }
   ],
   "standing": "accepted",
