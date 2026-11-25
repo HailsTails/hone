@@ -62,7 +62,10 @@ describe("patchedProjectionsOf", () => {
     expect(
       patchedProjectionsOf({
         queries: {
-          fileText: { read, exists: vi.fn<FileTextPort["exists"]>() },
+          fileText: {
+            read,
+            exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+          },
           entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
           path: {
             join: vi.fn<PathPort["join"]>().mockReturnValueOnce(PROJECTION_PATH),
@@ -92,6 +95,31 @@ describe("patchedProjectionsOf", () => {
     ]);
   });
 
+  it("patches nothing for a tracked projection missing from the working tree", () => {
+    const read = vi.fn<FileTextPort["read"]>();
+    const apply = vi
+      .fn<ProofEffects["apply"]>()
+      .mockReturnValueOnce({ outcome: "all-applied", settled: [] });
+
+    const patched = patchedProjectionsOf({
+      queries: {
+        fileText: { read, exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent") },
+        entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
+        path: {
+          join: vi.fn<PathPort["join"]>().mockReturnValueOnce(PROJECTION_PATH),
+          relative: vi.fn<PathPort["relative"]>(),
+          directoryOf: vi.fn<PathPort["directoryOf"]>(),
+        },
+      },
+      effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
+      repoRoot: REPO,
+      trackedPaths: [PROJECTION],
+    });
+
+    expect(patched).toEqual({ outcome: "ok", value: [] });
+    expect([read.mock.calls, apply.mock.calls]).toEqual([[], [[{ effects: [] }]]]);
+  });
+
   it("refuses naming a tracked projection it cannot read, applying nothing", () => {
     const apply = vi.fn<ProofEffects["apply"]>();
 
@@ -103,7 +131,7 @@ describe("patchedProjectionsOf", () => {
               outcome: "failed",
               error: { kind: "unreadable", path: PROJECTION_PATH, detail: "ENOENT" },
             }),
-            exists: vi.fn<FileTextPort["exists"]>(),
+            exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
           },
           entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
           path: {
@@ -146,7 +174,7 @@ describe("restoredOriginalProjections", () => {
         },
         effects: { undo },
         repoRoot: REPO,
-        patches: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
+        writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
         refusal: UNPLACEABLE,
       }),
     ).toEqual(UNPLACEABLE);
@@ -155,10 +183,46 @@ describe("restoredOriginalProjections", () => {
     ]);
   });
 
-  it("leaves a projection that version 1's own project rewrote as that project left it", () => {
+  it("deletes what version 1's own project created, then puts back its rewrite, then the original bytes, newest first", () => {
     const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([]);
 
-    restoredOriginalProjections({
+    const restored = restoredOriginalProjections({
+      queries: {
+        path: {
+          join: vi.fn<PathPort["join"]>(),
+          relative: vi.fn<PathPort["relative"]>(),
+          directoryOf: vi.fn<PathPort["directoryOf"]>(),
+        },
+      },
+      effects: { undo },
+      repoRoot: REPO,
+      writes: [
+        { kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL },
+        { kind: "file-replaced", path: PROJECTION_PATH, original: PATCHED },
+        { kind: "file-created", path: CREATED },
+      ],
+      refusal: UNPLACEABLE,
+    });
+
+    expect(restored).toEqual(UNPLACEABLE);
+    expect(undo.mock.calls).toEqual([
+      [
+        {
+          writes: [
+            { kind: "file-created", path: CREATED },
+            { kind: "file-replaced", path: PROJECTION_PATH, original: PATCHED },
+            { kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL },
+          ],
+        },
+      ],
+    ]);
+  });
+
+  it("puts back nothing for a projection that version 1's own project removed", () => {
+    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([]);
+    const refusal = { ...UNPLACEABLE, removedByVersionOne: [PROJECTION] };
+
+    const restored = restoredOriginalProjections({
       queries: {
         path: {
           join: vi.fn<PathPort["join"]>().mockReturnValueOnce(PROJECTION_PATH),
@@ -168,14 +232,11 @@ describe("restoredOriginalProjections", () => {
       },
       effects: { undo },
       repoRoot: REPO,
-      patches: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
-      refusal: {
-        kind: "version-one-project-rewrote",
-        files: [PROJECTION],
-        removedByVersionOne: [],
-      },
+      writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
+      refusal,
     });
 
+    expect(restored).toEqual(refusal);
     expect(undo.mock.calls).toEqual([[{ writes: [] }]]);
   });
 });

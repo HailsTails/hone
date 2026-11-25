@@ -274,11 +274,27 @@ const DECLARED_MADE = [
 
 const UPGRADED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-upgraded"] });
 
+const DRIFTED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-drifted"] });
+
+const MISSING = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-missing"] });
+
+const DRIFTED_REFUSED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-drifted-refused"],
+});
+
+const MISSING_REFUSED = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-missing-refused"],
+});
+
 const IGNORED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-ignored"] });
 
 afterAll(() => {
   scratch.removeTree({ path: UPGRADED });
   scratch.removeTree({ path: IGNORED });
+  scratch.removeTree({ path: DRIFTED });
+  scratch.removeTree({ path: MISSING });
+  scratch.removeTree({ path: DRIFTED_REFUSED });
+  scratch.removeTree({ path: MISSING_REFUSED });
   scratch.removeTree({ path: ESLINT_10_SLICED });
   scratch.removeTree({ path: ESLINT_10_DECLARED });
   scratch.removeTree({ path: ESLINT_9_SLICED });
@@ -315,6 +331,69 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       SUCCEEDED,
       { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
       { writes: [[{ text: NOTHING_TO_UPGRADE }]], exits: [[{ code: 0 }]] },
+    ]);
+  });
+
+  it("upgrades a version 1 repository whose projection has drifted, and leaves a repository that passes the check", async () => {
+    const repo = DRIFTED;
+    const engines = INSTALLED_PORTS;
+    const made = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: SRC_CARVE_OUT }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROOT_PROJECTION }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CLASS }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+    ];
+
+    const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], engines });
+    const added = commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    const checked = await runCommandIn({
+      repo,
+      subcommand: "check",
+      options: ["--forfeiture", "elsewhere"],
+      engines,
+    });
+
+    expect([made, upgraded, added, checked]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: UPGRADED_ROOT }]], exits: [[{ code: 0 }]] },
+      SUCCEEDED,
+      { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
+    ]);
+  });
+
+  it("upgrades a version 1 repository whose projection is missing, and leaves a repository that passes the check", async () => {
+    const repo = MISSING;
+    const engines = INSTALLED_PORTS;
+    const made = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: SRC_CARVE_OUT }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CLASS }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+    ];
+
+    const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], engines });
+    const added = commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    const checked = await runCommandIn({
+      repo,
+      subcommand: "check",
+      options: ["--forfeiture", "elsewhere"],
+      engines,
+    });
+
+    expect([made, upgraded, added, checked]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: UPGRADED_ROOT }]], exits: [[{ code: 0 }]] },
+      SUCCEEDED,
+      { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
     ]);
   });
 
@@ -415,6 +494,78 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       commands.run({ command: "git", arguments: GIT_STATUS, directory: repo }),
     ]).toEqual([
       { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      UNCHANGED,
+    ]);
+  });
+
+  it("puts back the drifted projection it regenerated when it refuses", async () => {
+    const repo = DRIFTED_REFUSED;
+    const made = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
+      fileText.write({
+        path: `${repo}/eslint.config.mjs`,
+        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+      }),
+      fileText.write({
+        path: `${repo}/disciplines.eslint.mjs`,
+        text: ROOT_PROJECTION_CARVING_SRC,
+      }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CONSTANT }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
+    ];
+
+    const refused = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      engines: INSTALLED_PORTS,
+    });
+    const left = fileText.read({ path: `${repo}/disciplines.eslint.mjs` });
+    const status = commands.run({ command: "git", arguments: GIT_STATUS, directory: repo });
+
+    expect([made, refused, left, status]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      { outcome: "ok", value: ROOT_PROJECTION_CARVING_SRC },
+      UNCHANGED,
+    ]);
+  });
+
+  it("deletes the missing projection it created when it refuses", async () => {
+    const repo = MISSING_REFUSED;
+    const made = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
+      fileText.write({
+        path: `${repo}/eslint.config.mjs`,
+        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+      }),
+      fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CONSTANT }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
+    ];
+
+    const refused = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      engines: INSTALLED_PORTS,
+    });
+    const left = fileText.exists({ path: `${repo}/disciplines.eslint.mjs` });
+    const status = commands.run({ command: "git", arguments: GIT_STATUS, directory: repo });
+
+    expect([made, refused, left, status]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      "absent",
       UNCHANGED,
     ]);
   });
