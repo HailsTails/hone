@@ -1,0 +1,13 @@
+import { createDefaultProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import {
+  createCpuUsagePort,
+  createProcessEndPort,
+  defaultRunningProcessSurface,
+} from "./process-adapter.ts";
+import { writeCpuTimeAtEnd } from "./write-cpu-time-at-end.ts";
+
+writeCpuTimeAtEnd({
+  processEnd: createProcessEndPort({ processSurface: defaultRunningProcessSurface }),
+  cpuUsage: createCpuUsagePort({ processSurface: defaultRunningProcessSurface }),
+  process: createDefaultProcessPort({}),
+});

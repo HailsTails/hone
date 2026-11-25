@@ -16,6 +16,7 @@ import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import {
   createDefaultExecutionPort,
   type ExecutionPolicy,
+  type ExecutionPort,
 } from "../node/process/execution-port.ts";
 
 export type GitEnvironment = Readonly<Record<string, string | undefined>>;
@@ -56,7 +57,7 @@ const LARGEST_GIT_OUTPUT_BYTES = 256 * 1024 * 1024;
 
 const SUCCESSFUL_EXIT_STATUS = 0;
 
-const environmentWithoutRepositoryLocation = (request: {
+export const createEnvironmentOutsideRepository = (request: {
   readonly ambientEnvironment: GitEnvironment;
 }): GitEnvironment =>
   Object.fromEntries(
@@ -67,13 +68,29 @@ const environmentWithoutRepositoryLocation = (request: {
 
 const GIT_EXECUTION_POLICY: ExecutionPolicy<"captured", "none"> = {
   executable: "git",
-  environment: ({ ambient }) =>
-    environmentWithoutRepositoryLocation({ ambientEnvironment: ambient }),
+  environment: ({ ambient }) => createEnvironmentOutsideRepository({ ambientEnvironment: ambient }),
   timeoutMilliseconds: undefined,
   maximumOutputBytes: LARGEST_GIT_OUTPUT_BYTES,
   stdout: "captured",
   replyPipe: "none",
 };
+
+const INDEX_FILE_VARIABLE = "GIT_INDEX_FILE";
+
+export const createGitExecutionPolicy = (options: {
+  readonly indexFile?: string;
+}): ExecutionPolicy<"captured", "none"> => ({
+  ...GIT_EXECUTION_POLICY,
+  environment: (request) => ({
+    ...GIT_EXECUTION_POLICY.environment(request),
+    ...(options.indexFile === undefined ? {} : { [INDEX_FILE_VARIABLE]: options.indexFile }),
+  }),
+});
+
+export const createDefaultGitExecutionPort = (options: {
+  readonly indexFile?: string;
+}): ExecutionPort<"captured", "none"> =>
+  createDefaultExecutionPort({ policy: createGitExecutionPolicy(options) });
 
 const parsedRepoPaths = (request: {
   readonly listed: readonly string[];
@@ -390,7 +407,7 @@ export const createGitPort = (options: {
   readonly spawn: GitSpawn;
   readonly ambientEnvironment: GitEnvironment;
 }): GitPort => {
-  const environment = environmentWithoutRepositoryLocation({
+  const environment = createEnvironmentOutsideRepository({
     ambientEnvironment: options.ambientEnvironment,
   });
   return {
@@ -469,7 +486,7 @@ export const createGitTreePort = (options: {
   readonly spawn: GitSpawn;
   readonly ambientEnvironment: GitEnvironment;
 }): GitTreePort => {
-  const environment = environmentWithoutRepositoryLocation({
+  const environment = createEnvironmentOutsideRepository({
     ambientEnvironment: options.ambientEnvironment,
   });
   return {
@@ -487,7 +504,7 @@ export const createGitHistoryPort = (options: {
   readonly spawn: GitSpawn;
   readonly ambientEnvironment: GitEnvironment;
 }): GitHistoryPort => {
-  const environment = environmentWithoutRepositoryLocation({
+  const environment = createEnvironmentOutsideRepository({
     ambientEnvironment: options.ambientEnvironment,
   });
   return {

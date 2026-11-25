@@ -1,0 +1,36 @@
+import type { PackageManifestPort } from "../../src/application/ports/host/package-manifest-port.ts";
+import type { BaselineCheckoutPort } from "./baseline-checkout-port.ts";
+import type { ClockPort } from "./clock-port.ts";
+import type { DirectoryRemovalPort } from "./directory-removal-port.ts";
+import type { HoneCheckPort } from "./hone-check-port.ts";
+import type { HoneDependenciesPort } from "./hone-dependencies-port.ts";
+import type { HonePackagePort } from "./hone-package-port.ts";
+import type { IndexRemovalPort } from "./index-removal-port.ts";
+import type { InstalledCommandPort } from "./installed-command-port.ts";
+import type { LockfilesPort } from "./lockfiles-port.ts";
+import type { SpeedBaselineArgumentsPort } from "./speed-baseline-arguments-port.ts";
+import type { TargetCopyPort } from "./target-copy-port.ts";
+import type { TargetIndexPort } from "./target-index-port.ts";
+import type { TargetInstallPort } from "./target-install-port.ts";
+import type { TargetPackageManager } from "./target-package-manager.ts";
+import type { TargetTreePort } from "./target-tree-port.ts";
+import type { TemporaryFolderPort } from "./temporary-folder-port.ts";
+
+export type SpeedBaselinePorts = {
+  readonly arguments: SpeedBaselineArgumentsPort;
+  readonly checkouts: BaselineCheckoutPort;
+  readonly dependencies: HoneDependenciesPort;
+  readonly packages: HonePackagePort;
+  readonly copies: TargetCopyPort;
+  readonly indexes: TargetIndexPort;
+  readonly indexRemovals: IndexRemovalPort;
+  readonly trees: TargetTreePort;
+  readonly lockfiles: LockfilesPort;
+  readonly installers: Readonly<Record<TargetPackageManager, TargetInstallPort>>;
+  readonly installedCommands: InstalledCommandPort;
+  readonly temporaryFolders: TemporaryFolderPort;
+  readonly directories: DirectoryRemovalPort;
+  readonly resolutions: PackageManifestPort;
+  readonly checks: HoneCheckPort;
+  readonly clock: ClockPort;
+};
