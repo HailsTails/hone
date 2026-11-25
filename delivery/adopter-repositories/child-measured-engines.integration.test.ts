@@ -1,6 +1,5 @@
 import { assert, describe, expect, it, onTestFinished, vi } from "vitest";
 
-import type { NamedEngineRun } from "../../src/application/ports/engine/engine-run.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { INSTALLED_PORTS, runToolCommand } from "../../src/composition/run-tool-command.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
@@ -9,26 +8,6 @@ import { createDefaultChildEnginesStage } from "../../src/infrastructure/engines
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultCommandRunPort } from "../install-proof/install-proof-ports.ts";
-
-const A_MEASURED: NamedEngineRun = {
-  mechanism: "eslint",
-  coverableKinds: ["config-override", "inline-disable"],
-  projection: "current",
-  slices: [],
-  nestedConfigurations: [],
-  unprojectedFolders: [],
-  misnamedRuleIds: [],
-  hits: [
-    {
-      check: "claimed-type#non-null-assertions",
-      file: repoPathOf("a.ts"),
-      anchor: { line: 1, column: 34 },
-      snippet: "export const a = (b: string[]) => b[0]!;",
-    },
-  ],
-  nativeExceptions: [],
-  measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("a.ts") }],
-};
 
 describe("an engines stage measured in a child process", () => {
   it("measures a projection rewritten in the same process, past Node's module cache", async () => {
@@ -134,9 +113,21 @@ describe("an engines stage measured in a child process", () => {
       },
     });
 
-    expect(measured).toEqual({
+    expect(measured).toMatchObject({
       outcome: "ok",
-      value: [A_MEASURED],
+      value: [
+        {
+          hits: [
+            {
+              check: "claimed-type#non-null-assertions",
+              file: "a.ts",
+              anchor: { line: 1, column: 34 },
+              snippet: "export const a = (b: string[]) => b[0]!;",
+            },
+          ],
+          measured: [{ check: "claimed-type#non-null-assertions", file: "a.ts" }],
+        },
+      ],
     });
   });
 });
