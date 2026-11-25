@@ -101,13 +101,6 @@ const checkedProjectionOf = async (
       }),
     );
   }
-  const invalid = inspected.value.files.find(({ state }) => state !== "current");
-  if (invalid !== undefined && invalid.state !== "current") {
-    return {
-      outcome: "failed",
-      error: { kind: "projection-not-current", file: invalid.file, state: invalid.state },
-    };
-  }
   const names = versionOneNamesOf({
     selected: request.ready.selected.selection.selected,
     catalogues: request.catalogues,
@@ -128,9 +121,7 @@ const checkedProjectionOf = async (
     value: {
       settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
       projectionFile: PROJECTION,
-      packageFiles: inspected.value.files.flatMap(({ file }) =>
-        file === PROJECTION ? [] : [file],
-      ),
+      packageFiles: inspected.value.files.filter((file) => file !== PROJECTION),
       rules: new Map(rules.value),
     },
   };
@@ -152,7 +143,7 @@ const namedPassOf = (request: BeforeInput & { readonly ready: Ready }): EnginePa
     checkProjection: ({ records }) => checkedProjectionOf({ ...request, records }),
   });
 
-type UpgradeBefore = {
+export type UpgradeBefore = {
   readonly enginePass: EnginePass;
   readonly report: () => Promise<Result<CheckReport, LoadFailure>>;
   readonly prepareProjections: (

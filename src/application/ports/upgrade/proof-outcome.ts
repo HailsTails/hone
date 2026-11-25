@@ -88,7 +88,7 @@ export type AfterWriting = {
 type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[] };
 
 export type ProofRefusal =
-  | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
+  | ({ readonly kind: "oracle-failed"; readonly failure: OracleFailure } & AfterVersionOneProject)
   | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-run-failed";
@@ -101,10 +101,6 @@ export type ProofRefusal =
   | ({
       readonly kind: "version-one-project-failed";
       readonly detail: string;
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-project-rewrote";
-      readonly files: readonly RepoPath[];
     } & AfterVersionOneProject)
   | ({ readonly kind: "unplaceable-path"; readonly file: RepoPath } & AfterVersionOneProject)
   | ({ readonly kind: "removal-refused"; readonly failure: OutsideRoot } & AfterVersionOneProject)

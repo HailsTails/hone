@@ -26,7 +26,7 @@ describe("versionOneProjectionPortOver", () => {
   it("loads the ESLint runner module on demand and uses one projection adapter for both operations", async () => {
     const inspect = vi.fn().mockResolvedValue({
       outcome: "ok",
-      value: { files: [{ file: PROJECTION, state: "current" }], ruleIds: new Map() },
+      value: { files: [PROJECTION], ruleIds: new Map() },
     });
     const prepare = vi
       .fn()
@@ -55,7 +55,7 @@ describe("versionOneProjectionPortOver", () => {
     expect(runnerModuleOf).not.toHaveBeenCalled();
     await expect(adapter.inspect(REQUEST)).resolves.toEqual({
       outcome: "ok",
-      value: { files: [{ file: PROJECTION, state: "current" }], ruleIds: new Map() },
+      value: { files: [PROJECTION], ruleIds: new Map() },
     });
     await expect(adapter.prepare(REQUEST)).resolves.toEqual({
       outcome: "ok",

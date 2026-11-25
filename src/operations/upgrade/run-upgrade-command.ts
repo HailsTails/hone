@@ -4,6 +4,7 @@ import type { DirectoryRemovalPort } from "../../application/ports/file-system/d
 import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
 import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { RecordsEditor } from "../../application/ports/records/records-editor.ts";
 import type { RecordsReader } from "../../application/ports/records/records-reader.ts";
@@ -47,13 +48,21 @@ import type { FoundTreeChanges } from "../../application/upgrade/found-tree/foun
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import { proofEffectsOver } from "../../application/upgrade/proof-writes/applied-effects.ts";
 import type { ProofQueries } from "../../application/upgrade/proof-writes/proof-writes.ts";
+import {
+  createRecordedFileText,
+  type RecordedFileText,
+} from "../../application/upgrade/proof-writes/recorded-file-text.ts";
 import type { ProjectionFilesOf } from "../../application/upgrade/proof/upgrade-plan.ts";
 import type {
   RuleSetLayoutRemoval,
   UpgradeProofRequest,
 } from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { VersionOneProjectionsOf } from "../../application/upgrade/proof/version-one-projections-reading.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
-import { createUpgradeBefore } from "../../application/upgrade/record-answers/upgrade-before.ts";
+import {
+  createUpgradeBefore,
+  type UpgradeBefore,
+} from "../../application/upgrade/record-answers/upgrade-before.ts";
 import type { VersionOneCheckInput } from "../../application/upgrade/record-answers/version-one-check-input.ts";
 import {
   type TeamLayoutPlan,
@@ -271,6 +280,61 @@ const createUpgradeSmoothing = (
     projectCommand: request.pointers.projectCommand,
   });
 
+type PreparedInput = Pick<UpgradeInput, "command" | "ports" | "located"> & {
+  readonly prepared: Prepared;
+};
+
+const createVersionOneBefore = (
+  request: PreparedInput &
+    Pick<UpgradeInput, "measureVersionOne"> & { readonly projectionFileText: FileTextPort },
+): UpgradeBefore => {
+  const { ports, command, located, prepared } = request;
+  const at = {
+    fileText: command.fileText,
+    fileRemoval: ports.fileRemoval,
+    directory: ports.directory,
+    path: command.path,
+    repoRoot: located.repoRoot,
+    installRoot: located.installRoot,
+    moduleExtension: prepared.check.moduleExtension,
+    toolRecordKinds: toolRecordKindsOf(prepared),
+  };
+  return createUpgradeBefore({
+    measureVersionOne: request.measureVersionOne,
+    check: prepared.check,
+    selection: prepared.read.reading.selection,
+    catalogues: prepared.catalogues,
+    engine: ports.namedEngine,
+    sources: ports.settingsSourcesOf(at),
+    readPiece: ports.checkPieceSourceOf(at),
+    projection: ports.versionOneProjectionOf({
+      ...at,
+      fileText: request.projectionFileText,
+      modules: command.modules,
+    }),
+    loadFailureDetail: ports.loadFailureDetail,
+  });
+};
+
+const createVersionOneProjections = (
+  request: PreparedInput & {
+    readonly before: Pick<UpgradeBefore, "prepareProjections">;
+    readonly writes: RecordedFileText["writes"];
+  },
+): VersionOneProjectionsOf => {
+  const { ports, command, located, prepared } = request;
+  return versionOneProjectionsOfRepository({
+    writes: request.writes,
+    project: () =>
+      request.before.prepareProjections(prepared.read.reading.heads.map(({ record }) => record)),
+    loadFailureDetail: ports.loadFailureDetail,
+    fileText: command.fileText,
+    path: command.path,
+    repoRoot: located.repoRoot,
+    trackedPaths: prepared.trackedPaths,
+  });
+};
+
 const proofRequestOf = (
   request: UpgradeInput & {
     readonly prepared: Prepared;
@@ -283,27 +347,8 @@ const proofRequestOf = (
     foundTreeReach: request.foundTreeReach,
     layout: { files: layoutFiles, removed: ruleSetLayout.removed },
   });
-  const at = {
-    fileText: command.fileText,
-    fileRemoval: ports.fileRemoval,
-    directory: ports.directory,
-    path: command.path,
-    repoRoot: located.repoRoot,
-    installRoot: located.installRoot,
-    moduleExtension: prepared.check.moduleExtension,
-    toolRecordKinds: toolRecordKindsOf(prepared),
-  };
-  const before = createUpgradeBefore({
-    measureVersionOne: request.measureVersionOne,
-    check: prepared.check,
-    selection: prepared.read.reading.selection,
-    catalogues: prepared.catalogues,
-    engine: ports.namedEngine,
-    sources: ports.settingsSourcesOf(at),
-    readPiece: ports.checkPieceSourceOf(at),
-    projection: ports.versionOneProjectionOf({ ...at, modules: command.modules }),
-    loadFailureDetail: ports.loadFailureDetail,
-  });
+  const recorded = createRecordedFileText({ fileText: command.fileText });
+  const before = createVersionOneBefore({ ...request, projectionFileText: recorded.fileText });
   return {
     queries: proofQueriesOf(request),
     effects: proofEffectsOf(request),
@@ -325,14 +370,10 @@ const proofRequestOf = (
     trackedPaths: prepared.trackedPaths,
     projectionFilesOf: projectionFilesFor(request),
     settingsFormat: ports.settingsFormat,
-    versionOneProjectionsOf: versionOneProjectionsOfRepository({
-      project: () =>
-        before.prepareProjections(prepared.read.reading.heads.map(({ record }) => record)),
-      loadFailureDetail: ports.loadFailureDetail,
-      fileText: command.fileText,
-      path: command.path,
-      repoRoot: located.repoRoot,
-      trackedPaths: prepared.trackedPaths,
+    versionOneProjectionsOf: createVersionOneProjections({
+      ...request,
+      before,
+      writes: recorded.writes,
     }),
   };
 };
