@@ -51,33 +51,33 @@
         "whys": [
           {
             "why": "Why does eslint-instance.ts import types from eslint?",
-            "because": "It constructs the ESLint class it is given and maps its results, and it hands AST, Rule and SourceCode to Hone's own ESLint rules.",
+            "because": "It constructs the ESLint class it is given and maps its results, and it hands AST, Rule and SourceCode to rules of Hone's own.",
             "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts:692"
           },
           {
             "why": "Why does it construct the class, map its results and hand out the rule types?",
-            "because": "The ESLint adapter meets ESLint's surface in one module, so callers get Hone's own messages and the rules fill one contract.",
-            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts:1"
+            "because": "It adapts ESLint's engine to Hone's own port, and the rules that take those types fill ESLint's rule contract.",
+            "evidence": "src/infrastructure/engines/eslint/runner/hone-plugin/checks-plugin.ts:10"
           },
           {
-            "why": "Why must the adapter meet ESLint's surface in one module?",
-            "because": "Adopters install either supported major beside Hone, and the toolchain loads whichever theirs resolves.",
-            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts:69"
-          },
-          {
-            "why": "Why does the toolchain load whichever major adopters install?",
-            "because": "Hone runs the adopter's own linter over their config, so that package supplies the result, option and rule shapes.",
+            "why": "Why must the engine be adapted and the rules fill ESLint's contract?",
+            "because": "ESLint runs the rules and returns its results in shapes of its own.",
             "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts:648"
           },
           {
-            "why": "Why does that package supply the result, option and rule shapes?",
-            "because": "ESLint publishes those declarations as its Node.js API, outside Hone.",
+            "why": "Why does Hone meet ESLint's own shapes?",
+            "because": "Hone runs the ESLint the adopter installs over their config, loaded by its toolchain.",
+            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts:69"
+          },
+          {
+            "why": "Why does the ESLint the adopter installs set those shapes?",
+            "because": "ESLint publishes them as its Node.js API, outside Hone.",
             "evidence": "https://eslint.org/docs/latest/integrate/nodejs-api"
           }
         ],
         "rootCause": "ESLint publishes its Node.js API declarations outside Hone.",
         "rootEvidence": "Read 25 Nov 2026: `eslint-instance.ts:2` and `:22` are its only imports from eslint, both types only.",
-        "readback": "ESLint publishes its API declarations outside Hone; therefore it supplies the result, option and rule shapes; therefore the toolchain loads the adopter's major; therefore the adapter meets ESLint in one module; therefore eslint-instance.ts imports types from eslint.",
+        "readback": "ESLint publishes its API declarations outside Hone; therefore the ESLint the adopter installs sets those shapes; therefore Hone meets them; therefore it adapts the engine and its rules fill the contract; therefore eslint-instance.ts constructs the class and hands out the rule types; therefore it imports types from eslint.",
         "owner": "HailsTails"
       }
     }
