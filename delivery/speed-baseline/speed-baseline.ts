@@ -32,13 +32,13 @@ import {
 } from "./pnpm-adapter.ts";
 import { prepareSample } from "./prepare-sample.ts";
 import { type CleanUpPhase, prepareSpeedSides } from "./prepare-speed-sides.ts";
-import { createEnvironmentVariablePort } from "./process-adapter.ts";
+import { createEnvironmentVariablePort, defaultRunningProcessSurface } from "./process-adapter.ts";
 import { readTargetTree } from "./read-target-tree.ts";
 import { removeTargetCopy } from "./remove-sample.ts";
 import { runSpeedBaseline } from "./run-speed-baseline.ts";
 import { runSpeedPairs } from "./run-speed-pairs.ts";
 import { runSpeedSample, type SampleStages } from "./run-speed-sample.ts";
-import { removeSpeedLeftovers, removeSpeedSides } from "./speed-baseline-cleanup.ts";
+import { removeSpeedSides } from "./speed-baseline-cleanup.ts";
 import type { SpeedBaselineConfiguration } from "./speed-baseline-configuration.ts";
 import type { SpeedBaselinePorts } from "./speed-baseline-ports.ts";
 import { createTemporaryFolderPort } from "./temporary-folder-adapter.ts";
@@ -60,7 +60,7 @@ const path = createDefaultPathPort({});
 const git = createDefaultGitExecutionPort({});
 const pnpm = {
   node: createDefaultExecutionPort({ policy: PNPM_POLICY }),
-  environment: createEnvironmentVariablePort(),
+  environment: createEnvironmentVariablePort({ processSurface: defaultRunningProcessSurface }),
 };
 const directories = createDefaultDirectoryPort({});
 const honeRoot = absolutePathSchema.parse(
@@ -110,7 +110,6 @@ writeSpeedBaselineReport({
           ...request,
           headRoot: honeRoot,
           stages: {
-            removeLeftovers: (leftovers) => removeSpeedLeftovers({ ...leftovers, ports }),
             readTargetTree: (target) => readTargetTree({ ...target, ports }),
             writeTarballs: (tarballs) => writeTarballs({ ...tarballs, ports }),
             writeSideInstalls: (installs) =>

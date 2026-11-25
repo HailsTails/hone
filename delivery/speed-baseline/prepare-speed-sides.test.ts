@@ -19,9 +19,6 @@ describe("prepareSpeedSides", () => {
 
     prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi
           .fn<PrepareStages["readTargetTree"]>()
           .mockReturnValue({ tree: { outcome: "ok", value: "4b825dc6" }, leftovers: [] }),
@@ -51,9 +48,6 @@ describe("prepareSpeedSides", () => {
 
     const preparation = prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi.fn<PrepareStages["readTargetTree"]>().mockReturnValue({
           tree: { outcome: "ok", value: "4b825dc6" },
           leftovers: [
@@ -97,9 +91,6 @@ describe("prepareSpeedSides", () => {
 
     const preparation = prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi
           .fn<PrepareStages["readTargetTree"]>()
           .mockReturnValue({ tree: { outcome: "ok", value: "4b825dc6" }, leftovers: [] }),
@@ -156,9 +147,6 @@ describe("prepareSpeedSides", () => {
 
     prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi
           .fn<PrepareStages["readTargetTree"]>()
           .mockReturnValue({ tree: { outcome: "ok", value: "4b825dc6" }, leftovers: [] }),
@@ -183,9 +171,6 @@ describe("prepareSpeedSides", () => {
 
     const preparation = prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi
           .fn<PrepareStages["readTargetTree"]>()
           .mockReturnValue({ tree: { outcome: "ok", value: "4b825dc6" }, leftovers: [] }),
@@ -227,9 +212,6 @@ describe("prepareSpeedSides", () => {
 
     const preparation = prepareSpeedSides({
       stages: {
-        removeLeftovers: vi
-          .fn<PrepareStages["removeLeftovers"]>()
-          .mockReturnValue({ outcome: "ok", value: null }),
         readTargetTree: vi.fn<PrepareStages["readTargetTree"]>().mockReturnValue({
           tree: {
             outcome: "failed",
@@ -258,48 +240,6 @@ describe("prepareSpeedSides", () => {
         leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
       },
       packed: [],
-    });
-  });
-
-  it("reads no tree when a leftover from an earlier run cannot be removed", () => {
-    const readTargetTree = vi.fn<PrepareStages["readTargetTree"]>();
-
-    const preparation = prepareSpeedSides({
-      stages: {
-        removeLeftovers: vi.fn<PrepareStages["removeLeftovers"]>().mockReturnValue({
-          outcome: "failed",
-          error: {
-            side: "baseline",
-            failure: {
-              kind: "directory-unremoved",
-              directory: absoluteRootOf("/work/baseline"),
-              detail: "EBUSY",
-            },
-          },
-        }),
-        readTargetTree,
-        writeTarballs: vi.fn<PrepareStages["writeTarballs"]>(),
-        writeSideInstalls: vi.fn<PrepareStages["writeSideInstalls"]>(),
-        cleanUp: vi.fn<PrepareStages["cleanUp"]>(),
-      },
-      repo: absoluteRootOf("/work/large-repo"),
-      mode: "compare",
-      revision: "v2.0.0-pre.4",
-      headRoot: absoluteRootOf("/work/hone"),
-    });
-
-    expect({ preparation, read: readTargetTree.mock.calls }).toEqual({
-      preparation: {
-        prepared: {
-          outcome: "failed",
-          error: {
-            side: "baseline",
-            failure: { kind: "directory-unremoved", directory: "/work/baseline", detail: "EBUSY" },
-          },
-        },
-        leftovers: [],
-      },
-      read: [],
     });
   });
 });

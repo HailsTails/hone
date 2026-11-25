@@ -28,9 +28,8 @@ describe("writeSideInstall", () => {
             .fn<TargetCopyPort["read"]>()
             .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head") }),
           write: copiesWrite,
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
-        trees: { read: vi.fn<TargetTreePort["read"]>(), write: treesWrite },
+        trees: { write: treesWrite },
         lockfiles: {
           read: vi
             .fn<LockfilesPort["read"]>()
@@ -77,10 +76,8 @@ describe("writeSideInstall", () => {
             .fn<TargetCopyPort["read"]>()
             .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head") }),
           write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
         trees: {
-          read: vi.fn<TargetTreePort["read"]>(),
           write: vi.fn<TargetTreePort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
         },
         lockfiles: {
@@ -133,10 +130,8 @@ describe("writeSideInstall", () => {
             .fn<TargetCopyPort["read"]>()
             .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/baseline") }),
           write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
         trees: {
-          read: vi.fn<TargetTreePort["read"]>(),
           write: vi.fn<TargetTreePort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
         },
         lockfiles: {
@@ -166,6 +161,56 @@ describe("writeSideInstall", () => {
           failure: { kind: "lockfile-unsupported", lockfile: "package-lock.json" },
         },
       },
+    });
+  });
+
+  it("claims no worktree to remove, and installs nothing, when git refuses its worktree", () => {
+    const treesWrite = vi.fn<TargetTreePort["write"]>();
+
+    const install = writeSideInstall({
+      ports: {
+        copies: {
+          read: vi
+            .fn<TargetCopyPort["read"]>()
+            .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/baseline") }),
+          write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({
+            outcome: "failed",
+            error: {
+              kind: "target-uncopied",
+              command: { kind: "exited", status: 128, output: "fatal: already exists" },
+            },
+          }),
+        },
+        trees: { write: treesWrite },
+        lockfiles: { read: vi.fn<LockfilesPort["read"]>() },
+        installers: {
+          pnpm: { write: vi.fn<TargetInstallPort["write"]>() },
+          bun: { write: vi.fn<TargetInstallPort["write"]>() },
+        },
+        installedCommands: { read: vi.fn<InstalledCommandPort["read"]>() },
+        resolutions: { locateManifestFrom: vi.fn<PackageManifestPort["locateManifestFrom"]>() },
+      },
+      repo: absoluteRootOf("/work/large-repo"),
+      side: "baseline",
+      tarball: absoluteRootOf("/work/b.tgz"),
+      tree: "4b825dc6",
+    });
+
+    expect({ install, written: treesWrite.mock.calls }).toEqual({
+      install: {
+        directories: [],
+        install: {
+          outcome: "failed",
+          error: {
+            side: "baseline",
+            failure: {
+              kind: "target-uncopied",
+              command: { kind: "exited", status: 128, output: "fatal: already exists" },
+            },
+          },
+        },
+      },
+      written: [],
     });
   });
 });

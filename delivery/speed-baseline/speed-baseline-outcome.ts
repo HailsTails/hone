@@ -32,7 +32,6 @@ export type Leftover =
   | IndexRemovalFailure;
 
 export type PreparationFailure =
-  | Leftover
   | TargetIndexFailure
   | PackageManifestUnresolved
   | HoneInstallFailure

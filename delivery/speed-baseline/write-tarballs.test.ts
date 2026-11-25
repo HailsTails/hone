@@ -23,7 +23,6 @@ describe("writeTarballs", () => {
             .fn<BaselineCheckoutPort["read"]>()
             .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/baseline") }),
           write: checkoutsWrite,
-          remove: vi.fn<BaselineCheckoutPort["remove"]>(),
         },
         dependencies: {
           write: vi
@@ -68,7 +67,6 @@ describe("writeTarballs", () => {
           write: vi
             .fn<BaselineCheckoutPort["write"]>()
             .mockReturnValue({ outcome: "ok", value: null }),
-          remove: vi.fn<BaselineCheckoutPort["remove"]>(),
         },
         dependencies: {
           write: vi
@@ -94,7 +92,7 @@ describe("writeTarballs", () => {
     });
   });
 
-  it("keeps the checkout to remove, and packs nothing, when the baseline cannot be checked out", () => {
+  it("claims no checkout to remove, and packs nothing, when the baseline cannot be checked out", () => {
     const packages = vi.fn<HonePackagePort["write"]>();
 
     const tarballs = writeTarballs({
@@ -110,7 +108,6 @@ describe("writeTarballs", () => {
               command: { kind: "exited", status: 128, output: "fatal" },
             },
           }),
-          remove: vi.fn<BaselineCheckoutPort["remove"]>(),
         },
         dependencies: { write: vi.fn<HoneDependenciesPort["write"]>() },
         packages: { write: packages },
@@ -122,7 +119,7 @@ describe("writeTarballs", () => {
 
     expect({ tarballs, packed: packages.mock.calls }).toEqual({
       tarballs: {
-        checkouts: ["/work/baseline"],
+        checkouts: [],
         tarballs: {
           outcome: "failed",
           error: {
@@ -135,6 +132,48 @@ describe("writeTarballs", () => {
         },
       },
       packed: [],
+    });
+  });
+
+  it("keeps a made checkout to remove when the baseline's dependencies cannot be installed", () => {
+    const tarballs = writeTarballs({
+      ports: {
+        checkouts: {
+          read: vi
+            .fn<BaselineCheckoutPort["read"]>()
+            .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/baseline") }),
+          write: vi
+            .fn<BaselineCheckoutPort["write"]>()
+            .mockReturnValue({ outcome: "ok", value: null }),
+        },
+        dependencies: {
+          write: vi.fn<HoneDependenciesPort["write"]>().mockReturnValue({
+            outcome: "failed",
+            error: {
+              kind: "hone-dependencies-uninstalled",
+              command: { kind: "exited", status: 1, output: "offline" },
+            },
+          }),
+        },
+        packages: { write: vi.fn<HonePackagePort["write"]>() },
+      },
+      revision: "v2.0.0-pre.4",
+      headRoot: absoluteRootOf("/work/hone"),
+      mode: "compare",
+    });
+
+    expect(tarballs).toEqual({
+      checkouts: ["/work/baseline"],
+      tarballs: {
+        outcome: "failed",
+        error: {
+          side: "baseline",
+          failure: {
+            kind: "hone-dependencies-uninstalled",
+            command: { kind: "exited", status: 1, output: "offline" },
+          },
+        },
+      },
     });
   });
 });

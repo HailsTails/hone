@@ -6,7 +6,8 @@ import type {
   ExecutionPolicy,
   ExecutionPort,
 } from "../../src/infrastructure/node/process/execution-port.ts";
-import { type CommandFailure, mapExecutionToCommandResult } from "./command-failure.ts";
+import type { CommandFailure } from "./command-failure.ts";
+import { mapExecutionToCommandResult } from "./command-result.ts";
 import type { TargetInstallPort } from "./target-install-port.ts";
 
 export const BUN_POLICY: ExecutionPolicy<"captured", "none"> = {

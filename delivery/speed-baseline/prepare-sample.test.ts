@@ -27,9 +27,8 @@ describe("prepareSample", () => {
         copies: {
           read: copiesRead,
           write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
-        trees: { read: vi.fn<TargetTreePort["read"]>(), write: treesWrite },
+        trees: { write: treesWrite },
         resolutions: {
           locateManifestFrom: vi
             .fn<PackageManifestPort["locateManifestFrom"]>()
@@ -82,10 +81,8 @@ describe("prepareSample", () => {
             .fn<TargetCopyPort["read"]>()
             .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head/samples/0") }),
           write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
         trees: {
-          read: vi.fn<TargetTreePort["read"]>(),
           write: vi.fn<TargetTreePort["write"]>().mockReturnValue({ outcome: "ok", value: null }),
         },
         resolutions: { locateManifestFrom: resolutionsRead },
@@ -133,9 +130,8 @@ describe("prepareSample", () => {
             error: { kind: "target-copy-unresolved", path: "samples/0" },
           }),
           write: copiesWrite,
-          remove: vi.fn<TargetCopyPort["remove"]>(),
         },
-        trees: { read: vi.fn<TargetTreePort["read"]>(), write: vi.fn<TargetTreePort["write"]>() },
+        trees: { write: vi.fn<TargetTreePort["write"]>() },
         resolutions: { locateManifestFrom: vi.fn<PackageManifestPort["locateManifestFrom"]>() },
         temporaryFolders: { write: vi.fn<TemporaryFolderPort["write"]>() },
         clock: { read: vi.fn<ClockPort["read"]>() },
@@ -153,6 +149,55 @@ describe("prepareSample", () => {
         refusal: { side: "head", failure: { kind: "target-copy-unresolved", path: "samples/0" } },
       },
       copied: [],
+    });
+  });
+
+  it("refuses with no worktree to remove, and writes nothing, when git refuses the sample's worktree", () => {
+    const install = {
+      directory: absoluteRootOf("/work/head"),
+      command: absoluteRootOf("/work/head/hone.js"),
+      resolvedHone: "/work/head/node_modules/.pnpm/hone/package.json",
+    };
+    const treesWrite = vi.fn<TargetTreePort["write"]>();
+
+    const prepared = prepareSample({
+      ports: {
+        copies: {
+          read: vi
+            .fn<TargetCopyPort["read"]>()
+            .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head/samples/0") }),
+          write: vi.fn<TargetCopyPort["write"]>().mockReturnValue({
+            outcome: "failed",
+            error: {
+              kind: "target-uncopied",
+              command: { kind: "exited", status: 128, output: "fatal: already exists" },
+            },
+          }),
+        },
+        trees: { write: treesWrite },
+        resolutions: { locateManifestFrom: vi.fn<PackageManifestPort["locateManifestFrom"]>() },
+        temporaryFolders: { write: vi.fn<TemporaryFolderPort["write"]>() },
+        clock: { read: vi.fn<ClockPort["read"]>().mockReturnValue(0) },
+      },
+      repo: absoluteRootOf("/work/large-repo"),
+      side: "head",
+      sampleIndex: 0,
+      install,
+      tree: "4b825dc6",
+    });
+
+    expect({ prepared, written: treesWrite.mock.calls }).toEqual({
+      prepared: {
+        kind: "unplaced",
+        refusal: {
+          side: "head",
+          failure: {
+            kind: "target-uncopied",
+            command: { kind: "exited", status: 128, output: "fatal: already exists" },
+          },
+        },
+      },
+      written: [],
     });
   });
 });

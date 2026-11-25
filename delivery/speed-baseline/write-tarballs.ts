@@ -1,8 +1,10 @@
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
+import type { BaselineCheckoutPort } from "./baseline-checkout-port.ts";
+import type { HoneDependenciesPort } from "./hone-dependencies-port.ts";
+import type { HonePackagePort } from "./hone-package-port.ts";
 import type { SpeedBaselineMode } from "./speed-baseline-arguments-port.ts";
 import type { PreparationFailure, PreparationRefusal } from "./speed-baseline-outcome.ts";
-import type { SpeedBaselinePorts } from "./speed-baseline-ports.ts";
 import type { SpeedSide } from "./speed-samples.ts";
 
 export type Tarballs = {
@@ -10,18 +12,16 @@ export type Tarballs = {
   readonly tarballs: Result<Readonly<Record<SpeedSide, AbsolutePath>>, PreparationRefusal>;
 };
 
-type TarballPorts = Pick<SpeedBaselinePorts, "checkouts" | "dependencies" | "packages">;
+type TarballPorts = {
+  readonly checkouts: Pick<BaselineCheckoutPort, "read" | "write">;
+  readonly dependencies: HoneDependenciesPort;
+  readonly packages: HonePackagePort;
+};
 
 const writePackedCheckout = (request: {
-  readonly ports: TarballPorts;
-  readonly revision: string;
+  readonly ports: Pick<TarballPorts, "dependencies" | "packages">;
   readonly directory: AbsolutePath;
 }): Result<AbsolutePath, PreparationFailure> => {
-  const checkedOut = request.ports.checkouts.write({
-    revision: request.revision,
-    directory: request.directory,
-  });
-  if (checkedOut.outcome === "failed") return checkedOut;
   const installed = request.ports.dependencies.write({ honeRoot: request.directory });
   return installed.outcome === "failed"
     ? installed
@@ -42,7 +42,17 @@ const writeBaselineTarball = (request: {
       tarball: { outcome: "failed", error: { side: "baseline", failure: directory.error } },
     };
   }
-  const tarball = writePackedCheckout({ ...request, directory: directory.value });
+  const checkedOut = request.ports.checkouts.write({
+    revision: request.revision,
+    directory: directory.value,
+  });
+  if (checkedOut.outcome === "failed") {
+    return {
+      checkouts: [],
+      tarball: { outcome: "failed", error: { side: "baseline", failure: checkedOut.error } },
+    };
+  }
+  const tarball = writePackedCheckout({ ports: request.ports, directory: directory.value });
   return {
     checkouts: [directory.value],
     tarball:

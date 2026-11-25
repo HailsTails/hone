@@ -109,18 +109,9 @@ describe("createBaselineCheckoutPort write", () => {
 });
 
 describe("createBaselineCheckoutPort remove", () => {
-  it("removes a registered worktree, then prunes", () => {
+  it("removes the worktree through git", () => {
     const run = vi
       .fn<ExecutionPort<"captured", "none">["run"]>()
-      .mockReturnValueOnce({
-        outcome: "ok",
-        value: {
-          status: 0,
-          stdout:
-            "worktree /work/hone\nHEAD abc\n\nworktree /work/hone/.claude/worktrees/baseline-31098fa5\nHEAD def\ndetached\n",
-          stderr: "",
-        },
-      })
       .mockReturnValue({ outcome: "ok", value: { status: 0, stdout: "", stderr: "" } });
     const checkouts = createBaselineCheckoutPort({
       git: { run },
@@ -135,7 +126,6 @@ describe("createBaselineCheckoutPort remove", () => {
     expect({ removed, git: run.mock.calls }).toEqual({
       removed: { outcome: "ok", value: null },
       git: [
-        [{ arguments: ["worktree", "list", "--porcelain"], cwd: "/work/hone" }],
         [
           {
             arguments: [
@@ -147,19 +137,21 @@ describe("createBaselineCheckoutPort remove", () => {
             cwd: "/work/hone",
           },
         ],
-        [{ arguments: ["worktree", "prune"], cwd: "/work/hone" }],
       ],
     });
   });
 
-  it("only prunes when the worktree is not registered", () => {
+  it("is done when git refuses a worktree it no longer registers", () => {
     const run = vi
       .fn<ExecutionPort<"captured", "none">["run"]>()
       .mockReturnValueOnce({
         outcome: "ok",
-        value: { status: 0, stdout: "worktree /work/hone\nHEAD abc\n", stderr: "" },
+        value: { status: 128, stdout: "", stderr: "fatal: is not a working tree\n" },
       })
-      .mockReturnValue({ outcome: "ok", value: { status: 0, stdout: "", stderr: "" } });
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: { status: 0, stdout: "worktree /work/hone\nHEAD abc\n", stderr: "" },
+      });
     const checkouts = createBaselineCheckoutPort({
       git: { run },
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
@@ -173,27 +165,63 @@ describe("createBaselineCheckoutPort remove", () => {
     expect({ removed, git: run.mock.calls }).toEqual({
       removed: { outcome: "ok", value: null },
       git: [
+        [
+          {
+            arguments: [
+              "worktree",
+              "remove",
+              "--force",
+              "/work/hone/.claude/worktrees/baseline-31098fa5",
+            ],
+            cwd: "/work/hone",
+          },
+        ],
         [{ arguments: ["worktree", "list", "--porcelain"], cwd: "/work/hone" }],
-        [{ arguments: ["worktree", "prune"], cwd: "/work/hone" }],
       ],
     });
   });
 
-  it("names the directory it could not remove", () => {
+  it("fails with git's refusal when git still registers the worktree", () => {
     const run = vi
       .fn<ExecutionPort<"captured", "none">["run"]>()
       .mockReturnValueOnce({
         outcome: "ok",
-        value: {
-          status: 0,
-          stdout: "worktree /work/hone/.claude/worktrees/baseline-31098fa5\n",
-          stderr: "",
-        },
+        value: { status: 128, stdout: "", stderr: "fatal: locked\n" },
       })
       .mockReturnValueOnce({
         outcome: "ok",
-        value: { status: 128, stdout: "", stderr: "fatal: busy\n" },
+        value: {
+          status: 0,
+          stdout:
+            "worktree /work/hone\nHEAD abc\n\nworktree /work/hone/.claude/worktrees/baseline-31098fa5\nHEAD def\ndetached\nlocked\n",
+          stderr: "",
+        },
       });
+    const checkouts = createBaselineCheckoutPort({
+      git: { run },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+      repository: absoluteRootOf("/work/hone"),
+    });
+
+    const removed = checkouts.remove({
+      directory: absoluteRootOf("/work/hone/.claude/worktrees/baseline-31098fa5"),
+    });
+
+    expect(removed).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "baseline-unremoved",
+        directory: "/work/hone/.claude/worktrees/baseline-31098fa5",
+        command: { kind: "exited", status: 128, output: "fatal: locked\n" },
+      },
+    });
+  });
+
+  it("fails with git's refusal when the registrations cannot be read", () => {
+    const run = vi.fn<ExecutionPort<"captured", "none">["run"]>().mockReturnValue({
+      outcome: "ok",
+      value: { status: 128, stdout: "", stderr: "fatal: busy\n" },
+    });
     const checkouts = createBaselineCheckoutPort({
       git: { run },
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
@@ -312,17 +340,9 @@ describe("createTargetCopyPort write", () => {
 });
 
 describe("createTargetCopyPort remove", () => {
-  it("removes the registered copy from the target repository, then prunes", () => {
+  it("removes the copy through the target repository", () => {
     const run = vi
       .fn<ExecutionPort<"captured", "none">["run"]>()
-      .mockReturnValueOnce({
-        outcome: "ok",
-        value: {
-          status: 0,
-          stdout: "worktree /work/large-repo/.claude/worktrees/hone-speed-head\n",
-          stderr: "",
-        },
-      })
       .mockReturnValue({ outcome: "ok", value: { status: 0, stdout: "", stderr: "" } });
     const copies = createTargetCopyPort({
       git: { run },
@@ -337,7 +357,6 @@ describe("createTargetCopyPort remove", () => {
     expect({ removed, git: run.mock.calls }).toEqual({
       removed: { outcome: "ok", value: null },
       git: [
-        [{ arguments: ["worktree", "list", "--porcelain"], cwd: "/work/large-repo" }],
         [
           {
             arguments: [
@@ -349,7 +368,6 @@ describe("createTargetCopyPort remove", () => {
             cwd: "/work/large-repo",
           },
         ],
-        [{ arguments: ["worktree", "prune"], cwd: "/work/large-repo" }],
       ],
     });
   });

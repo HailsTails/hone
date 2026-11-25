@@ -17,8 +17,6 @@ describe("removeTargetCopy", () => {
     const leftovers = removeTargetCopy({
       ports: {
         copies: {
-          read: vi.fn<TargetCopyPort["read"]>(),
-          write: vi.fn<TargetCopyPort["write"]>(),
           remove: copiesRemove,
         },
         directories: { remove: directoriesRemove },
@@ -38,12 +36,12 @@ describe("removeTargetCopy", () => {
     });
   });
 
-  it("still removes the folder, keeping both failures, when neither removal succeeds", () => {
+  it("keeps the folder, and reports the one failure, when git still holds the worktree", () => {
+    const directoriesRemove = vi.fn<DirectoryRemovalPort["remove"]>();
+
     const leftovers = removeTargetCopy({
       ports: {
         copies: {
-          read: vi.fn<TargetCopyPort["read"]>(),
-          write: vi.fn<TargetCopyPort["write"]>(),
           remove: vi.fn<TargetCopyPort["remove"]>().mockReturnValue({
             outcome: "failed",
             error: {
@@ -52,6 +50,30 @@ describe("removeTargetCopy", () => {
               command: { kind: "exited", status: 128, output: "fatal" },
             },
           }),
+        },
+        directories: { remove: directoriesRemove },
+      },
+      repo: absoluteRootOf("/work/large-repo"),
+      copy: absoluteRootOf("/work/sample"),
+    });
+
+    expect({ leftovers, removed: directoriesRemove.mock.calls }).toEqual({
+      leftovers: [
+        {
+          kind: "target-copy-unremoved",
+          directory: "/work/sample",
+          command: { kind: "exited", status: 128, output: "fatal" },
+        },
+      ],
+      removed: [],
+    });
+  });
+
+  it("reports the folder it could not remove once git let the worktree go", () => {
+    const leftovers = removeTargetCopy({
+      ports: {
+        copies: {
+          remove: vi.fn<TargetCopyPort["remove"]>().mockReturnValue({ outcome: "ok", value: null }),
         },
         directories: {
           remove: vi.fn<DirectoryRemovalPort["remove"]>().mockReturnValue({
@@ -69,11 +91,6 @@ describe("removeTargetCopy", () => {
     });
 
     expect(leftovers).toEqual([
-      {
-        kind: "target-copy-unremoved",
-        directory: "/work/sample",
-        command: { kind: "exited", status: 128, output: "fatal" },
-      },
       { kind: "directory-unremoved", directory: "/work/sample", detail: "EBUSY" },
     ]);
   });

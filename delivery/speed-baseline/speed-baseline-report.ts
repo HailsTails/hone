@@ -162,7 +162,9 @@ const mapSampleFailureToText = (request: {
   }
 };
 
-const mapPreparationFailureToText = (request: { readonly failure: PreparationFailure }): string => {
+const mapPreparationFailureToText = (request: {
+  readonly failure: PreparationFailure | Leftover;
+}): string => {
   const { failure } = request;
   switch (failure.kind) {
     case "baseline-unchecked-out":

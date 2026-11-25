@@ -1,10 +1,18 @@
+import type { PackageManifestPort } from "../../src/application/ports/host/package-manifest-port.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { TOOL_IDENTITY } from "../../src/domain/rule-set/tool-identity.ts";
+import type { InstalledCommandPort } from "./installed-command-port.ts";
+import type { LockfilesPort } from "./lockfiles-port.ts";
 import type { PreparationFailure, PreparationRefusal } from "./speed-baseline-outcome.ts";
-import type { SpeedBaselinePorts } from "./speed-baseline-ports.ts";
 import type { SpeedSide } from "./speed-samples.ts";
-import { mapFilesToTargetPackageManager } from "./target-package-manager.ts";
+import type { TargetCopyPort } from "./target-copy-port.ts";
+import type { TargetInstallPort } from "./target-install-port.ts";
+import {
+  mapFilesToTargetPackageManager,
+  type TargetPackageManager,
+} from "./target-package-manager.ts";
+import type { TargetTreePort } from "./target-tree-port.ts";
 
 export type SideInstall = {
   readonly directory: AbsolutePath;
@@ -17,10 +25,14 @@ export type SideInstallRun = {
   readonly install: Result<SideInstall, PreparationRefusal>;
 };
 
-type InstallPorts = Pick<
-  SpeedBaselinePorts,
-  "copies" | "trees" | "lockfiles" | "installers" | "installedCommands" | "resolutions"
->;
+type InstallPorts = {
+  readonly copies: Pick<TargetCopyPort, "read" | "write">;
+  readonly trees: Pick<TargetTreePort, "write">;
+  readonly lockfiles: LockfilesPort;
+  readonly installers: Readonly<Record<TargetPackageManager, TargetInstallPort>>;
+  readonly installedCommands: InstalledCommandPort;
+  readonly resolutions: PackageManifestPort;
+};
 
 const writeInstalledHone = (request: {
   readonly ports: InstallPorts;
@@ -38,15 +50,12 @@ const writeInstalledHone = (request: {
   return installed.outcome === "failed" ? installed : { outcome: "ok", value: null };
 };
 
-const writeInstallCopy = (request: {
+const writeInstall = (request: {
   readonly ports: InstallPorts;
-  readonly repo: AbsolutePath;
   readonly directory: AbsolutePath;
   readonly tarball: AbsolutePath;
   readonly tree: string;
 }): Result<SideInstall, PreparationFailure> => {
-  const copied = request.ports.copies.write({ repo: request.repo, directory: request.directory });
-  if (copied.outcome === "failed") return copied;
   const written = request.ports.trees.write({ copy: request.directory, tree: request.tree });
   if (written.outcome === "failed") return written;
   const installed = writeInstalledHone(request);
@@ -86,7 +95,14 @@ export const writeSideInstall = (request: {
       install: { outcome: "failed", error: { side: request.side, failure: directory.error } },
     };
   }
-  const install = writeInstallCopy({ ...request, directory: directory.value });
+  const copied = request.ports.copies.write({ repo: request.repo, directory: directory.value });
+  if (copied.outcome === "failed") {
+    return {
+      directories: [],
+      install: { outcome: "failed", error: { side: request.side, failure: copied.error } },
+    };
+  }
+  const install = writeInstall({ ...request, directory: directory.value });
   return {
     directories: [directory.value],
     install:

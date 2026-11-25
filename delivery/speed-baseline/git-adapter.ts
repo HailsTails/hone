@@ -3,7 +3,8 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import type { Result } from "../../src/domain/result.ts";
 import type { ExecutionPort } from "../../src/infrastructure/node/process/execution-port.ts";
 import type { BaselineCheckoutPort } from "./baseline-checkout-port.ts";
-import { type CommandFailure, mapExecutionToCommandResult } from "./command-failure.ts";
+import type { CommandFailure } from "./command-failure.ts";
+import { mapExecutionToCommandResult } from "./command-result.ts";
 import {
   mapCommitToCheckoutSegments,
   mapPlaceToSegments,
@@ -34,7 +35,7 @@ const runGit = (request: {
 
 const readWorktreeDirectory = (request: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "directoryOf" | "join" | "resolve">;
   readonly repository: AbsolutePath;
   readonly segments: readonly string[];
 }): Result<AbsolutePath, WorktreeFailure> => {
@@ -58,53 +59,49 @@ const readWorktreeDirectory = (request: {
     : resolved;
 };
 
-const readRegistered = (request: {
+type Registration = "registered" | "unregistered";
+
+const readRegistration = (request: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "resolve">;
   readonly repository: AbsolutePath;
   readonly directory: AbsolutePath;
-}): Result<boolean, CommandFailure> => {
+}): Result<Registration, CommandFailure> => {
   const listed = runGit({
     git: request.git,
     arguments: ["worktree", "list", "--porcelain"],
     cwd: request.repository,
   });
-  return listed.outcome === "failed"
-    ? listed
-    : {
-        outcome: "ok",
-        value: listed.value
-          .split("\n")
-          .filter((line) => line.startsWith(WORKTREE_LINE_PREFIX))
-          .map((line) =>
-            request.path.resolve({ path: line.slice(WORKTREE_LINE_PREFIX.length).trim() }),
-          )
-          .some((resolved) => resolved.outcome === "ok" && resolved.value === request.directory),
-      };
+  if (listed.outcome === "failed") return listed;
+  const registered = listed.value
+    .split("\n")
+    .filter((line) => line.startsWith(WORKTREE_LINE_PREFIX))
+    .map((line) => request.path.resolve({ path: line.slice(WORKTREE_LINE_PREFIX.length).trim() }))
+    .some((resolved) => resolved.outcome === "ok" && resolved.value === request.directory);
+  return { outcome: "ok", value: registered ? "registered" : "unregistered" };
 };
 
 const removeWorktree = (request: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "resolve">;
   readonly repository: AbsolutePath;
   readonly directory: AbsolutePath;
-}): Result<string, CommandFailure> => {
-  const registered = readRegistered(request);
-  if (registered.outcome === "failed") return registered;
-  if (registered.value) {
-    const removed = runGit({
-      git: request.git,
-      arguments: ["worktree", "remove", "--force", request.directory],
-      cwd: request.repository,
-    });
-    if (removed.outcome === "failed") return removed;
-  }
-  return runGit({ git: request.git, arguments: ["worktree", "prune"], cwd: request.repository });
+}): Result<null, CommandFailure> => {
+  const removed = runGit({
+    git: request.git,
+    arguments: ["worktree", "remove", "--force", request.directory],
+    cwd: request.repository,
+  });
+  if (removed.outcome === "ok") return { outcome: "ok", value: null };
+  const registration = readRegistration(request);
+  return registration.outcome === "ok" && registration.value === "unregistered"
+    ? { outcome: "ok", value: null }
+    : removed;
 };
 
 export const createBaselineCheckoutPort = (options: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "directoryOf" | "join" | "resolve">;
   readonly repository: AbsolutePath;
 }): BaselineCheckoutPort => ({
   read: (request) => {
@@ -158,7 +155,7 @@ export const createBaselineCheckoutPort = (options: {
 
 export const createTargetCopyPort = (options: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "directoryOf" | "join" | "resolve">;
 }): TargetCopyPort => ({
   read: (request) => {
     const directory = readWorktreeDirectory({
@@ -205,7 +202,7 @@ export const createTargetCopyPort = (options: {
 
 export const createTargetIndexPort = (options: {
   readonly git: ExecutionPort<"captured", "none">;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "resolve">;
 }): TargetIndexPort => ({
   read: (request) => {
     const index = runGit({

@@ -7,7 +7,8 @@ import type {
   ExecutionPolicy,
   ExecutionPort,
 } from "../../src/infrastructure/node/process/execution-port.ts";
-import { type CommandFailure, mapExecutionToCommandResult } from "./command-failure.ts";
+import type { CommandFailure } from "./command-failure.ts";
+import { mapExecutionToCommandResult } from "./command-result.ts";
 import type { EnvironmentVariablePort } from "./environment-variable-port.ts";
 import type { HoneDependenciesPort } from "./hone-dependencies-port.ts";
 import type { HonePackagePort } from "./hone-package-port.ts";

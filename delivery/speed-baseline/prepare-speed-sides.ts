@@ -18,10 +18,6 @@ export type CleanUpPhase = (
 ) => readonly Leftover[];
 
 export type PrepareStages = {
-  readonly removeLeftovers: (request: {
-    readonly repo: AbsolutePath;
-    readonly revision: string;
-  }) => Result<null, PreparationRefusal>;
   readonly readTargetTree: (request: { readonly repo: AbsolutePath }) => TargetTree;
   readonly writeTarballs: (request: {
     readonly revision: string;
@@ -90,8 +86,6 @@ const installSides = (
 
 export const prepareSpeedSides = (request: PrepareRequest): SpeedSidesPreparation => {
   const { stages, repo } = request;
-  const cleared = stages.removeLeftovers({ repo, revision: request.revision });
-  if (cleared.outcome === "failed") return { prepared: cleared, leftovers: [] };
   const target = stages.readTargetTree({ repo });
   if (target.tree.outcome === "failed") {
     return { prepared: target.tree, leftovers: target.leftovers };

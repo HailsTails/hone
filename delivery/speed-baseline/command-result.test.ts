@@ -5,7 +5,7 @@ import type {
   ExecutionExit,
   ExecutionFailure,
 } from "../../src/infrastructure/node/process/execution-port.ts";
-import { mapExecutionToCommandResult } from "./command-failure.ts";
+import { mapExecutionToCommandResult } from "./command-result.ts";
 
 describe("mapExecutionToCommandResult", () => {
   it("keeps a successful exit", () => {
