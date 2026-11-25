@@ -65,7 +65,7 @@ For an `eslint` check, the off-switch the projection writes for a record is Hone
 
 ## Adopting the ESLint mechanism
 
-With any check listed for `eslint`, run `hone project`. It writes `hone.eslint.mjs` at the repository root, which turns the listed checks' rules on and off where records answer them, and `hone.eslint.d.mts`, which types it. Commit both, and spread the default export of the projection last in the repository's flat config:
+With any check listed for `eslint`, run `hone project`. It writes `hone.eslint.mjs` at the repository root, which turns the listed checks' rules on and off where records answer them, and `hone.eslint.d.mts`, which types it. The projection leaves that declaration out of the checks' rules. Commit both, and spread the default export of the projection last in the repository's flat config:
 
 ```js
 import hone from "./hone.eslint.mjs";
@@ -80,7 +80,7 @@ This is the only supported way to adopt the checks. On every run, Hone reads the
 
 ### Package slices
 
-A package that runs ESLint from its own folder resolves the `files` of its config against that folder, so spreading the root projection there loses every record written with a root-relative path. `hone project` therefore writes one projection per config root, and beside each a `hone.eslint.d.mts` that types its default export as ESLint's `Linter.Config[]`, so a TypeScript config can import the projection and spread it. Commit both files in every folder. The repository root gets `hone.eslint.mjs` as above. Under the nearest-to-file lookup, each package folder with a tracked `eslint.config.*` is a config root; under the repository-root lookup a package's own config is never loaded, so it gets no slice. Each folder `hone.config.json` lists under `eslintConfigRoots` is a config root under either lookup. Each package config root gets its own `hone.eslint.mjs` beside it: the same checks, imported by a path relative to that folder, and only the records for files under it, with paths relative to it; every slice also carries the block that turns the listed checks' rules on. Each package config spreads its own slice:
+A package that runs ESLint from its own folder resolves the `files` of its config against that folder, so spreading the root projection there loses every record written with a root-relative path. `hone project` therefore writes one projection per config root, and beside each a `hone.eslint.d.mts` that types its default export and imports nothing, so a TypeScript config can import the projection and spread it, and a `tsc` run where ESLint is not installed can read it. Commit both files in every folder. The repository root gets `hone.eslint.mjs` as above. Under the nearest-to-file lookup, each package folder with a tracked `eslint.config.*` is a config root; under the repository-root lookup a package's own config is never loaded, so it gets no slice. Each folder `hone.config.json` lists under `eslintConfigRoots` is a config root under either lookup. Each package config root gets its own `hone.eslint.mjs` beside it: the same checks, imported by a path relative to that folder, and only the records for files under it, with paths relative to it; every slice also carries the block that turns the listed checks' rules on. Each package config spreads its own slice:
 
 ```js
 import hone from "./hone.eslint.mjs";
