@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/speed-baseline/process-adapter.ts",
+      "case": "reads-data-from-outside",
+      "owes": "no-leak-across-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does process-adapter.ts use the process global in place?",
+            "because": "It fills three narrow ports with three capabilities of the running program: its exit event, its CPU usage and its environment variables.",
+            "evidence": "delivery/speed-baseline/process-adapter.ts:11, delivery/speed-baseline/process-adapter.ts:19 and delivery/speed-baseline/process-adapter.ts:28"
+          },
+          {
+            "why": "Why does the speed baseline need the exit event, CPU usage and environment variables?",
+            "because": "A measured check reports the CPU time it spent when it finishes, and running pnpm (to pack Hone, install the baseline's dependencies or install into a pnpm target) reads npm_execpath to find pnpm's script.",
+            "evidence": "delivery/speed-baseline/write-cpu-time-at-end.ts:20 and delivery/speed-baseline/pnpm-adapter.ts:45"
+          },
+          {
+            "why": "Why are CPU time, the exit event and npm_execpath read inside the program concerned?",
+            "because": "The result the execution port returns for a child holds its status and output and no CPU time, and npm_execpath is a variable in this program's environment.",
+            "evidence": "src/infrastructure/node/process/execution-port.ts:30 and delivery/speed-baseline/pnpm-adapter.ts:45"
+          },
+          {
+            "why": "Why does each program read these from itself, when a child's result holds no CPU time and npm_execpath is a variable in this program's environment?",
+            "because": "Each is read through Node's process object, which provides information about the current Node.js process.",
+            "evidence": "https://nodejs.org/api/process.html#process"
+          },
+          {
+            "why": "Why is Node's process object reached through the global?",
+            "because": "Node makes its process object available in all modules as the global named process.",
+            "evidence": "https://nodejs.org/api/globals.html#process"
+          }
+        ],
+        "rootCause": "Node gives every module the current process as the global process object.",
+        "rootEvidence": "Read 25 Nov 2026: delivery/speed-baseline/process-adapter.ts:36, :38 and :39 use process.on, process.cpuUsage and process.env in one default surface, and the file otherwise holds that surface's type and the three port adapters that take it.",
+        "readback": "Node gives every module the current process as the global process object; therefore its CPU time, exit and environment are read through it; therefore the measured check reports its own CPU time and running pnpm reads npm_execpath; therefore three narrow ports need filling; therefore process-adapter.ts uses the process global in place.",
+        "owner": "HailsTails"
+      }
+    }
+  ]
+}

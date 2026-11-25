@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/modules/package-manifest-port.ts",
+      "outsideParty": "node:module",
+      "case": "uses-a-system-or-service-outside-the-program",
+      "owes": "external-behaviour-sits-at-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does package-manifest-port.ts import createRequire from node:module?",
+            "because": "It finds where a package's manifest is installed, starting the search at whichever folder the caller names.",
+            "evidence": "src/infrastructure/node/modules/package-manifest-port.ts:8"
+          },
+          {
+            "why": "Why does the caller name the folder the manifest search starts at?",
+            "because": "The speed baseline compares two Hone builds, so it checks that every sample copy loads its own side's build.",
+            "evidence": "delivery/speed-baseline/prepare-sample.ts:44 and delivery/speed-baseline/hone-install-check.ts:11"
+          },
+          {
+            "why": "Why might a sample copy load a build that is not its own side's?",
+            "because": "Nothing is installed in a sample copy: it is a git worktree placed inside its side's install folder, so its packages are found in a folder above it.",
+            "evidence": "delivery/speed-baseline/prepare-sample.ts:76 and delivery/speed-baseline/speed-baseline-places.ts:27"
+          },
+          {
+            "why": "Why does being placed below another folder settle which packages a copy finds?",
+            "because": "Node looks in the node_modules folder of the starting folder, then of each parent folder, until it finds the package.",
+            "evidence": "https://nodejs.org/api/modules.html#loading-from-node_modules-folders"
+          },
+          {
+            "why": "Why ask Node for that lookup rather than walk the parent folders ourselves?",
+            "because": "Node owns that lookup, and module.createRequire gives a require function for a file path the caller chooses.",
+            "evidence": "https://nodejs.org/api/module.html#modulecreaterequirefilename"
+          }
+        ],
+        "rootCause": "Node owns the package lookup and offers it from a chosen path through module.createRequire.",
+        "rootEvidence": "Read 25 Nov 2026: src/infrastructure/node/modules/package-manifest-port.ts:15 calls createRequire(...).resolve, its only use of node:module.",
+        "readback": "Node owns the package lookup and offers it through createRequire; therefore the folders above a sample copy settle which packages it finds; therefore the baseline checks that each copy finds its own side's build; therefore the caller names the folder to search from; therefore package-manifest-port.ts imports createRequire from node:module.",
+        "owner": "HailsTails"
+      }
+    }
+  ]
+}
