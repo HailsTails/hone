@@ -2,6 +2,17 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.1.0
+
+### Features
+
+- the projection leaves out the declaration Hone writes; run hone project and commit the result (#499)
+
+### Fixes
+
+- a clause-wide carve-out upgrades to debt by file (#496)
+- check and upgrade a workspace with ESLint only in its packages; adopters run hone project (#497)
+
 ## 2.0.0
 
 ### Breaking changes
