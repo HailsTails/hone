@@ -132,7 +132,7 @@ Skip this if every listed check runs on the `walker`. Otherwise, after writing `
 npm run --silent hone:project
 ```
 
-It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config. Add both to your formatter's ignore list: Hone compares each with what `hone project` writes. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
+It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config and which the projection leaves out of the checks' rules. Add both to your formatter's ignore list: Hone compares each with what `hone project` writes. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
 
 ```js
 import typescriptParser from "@typescript-eslint/parser";
