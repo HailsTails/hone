@@ -108,8 +108,10 @@ An imported `file-carve-out` needs a `decision`: copy the old entry's. If the ol
 Once the old records are converted, what is left is debt no old record covers: findings in a folder whose relaxed rule set was not carried over (step 2a), clauses the old route never checked, and inline disables or `@ts-expect-error` directives the old tool accepted ([section 14](#14-moving-to-recorded-inline-exceptions)). When the human approves recording it, run, with one `--leave` for each file the human decided is a permanent exception:
 
 ```bash
-node_modules/.bin/hone record-debt --repo . --base-revision origin/main --leave <path>
+npm run --silent hone:record-debt -- --base-revision origin/main --leave <path>
 ```
+
+where the root `package.json` has `"hone:record-debt": "hone record-debt --repo ."`. With pnpm the options follow the script name directly.
 
 Give it the branch's base, `origin/main`, not `HEAD` as this migration's other checks do: after step 6 the pre-push hook and CI assess decay against that base, so a record for a file this branch edits passes a check against `HEAD` and is forfeited there. Finish each file the migration edits, as [ADOPTING.md](ADOPTING.md#7a-record-the-debt-you-inherit) step 7a point 3 says, and confirm with `npm run --silent hone:check -- --forfeiture this-run --base-revision origin/main`, which assesses decay in that run whatever `assessment.forfeiture` says. Before you run it, put every pre-push hook, CI job and other machine that runs the check on this release or later: the records it writes give no `reason`, and a Hone from before file carve-outs could leave out `reason` stops with `load failure: file-malformed` on them. It adds a `file-carve-out` naming only its clause and file for each clause and file that no converted record holds, and leaves the converted records as they are. A converted record still holds its pair, so the command reports it `already-recorded` only if the check does not accept it; fix that record rather than adding another. [ADOPTING.md](ADOPTING.md#7a-record-the-debt-you-inherit) step 7a says how to read its output and review the result.
 
@@ -343,8 +345,10 @@ Neither `"not-run"` nor `"not-adopted"` takes an exception record. Stop and ask 
 2. **Split the records:**
 
    ```bash
-   node_modules/.bin/hone split-records --repo .
+   npm run --silent hone:split-records
    ```
+
+   with `"hone:split-records": "hone split-records --repo ."` in the root `package.json`.
 
    It prints `<path> written` for each file and `discipline-exceptions.json removed`. Within each file the records keep the order they had. It refuses a record whose clause names no discipline, naming its index: fix the clause or remove the record, then run it again. It also refuses a `discipline-exceptions.json` holding keys other than `version` and `exceptions`, such as `$schema` or `notes`, naming them, since no split file keeps them: remove them, or keep what they say elsewhere, then run it again.
 3. **Re-project and check against the same base.** With any `eslint` clause, run `npm run --silent hone:project`; it prints `unchanged`, since the projection does not depend on where a record is kept. Then run `npm run --silent hone:check -- --forfeiture this-run --base-revision origin/main` (with pnpm, `pnpm run --silent hone:check --forfeiture this-run --base-revision origin/main`). The base still holds `discipline-exceptions.json`, and Hone reads the base in whichever layout it holds, so imported and legacy-chain records are still verified against it. `--forfeiture this-run` makes this run assess decay whatever `assessment.forfeiture` says. The report is the one the check printed before the split, except that a section listing records, such as `stale`, lists them in the order of the new files.
@@ -368,7 +372,7 @@ Earlier releases never listed an `eslint` file record as `stale`. The off-switch
    From the repository root that is:
 
    ```bash
-   node_modules/.bin/hone prune-debt --repo . --base-revision origin/main
+   npm run --silent hone:prune-debt -- --base-revision origin/main
    npm run --silent hone:project
    ```
 
@@ -396,15 +400,15 @@ Nothing must be migrated. Selections, exception records and findings still use t
 
 Version 2 keeps its settings in `hone.config.json`, its records in the `hone-records` folder and its native configuration in `hone.<engine>.mjs`, where version 1 kept them in `disciplines.json`, the exception records and `disciplines.<mechanism>.mjs`. `hone upgrade` moves a repository from one to the other in one run, and refuses, changing nothing, when version 2's check does not pass on the result. Version 2 is a major release, so its findings may differ from version 1's: the upgrade records the differences as debt.
 
-1. **Before installing version 2, get your 1.x check passing.** The upgrade records as debt whatever version 2 then finds. **Then install version 2 on a branch, with a clean working tree,** the way [ADOPTING.md](ADOPTING.md#10-update-and-remove) section 10 installs a release, and **commit the install**, which changes the pin and the lock, so the working tree is clean before the upgrade. Run neither `hone:project` nor the check before the upgrade: on a version 1 repository version 2's commands stop with `upgrade-needed`. The upgrade runs version 1's `project` itself, and refuses when that rewrites a file it had already measured. The working tree is the only rollback: a refusal after files were written puts them back, and names any it could not put back, so you can restore them from version control.
+1. **Your version 1 check need not pass before you install version 2.** Version 2 may find what version 1 did not, and the upgrade records whatever version 2 finds as debt. **Install version 2 on a branch, with a clean working tree,** the way [ADOPTING.md](ADOPTING.md#10-update-and-remove) section 10 installs a release, changing the pin of `@hailstails/hone` in every workspace package that declares it, not only the root. Add `"hone:upgrade": "hone upgrade --repo ."` to the root `package.json` scripts, as `hone:check` and `hone:project` are, and **commit the install**, which changes the pins, the scripts and the lock, so the working tree is clean before the upgrade. Run neither `hone:project` nor the check before the upgrade: on a version 1 repository version 2's commands stop with `upgrade-needed`. The upgrade runs version 1's `project` itself, and refuses when that rewrites a file it had already measured. The working tree is the only rollback: a refusal after files were written puts them back, and names any it could not put back, so you can restore them from version control.
 2. **Run it:**
 
    ```bash
-   node_modules/.bin/hone upgrade --repo .
+   npm run --silent hone:upgrade
    ```
 
    It writes the version 2 files, removes the records it carried that answer nothing, runs `record-debt`, `prune-debt` and `project`, then runs version 2's check. A version 1 `reportOutput` of `failures-only` is written as `actionable`, its version 2 name, and `--report-output failures-only` is refused on a version 2 repository. Only when version 2's check passes does it remove the version 1 files. If it fails, the upgrade puts everything back and prints the failing lines. Each refusal states whether anything was changed, and lists any file it could not put back.
-3. **Commit** what the upgrade wrote and removed, as its own commit after the install: the version 2 files together with the removal of the version 1 files, `git add .`, then your commit. That includes each `hone.eslint.d.mts`, which the check compares with what `hone project` writes and reports under `projection-problems` when it is missing or out of date.
+3. **Format, then commit** what the upgrade wrote and removed, as its own commit after the install: the version 2 files together with the removal of the version 1 files. Run your formatter on `hone.config.json` before committing, because no later Hone command rewrites it. Add `hone.eslint.mjs` and `hone.eslint.d.mts` to the formatter's ignore list: the check compares each with what `hone project` writes and reports under `projection-problems` when it is missing or out of date. Then `git add .` and your commit.
 
    After the upgrade, `hone split-records` does not run on version 2 files, and the records stay in `hone-records`. Before it, version 1's `hone authorise` stops and sends you here.
 4. **Run the check with a base revision in at least one run, in CI at least,** for example `npm run --silent hone:check -- --base-revision origin/main`, where the script passes everything after `--` to `hone check`. The report a version 1 reader knew reads a little differently: `exempted` is now `answered`, and `carried` is a section of its own, listing the records the upgrade carried over. The records carried over follow the `forfeiture` setting, as debt does. With the default, `this-run`, every run needs `--base-revision` while a carried record or any debt exists: without one the run prints `forfeiture-unmeasured no-base-revision` when debt exists, first, and `import-unmeasured no-base-revision` when carried records exist, and fails, a bare local check or a hook that passes no base included. With `"forfeiture": "elsewhere"` a run that is given no base leaves the carried records to the run that has one, prints `carried standing elsewhere` with how many, and passes as a partial assessment when nothing else fails. A run with debt also prints `forfeiture elsewhere: <n> debt records not checked for forfeiture in this run` under `assessment`, which is the same setting at work on debt. A run that is given a base judges the carried records against it, but still does not check debt for forfeiture: it still prints that `forfeiture elsewhere` line and still ends `verdict: pass (partial assessment)`, or `verdict: fail (partial assessment)` when something else fails. Some run must assess forfeiture, and the run that does is the one with `"forfeiture": "this-run"`, the default, or `--forfeiture this-run`, given a base. A base that is given and cannot be read still prints `import-unmeasured base-git-failed` and fails under either setting. If no run is ever given a base, carried records are never judged, so keep one run that has it. A second `hone upgrade` prints `already on version 2; nothing to upgrade` and exits `0`.

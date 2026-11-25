@@ -132,7 +132,7 @@ Skip this if every listed check runs on the `walker`. Otherwise, after writing `
 npm run --silent hone:project
 ```
 
-It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
+It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config. Add both to your formatter's ignore list: Hone compares each with what `hone project` writes. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
 
 ```js
 import typescriptParser from "@typescript-eslint/parser";
@@ -329,8 +329,10 @@ A repository with existing code usually has more findings than the change that a
 
    ```bash
    git fetch origin
-   node_modules/.bin/hone record-debt --repo . --base-revision origin/main --leave src/clock.ts --leave src/adapters
+   npm run --silent hone:record-debt -- --base-revision origin/main --leave src/clock.ts --leave src/adapters
    ```
+
+   Add the script to the root `package.json` first: `"hone:record-debt": "hone record-debt --repo ."`. With pnpm the options follow the script name directly.
 
    It prints one line per finding and per native exception, saying what it recorded and, for each it did not, why and what to do instead. Files under a `--leave` path need their authorised locations from point 1 written now. Files this change created or changed need fixing.
 5. **Re-project and check against the same base.** With any `eslint` check, run `npm run --silent hone:project`. Then run `npm run --silent hone:check -- --forfeiture this-run --base-revision origin/main` (with pnpm, `pnpm run --silent hone:check --forfeiture this-run --base-revision origin/main`). `--forfeiture this-run` makes this run assess forfeiture whatever `forfeiture` says, as the run that assesses it for your repository does: the pre-push hook with `"forfeiture": "elsewhere"` (step 5), or CI without it. A `forfeited` line names a file this change edits: go back to point 3 for it. A check against `HEAD` hides those lines, because nothing has changed since `HEAD`, and the hook or CI then fails where this run passed. What stays under `unrecorded` is what no record can hold; point 4's line for each says what to do.
@@ -373,9 +375,9 @@ To use an agent, give it the lens file, the rule items that name it, the change 
 
 ## 10. Update and remove
 
-To update, on a branch, read [the changelog](https://github.com/HailsTails/hone/blob/main/CHANGELOG.md) for each version since yours, then install the new version exactly as step 2 does, with `npm install --save-dev --save-exact @hailstails/hone@<version>` or `pnpm add -D --save-exact @hailstails/hone@<version>`. Compare the installed rule pages under `node_modules/@hailstails/hone/rules/` with the old ones, re-run `hone:project` if any check is on `eslint`, run the check, and commit `package.json` and the lockfile with a message naming the new version. With a tarball, replace it with the newer one and install that instead. Rule text can change between versions, so read the changed pages. Version 2 reads different files from version 1: a repository on version 1 runs `hone upgrade` once after installing version 2, as [MIGRATING.md section 20](MIGRATING.md#20-moving-from-version-1-to-version-2) says, before it runs the check.
+To update, on a branch, read [the changelog](https://github.com/HailsTails/hone/blob/main/CHANGELOG.md) for each version since yours, then install the new version exactly as step 2 does, in the root and in every workspace package that pins `@hailstails/hone`, with `npm install --save-dev --save-exact @hailstails/hone@<version>` or `pnpm add -D --save-exact @hailstails/hone@<version>`. Compare the installed rule pages under `node_modules/@hailstails/hone/rules/` with the old ones, re-run `hone:project` if any check is on `eslint`, run the check, and commit `package.json` and the lockfile with a message naming the new version. With a tarball, replace it with the newer one and install that instead. Rule text can change between versions, so read the changed pages. Version 2 reads different files from version 1: a repository on version 1 runs `hone upgrade` once after installing version 2, as [MIGRATING.md section 20](MIGRATING.md#20-moving-from-version-1-to-version-2) says, before it runs the check.
 
-To remove, run `npm uninstall @hailstails/hone`, delete the two `hone:` scripts, any vendored tarball, `hone.config.json`, `hone-records`, `disciplines.assessment.md` and, with `eslint` checks, `hone.eslint.mjs`, `hone.eslint.d.mts`, every package slice and their spread in the flat config, and take the check out of the validation script.
+To remove, run `npm uninstall @hailstails/hone`, delete the `hone:` scripts, any vendored tarball, `hone.config.json`, `hone-records`, `disciplines.assessment.md` and, with `eslint` checks, `hone.eslint.mjs`, `hone.eslint.d.mts`, every package slice and their spread in the flat config, and take the check out of the validation script.
 
 ## Known gaps
 
