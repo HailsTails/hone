@@ -12,10 +12,10 @@ import { createDefaultDirectoryPort } from "../../../src/infrastructure/node/fil
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import { createBlockFlagsPort } from "./block-flags.ts";
-import { createTypeErrorsPort } from "./block-type-errors.ts";
+import { createDefaultTypeErrorsPort } from "./block-type-errors.ts";
 import { readCheckBindings } from "./check-bindings.ts";
 import { findExampleRefusals } from "./example-refusals.ts";
-import { createFlaggedFormsPort } from "./flagged-forms.ts";
+import { createDefaultFlaggedFormsPort } from "./flagged-forms.ts";
 import { readListedPieces } from "./piece-listing.ts";
 import { readRecipePages } from "./recipe-pages.ts";
 
@@ -54,11 +54,11 @@ describe("the examples on this repository's recipe pages", () => {
       pieces: pieces.value,
       bindings: bindings.value,
       pages: readRecipePages({ recipes, ruleSetRoot: repoRoot, fileText, path }),
-      typeErrors: createTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }),
+      typeErrors: createDefaultTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }),
       flags: createBlockFlagsPort({
         runners: { walker: walkerRunner, eslint: eslintRunner },
       }),
-      flaggedForms: createFlaggedFormsPort({
+      flaggedForms: createDefaultFlaggedFormsPort({
         parse: parse.value,
         repoRoot,
         fileText,

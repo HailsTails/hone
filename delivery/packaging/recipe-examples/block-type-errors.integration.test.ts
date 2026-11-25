@@ -5,9 +5,9 @@ import {
   loadParsePort,
 } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import { createTypeErrorsPort } from "./block-type-errors.ts";
+import { createDefaultTypeErrorsPort } from "./block-type-errors.ts";
 
-describe("createTypeErrorsPort, over the real TypeScript", () => {
+describe("createDefaultTypeErrorsPort, over the real TypeScript", () => {
   it("reports an element that may be missing and an optional property given undefined, and nothing for a block that compiles", async () => {
     const repoRoot = createDefaultPathPort({}).join({
       segments: [import.meta.dirname, "..", "..", ".."],
@@ -37,9 +37,11 @@ describe("createTypeErrorsPort, over the real TypeScript", () => {
       source: "declare const count: number;\nexpect(count).toBe(1);\n",
     };
 
-    const errors = createTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }).read({
-      blocks: [indexed, optional, whole],
-    });
+    const errors = createDefaultTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }).read(
+      {
+        blocks: [indexed, optional, whole],
+      },
+    );
 
     expect(errors).toEqual([
       { kind: "in-a-block", block: indexed, message: "Object is possibly 'undefined'." },

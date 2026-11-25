@@ -2,12 +2,14 @@ import type {
   CompilerOptions,
   SyntaxApi,
 } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
-import { type BlockFile, mapDiagnosticsToTypeErrors } from "./block-diagnostics.ts";
+import { type Diagnostic, mapDiagnosticsToTypeErrors } from "./block-diagnostics.ts";
 import { createBlockText } from "./block-text.ts";
 import type { BlockTypeError, TypeErrorsPort } from "./block-verdicts-port.ts";
 import type { ExampleBlock } from "./example-block.ts";
 
-type TypeErrorsSource = { readonly syntaxApi: SyntaxApi; readonly repoRoot: string };
+type NamedText = { readonly path: string; readonly text: string };
+
+export type Diagnose = (request: { readonly files: readonly NamedText[] }) => readonly Diagnostic[];
 
 const createStrictOptions = (request: { readonly syntaxApi: SyntaxApi }): CompilerOptions => ({
   strict: true,
@@ -28,20 +30,13 @@ const createStrictOptions = (request: { readonly syntaxApi: SyntaxApi }): Compil
 const mapPathToSlashes = (request: { readonly path: string }): string =>
   request.path.replaceAll("\\", "/");
 
-type TextFile = BlockFile & { readonly text: string };
-
-const readTypeErrors = (
-  request: TypeErrorsSource & { readonly blocks: readonly ExampleBlock[] },
-): readonly BlockTypeError[] => {
-  const { syntaxApi } = request;
+const readDiagnostics = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly files: readonly NamedText[];
+}): readonly Diagnostic[] => {
+  const { syntaxApi, files } = request;
   const options = createStrictOptions({ syntaxApi });
-  const root = mapPathToSlashes({ path: request.repoRoot });
-  const files = request.blocks.map((block, index): TextFile => ({
-    block,
-    path: `${root}/recipe-example-${index}.test.ts`,
-    text: createBlockText(block),
-  }));
-  const findFile = (path: string): TextFile | undefined =>
+  const findFile = (path: string): NamedText | undefined =>
     files.find((file) => file.path === mapPathToSlashes({ path }));
   const host = syntaxApi.createCompilerHost(options);
   const { readFile, getSourceFile, fileExists } = host;
@@ -60,18 +55,40 @@ const readTypeErrors = (
       },
     },
   });
-  return mapDiagnosticsToTypeErrors({
-    files,
-    diagnostics: syntaxApi.getPreEmitDiagnostics(program).map((diagnostic) => ({
-      path:
-        diagnostic.file === undefined
-          ? undefined
-          : mapPathToSlashes({ path: diagnostic.file.fileName }),
-      message: syntaxApi.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-    })),
-  });
+  return syntaxApi.getPreEmitDiagnostics(program).map(({ file, messageText }) => ({
+    path: file === undefined ? undefined : mapPathToSlashes({ path: file.fileName }),
+    message: syntaxApi.flattenDiagnosticMessageText(messageText, "\n"),
+  }));
 };
 
-export const createTypeErrorsPort = (source: TypeErrorsSource): TypeErrorsPort => ({
-  read: ({ blocks }) => readTypeErrors({ ...source, blocks }),
+const readTypeErrors = (request: {
+  readonly diagnose: Diagnose;
+  readonly repoRoot: string;
+  readonly blocks: readonly ExampleBlock[];
+}): readonly BlockTypeError[] => {
+  const root = mapPathToSlashes({ path: request.repoRoot });
+  const files = request.blocks.map((block, index) => ({
+    block,
+    path: `${root}/recipe-example-${index}.test.ts`,
+  }));
+  const diagnostics = request.diagnose({
+    files: files.map(({ block, path }) => ({ path, text: createBlockText(block) })),
+  });
+  return mapDiagnosticsToTypeErrors({ files, diagnostics });
+};
+
+export const createTypeErrorsPort = (options: {
+  readonly diagnose: Diagnose;
+  readonly repoRoot: string;
+}): TypeErrorsPort => ({
+  read: ({ blocks }) => readTypeErrors({ ...options, blocks }),
 });
+
+export const createDefaultTypeErrorsPort = (options: {
+  readonly syntaxApi: SyntaxApi;
+  readonly repoRoot: string;
+}): TypeErrorsPort =>
+  createTypeErrorsPort({
+    diagnose: ({ files }) => readDiagnostics({ syntaxApi: options.syntaxApi, files }),
+    repoRoot: options.repoRoot,
+  });

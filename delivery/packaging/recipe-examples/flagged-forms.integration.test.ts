@@ -8,9 +8,9 @@ import {
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import { readCheckBindings } from "./check-bindings.ts";
-import { createFlaggedFormsPort } from "./flagged-forms.ts";
+import { createDefaultFlaggedFormsPort } from "./flagged-forms.ts";
 
-describe("createFlaggedFormsPort, over the real walker", () => {
+describe("createDefaultFlaggedFormsPort, over the real walker", () => {
   it("names the forms the check's newest edition flags in a block, and no other check's", async () => {
     const fileText = createDefaultFileTextPort({});
     const path = createDefaultPathPort({});
@@ -35,7 +35,7 @@ describe("createFlaggedFormsPort, over the real walker", () => {
       path,
     });
     assert(bindings.outcome === "ok", "the pieces of the checks read");
-    const flaggedForms = createFlaggedFormsPort({
+    const flaggedForms = createDefaultFlaggedFormsPort({
       parse: parse.value,
       repoRoot,
       fileText,
