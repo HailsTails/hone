@@ -2,6 +2,40 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.0.0-pre.5
+
+### Breaking changes
+
+- an authorised location binds what its symptom declares, and boundary records go (#477)
+- hone upgrade runs the record tools and ends in a passing check (#478)
+- hone upgrade carries no names from 2.0 prereleases (#483)
+- findings reach recipe examples through symptom, case and rule (#484)
+
+### Features
+
+- an engines stage measures in a child process, so a rewritten config takes effect (#464)
+- a local speed baseline compares hone check CPU time against a pinned revision (#454)
+
+### Fixes
+
+- self-check fails on findings and unrecorded native exceptions (#445)
+- a moved file keeps its debt, and records follow renames (#447)
+- type-declared-in-a-test spares a row typed only by imported types (#450)
+- the child measurement replies on its own pipe, so adopter output can't break it (#476)
+
+### Other changes
+
+- Hone's record tools run without asking (#442)
+- record the applied agent definitions (#443)
+- the upgrade proof decides its effects as data (#448)
+- AGENTS.md holds the naming, test-layout and rules-over-checks rulings (#456)
+- freeze the version 2 names (#449)
+- the package plan finds every process entry by one convention (#463)
+- leave Hone's own debt forfeiture to another run until 2.0 ships (#468)
+- the ESLint integration tests prove only what real ESLint adds (#470)
+- Hone's own check prints only what needs action (#471)
+- records and checks refer to symptoms by address (#472)
+
 ## 2.0.0-pre.4
 
 ### Breaking changes
