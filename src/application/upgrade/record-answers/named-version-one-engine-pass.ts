@@ -55,7 +55,6 @@ const settingsFor = (
   const mapped = mappedSettings({
     selection: request.selection,
     clauseChecks: createClauseChecks({ catalogues: request.catalogues }),
-    notAdoptedClauses: [],
   });
   if (mapped.outcome === "failed") {
     return refused(

@@ -36,7 +36,6 @@ describe("mapSelectionToVersionTwo", () => {
         checkEditions: "pinned",
       },
       clauseChecks: new Map([["CD-19#import-boundaries", [importOrRequire]]]),
-      notAdoptedClauses: [],
     });
 
     expect(mapped).toEqual({
@@ -97,7 +96,6 @@ describe("mapSelectionToVersionTwo", () => {
         checkEditions: "pinned",
       },
       clauseChecks: new Map(),
-      notAdoptedClauses: [],
     });
 
     expect(mapped).toEqual({

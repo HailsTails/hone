@@ -6,7 +6,6 @@ import { createRuleContent } from "../../../domain/language-layer/rule-content.t
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 import {
   type AuthorisationContent,
-  clausesCarriedAsNotAdopted,
   mappedRecords,
   type RecordLine,
   type MappedRecords,
@@ -71,7 +70,6 @@ const mapInputsToVersionTwo = (request: {
   const selection = mapSelectionToVersionTwo({
     selection: request.selection,
     clauseChecks: request.clauseChecks,
-    notAdoptedClauses: clausesCarriedAsNotAdopted({ inputs: request.inputs }),
   });
   const confined = readConfinedPackages({ selection: request.selection });
   const records = mappedRecords({

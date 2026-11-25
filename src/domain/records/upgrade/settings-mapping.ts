@@ -25,7 +25,6 @@ import type { UpgradeDrop, UpgradeRefusal } from "./upgrade-refusal.ts";
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
   readonly clauseChecks: ClauseChecks;
-  readonly notAdoptedClauses: readonly ClauseAddress[];
 };
 
 export type MappedSettings = {
@@ -79,19 +78,6 @@ const listedAddressOf = (request: {
   ruleSet: request.clause.ruleSet,
   check: checkAddressOf({ check: request.check }),
 });
-
-const NOT_ADOPTED_CHOICE: ClauseChoice = { state: "not-adopted" };
-
-const choiceCarriedOver = (request: {
-  readonly clause: ClauseAddress;
-  readonly choice: ClauseChoice;
-  readonly notAdoptedClauses: readonly ClauseAddress[];
-}): ClauseChoice =>
-  request.notAdoptedClauses.some(
-    (notAdopted) => sameClauseAddress({ left: notAdopted, right: request.clause }) === "same",
-  )
-    ? NOT_ADOPTED_CHOICE
-    : request.choice;
 
 const listingOf = (request: {
   readonly clauseChecks: ClauseChecks;
@@ -161,7 +147,7 @@ export const mappedSettings = (
     listingOf({
       clauseChecks: request.clauseChecks,
       clause,
-      choice: choiceCarriedOver({ clause, choice, notAdoptedClauses: request.notAdoptedClauses }),
+      choice,
     }),
   );
   const refusals = listings.flatMap((listing) => listing.refusals);

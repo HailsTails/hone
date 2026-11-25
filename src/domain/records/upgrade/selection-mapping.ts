@@ -23,7 +23,6 @@ const isPackageList = (given: ReadonlyJsonValue | undefined): given is readonly 
 export const mapSelectionToVersionTwo = (request: {
   readonly selection: ConsumerSelectionFile;
   readonly clauseChecks: ClauseChecks;
-  readonly notAdoptedClauses: readonly ClauseAddress[];
 }): Result<SettingsFile, readonly UpgradeRefusal[]> => {
   const mapped = mappedSettings(request);
   return mapped.outcome === "failed" ? mapped : { outcome: "ok", value: mapped.value.settings };
