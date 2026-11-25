@@ -205,6 +205,7 @@ const ROOT_PROJECTION: VersionOneProjection = {
 };
 
 const FOUND_PROJECTIONS: VersionOneProjectionsReading = {
+  written: [],
   removed: [],
   outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
 };
@@ -485,6 +486,7 @@ const ROOT_PROJECTION_FILES: Awaited<ReturnType<ProjectionFilesOf>> = {
 };
 
 const SLICE_REMOVED: VersionOneProjectionsReading = {
+  written: [],
   removed: [ORPHAN],
   outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
 };
@@ -579,6 +581,8 @@ const ROLLING_BACK = {
     { kind: "directory-created", path: RECORDS_FOLDER },
   ],
 };
+
+const CREATED_SLICE = absoluteRootOf("/repo/packages/a/disciplines.eslint.mjs");
 
 const NOTHING_TO_RESTORE = { writes: [] };
 
@@ -872,6 +876,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "oracle-failed",
         failure: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
+        removedByVersionOne: [],
       },
       versionOneRuns: [],
     },
@@ -889,16 +894,25 @@ describe("upgradeProof", () => {
           clause: "CD-15#loops",
           file: repoPathOf("src/a.ts"),
         },
+        removedByVersionOne: [],
       },
       versionOneRuns: [],
     },
   ] as const)(
-    "refuses, before reading the projections or writing anything, $name",
+    "refuses, writing nothing more and undoing what version 1's own project rewrote and created, $name",
     async ({ answered, before, error, versionOneRuns }) => {
       const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce(NOTHING_PATCHED);
       const versionOne = vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(before);
       const versionTwo = vi.fn<ProofRuns["versionTwo"]>();
-      const versionOneProjectionsOf = vi.fn<VersionOneProjectionsOf>();
+      const undo = vi.fn<ProofEffects["undo"]>().mockReturnValue([]);
+      const answer = vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered);
+      const versionOneProjectionsOf = vi.fn<VersionOneProjectionsOf>().mockResolvedValue({
+        ...FOUND_PROJECTIONS,
+        written: [
+          { kind: "file-replaced", path: VERSION_ONE_PROJECTION, original: "drifted" },
+          { kind: "file-created", path: CREATED_SLICE },
+        ],
+      });
 
       const proven = await upgradeProof({
         ...VERSION_ONE_REPOSITORY,
@@ -910,8 +924,8 @@ describe("upgradeProof", () => {
           entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
           path: recordsFolderPath(),
         },
-        effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
-        oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered) },
+        effects: { apply, undo },
+        oracle: { answer },
         runs: { versionOne, versionTwo },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
         versionOneProjectionsOf,
@@ -921,13 +935,25 @@ describe("upgradeProof", () => {
         proven,
         versionOneRuns: versionOne.mock.calls,
         versionTwoRuns: versionTwo.mock.calls,
-        projectionsRead: versionOneProjectionsOf.mock.calls,
+        projectedBeforeMeasuring:
+          versionOneProjectionsOf.mock.invocationCallOrder[0] < answer.mock.invocationCallOrder[0],
+        undone: undo.mock.calls,
         applied: apply.mock.calls,
       }).toEqual({
         proven: { outcome: "failed", error },
         versionOneRuns,
         versionTwoRuns: [],
-        projectionsRead: [],
+        projectedBeforeMeasuring: true,
+        undone: [
+          [
+            {
+              writes: [
+                { kind: "file-created", path: CREATED_SLICE },
+                { kind: "file-replaced", path: VERSION_ONE_PROJECTION, original: "drifted" },
+              ],
+            },
+          ],
+        ],
         applied: [[PATCHING_NOTHING]],
       });
     },
@@ -1554,6 +1580,7 @@ describe("upgradeProof", () => {
     {
       name: "the team config is refused and version 1 changed nothing",
       reading: {
+        written: [],
         removed: [],
         outcome: {
           outcome: "failed",
@@ -1569,6 +1596,7 @@ describe("upgradeProof", () => {
     {
       name: "the team config is refused after version 1 removed a slice",
       reading: {
+        written: [],
         removed: [ORPHAN],
         outcome: {
           outcome: "failed",
@@ -1584,6 +1612,7 @@ describe("upgradeProof", () => {
     {
       name: "version 1 left a slice in place",
       reading: {
+        written: [],
         removed: [ORPHAN],
         outcome: {
           outcome: "failed",
@@ -1602,25 +1631,11 @@ describe("upgradeProof", () => {
     {
       name: "version 1's project fails",
       reading: {
+        written: [],
         removed: [],
         outcome: { outcome: "failed", error: { kind: "project-failed", detail: "disk full" } },
       },
       error: { kind: "version-one-project-failed", detail: "disk full", removedByVersionOne: [] },
-    },
-    {
-      name: "version 1's project rewrote a file",
-      reading: {
-        removed: [ORPHAN],
-        outcome: {
-          outcome: "failed",
-          error: { kind: "project-rewrote", files: [repoPathOf("disciplines.eslint.mjs")] },
-        },
-      },
-      error: {
-        kind: "version-one-project-rewrote",
-        files: ["disciplines.eslint.mjs"],
-        removedByVersionOne: ["old/disciplines.eslint.mjs"],
-      },
     },
   ] as const)(
     "refuses, writing nothing and naming any slice version 1 removed, when $name",

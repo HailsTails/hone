@@ -3,7 +3,9 @@ import type { UpgradeCarriedOver } from "../../../application/ports/upgrade/upgr
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { RULE_SET_NAMES_SEGMENTS } from "../../../domain/rule-set/version-one-names-location.ts";
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
 import { debtOutcomeLine, prunedDebtLine } from "../records/record-command-lines.ts";
 import { recordSubjectText } from "../records/record-lines.ts";
@@ -66,6 +68,16 @@ const mapSmoothedToLines = (request: {
   ];
 };
 
+const NAMES_FILE_END = `/${RULE_SET_NAMES_SEGMENTS.join("/")}`;
+
+const createNamesLines = (request: { readonly written: readonly RepoPath[] }): readonly string[] =>
+  request.written
+    .filter((file) => `/${file}`.endsWith(NAMES_FILE_END))
+    .map(
+      (file) =>
+        `keep ${file} until your main branch is on version 2, then you can delete it: until then the check judges carried records by it`,
+    );
+
 export const upgradeSuccessOutcomeOf = (request: {
   readonly carried: UpgradeCarriedOver;
   readonly repoRoot: AbsolutePath;
@@ -84,6 +96,7 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...carriedLinesOf({ records: carried.records }),
       ...carried.mentions.map(({ file, line }) => `mention ${file}:${line}`),
       ...carried.unread.map(({ file, detail }) => `mention-unread ${file} ${detail}`),
+      ...createNamesLines({ written: carried.written }),
       ...mapSmoothedToLines({ carried }),
     ]
       .map((line) => `${line}\n`)

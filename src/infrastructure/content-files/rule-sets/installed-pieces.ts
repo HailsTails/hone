@@ -8,7 +8,7 @@ import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { clauseAddressText, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import {
@@ -40,7 +40,11 @@ export const installedNamesPathOf = (request: Omit<InstallFiles, "fileText">): s
 export const readInstalledNames = (
   request: InstallFiles,
 ): Result<VersionOneNames, VersionTwoLoadFailure> =>
-  readVersionOneNames({ fileText: request.fileText, path: installedNamesPathOf(request) });
+  readVersionOneNames({
+    fileText: request.fileText,
+    path: installedNamesPathOf(request),
+    ruleSet: TOOL_RULE_SET,
+  });
 
 const installedPieceOf = (
   request: InstallFiles & CheckNames & { readonly mechanism: EngineId },

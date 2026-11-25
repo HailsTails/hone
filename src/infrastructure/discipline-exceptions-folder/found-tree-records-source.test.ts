@@ -20,6 +20,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { foundTreeRecordsSourceOver } from "./found-tree-records-source.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
@@ -213,6 +214,76 @@ describe("foundTreeRecordsSourceOver", () => {
       askedRecords: [],
       askedEntries: [[{ revision: FOUND_TREE }]],
       askedSelection: [[{ repoRoot, baseRevision: FOUND_TREE, file: "disciplines.json" }]],
+    });
+  });
+
+  it("holds at the base a team's location and carve-out at the check its catalogue names for their clause", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const directConsole: Symptom = { ...LOOP_KEYWORD, ruleSet: acme, name: "direct-console" };
+    const consoleCalls: Check = {
+      name: "console-calls",
+      symptom: directConsole,
+      page: "direct-console/console-calls.md",
+      clause: {
+        ruleSet: acme,
+        discipline: disciplineIdOf("ACME-1"),
+        clause: clauseIdOf("console-calls"),
+      },
+      engines: [WALKER],
+      forms: [],
+      findingSpecifics: [],
+    };
+    const location: StructuralExceptionEntry = {
+      kind: "authorised-location",
+      clause: "acme/ACME-1#console-calls",
+      file: "src/a.ts",
+      reason: "the one place",
+    };
+    const carveOut: StructuralExceptionEntry = {
+      kind: "file-carve-out",
+      clause: "acme/ACME-1#console-calls",
+      file: "src/b.ts",
+    };
+    const source = foundTreeRecordsSourceOver({
+      source: sourceReading(),
+      exceptions: {
+        readAt: vi
+          .fn<FoundTreeExceptions["readAt"]>()
+          .mockReturnValue({ outcome: "ok", value: [location, carveOut] }),
+      },
+      git: {
+        textInBase: vi
+          .fn<GitPort["textInBase"]>()
+          .mockReturnValue({ outcome: "ok", value: { presence: "absent-from-base" } }),
+      },
+      repoRoot: absoluteRootOf("/repo"),
+      catalogue: { ...SETTINGS_CATALOGUE, symptoms: [directConsole], checks: [consoleCalls] },
+    });
+
+    const atBase = source.readAt({ revision: FOUND_TREE });
+
+    expect(atBase).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: "hone-records/acme/authorised-locations/direct-console.json",
+          document: {
+            version: 2,
+            records: [
+              { answers: "direct-console#console-calls", file: "src/a.ts", carried: location },
+            ],
+          },
+        },
+        {
+          file: "hone-records/acme/debt/direct-console.json",
+          document: {
+            version: 2,
+            records: [
+              { answers: "direct-console#console-calls", file: "src/b.ts", carried: carveOut },
+            ],
+          },
+        },
+      ],
     });
   });
 

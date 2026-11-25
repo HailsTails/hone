@@ -60,7 +60,8 @@ describe("checkUnderTestOf", () => {
     });
   });
 
-  it("uses the piece's default edition and preserves an explicit example edition", () => {
+  it("returns a check's binding with its examples", () => {
+    const firstEdition = editionOf("1");
     const examples: NamedCheckExamplesRepository = {
       read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
         outcome: "ok",
@@ -72,11 +73,7 @@ describe("checkUnderTestOf", () => {
             settings: {},
             forms: {},
             declarations: {},
-            editions: {
-              declared: [editionOf("1"), editionOf("2")],
-              default: editionOf("1"),
-              latest: editionOf("2"),
-            },
+            editions: { declared: [firstEdition], default: firstEdition, latest: firstEdition },
           },
           examples: [
             {
@@ -85,41 +82,42 @@ describe("checkUnderTestOf", () => {
               source: "const first = 1;",
               expectedLines: [],
             },
-            {
-              name: "second edition",
-              fileName: repoPathOf("src/second.ts"),
-              source: "const second = 2;",
-              expectedLines: [1],
-              edition: editionOf("2"),
-            },
           ],
         },
       }),
     };
-    expect(
-      checkUnderTestOf({
-        ruleSet: "hone",
-        check: "example#sample",
-        engine: "walker",
-        installRoot: absoluteRootOf("/install"),
-        path: { resolve: vi.fn() },
-        examples,
-        loadFailureDetail: vi.fn<LoadFailureDetail>(),
-      }),
-    ).toEqual({
+
+    const request = {
+      ruleSet: "hone",
+      check: "example#sample",
+      engine: "walker",
+      installRoot: absoluteRootOf("/install"),
+      path: { resolve: vi.fn() },
+      examples,
+      loadFailureDetail: vi.fn<LoadFailureDetail>(),
+    } as const;
+
+    const checked = checkUnderTestOf(request);
+
+    expect(checked).toEqual({
       outcome: "ok",
       value: {
         ruleSet: "hone",
         check: "example#sample",
         engine: "walker",
+        binding: {
+          address: "example#sample",
+          ruleSet: "hone",
+          engine: "walker",
+          anchor: { kind: "file" },
+          pieceRoot: "/install/piece",
+          settings: {},
+          forms: {},
+          checkSettings: {},
+          edition: "1",
+        },
         examples: [
           { name: "first edition", file: "src/first.ts", source: "const first = 1;", edition: "1" },
-          {
-            name: "second edition",
-            file: "src/second.ts",
-            source: "const second = 2;",
-            edition: "2",
-          },
         ],
       },
     });
@@ -251,6 +249,66 @@ describe("checkUnderTestOf on a team's rule set", () => {
         kind: "rule-set-invalid",
         detail:
           "the root tools/acme of rule set acme does not resolve, because the working directory cannot be used",
+      },
+    });
+  });
+});
+
+describe("checkUnderTestOf binding", () => {
+  it("carries a team rule set's identity into the binding", () => {
+    const one = editionOf("1");
+    const examples: NamedCheckExamplesRepository = {
+      read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
+        outcome: "ok",
+        value: {
+          piece: {
+            anchor: { kind: "file" },
+            pieceRoot: "/install/piece",
+            exceptions: "allowed",
+            settings: {},
+            forms: {},
+            declarations: {},
+            editions: { declared: [one], default: one, latest: one },
+          },
+          examples: [],
+        },
+      }),
+    };
+
+    const request = {
+      ruleSet: { name: "acme", root: "tools/acme" },
+      check: "scratch-file#scratch-files",
+      engine: "walker",
+      installRoot: absoluteRootOf("/install"),
+      path: {
+        resolve: vi
+          .fn<PathPort["resolve"]>()
+          .mockReturnValueOnce({ outcome: "ok", value: absoluteRootOf("/repo/tools/acme") }),
+      },
+      examples,
+      loadFailureDetail: vi.fn<LoadFailureDetail>(),
+    } as const;
+
+    const checked = checkUnderTestOf(request);
+
+    expect(checked).toEqual({
+      outcome: "ok",
+      value: {
+        ruleSet: { name: "acme", root: "tools/acme" },
+        check: "scratch-file#scratch-files",
+        engine: "walker",
+        binding: {
+          address: "scratch-file#scratch-files",
+          ruleSet: { name: "acme" },
+          engine: "walker",
+          anchor: { kind: "file" },
+          pieceRoot: "/install/piece",
+          settings: {},
+          forms: {},
+          checkSettings: {},
+          edition: "1",
+        },
+        examples: [],
       },
     });
   });

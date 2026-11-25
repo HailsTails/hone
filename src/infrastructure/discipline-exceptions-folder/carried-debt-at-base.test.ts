@@ -1,40 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  Principle,
-  RecordKind,
-  Symptom,
-  SymptomCatalogue,
-  AuthorisedLocationKind,
-  UnboundRecordKind,
-} from "../../domain/language-layer/symptom-catalogue.ts";
+import type { ClauseChecks } from "../../domain/language-layer/clause-checks.ts";
+import type { Check, Engine, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
-
-const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
-
-const DEBT: UnboundRecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-
-const AUTHORISED_LOCATION: AuthorisedLocationKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
 
 const WALKER: Engine = { name: "walker" };
 
@@ -63,12 +38,6 @@ const TEST_BODY_CLAUSE: ClauseAddress = {
   ruleSet: TOOL_RULE_SET,
   discipline: disciplineIdOf("CD-27"),
   clause: clauseIdOf("test-body-logic"),
-};
-
-const LAYERING_CLAUSE: ClauseAddress = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-13"),
-  clause: clauseIdOf("layering"),
 };
 
 const LOOP_KEYWORD_LOOPS: Check = {
@@ -101,35 +70,10 @@ const REBINDING_TEST_BODY: Check = {
   findingSpecifics: [],
 };
 
-const SETTINGS_CATALOGUE: SymptomCatalogue = {
-  principles: [NO_HIDDEN_EFFECTS],
-  rules: [],
-  cases: [],
-  recipes: [],
-  recordKinds: [AUTHORISED_LOCATION, DEBT],
-  engines: [WALKER, ESLINT],
-  symptoms: [LOOP_KEYWORD, REBINDING],
-  clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
-    {
-      clause: TEST_BODY_CLAUSE,
-      sight: {
-        kind: "symptom-by-form",
-        forms: [
-          { form: "a-for-loop", symptom: LOOP_KEYWORD },
-          { form: "a-let", symptom: REBINDING },
-        ],
-      },
-    },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
-  ],
-  checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
-  namedBans: [],
-};
-
-const CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE },
-];
+const CLAUSE_CHECKS: ClauseChecks = new Map([
+  ["CD-15#loops", [LOOP_KEYWORD_LOOPS]],
+  ["CD-27#test-body-logic", [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY]],
+]);
 
 const LOOP_KEYWORD_DEBT = repoPathOf("hone-records/debt/loop-keyword.json");
 
@@ -146,7 +90,7 @@ const CARVE_OUT: VersionOneEntry = {
 const TEST_BODY_CARVE_OUT: VersionOneEntry = { ...CARVE_OUT, clause: "CD-27#test-body-logic" };
 
 const documentsAtBase = (request: { readonly entries: readonly VersionOneEntry[] }) =>
-  carriedDebtDocumentsAtBaseOf({ entries: request.entries, catalogues: CATALOGUES });
+  carriedDebtDocumentsAtBaseOf({ entries: request.entries, clauseChecks: CLAUSE_CHECKS });
 
 describe("carriedDebtDocumentsAtBaseOf writing the debt the base's file carve-outs would have been carried as", () => {
   it("writes the debt at the one check of the clause, in that symptom's debt file, carrying the entry word for word", () => {
@@ -205,17 +149,11 @@ describe("carriedDebtDocumentsAtBaseOf writing the debt the base's file carve-ou
     const clause: ClauseAddress = { ...LOOPS_CLAUSE, ruleSet: acme };
     const symptom: Symptom = { ...LOOP_KEYWORD, ruleSet: acme };
     const check: Check = { ...LOOP_KEYWORD_LOOPS, symptom, clause };
-    const catalogue: SymptomCatalogue = {
-      ...SETTINGS_CATALOGUE,
-      symptoms: [symptom],
-      clauses: [{ clause, sight: { kind: "one-symptom", symptom } }],
-      checks: [check],
-    };
     const entry: VersionOneEntry = { ...CARVE_OUT, clause: "acme/CD-15#loops" };
     expect(
       carriedDebtDocumentsAtBaseOf({
         entries: [entry],
-        catalogues: [{ ruleSet: acme, catalogue }],
+        clauseChecks: new Map([["acme/CD-15#loops", [check]]]),
       }),
     ).toEqual([
       {

@@ -44,10 +44,11 @@ describe("upgradeFailureOutcomeOf", () => {
           kind: "version-one-run-failed",
           detail: "eslint not run: its projection is missing",
         },
+        removedByVersionOne: [],
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 1's own run could not be made (eslint not run: its projection is missing). Run hone check and fix its load failure first.\nNothing was changed.\n",
+        text: "upgrade refused:\nversion 1's own run could not be made (eslint not run: its projection is missing). Fix what it names, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -59,6 +60,7 @@ describe("upgradeFailureOutcomeOf", () => {
           clause: "CD-14#class-syntax",
           file: repoPathOf("src/a.ts"),
         },
+        removedByVersionOne: [],
       },
       outcome: {
         code: 1,
@@ -116,7 +118,7 @@ describe("upgradeFailureOutcomeOf", () => {
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 2 would project packages/a/hone.eslint.mjs, but version 1 has no projection in packages/a. With your version 1 release, run hone project and import what it writes in the lint config of packages/a, commit, then run the upgrade again.\nNothing was changed.\n",
+        text: "upgrade refused:\nversion 2 would project packages/a/hone.eslint.mjs, but version 1 projects nothing in packages/a: it leaves out a folder that holds its own disciplines.json. Remove that disciplines.json and spread ./disciplines.eslint.mjs last in the ESLint config of packages/a, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -135,7 +137,7 @@ describe("upgradeFailureOutcomeOf", () => {
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 2 would project hone.eslint.mjs, but version 1 has no projection in the repository root. With your version 1 release, run hone project and import what it writes in the lint config of the repository root, commit, then run the upgrade again.\nNothing was changed.\n",
+        text: "upgrade refused:\nversion 2 would project hone.eslint.mjs, but version 1 projects nothing in the repository root: it leaves out a folder that holds its own disciplines.json. Remove that disciplines.json and spread ./disciplines.eslint.mjs last in the ESLint config of the repository root, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -175,33 +177,35 @@ describe("upgradeFailureOutcomeOf", () => {
       },
     },
     {
-      name: "a version 1 projection is out of date",
-      failure: {
-        kind: "oracle-failed",
-        failure: {
-          kind: "projection-not-current",
-          file: repoPathOf("packages/a/disciplines.eslint.mjs"),
-          state: "out-of-date",
-        },
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is out-of-date. Run hone project with your version 1 release, commit what it writes, then run the upgrade again.\nNothing was changed.\n",
-      },
-    },
-    {
-      name: "the root projection is missing",
+      name: "the root projection is in no config",
       failure: {
         kind: "oracle-failed",
         failure: {
           kind: "projection-not-current",
           file: repoPathOf("disciplines.eslint.mjs"),
-          state: "missing",
+          state: "not-included",
         },
+        removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nthe version 1 projection disciplines.eslint.mjs is missing. Run hone project with your version 1 release, commit what it writes, then run the upgrade again.\nNothing was changed.\n",
+        text: "upgrade refused:\nthe version 1 projection disciplines.eslint.mjs is not-included. Spread its default export last in the ESLint config that loads for the repository root, then run the upgrade again.\nversion 1's own project removed these files, and the upgrade does not put them back; restore them from version control:\n  /repo/old/disciplines.eslint.mjs\n",
+      },
+    },
+    {
+      name: "a version 1 slice has no config in its folder",
+      failure: {
+        kind: "oracle-failed",
+        failure: {
+          kind: "projection-not-current",
+          file: repoPathOf("packages/a/disciplines.eslint.mjs"),
+          state: "unconfigured",
+        },
+        removedByVersionOne: [],
+      },
+      outcome: {
+        code: 1,
+        text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is unconfigured. Spread its default export last in the ESLint config that loads for packages/a, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -213,10 +217,11 @@ describe("upgradeFailureOutcomeOf", () => {
           file: repoPathOf("packages/a/disciplines.eslint.mjs"),
           state: "not-applied",
         },
+        removedByVersionOne: [],
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is not-applied. Run hone check with your version 1 release, fix what it reports, then run the upgrade again.\nNothing was changed.\n",
+        text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is not-applied. Spread its default export last in the ESLint config that loads for packages/a, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -310,22 +315,7 @@ Nothing was changed.
       failure: { kind: "version-one-project-failed", detail: "disk full", removedByVersionOne: [] },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 1's own project failed (disk full). Run hone project with your version 1 release, fix what it reports, then run the upgrade again.\nversion 1's own project may have changed files before it failed; check version control for what it changed.\n",
-      },
-    },
-    {
-      name: "version 1's own project rewrote projections and removed a slice",
-      failure: {
-        kind: "version-one-project-rewrote",
-        files: [
-          repoPathOf("disciplines.eslint.mjs"),
-          repoPathOf("packages/a/disciplines.eslint.mjs"),
-        ],
-        removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
-      },
-      outcome: {
-        code: 1,
-        text: "upgrade refused:\nversion 1's own project rewrote disciplines.eslint.mjs, packages/a/disciplines.eslint.mjs, which the upgrade had already measured. Commit what it wrote, then run the upgrade again.\nversion 1's own project removed these files, and the upgrade does not put them back; restore them from version control:\n  /repo/old/disciplines.eslint.mjs\n",
+        text: "upgrade refused:\nversion 1's own project failed (disk full). Fix what it names, then run the upgrade again.\nversion 1's own project may have changed files before it failed; check version control for what it changed.\n",
       },
     },
     {
@@ -360,7 +350,7 @@ Nothing was changed.
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nversion 1's run failed (disciplines.json is malformed). Run hone check and fix its load failure first.\nNothing was changed.\n",
+        text: "upgrade refused:\nversion 1's run failed (disciplines.json is malformed). Fix what it names, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {
@@ -702,7 +692,7 @@ Nothing was changed.
       },
     },
     {
-      name: "a moved file imports a file of its folder that is not there",
+      name: "a moved file imports something in its folder that the upgrade does not move",
       failure: {
         kind: "plan-refused",
         refusal: {
@@ -718,7 +708,7 @@ Nothing was changed.
       },
       outcome: {
         code: 1,
-        text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:2 imports a file of acme/mechanisms/audit/ACME-2 that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.\nNothing was changed.\n",
+        text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:2 imports something in acme/mechanisms/audit/ACME-2 that the upgrade does not move: piece.json, which the upgrade replaces, the folder itself, or a file that is not there. So it cannot point the import at where the folder's files move. Fix or remove the import, then run the upgrade again.\nNothing was changed.\n",
       },
     },
     {

@@ -35,14 +35,7 @@ const inspectionResult = z.discriminatedUnion(
   "outcome",
   runnerResultSchema({
     value: z.object({
-      files: z
-        .array(
-          z.object({
-            file: repoPathSchema,
-            state: z.enum(["current", "missing", "out-of-date"]),
-          }),
-        )
-        .readonly(),
+      files: z.array(repoPathSchema).readonly(),
       ruleIds: z.map(z.string(), z.string()),
     }),
   }).options,

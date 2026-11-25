@@ -39,6 +39,7 @@ describe("readBoundCatalogue", () => {
       exists: vi
         .fn<FileTextPort["exists"]>()
         .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present")
         .mockReturnValueOnce("absent")
         .mockReturnValueOnce("absent"),
       read: vi
@@ -116,7 +117,10 @@ describe("readBoundCatalogue", () => {
   it("reports an unreadable catalogue in the team's own rules folder", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
@@ -149,7 +153,10 @@ describe("readBoundCatalogue", () => {
         detail: "EACCES",
       },
     });
-    expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
+    expect(vi.mocked(fileText.exists).mock.calls).toEqual([
+      [{ path: "/repo/team-rules/rules" }],
+      [{ path: "/repo/team-rules/rules/version-one-names.json" }],
+    ]);
     expect(fileText.read).not.toHaveBeenCalled();
   });
 

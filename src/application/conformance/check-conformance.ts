@@ -6,9 +6,7 @@ import type { Result } from "../../domain/result.ts";
 import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { teamRuleSetOf } from "../../domain/rule-set/rule-set-identity.ts";
-import type { CheckBinding } from "../../domain/runner/check-binding.ts";
 import { casesByEdition } from "../../domain/runner/edition-runs.ts";
-import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { NamedConformancePort } from "../ports/engine/engine-port.ts";
 import type { RunnerLocation } from "../ports/engine/runner-location.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
@@ -25,6 +23,8 @@ import type {
   RepoPathOf,
   TeamRuleSetUnderTest,
 } from "./conformance-testing-types.ts";
+import { createCaseUnderTest } from "./create-case-under-test.ts";
+import { createCheckBinding } from "./create-check-binding.ts";
 
 type ExamplesRequest = CheckRequest & {
   readonly installRoot: RunnerLocation["installRoot"];
@@ -106,18 +106,17 @@ export const checkUnderTestOf = (
   }
   const { ruleSet, check, engine } = request;
   const { piece, examples } = read.value;
+  const binding = createCheckBinding({ check, ruleSet: read.value.ruleSet, engine, piece });
   return {
     outcome: "ok",
     value: {
       ruleSet,
       check,
       engine,
-      examples: examples.map((example) => ({
-        name: example.name,
-        file: example.fileName,
-        source: example.source,
-        edition: example.edition ?? piece.editions.default,
-      })),
+      binding,
+      examples: examples.map((example) =>
+        createCaseUnderTest({ example, defaultEdition: binding.edition }),
+      ),
     },
   };
 };
@@ -144,17 +143,7 @@ export const checkConformanceOf = async (
     };
   }
   const { piece, examples, ruleSet } = read.value;
-  const binding: CheckBinding = {
-    address: request.check,
-    ruleSet,
-    engine: mechanism,
-    anchor: piece.anchor,
-    pieceRoot: piece.pieceRoot,
-    settings: piece.settings,
-    forms: piece.forms,
-    checkSettings: defaultClauseSettings({ declarations: piece.declarations }),
-    edition: piece.editions.default,
-  };
+  const binding = createCheckBinding({ check: request.check, ruleSet, engine: mechanism, piece });
   const conformed = gatheredOutcomes({
     outcomes: await Promise.all(
       casesByEdition({ cases: examples, defaultEdition: binding.edition }).map(

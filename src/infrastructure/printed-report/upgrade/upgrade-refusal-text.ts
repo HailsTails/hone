@@ -100,36 +100,25 @@ const unrestoredLinesOf = (
   ];
 };
 
+const folderTextOf = (request: { readonly folder: string }): string =>
+  request.folder === "" ? "the repository root" : request.folder;
+
+const folderOf = (request: { readonly file: RepoPath }): string =>
+  request.file.slice(0, Math.max(request.file.lastIndexOf("/"), 0));
+
 const oracleLineOf = (request: { readonly failure: OracleFailure }): string => {
   const { failure } = request;
   switch (failure.kind) {
     case "version-one-run-failed":
-      return `version 1's own run could not be made (${failure.detail}). Run hone check and fix its load failure first.`;
+      return `version 1's own run could not be made (${failure.detail}). Fix what it names, then run the upgrade again.`;
     case "finding-not-attributable":
       return `a finding of ${failure.clause} in ${failure.file} names no check of version 2. Report it at ${UPGRADE_ISSUES_URL}.`;
     case "record-doubly-held":
       return `${failure.clause} in ${failure.file} is held by both a file carve-out and an authorised location. Remove one of them first, then run the upgrade again.`;
     case "projection-not-current":
-      return `the version 1 projection ${failure.file} is ${failure.state}. ${projectionActionOf({ state: failure.state })}`;
+      return `the version 1 projection ${failure.file} is ${failure.state}. Spread its default export last in the ESLint config that loads for ${folderTextOf({ folder: folderOf({ file: failure.file }) })}, then run the upgrade again.`;
   }
 };
-
-const projectionActionOf = (request: {
-  readonly state: Extract<OracleFailure, { readonly kind: "projection-not-current" }>["state"];
-}): string => {
-  switch (request.state) {
-    case "out-of-date":
-    case "missing":
-      return "Run hone project with your version 1 release, commit what it writes, then run the upgrade again.";
-    case "not-applied":
-    case "not-included":
-    case "unconfigured":
-      return "Run hone check with your version 1 release, fix what it reports, then run the upgrade again.";
-  }
-};
-
-const folderTextOf = (request: { readonly folder: string }): string =>
-  request.folder === "" ? "the repository root" : request.folder;
 
 const specifierOf = (request: { readonly projection: string }): string =>
   `./${request.projection.slice(request.projection.lastIndexOf("/") + 1)}`;
@@ -157,7 +146,7 @@ const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string =>
     case "version-one-projection-unpaired":
       return `the version 1 projection ${refusal.projection} has no version 2 projection to take its place, since version 2 runs no lint config in ${folderTextOf({ folder: refusal.folder })}. Remove it and its import in ${refusal.config}, then run the upgrade again.`;
     case "version-two-projection-unpaired":
-      return `version 2 would project ${refusal.file}, but version 1 has no projection in ${folderTextOf({ folder: refusal.folder })}. With your version 1 release, run hone project and import what it writes in the lint config of ${folderTextOf({ folder: refusal.folder })}, commit, then run the upgrade again.`;
+      return `version 2 would project ${refusal.file}, but version 1 projects nothing in ${folderTextOf({ folder: refusal.folder })}: it leaves out a folder that holds its own disciplines.json. Remove that disciplines.json and spread ./disciplines.eslint.mjs last in the ESLint config of ${folderTextOf({ folder: refusal.folder })}, then run the upgrade again.`;
   }
 };
 
@@ -191,7 +180,7 @@ const pieceFolderSplitLineOf = (request: {
     case "specifier-not-literal":
       return `${split.file}:${split.line} names a module with an expression rather than a string, so the upgrade cannot point it at where the files of ${folder} move. Write the path as a string, then run the upgrade again.`;
     case "target-not-moved":
-      return `${split.file}:${split.line} imports a file of ${folder} that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
+      return `${split.file}:${split.line} imports something in ${folder} that the upgrade does not move: piece.json, which the upgrade replaces, the folder itself, or a file that is not there. So it cannot point the import at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
   }
 };
 
@@ -273,7 +262,7 @@ const readFailureLinesOf = (request: {
   switch (failure.kind) {
     case "version-one-unreadable":
       return [
-        `version 1's files could not be read (${loadFailureDetail({ failure: failure.failure })}). Run hone check and fix its load failure first.`,
+        `version 1's files could not be read (${loadFailureDetail({ failure: failure.failure })}). Fix what it names, then run the upgrade again.`,
       ];
     case "records-refused":
       return failure.refusal.kind === "invalid-records"
@@ -398,7 +387,13 @@ const mapVersionOneRunRefusalToLines = (request: {
   const { failure, placement } = request;
   switch (failure.kind) {
     case "oracle-failed":
-      return { code: 1, lines: [oracleLineOf({ failure: failure.failure }), NOTHING_CHANGED] };
+      return {
+        code: 1,
+        lines: [
+          oracleLineOf({ failure: failure.failure }),
+          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
+        ],
+      };
     case "plan-refused":
       return {
         code: 1,
@@ -411,7 +406,7 @@ const mapVersionOneRunRefusalToLines = (request: {
       return {
         code: 1,
         lines: [
-          `version 1's run failed (${failure.failure.detail}). Run hone check and fix its load failure first.`,
+          `version 1's run failed (${failure.failure.detail}). Fix what it names, then run the upgrade again.`,
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
@@ -436,16 +431,8 @@ const mapVersionOneWriteRefusalToLines = (request: {
       return {
         code: 1,
         lines: [
-          `version 1's own project failed (${failure.detail}). Run hone project with your version 1 release, fix what it reports, then run the upgrade again.`,
+          `version 1's own project failed (${failure.detail}). Fix what it names, then run the upgrade again.`,
           VERSION_ONE_PROJECT_MAY_HAVE_CHANGED,
-        ],
-      };
-    case "version-one-project-rewrote":
-      return {
-        code: 1,
-        lines: [
-          `version 1's own project rewrote ${failure.files.join(", ")}, which the upgrade had already measured. Commit what it wrote, then run the upgrade again.`,
-          ...removedByVersionOneLinesOf({ ...failure, placement }),
         ],
       };
     case "unplaceable-path":

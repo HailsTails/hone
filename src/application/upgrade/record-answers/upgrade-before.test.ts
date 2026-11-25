@@ -1,9 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type {
+  AuthorisedLocationKind,
+  Check,
+  Symptom,
+  SymptomCatalogue,
+  UnboundRecordKind,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
+import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
+import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
 import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
+import type { VersionOneProjectionInspection } from "../../ports/upgrade/version-one-projection-port.ts";
 import { createUpgradeBefore } from "./upgrade-before.ts";
 
 const REPO = absoluteRootOf("/repo");
@@ -21,6 +36,137 @@ const SELECTION: ConsumerSelectionFile = {
   checkEditions: "pinned",
 };
 const ABSENT: LoadFailure = { kind: "selection-absent", repo: REPO };
+
+const CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
+
+const LOOP_KEYWORD: Symptom = {
+  ruleSet: TOOL_RULE_SET,
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "A loop.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const LOOP: Check = {
+  name: "loops",
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/loops.md",
+  clause: CLAUSE,
+  engines: [{ name: "eslint" }],
+  forms: [],
+  findingSpecifics: [],
+};
+
+const DEBT: UnboundRecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
+
+const AUTHORISED: AuthorisedLocationKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [DEBT, AUTHORISED],
+  engines: LOOP.engines,
+  symptoms: [LOOP_KEYWORD],
+  clauses: [{ clause: CLAUSE, sight: { kind: "one-symptom", symptom: LOOP.symptom } }],
+  checks: [LOOP],
+  namedBans: [],
+};
+
+const RUNNER: ParsedNamedRunner = {
+  fileScope: "tracked",
+  projectedKinds: [],
+  run: vi.fn(),
+  conform: vi.fn(),
+  project: vi.fn(),
+};
+
+const FIRST = editionOf("1");
+
+const PIECE = {
+  exceptions: "allowed",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/eslint/loop-keyword/loops",
+  settings: {},
+  declarations: {},
+  forms: {},
+  editions: { declared: [FIRST], default: FIRST, latest: FIRST },
+} as const;
+
+const ESLINT_MEASURED = {
+  report: {
+    mechanism: "eslint",
+    coverableKinds: [],
+    hits: [],
+    measured: [],
+    nativeExceptions: [],
+    projection: "current",
+    slices: [],
+    nestedConfigurations: [],
+    unprojectedFolders: [],
+    misnamedRuleIds: [],
+  },
+  unappliedSlices: [],
+} as const;
+
+const ESLINT_SELECTION: SelectionReading = {
+  selection: {
+    selected: [{ address: CLAUSE, mechanism: "eslint", exceptions: "allowed" }],
+    uncovered: [],
+    notAdopted: [],
+    notRun: [],
+    editions: [],
+  },
+  bindings: [
+    {
+      mechanism: "eslint",
+      clause: {
+        address: CLAUSE,
+        anchor: { kind: "file" },
+        pieceRoot: "/install/eslint/loop-keyword/loops",
+        settings: {},
+        clauseSettings: {},
+        edition: FIRST,
+      },
+    },
+  ],
+  clauseRoots: [],
+  excluded: [],
+  eslintConfigRoots: [],
+  fileExceptionWhyChains: "optional",
+};
+
+const SOURCES = {
+  settingsFile: vi.fn(),
+  ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+  catalogue: vi.fn().mockReturnValue({
+    outcome: "ok",
+    value: { held: "catalogue", catalogue: CATALOGUE },
+  }),
+};
+
+const INSPECTED: VersionOneProjectionInspection = {
+  files: [repoPathOf("disciplines.eslint.mjs"), repoPathOf("packages/a/disciplines.eslint.mjs")],
+  ruleIds: new Map([["CD-15#loops", "hone/no-loops"]]),
+};
 
 const inputsWith = (
   read: SelectionRepository["read"],
@@ -89,5 +235,62 @@ describe("createUpgradeBefore", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({});
     expect(input.check.git.trackedPaths).not.toHaveBeenCalled();
     expect(input.projection.inspect).not.toHaveBeenCalled();
+  });
+
+  it("measures version 1 under every projection file and rule id the inspection names", async () => {
+    const read = vi.fn<SelectionRepository["read"]>().mockReturnValue({
+      outcome: "ok",
+      value: ESLINT_SELECTION,
+    });
+    const input = inputsWith(read);
+    const measureVersionOne = vi
+      .fn<typeof input.measureVersionOne>()
+      .mockResolvedValue({ outcome: "ok", value: ESLINT_MEASURED });
+    const before = createUpgradeBefore({
+      ...input,
+      selection: { ...SELECTION, clauses: [[CLAUSE, { state: "run", mechanism: "eslint" }]] },
+      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE }],
+      check: {
+        ...input.check,
+        git: {
+          ...input.check.git,
+          trackedPaths: vi.fn().mockReturnValue({ outcome: "ok", value: [] }),
+        },
+      },
+      engine: {
+        load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
+        run: vi.fn(),
+        project: vi.fn(),
+      },
+      sources: SOURCES,
+      readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: PIECE }),
+      projection: {
+        inspect: vi
+          .fn<typeof input.projection.inspect>()
+          .mockResolvedValue({ outcome: "ok", value: INSPECTED }),
+        prepare: vi.fn(),
+      },
+      measureVersionOne,
+    });
+
+    const found = await before.enginePass.findingsFor({ records: [] });
+
+    expect(found).toEqual({
+      outcome: "ok",
+      value: {
+        findings: [],
+        runs: [{ mechanism: "eslint", coverableKinds: [], nativeExceptions: [] }],
+      },
+    });
+    expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
+      call: { mechanism: "eslint", runner: RUNNER, request: expect.anything() },
+      location: expect.anything(),
+      projection: {
+        settingsFile: "disciplines.json",
+        projectionFile: "disciplines.eslint.mjs",
+        packageFiles: ["packages/a/disciplines.eslint.mjs"],
+        rules: new Map([["loop-keyword#loops", "hone/no-loops"]]),
+      },
+    });
   });
 });

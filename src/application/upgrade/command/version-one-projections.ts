@@ -6,6 +6,7 @@ import type { ProjectionWrite } from "../../../domain/runner/runner-result-types
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
+import type { ProofWrites } from "../proof-writes/proof-writes.ts";
 import { teamConfigsOf } from "../proof/team-config-finder.ts";
 import {
   type VersionOneProjectionsOf,
@@ -16,6 +17,7 @@ export type VersionOneProject = () => Promise<Result<readonly ProjectionWrite[],
 
 export type VersionOneProjectionsRequest = {
   readonly project: VersionOneProject;
+  readonly writes: () => ProofWrites;
   readonly loadFailureDetail: LoadFailureDetail;
   readonly fileText: FileTextPort;
   readonly path: PathPort;
@@ -27,6 +29,7 @@ export const versionOneProjectionsOfRepository = (
   request: VersionOneProjectionsRequest,
 ): VersionOneProjectionsOf =>
   versionOneProjectionsOver({
+    writes: request.writes,
     project: async () => {
       const projected = await request.project();
       return projected.outcome === "failed"

@@ -3,14 +3,13 @@ import type { RecordsSourceOf } from "../../application/ports/records/records-so
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import { createClauseChecks } from "../../domain/language-layer/clause-checks.ts";
 import { createRuleContent } from "../../domain/language-layer/rule-content.ts";
+import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import {
   createBaseEntryStanding,
   mapStandingsToHeldDocuments,
 } from "../../domain/records/upgrade/base-standing-documents.ts";
 import type { RecordInput } from "../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
@@ -42,7 +41,7 @@ const createLocationInput = (request: { readonly base: BaseEntry }): readonly Re
 export const baseStandingRecordsSource = (request: {
   readonly source: RecordsSource;
   readonly entries: VersionOneEntries;
-  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly catalogue: SymptomCatalogue;
 }): RecordsSource => ({
   read: request.source.read,
   readAt: ({ revision }) => {
@@ -58,10 +57,8 @@ export const baseStandingRecordsSource = (request: {
     if (selection.outcome === "failed") {
       return selection;
     }
-    const clauseChecks = createClauseChecks({ catalogues: request.catalogues });
-    const content = createRuleContent({
-      catalogues: request.catalogues.map(({ catalogue }) => catalogue),
-    });
+    const clauseChecks = createClauseChecks({ catalogues: [{ catalogue: request.catalogue }] });
+    const content = createRuleContent({ catalogues: [request.catalogue] });
     const standings = entries.value
       .flatMap((each) => createLocationInput({ base: each }))
       .map((input) =>
@@ -75,7 +72,7 @@ export const baseStandingRecordsSource = (request: {
       })),
       ...carriedDebtDocumentsAtBaseOf({
         entries: entries.value.map(({ carried }) => carried),
-        catalogues: request.catalogues,
+        clauseChecks,
       }),
     ].filter(({ file }) => !heldAtBase.has(file));
     return { outcome: "ok", value: [...base.value, ...absentAtBase] };
@@ -97,5 +94,5 @@ export const versionOneAwareRecordsSourceOf =
         git: folder.git,
         repoRoot: folder.repoRoot,
       }),
-      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: folder.catalogue }],
+      catalogue: folder.catalogue,
     });

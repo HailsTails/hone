@@ -6,6 +6,8 @@ import {
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { isRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { RULE_SET_NAMES_SEGMENTS } from "../../../domain/rule-set/version-one-names-location.ts";
 import type { RuleSetLocation } from "../../../domain/settings/selection/selection-file.ts";
 import type { PlanRefusal, TeamNameMissing } from "../../ports/upgrade/plan-refusal.ts";
 import type {
@@ -57,6 +59,8 @@ const ITEM_EXTENSION = ".md";
 const SUMMARY_SEPARATOR = "; ";
 
 const PIECE_VERSION = 2;
+
+const NAMES_VERSION = 1;
 
 const JSON_INDENT = 2;
 
@@ -202,6 +206,20 @@ const checkTextsOf = (request: LayoutTexts): readonly PlannedText[] =>
     text: request.itemTextOf({ title, facts: {} }),
   }));
 
+const createNamesText = (request: { readonly clauses: readonly NamedClause[] }): PlannedText => ({
+  segments: RULE_SET_NAMES_SEGMENTS,
+  text: documentTextOf({
+    version: NAMES_VERSION,
+    clauses: request.clauses.map(({ clause, check, anchor }) => ({
+      clause: clauseAddressText({ address: clause }),
+      sight: { kind: "one-symptom", symptom: check.symptom },
+      checks: [checkAddressOfNames(check)],
+      anchor,
+    })),
+    recordKinds: {},
+  }),
+});
+
 const pieceDeclarationOf = (request: {
   readonly clause: NamedClause;
   readonly piece: VersionOnePiece;
@@ -233,6 +251,7 @@ const pieceTextsOf = (request: { readonly clause: NamedClause }): readonly Plann
 const layoutTextsOf = (request: LayoutTexts): readonly PlannedText[] => [
   ...definitionTextsOf(request),
   ...checkTextsOf(request),
+  createNamesText(request),
   ...request.clauses.flatMap((clause) => pieceTextsOf({ clause })),
 ];
 

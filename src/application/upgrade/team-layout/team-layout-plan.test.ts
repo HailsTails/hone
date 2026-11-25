@@ -181,7 +181,7 @@ const MOVED = new Map([
 ]);
 
 describe("teamLayoutPlanOf", () => {
-  it("writes the team's definitions, the symptom seen as its clauses' summaries, a check per clause, and each piece's folder through the import rewriter with its examples, and removes the version 1 files and the folders they leave deepest first", () => {
+  it("writes the team's definitions, the symptom seen as its clauses' summaries, a check per clause, the clauses' version 1 names, and each piece's folder through the import rewriter with its examples, and removes the version 1 files and the folders they leave deepest first", () => {
     expect(planOf([LAYOUT])).toEqual({
       outcome: "ok",
       value: {
@@ -202,6 +202,10 @@ describe("teamLayoutPlanOf", () => {
           {
             file: "acme/rules/typescript/symptoms/direct-console/draft-calls.md",
             text: "Draft calls {}",
+          },
+          {
+            file: "acme/rules/version-one-names.json",
+            text: '{\n  "version": 1,\n  "clauses": [\n    {\n      "clause": "acme/ACME-1#console-calls",\n      "sight": {\n        "kind": "one-symptom",\n        "symptom": "direct-console"\n      },\n      "checks": [\n        "direct-console#console-calls"\n      ],\n      "anchor": {\n        "kind": "keyword",\n        "keyword": "console"\n      }\n    },\n    {\n      "clause": "acme/ACME-1#draft-calls",\n      "sight": {\n        "kind": "one-symptom",\n        "symptom": "direct-console"\n      },\n      "checks": [\n        "direct-console#draft-calls"\n      ],\n      "anchor": {\n        "kind": "file"\n      }\n    }\n  ],\n  "recordKinds": {}\n}\n',
           },
           {
             file: "acme/engines/eslint/direct-console/console-calls/piece.json",
@@ -254,6 +258,10 @@ describe("teamLayoutPlanOf", () => {
           { file: "rules/principles/repository-ready.md", text: "Repository ready {}" },
           { file: "rules/cases/changes-a-repository.md" },
           { file: "rules/typescript/symptoms/direct-console.md" },
+          {
+            file: "rules/version-one-names.json",
+            text: '{\n  "version": 1,\n  "clauses": [],\n  "recordKinds": {}\n}\n',
+          },
         ],
       },
     });

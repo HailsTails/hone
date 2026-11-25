@@ -46,7 +46,6 @@ import {
   packageSliceProblemsOf,
   type ProjectionClause,
   type SliceOrigin,
-  slicedProjectionCurrency,
   slicedProjectionWrites,
   sliceTextOf,
 } from "../config-roots/sliced-projection.ts";
@@ -1002,12 +1001,10 @@ export const versionOneProjectionOver = (platform: {
     inspect: async (request) => {
       const plan = projectionPlanOf({ request, ports });
       if (plan.outcome === "failed") return plan;
-      const files = slicedProjectionCurrency(plan.value);
-      if (files.outcome === "failed") return files;
       return {
         outcome: "ok",
         value: {
-          files: files.value,
+          files: plan.value.roots.map((root) => slicePathOf({ root })),
           ruleIds: new Map(
             plan.value.clauses.map(({ address, ruleId }) => [
               clauseAddressText({ address }),
