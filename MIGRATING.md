@@ -433,6 +433,8 @@ Anything of yours that names a file version 1 kept needs the version 2 name: scr
 | `discipline-exceptions.json`, `discipline-exceptions/` | `hone-records/` |
 | `disciplines.eslint.mjs` | `hone.eslint.mjs`, and beside it `hone.eslint.d.mts`, which version 1 had no file for |
 
+Files inside the package moved as well, so a script that runs one by its path, such as `node_modules/@hailstails/hone/core/check/tool-command.js`, no longer finds it. Call `hone`, or your own `hone:check` script, instead.
+
 ### ESLint slices and declared roots
 
 A repository with package slices, one `disciplines.eslint.mjs` in each package folder that has its own ESLint config, gets one `hone.eslint.mjs` in each of the same folders. Every config that imported a version 1 projection now imports the one in its own folder, and a config that imported several has each import renamed. `eslintConfigRoots` and `eslintConfigLookup` move into `hone.config.json` as they are.
