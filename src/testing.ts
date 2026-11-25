@@ -19,6 +19,8 @@ import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/mod
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
 import { loadFailureDetail } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
 
+export type { CheckBinding } from "./domain/runner/check-binding.ts";
+
 export type {
   CaseUnderTest,
   CheckRequest,
