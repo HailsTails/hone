@@ -434,30 +434,57 @@ describe("findingLine", () => {
     );
   });
 
-  it("names after the fix each recipe example that answers the form, a team's by its own file", () => {
-    const acme = { name: ruleSetNameOf("acme") };
-    const answer = {
-      check: {
-        name: "test-body",
-        symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-      },
-      form: "branching-with-if",
-    };
-    const catalogue: SymptomCatalogue = {
-      ...REPORT_CATALOGUE,
-      recipes: [
-        WORLD_VALUES_THROUGH_A_PORT,
-        { ...ASSERT_TO_NARROW, examples: [{ anchor: "an-if", answers: [answer] }] },
+  it("names after a Hone finding's fix each Hone example of its form, and no other form's", () => {
+    const narrowing: Recipe = {
+      ...ASSERT_TO_NARROW,
+      examples: [
         {
-          ...IT_EACH_OVER_TYPED_ROWS,
-          ruleSet: acme,
-          sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
-          examples: [
-            { anchor: "a-ternary", answers: [{ ...answer, form: "a-ternary" }] },
-            { anchor: "branching", answers: [answer] },
+          anchor: "a-ternary",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "a-ternary",
+            },
+          ],
+        },
+        {
+          anchor: "an-if",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "branching-with-if",
+            },
           ],
         },
       ],
+    };
+    const typedRows: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      checks: [{ ...TEST_BODY_CHECK, forms: ["a-ternary", "branching-with-if"] }],
+      recipes: [narrowing, typedRows],
     };
 
     const line = findingLine({
@@ -468,7 +495,113 @@ describe("findingLine", () => {
     });
 
     expect(line).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (assert-to-narrow.md#an-if, team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (assert-to-narrow.md#an-if, it-each-over-typed-rows.md#branching)`,
+    );
+  });
+
+  it("names after a Hone finding's fix no team example answering the team's own check of the same name", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = {
+      ...BRANCH_IN_A_TEST,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+      recipes: [],
+    };
+    const teamCheck: Check = {
+      name: "test-body",
+      symptom: { ruleSet: acme, name: "branch-in-a-test" },
+      page: "team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+      engines: [WALKER],
+      forms: ["branching-with-if"],
+      findingSpecifics: [],
+    };
+    const teamRecipe: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      symptoms: [BRANCH_IN_A_TEST, teamSymptom],
+      checks: [TEST_BODY_CHECK, teamCheck],
+      recipes: [teamRecipe],
+    };
+
+    const line = findingLine({
+      catalogue,
+      content: {
+        symptoms: new Map([
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["acme/branch-in-a-test", teamSymptom],
+        ]),
+      },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table`,
+    );
+  });
+
+  it("names after a team finding's fix the team's example by its own file", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const symptom: Symptom = {
+      ...BRANCH_IN_A_TEST,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+      recipes: [],
+    };
+    const check: Check = {
+      name: "test-body",
+      symptom: { ruleSet: acme, name: "branch-in-a-test" },
+      page: "team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+      engines: [WALKER],
+      forms: ["branching-with-if"],
+      findingSpecifics: [],
+    };
+    const recipe: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+
+    const line = findingLine({
+      catalogue: {
+        ...REPORT_CATALOGUE,
+        symptoms: [symptom],
+        checks: [check],
+        recipes: [recipe],
+      },
+      content: { symptoms: new Map([["acme/branch-in-a-test", symptom]]) },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      "acme/branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (team-rules/rules/typescript/symptoms/branch-in-a-test.md) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (team-rules/rules/typescript/checks/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)",
     );
   });
 
