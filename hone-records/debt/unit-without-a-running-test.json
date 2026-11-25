@@ -43,10 +43,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/composition/shown-command-paths.ts"
     },
     {

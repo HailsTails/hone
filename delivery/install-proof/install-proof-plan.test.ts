@@ -278,6 +278,9 @@ const ESLINT_SETUP = {
   ],
 };
 
+const PACKAGE_CONFIG_PARSING_TS =
+  'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n';
+
 const WORKSPACE_SETUP = {
   replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs"],
   files: [
@@ -289,11 +292,11 @@ const WORKSPACE_SETUP = {
   "checks": {
     "authored-class-or-this#class-keyword": "eslint"
   },
-  "forfeiture": "elsewhere"
+  "forfeiture": "elsewhere",
+  "eslintConfigLookup": "nearest-to-file"
 }\n`,
     },
-    { name: "eslint.config.mjs", text: CONFIG_WITH_HONE },
-    { name: "packages/web/eslint.config.mjs", text: CONFIG_WITH_HONE },
+    { name: "packages/web/eslint.config.mjs", text: PACKAGE_CONFIG_PARSING_TS },
     {
       name: "hone-records/debt/authored-class-or-this.json",
       text: '{"version":2,"records":[{"answers":"authored-class-or-this#class-keyword","file":"packages/web/src/legacy.ts","note":"existing debt in a legacy file, recorded at adoption"}]}\n',
@@ -302,7 +305,7 @@ const WORKSPACE_SETUP = {
 };
 
 const ESLINT_PROJECTION = `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
 `;
 
 const CLASS_SYMPTOM =
@@ -356,7 +359,7 @@ const ESLINT_MISSING_ACTIONS: readonly ProofAction[] = [
 ];
 
 const WORKSPACE_SLICE = `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["src/legacy.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `;
 

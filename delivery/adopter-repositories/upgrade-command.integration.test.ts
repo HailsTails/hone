@@ -98,8 +98,8 @@ const ROOT_CARVE_OUT =
 const TEAM_CONFIG =
   'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
 
-const TEAM_CONFIG_IGNORING_DECLARATIONS =
-  'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, { ignores: ["*.d.mts"] }, ...projection];\n';
+const TEAM_CONFIG_SWITCHING_OFF_A_CHECK =
+  'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection, { files: ["src/kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];\n';
 
 const ROOT_CONFIG_IMPORTING_PACKAGE_SLICE =
   'import projection from "./disciplines.eslint.mjs";\nimport packageProjection from "./packages/a/disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...packageProjection, ...projection];\n';
@@ -134,14 +134,20 @@ const UPGRADED_ROOT =
 const CHECKED_ROOT =
   "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
 
-const REFUSED_IGNORED_DECLARATIONS =
-  "upgrade refused:\nversion 2's check fails on the upgraded repository:\n  unrecorded (2)\n  authored-class-or-this#class-keyword eslint ignore hone.eslint.d.mts\n  authored-class-or-this#static-members-only eslint ignore hone.eslint.d.mts\nFix what it reports, then run the upgrade again.\nNothing was changed.\n";
+const REFUSED_SWITCHED_OFF =
+  "upgrade refused:\nversion 2's check fails on the upgraded repository:\n  unrecorded (1)\n  authored-class-or-this#class-keyword eslint config-override src/kept.ts\nFix what it reports, then run the upgrade again.\nNothing was changed.\n";
 
 const UPGRADED_PACKAGE =
   "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
 const CHECKED_PACKAGE =
   "answered (1)\nauthored-class-or-this#class-keyword eslint packages/a/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
+
+const PACKAGE_ONLY_SELECTION =
+  '{ "version": 1, "ruleSets": {}, "eslintConfigLookup": "nearest-to-file", "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
+
+const UPGRADED_PACKAGE_ONLY =
+  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
 const UPGRADED_DECLARED =
   "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
@@ -286,11 +292,18 @@ const MISSING_REFUSED = path.join({
   segments: [INSTALL_ROOT, "artefacts", "upgrade-command-missing-refused"],
 });
 
-const IGNORED = path.join({ segments: [INSTALL_ROOT, "artefacts", "upgrade-command-ignored"] });
+const SWITCHED_OFF = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-switched-off"],
+});
+
+const PACKAGE_ONLY = path.join({
+  segments: [INSTALL_ROOT, "artefacts", "upgrade-command-package-only"],
+});
 
 afterAll(() => {
   scratch.removeTree({ path: UPGRADED });
-  scratch.removeTree({ path: IGNORED });
+  scratch.removeTree({ path: SWITCHED_OFF });
+  scratch.removeTree({ path: PACKAGE_ONLY });
   scratch.removeTree({ path: DRIFTED });
   scratch.removeTree({ path: MISSING });
   scratch.removeTree({ path: DRIFTED_REFUSED });
@@ -397,6 +410,45 @@ describe("hone upgrade over a real repository, through the real ports", () => {
     ]);
   });
 
+  it("upgrades a version 1 repository whose only ESLint config is a package's, and leaves a repository that passes the check", async () => {
+    const repo = PACKAGE_ONLY;
+    const engines = INSTALLED_PORTS;
+    const made = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/packages/a` }),
+      fileText.write({ path: `${repo}/disciplines.json`, text: PACKAGE_ONLY_SELECTION }),
+      fileText.write({ path: `${repo}/discipline-exceptions.json`, text: PACKAGE_CARVE_OUT }),
+      fileText.write({
+        path: `${repo}/disciplines.eslint.mjs`,
+        text: ROOT_PROJECTION_CARVING_PACKAGE,
+      }),
+      fileText.write({
+        path: `${repo}/packages/a/disciplines.eslint.mjs`,
+        text: PACKAGE_PROJECTION_CARVING,
+      }),
+      fileText.write({ path: `${repo}/packages/a/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/packages/a/kept.ts`, text: KEPT_CLASS }),
+      commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
+      commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
+    ];
+
+    const upgraded = await runCommandIn({ repo, subcommand: "upgrade", options: [], engines });
+    const added = commands.run({ command: "git", arguments: GIT_ADD, directory: repo });
+    const checked = await runCommandIn({
+      repo,
+      subcommand: "check",
+      options: ["--forfeiture", "elsewhere"],
+      engines,
+    });
+
+    expect([made, upgraded, added, checked]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: UPGRADED_PACKAGE_ONLY }]], exits: [[{ code: 0 }]] },
+      SUCCEEDED,
+      { writes: [[{ text: CHECKED_PACKAGE }]], exits: [[{ code: 0 }]] },
+    ]);
+  });
+
   it("keeps the party record a file answers with, names the ones it removed, and leaves a check that passes", async () => {
     const repo = absolutePathSchema.parse(`${INSTALL_ROOT}/artefacts/upgrade-command-parties`);
     const upgrading: ProcessPort = {
@@ -461,8 +513,8 @@ describe("hone upgrade over a real repository, through the real ports", () => {
     });
   });
 
-  it("refuses when the team config ignores a file the upgrade writes, as checking the committed upgrade would, and changes nothing", async () => {
-    const repo = IGNORED;
+  it("refuses when the team config switches off a check the upgrade projects, as checking the committed upgrade would, and changes nothing", async () => {
+    const repo = SWITCHED_OFF;
     expect([
       scratch.removeTree({ path: repo }),
       scratch.makeDirectory({ path: `${repo}/src` }),
@@ -470,7 +522,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
       fileText.write({
         path: `${repo}/eslint.config.mjs`,
-        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+        text: TEAM_CONFIG_SWITCHING_OFF_A_CHECK,
       }),
       fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROOT_PROJECTION }),
       fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CONSTANT }),
@@ -492,10 +544,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
     expect([
       await runCommandIn({ repo, subcommand: "upgrade", options: [], engines: INSTALLED_PORTS }),
       commands.run({ command: "git", arguments: GIT_STATUS, directory: repo }),
-    ]).toEqual([
-      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
-      UNCHANGED,
-    ]);
+    ]).toEqual([{ writes: [[{ text: REFUSED_SWITCHED_OFF }]], exits: [[{ code: 1 }]] }, UNCHANGED]);
   });
 
   it("puts back the drifted projection it regenerated when it refuses", async () => {
@@ -507,7 +556,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
       fileText.write({
         path: `${repo}/eslint.config.mjs`,
-        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+        text: TEAM_CONFIG_SWITCHING_OFF_A_CHECK,
       }),
       fileText.write({
         path: `${repo}/disciplines.eslint.mjs`,
@@ -530,7 +579,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
 
     expect([made, refused, left, status]).toEqual([
       [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED, SUCCEEDED],
-      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      { writes: [[{ text: REFUSED_SWITCHED_OFF }]], exits: [[{ code: 1 }]] },
       { outcome: "ok", value: ROOT_PROJECTION_CARVING_SRC },
       UNCHANGED,
     ]);
@@ -545,7 +594,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       fileText.write({ path: `${repo}/discipline-exceptions.json`, text: NO_RECORDS }),
       fileText.write({
         path: `${repo}/eslint.config.mjs`,
-        text: TEAM_CONFIG_IGNORING_DECLARATIONS,
+        text: TEAM_CONFIG_SWITCHING_OFF_A_CHECK,
       }),
       fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CONSTANT }),
       commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
@@ -564,7 +613,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
 
     expect([made, refused, left, status]).toEqual([
       [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED, SUCCEEDED],
-      { writes: [[{ text: REFUSED_IGNORED_DECLARATIONS }]], exits: [[{ code: 1 }]] },
+      { writes: [[{ text: REFUSED_SWITCHED_OFF }]], exits: [[{ code: 1 }]] },
       "absent",
       UNCHANGED,
     ]);

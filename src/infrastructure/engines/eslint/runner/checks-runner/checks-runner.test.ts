@@ -44,25 +44,6 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: DECLARATION_TEXT,
 };
 
-type CountedReads = {
-  readonly fileText: FileTextPort;
-  readonly readsOf: (request: { readonly path: string }) => number;
-};
-
-const countedReadsOver = (request: { readonly fileText: FileTextPort }): CountedReads => {
-  const counts = new Map<string, number>();
-  return {
-    fileText: {
-      ...request.fileText,
-      read: (asked) => {
-        counts.set(asked.path, (counts.get(asked.path) ?? 0) + 1);
-        return request.fileText.read(asked);
-      },
-    },
-    readsOf: ({ path }) => counts.get(path) ?? 0,
-  };
-};
-
 const eslint: EslintPort = {
   boundary: SILENT_BOUNDARY,
   createQueryInstance: vi.fn<EslintPort["createQueryInstance"]>(),
@@ -146,6 +127,13 @@ const SCRATCH_REPO_ROOT = absolutePathSchema.parse(`${REAL_INSTALL_ROOT}/artefac
 
 const INSTALLED_ESLINT_PACKAGE_JSON = path.join({
   segments: [SCRATCH_REPO_ROOT, "node_modules", "eslint", "package.json"],
+});
+
+const CLASS_PIECE_JSON = path.join({
+  segments: [
+    REAL_INSTALL_ROOT,
+    "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json",
+  ],
 });
 
 const CLASS_KEYWORD_CHECK: EngineCheck = {
@@ -257,19 +245,13 @@ const lintingNothing = (): GovernanceInstance => ({
     .mockResolvedValue({ outcome: "ok", value: [] }),
 });
 
-type ProjectionStubs = {
+const runnerOverQuery = (stubs: {
   readonly currents: ReadonlyMap<RepoPath, CurrentProjection>;
-  readonly ruleState: RuleState;
   readonly governance: GovernanceInstance;
-};
-
-const runnerOverQuery = (
-  stubs: Omit<ProjectionStubs, "ruleState"> & {
-    readonly fileText: FileTextPort;
-    readonly query: QueryInstance;
-    readonly repository?: Partial<ChecksRepository>;
-  },
-) => {
+  readonly fileText: FileTextPort;
+  readonly query: QueryInstance;
+  readonly repository?: Partial<ChecksRepository>;
+}) => {
   const realModules = createDefaultModuleLoaderPort({});
   const stubbedEslint: EslintPort = {
     boundary: SILENT_BOUNDARY,
@@ -304,12 +286,18 @@ const runnerOverQuery = (
   });
 };
 
-const runnerOverProjectionReading = (
-  stubs: ProjectionStubs & { readonly fileText: FileTextPort },
-) => runnerOverQuery({ ...stubs, query: queryInstanceOver(stubs.ruleState) });
+const runnerOverProjectionReading = (stubs: {
+  readonly currents: ReadonlyMap<RepoPath, CurrentProjection>;
+  readonly ruleState: RuleState;
+  readonly governance: GovernanceInstance;
+  readonly fileText: FileTextPort;
+}) => runnerOverQuery({ ...stubs, query: queryInstanceOver(stubs.ruleState) });
 
-const runnerOverProjection = (stubs: ProjectionStubs) =>
-  runnerOverProjectionReading({ ...stubs, fileText: createDefaultFileTextPort({}) });
+const runnerOverProjection = (stubs: {
+  readonly currents: ReadonlyMap<RepoPath, CurrentProjection>;
+  readonly ruleState: RuleState;
+  readonly governance: GovernanceInstance;
+}) => runnerOverProjectionReading({ ...stubs, fileText: createDefaultFileTextPort({}) });
 
 describe("checksRunnerOver, measuring an inspected version one projection", () => {
   it("reports the unapplied package to upgrade separately from the named check report", async () => {
@@ -600,7 +588,6 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
   });
 
   it("reports no nested projection reach when ESLint uses the repository root config", async () => {
-    const rootConfig = path.join({ segments: [SCRATCH_REPO_ROOT, "eslint.config.mjs"] });
     const fileText = createDefaultFileTextPort({});
     const outcome = await runnerOverProjectionReading({
       currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
@@ -608,8 +595,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
       governance: lintingNothing(),
       fileText: {
         ...fileText,
-        exists: ({ path: candidate }) =>
-          candidate === rootConfig ? "present" : fileText.exists({ path: candidate }),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
       },
     }).run({
       ...SELECTING_THE_CLASS_CHECK,
@@ -853,6 +839,114 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     });
   });
 
+  it("queries and lints neither declaration it compares, and every other file, whatever its name", async () => {
+    const authored = [
+      repoPathOf("kept.ts"),
+      repoPathOf("hone.walker.mts"),
+      repoPathOf("src/hone.eslint.d.mts"),
+      repoPathOf("packages/old/hone.eslint.d.mts"),
+    ];
+    const governance = lintingNothing();
+    const query = queryInstanceOver(CONFIGURED_ON);
+    const projecting = runnerOverQuery({
+      currents: slicesHolding({
+        root: PROJECTION_WRITTEN_AS_PROJECT_WOULD,
+        web: PACKAGE_PROJECTION_PRESENT,
+      }),
+      fileText: createDefaultFileTextPort({}),
+      query,
+      governance,
+    });
+
+    const outcome = await projecting.run({
+      ...WITH_A_PACKAGE_CONFIG,
+      files: [...authored, CHECKS_DECLARATION_PATH, PACKAGE_DECLARATION_PATH],
+    });
+
+    expect({
+      outcome,
+      linted: vi.mocked(governance.lintFiles).mock.calls,
+    }).toEqual({
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "current",
+          slices: [],
+        },
+      },
+      linted: [[{ files: authored }]],
+    });
+    expect(query.ignoredState).toHaveBeenCalledTimes(4);
+  });
+
+  it("names a declaration it compares out of date when it was altered, linting the other files", async () => {
+    const governance = lintingNothing();
+    const currents = new Map(
+      slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PACKAGE_PROJECTION_PRESENT }),
+    ).set(CHECKS_DECLARATION_PATH, { presence: "present", text: "export default [];" });
+    const projecting = runnerOverProjection({ currents, ruleState: CONFIGURED_ON, governance });
+
+    const outcome = await projecting.run({
+      ...WITH_A_PACKAGE_CONFIG,
+      files: [repoPathOf("kept.ts"), CHECKS_DECLARATION_PATH],
+    });
+
+    expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "current",
+          slices: [{ slice: CHECKS_DECLARATION_PATH, state: "out-of-date" }],
+        },
+      },
+      linted: [[{ files: [repoPathOf("kept.ts")] }]],
+    });
+  });
+
+  it("reports the projection current when the declaration it compares is the only file to check", async () => {
+    const governance = lintingNothing();
+    const projecting = runnerOverProjection({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      ruleState: CONFIGURED_ON,
+      governance,
+    });
+
+    const outcome = await projecting.run({
+      ...SELECTING_THE_CLASS_CHECK,
+      files: [CHECKS_DECLARATION_PATH],
+      trackedPaths: [CHECKS_DECLARATION_PATH],
+    });
+
+    expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "current",
+          slices: [],
+        },
+      },
+      linted: [[{ files: [] }]],
+    });
+  });
+
   it("lints nothing when a package's file is not written, and names it", async () => {
     const governance = lintingNothing();
     const outcome = await runnerOverProjection({
@@ -1026,8 +1120,10 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
   });
 
   it("reads the installed ESLint version once for the whole run, not once for its slices and again for its query", async () => {
-    const declaring = countedReadsOver({ fileText: createDefaultFileTextPort({}) });
-    const detecting = countedReadsOver({ fileText: createDefaultFileTextPort({}) });
+    const declaring = createDefaultFileTextPort({});
+    const detecting = createDefaultFileTextPort({});
+    const declaringRead = vi.spyOn(declaring, "read");
+    const detectingRead = vi.spyOn(detecting, "read");
     const stubs = {
       currents: slicesHolding({
         root: PROJECTION_WRITTEN_AS_PROJECT_WOULD,
@@ -1036,20 +1132,23 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
       ruleState: CONFIGURED_ON,
       governance: lintingNothing(),
     };
-    await runnerOverProjectionReading({ ...stubs, fileText: declaring.fileText }).run({
+    await runnerOverProjectionReading({ ...stubs, fileText: declaring }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: "nearest-to-file",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
-    await runnerOverProjectionReading({ ...stubs, fileText: detecting.fileText }).run({
+    await runnerOverProjectionReading({ ...stubs, fileText: detecting }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: undefined,
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     expect({
-      declared: declaring.readsOf({ path: INSTALLED_ESLINT_PACKAGE_JSON }),
-      detecting: detecting.readsOf({ path: INSTALLED_ESLINT_PACKAGE_JSON }),
-    }).toEqual({ declared: 0, detecting: 1 });
+      declared: declaringRead.mock.calls,
+      detecting: detectingRead.mock.calls,
+    }).toEqual({
+      declared: [[{ path: CLASS_PIECE_JSON }]],
+      detecting: [[{ path: INSTALLED_ESLINT_PACKAGE_JSON }], [{ path: CLASS_PIECE_JSON }]],
+    });
   });
 
   it("reads no slice for a declared folder that is a nested repository", async () => {

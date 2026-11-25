@@ -35,10 +35,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
     },
     {
@@ -128,10 +124,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/operations/upgrade/run-upgrade-command.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "delivery/adopter-repositories/child-measured-engines.integration.test.ts"
     },
     {
       "answers": "long-function#function-length",

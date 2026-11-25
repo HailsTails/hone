@@ -59,19 +59,7 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",

@@ -13,14 +13,18 @@ type Pair = { readonly version: VersionOneProjection; readonly projected: Planne
 const folderOf = (request: { readonly file: RepoPath }): string =>
   directoryOf({ file: request.file }).join(PATH_SEPARATOR);
 
-const pairOf = (request: {
+type PairRequest = {
   readonly version: VersionOneProjection;
   readonly projected: readonly PlannedRepoFile[];
-}): Result<Pair, ReplacementRefusal> => {
+};
+
+const projectedBeside = (request: PairRequest): PlannedRepoFile | undefined => {
   const folder = folderOf({ file: request.version.projection });
-  const projected = request.projected.find(
-    (candidate) => folderOf({ file: candidate.file }) === folder,
-  );
+  return request.projected.find((candidate) => folderOf({ file: candidate.file }) === folder);
+};
+
+const pairOf = (request: PairRequest): Result<Pair, ReplacementRefusal> => {
+  const projected = projectedBeside(request);
   return projected === undefined
     ? {
         outcome: "failed",
@@ -30,7 +34,7 @@ const pairOf = (request: {
             kind: "version-one-projection-unpaired",
             projection: request.version.projection,
             config: request.version.teamConfigs[0].file,
-            folder,
+            folder: folderOf({ file: request.version.projection }),
           },
         },
       }
@@ -41,9 +45,13 @@ const pairsOf = (request: {
   readonly projections: readonly VersionOneProjection[];
   readonly projected: readonly PlannedRepoFile[];
 }): Result<readonly Pair[], ReplacementRefusal> => {
-  const pairs = request.projections.map((version) =>
-    pairOf({ version, projected: request.projected }),
-  );
+  const pairs = request.projections
+    .filter(
+      (version) =>
+        version.teamConfigs.length > 0 ||
+        projectedBeside({ version, projected: request.projected }) !== undefined,
+    )
+    .map((version) => pairOf({ version, projected: request.projected }));
   const unpaired = pairs.find((pair) => pair.outcome === "failed");
   return (
     unpaired ?? {

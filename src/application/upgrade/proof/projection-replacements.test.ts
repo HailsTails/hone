@@ -153,6 +153,36 @@ export default [...slice, ...root];
     });
   });
 
+  it("replaces an unimported projection by the version 2 projection in its folder, rewriting nothing for it", () => {
+    expect(
+      replacementsOf({
+        projections: [
+          { projection: repoPathOf("disciplines.eslint.mjs"), teamConfigs: [] },
+          SLICE_VERSION_ONE,
+        ],
+        projected: [ROOT_VERSION_TWO, SLICE_VERSION_TWO],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [{ file: "packages/a/eslint.config.mjs", text: importing("./hone.eslint.mjs") }],
+    });
+  });
+
+  it("lets an unimported projection go when version 2 projects nothing in its folder", () => {
+    expect(
+      replacementsOf({
+        projections: [
+          ROOT_VERSION_ONE,
+          { projection: repoPathOf("packages/a/disciplines.eslint.mjs"), teamConfigs: [] },
+        ],
+        projected: [ROOT_VERSION_TWO],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [{ file: "eslint.config.mjs", text: importing("./hone.eslint.mjs") }],
+    });
+  });
+
   it("refuses a version 1 projection whose config has no version 2 projection in its folder", () => {
     expect(
       replacementsOf({

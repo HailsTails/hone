@@ -28,10 +28,16 @@ describe("the ESLint 9 boundary", () => {
     });
   });
 
-  it("declares the projection as the list of configuration blocks that ESLint 9 names Linter.Config", () => {
-    expect(eslintBoundary.declarationText).toContain(
-      "declare const projection: Linter.Config[];\nexport default projection;\n",
-    );
+  it("declares the projection as the list of configuration blocks Hone writes, importing no package", () => {
+    expect(eslintBoundary.declarationText).toBe(`declare const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[];
+export default projection;
+`);
   });
 
   it("reads a report without data as having none", () => {

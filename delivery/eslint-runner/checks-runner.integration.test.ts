@@ -126,11 +126,11 @@ const BINDINGS: NamedEngineRunRequest["bindings"] = [
 const ONE_CLASS = "export class Kept {}\n";
 
 const PROJECTION = `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
 const SUB_PROJECTION = `import hone from "../../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
 `;
 
 const TEAM_CONFIG = `import hone from "./hone.eslint.mjs";
@@ -371,7 +371,7 @@ describe.each<EslintLineRow>([
       folder: "answered-root-file",
       config: TEAM_CONFIG,
       projection: `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       source: ONE_CLASS,
@@ -491,12 +491,12 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       folder: "answered-package-file",
       rootConfig: CONFIG_WITHOUT_THE_CHECKS,
       rootProjection: `import hone from "../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["sub/kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       subConfig: `import hone from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"] }, ...hone];\n`,
       subProjection: `import hone from "../../../../src/eslint-plugin.ts";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["kept.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `,
       tracked: [

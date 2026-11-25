@@ -7,19 +7,7 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",

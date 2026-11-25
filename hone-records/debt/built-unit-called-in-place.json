@@ -31,10 +31,6 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/infrastructure/engines/protocol/upgrade/load-imports-rewriter.test.ts"
     },
     {

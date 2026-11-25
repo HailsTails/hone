@@ -15,10 +15,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/packaging/type-declarations/public-type-declarations.test.ts"
     },
     {
@@ -127,10 +123,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/tangled-function/cognitive-complexity/eslint-plugin.test.ts"
     },
     {
@@ -152,10 +144,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/work-inside-a-condition/else-after-an-exit/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",

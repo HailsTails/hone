@@ -55,14 +55,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
     },
     {
@@ -76,10 +68,6 @@
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",
