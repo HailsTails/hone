@@ -2,6 +2,18 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.0.0-pre.6
+
+### Fixes
+
+- a check's tests are given its binding (#490)
+- a team rule set's carried records stand at the base (#491)
+- the upgrade regenerates a stale version 1 projection (#492)
+
+### Other changes
+
+- the upgrade names a script, formatting and workspace pins (#488)
+
 ## 2.0.0-pre.5
 
 ### Breaking changes
