@@ -218,7 +218,10 @@ describe("teamConfigsOf", () => {
           .mockReturnValueOnce({ outcome: "ok", value: UNRELATED }),
       },
     });
-    expect(teamConfigsOf(request)).toEqual({
+
+    const found = teamConfigsOf(request);
+
+    expect(found).toEqual({
       outcome: "ok",
       value: [
         { projection: "disciplines.eslint.mjs", teamConfigs: [] },

@@ -179,16 +179,16 @@ const IMPORT_READERS: readonly ((request: ParsedNode) => readonly ModuleImport[]
   readLoad,
 ];
 
-const readImportsFrom = (request: ParsedNode): readonly ModuleImport[] => [
+const collectImports = (request: ParsedNode): readonly ModuleImport[] => [
   ...IMPORT_READERS.flatMap((read) => read(request)),
   ...request.parse
     .children({ node: request.node })
-    .flatMap((child) => readImportsFrom({ ...request, node: child })),
+    .flatMap((child) => collectImports({ ...request, node: child })),
 ];
 
 export const createModuleImportsReader =
   (options: { readonly parse: TypeScriptParsePort }): ReadModuleImports =>
   ({ file, text }) => {
     const tree = options.parse.parse({ fileName: file, source: text });
-    return readImportsFrom({ parse: options.parse, tree, node: tree });
+    return collectImports({ parse: options.parse, tree, node: tree });
   };

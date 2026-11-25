@@ -194,27 +194,27 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
   });
 
   it("names nothing when the only TypeScript files are the engine's own projection outputs", () => {
-    expect(
-      engineUnmeasuredOf({
-        catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "current" })],
-        tracked: [repoPathOf("hone.eslint.d.mts"), repoPathOf("packages/a/hone.eslint.d.mts")],
-        selected: SELECTED,
-      }),
-    ).toEqual([]);
+    const unmeasured = engineUnmeasuredOf({
+      catalogue: REPORT_CATALOGUE,
+      runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+      tracked: [repoPathOf("hone.eslint.d.mts"), repoPathOf("packages/a/hone.eslint.d.mts")],
+      selected: SELECTED,
+    });
+
+    expect(unmeasured).toEqual([]);
   });
 
   it.each([repoPathOf("src/a.ts"), repoPathOf("hone.walker.d.mts")])(
     "names an engine that measured nothing when %s is tracked beside its own projection outputs",
     (file) => {
-      expect(
-        engineUnmeasuredOf({
-          catalogue: REPORT_CATALOGUE,
-          runs: [runWith({ mechanism: ESLINT, projection: "current" })],
-          tracked: [repoPathOf("hone.eslint.d.mts"), file],
-          selected: SELECTED,
-        }),
-      ).toEqual([MEASURED_NOTHING]);
+      const unmeasured = engineUnmeasuredOf({
+        catalogue: REPORT_CATALOGUE,
+        runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+        tracked: [repoPathOf("hone.eslint.d.mts"), file],
+        selected: SELECTED,
+      });
+
+      expect(unmeasured).toEqual([MEASURED_NOTHING]);
     },
   );
 

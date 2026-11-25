@@ -756,7 +756,7 @@ const queryFiles = (
       });
 };
 
-const reportWithinReach = (request: {
+const restrictReportToReach = (request: {
   readonly report: NamedChecksRunReport;
   readonly reach: Pick<NamedChecksRunReport, "nestedConfigurations" | "unprojectedFolders">;
 }): NamedChecksRunReport => {
@@ -814,7 +814,7 @@ const queriedRun = async (request: QueriedRunRequest): Promise<MeasuredRun> => {
     lookup: request.lookup,
   });
   return measurementOf({
-    result: { outcome: "ok", value: reportWithinReach({ report: report.value, reach }) },
+    result: { outcome: "ok", value: restrictReportToReach({ report: report.value, reach }) },
     unappliedSlices:
       source === undefined
         ? []
