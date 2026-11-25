@@ -191,7 +191,7 @@ const pieceFolderSplitLineOf = (request: {
     case "specifier-not-literal":
       return `${split.file}:${split.line} names a module with an expression rather than a string, so the upgrade cannot point it at where the files of ${folder} move. Write the path as a string, then run the upgrade again.`;
     case "target-not-moved":
-      return `${split.file}:${split.line} imports a file of ${folder} that the upgrade does not move (it replaces piece.json), so the upgrade cannot point the import at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
+      return `${split.file}:${split.line} imports something in ${folder} that the upgrade does not move: piece.json, which the upgrade replaces, the folder itself, or a file that is not there. So it cannot point the import at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
   }
 };
 
