@@ -278,11 +278,34 @@ const ESLINT_SETUP = {
   ],
 };
 
+const WORKSPACE_SETUP = {
+  replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint"
+  },
+  "forfeiture": "elsewhere"
+}\n`,
+    },
+    { name: "eslint.config.mjs", text: CONFIG_WITH_HONE },
+    { name: "packages/web/eslint.config.mjs", text: CONFIG_WITH_HONE },
+    {
+      name: "hone-records/debt/authored-class-or-this.json",
+      text: '{"version":2,"records":[{"answers":"authored-class-or-this#class-keyword","file":"packages/web/src/legacy.ts","note":"existing debt in a legacy file, recorded at adoption"}]}\n',
+    },
+  ],
+};
+
 const PACKAGE_CONFIG_PARSING_TS =
   'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n';
 
-const WORKSPACE_SETUP = {
-  replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs"],
+const WORKSPACE_PACKAGE_CONFIG_SETUP = {
+  replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs", "package.json"],
   files: [
     {
       name: V2_CONFIG,
@@ -297,6 +320,10 @@ const WORKSPACE_SETUP = {
 }\n`,
     },
     { name: "packages/web/eslint.config.mjs", text: PACKAGE_CONFIG_PARSING_TS },
+    {
+      name: "packages/web/package.json",
+      text: '{"name":"web","private":true,"type":"module","scripts":{"lint":"node lint.mjs ."}}\n',
+    },
     {
       name: "hone-records/debt/authored-class-or-this.json",
       text: '{"version":2,"records":[{"answers":"authored-class-or-this#class-keyword","file":"packages/web/src/legacy.ts","note":"existing debt in a legacy file, recorded at adoption"}]}\n',
@@ -475,7 +502,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
 ];
 
 describe("the proof cases", () => {
-  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, and a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import", () => {
+  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import, and that workspace with no lint config but the package's own", () => {
     expect(PROOF_CASES).toEqual([
       {
         consumer: "audit",
@@ -530,6 +557,14 @@ describe("the proof cases", () => {
         toolchain: "current",
         typeStripping: "disabled",
         setup: WORKSPACE_SETUP,
+        actions: WORKSPACE_ACTIONS,
+      },
+      {
+        consumer: "workspace-package-config",
+        fixture: "workspace",
+        toolchain: "current",
+        typeStripping: "disabled",
+        setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
         actions: WORKSPACE_ACTIONS,
       },
     ]);
