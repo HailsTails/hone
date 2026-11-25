@@ -86,17 +86,12 @@ export type PlacedRecordLine = {
   readonly holding: "carried" | "stated";
 };
 
-export type NotAdoptedLine = {
+export type DebtByFileLine = {
   readonly recordKind: "clause-wide-carve-out";
   readonly clause: ClauseAddress;
-  readonly newKind: "not-adopted";
-  readonly check: Check;
-};
-
-export type CarveOutReasonLine = {
-  readonly recordKind: "clause-wide-carve-out";
-  readonly clause: ClauseAddress;
+  readonly newKind: "debt-by-file";
   readonly reason: string;
+  readonly owner: string;
 };
 
 export type NotCarriedLine = {
@@ -106,7 +101,7 @@ export type NotCarriedLine = {
   readonly newKind: "not-carried";
 };
 
-export type RecordLine = PlacedRecordLine | NotCarriedLine | NotAdoptedLine | CarveOutReasonLine;
+export type RecordLine = PlacedRecordLine | NotCarriedLine | DebtByFileLine;
 
 export type MappedRecords = {
   readonly documents: readonly MappedRecordsDocument[];
@@ -130,13 +125,13 @@ type PlacedRecord = {
 
 type InputOutcome = {
   readonly placed: readonly PlacedRecord[];
-  readonly choices: readonly RecordLine[];
+  readonly unplaced: readonly Exclude<RecordLine, PlacedRecordLine>[];
   readonly refusals: readonly UpgradeRefusal[];
 };
 
 const refusedWith = (request: { readonly refusal: UpgradeRefusal }): InputOutcome => ({
   placed: [],
-  choices: [],
+  unplaced: [],
   refusals: [request.refusal],
 });
 
@@ -196,7 +191,7 @@ const outcomeOfPlacements = (request: {
   placed: request.placements.flatMap((placement) =>
     placement.outcome === "ok" ? [placement.value] : [],
   ),
-  choices: [],
+  unplaced: [],
   refusals: request.placements.flatMap((placement) =>
     placement.outcome === "failed" ? [placement.error] : [],
   ),
@@ -243,7 +238,7 @@ const carveOutOutcome = (request: {
   if (carried.length === 0) {
     return {
       placed: [],
-      choices: [
+      unplaced: [
         {
           recordKind: "file-carve-out",
           clause: record.clause,
@@ -342,36 +337,23 @@ const authorisedLocationOutcome = (request: {
   });
 };
 
-const notAdoptedLinesOf = (request: {
+const mapClauseWideCarveOutToOutcome = (request: {
   readonly record: RecordOf<"clause-wide-carve-out">;
-  readonly checks: readonly Check[];
-}): readonly RecordLine[] => {
-  const { clause } = request.record;
-  return [
-    { recordKind: "clause-wide-carve-out", clause, reason: request.record.reason },
-    ...request.checks.map((check): NotAdoptedLine => ({
-      recordKind: "clause-wide-carve-out",
-      clause,
-      newKind: "not-adopted",
-      check,
-    })),
-  ];
-};
-
-const clauseWideCarveOutOutcome = (request: {
-  readonly input: Extract<RecordInput, { readonly kind: "clause-wide-carve-out" }>;
-  readonly clauseChecks: ClauseChecks;
 }): InputOutcome => {
-  const { record } = request.input;
-  const checks = readChecksOfClause({ clauseChecks: request.clauseChecks, clause: record.clause });
-  return checks.length === 0
-    ? refusedWith({
-        refusal: {
-          kind: "clause-without-check",
-          clause: clauseAddressText({ address: record.clause }),
-        },
-      })
-    : { placed: [], choices: notAdoptedLinesOf({ record, checks }), refusals: [] };
+  const { clause, reason, whyChain } = request.record;
+  return {
+    placed: [],
+    unplaced: [
+      {
+        recordKind: "clause-wide-carve-out",
+        clause,
+        newKind: "debt-by-file",
+        reason,
+        owner: whyChain.owner,
+      },
+    ],
+    refusals: [],
+  };
 };
 
 const outcomeOf = (request: {
@@ -392,7 +374,7 @@ const outcomeOf = (request: {
         confinedOutsideDependencies: request.confinedOutsideDependencies,
       });
     case "clause-wide-carve-out":
-      return clauseWideCarveOutOutcome({ input, clauseChecks: request.clauseChecks });
+      return mapClauseWideCarveOutToOutcome({ record: input.record });
   }
 };
 
@@ -422,21 +404,9 @@ export const mappedRecords = (
   const placed = outcomes.flatMap((outcome) => outcome.placed);
   const lines = outcomes.flatMap((outcome) => [
     ...outcome.placed.map(({ line }) => line),
-    ...outcome.choices,
+    ...outcome.unplaced,
   ]);
   return refusals.length > 0
     ? { outcome: "failed", error: refusals }
     : { outcome: "ok", value: { documents: documentsOf({ placed }), lines } };
 };
-
-export type CarriedClause = {
-  readonly kind: RecordInput["kind"];
-  readonly record: { readonly clause: ClauseAddress };
-};
-
-export const clausesCarriedAsNotAdopted = (request: {
-  readonly inputs: readonly CarriedClause[];
-}): readonly ClauseAddress[] =>
-  request.inputs.flatMap((input) =>
-    input.kind === "clause-wide-carve-out" ? [input.record.clause] : [],
-  );
