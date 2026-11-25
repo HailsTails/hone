@@ -2,6 +2,8 @@ import { assert, describe, expect, it } from "vitest";
 
 import { absolutePathSchema } from "../../../src/infrastructure/content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import { namedChecksRunner as eslintRunner } from "../../../src/infrastructure/engines/eslint/runner/runner.ts";
+import { namedChecksRunner as walkerRunner } from "../../../src/infrastructure/engines/walker/runner/runner.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
@@ -9,7 +11,7 @@ import {
 import { createDefaultDirectoryPort } from "../../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import { BLOCK_FLAGS } from "./block-flags.ts";
+import { createBlockFlagsPort } from "./block-flags.ts";
 import { createTypeErrorsPort } from "./block-type-errors.ts";
 import { readCheckBindings } from "./check-bindings.ts";
 import { findExampleRefusals } from "./example-refusals.ts";
@@ -53,7 +55,9 @@ describe("the examples on this repository's recipe pages", () => {
       bindings: bindings.value,
       pages: readRecipePages({ recipes, ruleSetRoot: repoRoot, fileText, path }),
       typeErrors: createTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }),
-      flags: BLOCK_FLAGS,
+      flags: createBlockFlagsPort({
+        runners: { walker: walkerRunner, eslint: eslintRunner },
+      }),
       flaggedForms: createFlaggedFormsPort({
         parse: parse.value,
         repoRoot,

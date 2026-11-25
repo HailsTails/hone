@@ -1,12 +1,14 @@
 import { assert, describe, expect, it } from "vitest";
 
 import { absolutePathSchema } from "../../../src/infrastructure/content-files/absolute-path.ts";
+import { namedChecksRunner as eslintRunner } from "../../../src/infrastructure/engines/eslint/runner/runner.ts";
+import { namedChecksRunner as walkerRunner } from "../../../src/infrastructure/engines/walker/runner/runner.ts";
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import { BLOCK_FLAGS } from "./block-flags.ts";
+import { createBlockFlagsPort } from "./block-flags.ts";
 import { readCheckBindings } from "./check-bindings.ts";
 
-describe("BLOCK_FLAGS, over the real walker and ESLint", () => {
+describe("createBlockFlagsPort, over the real walker and ESLint", () => {
   it("flags a block under each engine's check that sees it, and not under the others, putting a block inside a test for the check on assertion sites", async () => {
     const fileText = createDefaultFileTextPort({});
     const path = createDefaultPathPort({});
@@ -56,7 +58,9 @@ describe("BLOCK_FLAGS, over the real walker and ESLint", () => {
       source: "expect(1).toBe(1);\n",
     };
 
-    const flags = await BLOCK_FLAGS.read({
+    const flags = await createBlockFlagsPort({
+      runners: { walker: walkerRunner, eslint: eslintRunner },
+    }).read({
       bindings: bindings.value,
       blocks: [loop, untyped, clean],
     });
