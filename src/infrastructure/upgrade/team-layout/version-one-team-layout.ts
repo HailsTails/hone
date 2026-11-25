@@ -9,7 +9,6 @@ import type {
   VersionOneTeamClause,
   VersionOneTeamLayout,
 } from "../../../application/ports/upgrade/version-one-team-layout.ts";
-import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
@@ -18,7 +17,7 @@ import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { isRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import { clauseAddressText, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 import type {
   DisciplineId,
@@ -39,10 +38,6 @@ import {
 } from "../../content-files/rule-sets/rule-set-reader.ts";
 import { readBoundCatalogue } from "../../content-files/symptom-catalogues/bound-catalogue.ts";
 import { versionOneRuleFilesOf } from "../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import {
-  versionOneNamesOf,
-  type VersionOneNames,
-} from "../../disciplines-file/version-one-names.ts";
 import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { ruleSetRootOf } from "../../hone-config-file/rule-set-root.ts";
 import { readVersionTwoNames, VERSION_TWO_NAMES_FILE } from "./version-two-names.ts";
