@@ -3,6 +3,7 @@ import { z } from "zod";
 import type {
   EngineCheck,
   NamedEngineRunRequest,
+  NamedEslintRunRequest,
 } from "../../../../../application/ports/engine/engine-run.ts";
 import type {
   CheckedVersionOneProjection,
@@ -20,7 +21,10 @@ import { exclusionOf } from "../../../../../domain/repository/exclusion.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import type { ProjectedFile } from "../../../../../domain/runner/checks-run-report.ts";
+import type {
+  ProjectedFile,
+  ProjectionEntry,
+} from "../../../../../domain/runner/checks-run-report.ts";
 import type { ChecksSliceProblem } from "../../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
@@ -39,6 +43,7 @@ import {
   type ChecksSlice,
   type ChecksSlices,
   declarationPathOf,
+  pathInSlice,
   slicesOf,
 } from "../config-roots/checks-slices.ts";
 import {
@@ -80,10 +85,8 @@ import {
   type LoadedEslintPlugin,
 } from "../pieces/eslint-plugin-schema.ts";
 import {
-  type ChecksProjectionForm,
   type ChecksProjectionOutputs,
   checksProjectionText,
-  createChecksDeclarationText,
   createChecksProjectionOutputs,
   type ProjectedCheck,
   type ProjectedPlugin,
@@ -115,7 +118,7 @@ import { selectedNamedChecksOf } from "./checks-selection.ts";
 type Outcome<Value> = Result<Value, ChecksRunFailure>;
 type MeasuredRun = Outcome<ProjectionMeasurement<NamedChecksRunReport>>;
 
-export type EslintChecksRunner = NamedChecksRunner & {
+export type EslintChecksRunner = NamedChecksRunner<NamedEslintRunRequest> & {
   readonly measureVersionOne: (request: VersionOneMeasurementRequest) => Promise<MeasuredRun>;
 };
 
@@ -223,7 +226,7 @@ const lookupOf = (request: {
   });
 
 const slicesOver = (request: {
-  readonly run: NamedEngineRunRequest;
+  readonly run: NamedEslintRunRequest;
   readonly lookup: EslintConfigLookup;
 }): ChecksSlices =>
   slicesOf({
@@ -234,18 +237,6 @@ const slicesOver = (request: {
     configuration: createChecksProjectionOutputs({ kind: request.run.projectionKind })
       .configuration,
   });
-
-const createChecksProjectionForm = (request: {
-  readonly run: Pick<NamedEngineRunRequest, "projectionKind">;
-  readonly boundary: EslintMajorBoundary;
-}): ChecksProjectionForm => {
-  switch (request.run.projectionKind) {
-    case "mjs":
-      return { kind: "mjs" };
-    case "ts":
-      return { kind: "ts", projectionTypeText: request.boundary.projectionTypeText };
-  }
-};
 
 const queryInstanceOf = (request: {
   readonly run: NamedEngineRunRequest;
@@ -382,7 +373,7 @@ const externalPluginsOf = async (request: {
 };
 
 type SliceRequest = {
-  readonly run: NamedEngineRunRequest;
+  readonly run: NamedEslintRunRequest;
   readonly projected: readonly ProjectedCheck[];
   readonly ports: ChecksRunnerPorts;
   readonly slices: ChecksSlices;
@@ -458,12 +449,10 @@ const expectedSliceOf = (
     ? {
         outcome: "ok",
         value: {
+          kind: "write",
           file: request.slice.file,
           text: checksProjectionText({
-            form: createChecksProjectionForm({
-              run: request.run,
-              boundary: request.ports.eslint.boundary,
-            }),
+            kind: request.run.projectionKind,
             pluginImport: pluginImport.specifier,
             plugins: plugins.value,
             checks: request.projected,
@@ -483,12 +472,11 @@ const expectedDeclarationsOf = (request: {
     return [];
   }
   const { declaration } = request.outputs;
-  const text = createChecksDeclarationText({
-    projectionTypeText: request.boundary.projectionTypeText,
-  });
+  const { declarationText } = request.boundary;
   return [request.slices.root, ...request.slices.packages].map((slice) => ({
+    kind: "write",
     file: declarationPathOf({ slice, declaration }),
-    text,
+    text: declarationText,
   }));
 };
 
@@ -545,8 +533,31 @@ const packageProblemOf = (request: {
   };
 };
 
+type ProjectionStatusRequest = SliceRequest & { readonly platform: EslintPlatformPorts };
+
+const findRemovedProjectionFiles = (request: {
+  readonly run: Pick<NamedEslintRunRequest, "projectionKind" | "repoRoot">;
+  readonly platform: Pick<EslintPlatformPorts, "fileText" | "path">;
+  readonly slices: ChecksSlices;
+}): readonly RepoPath[] => {
+  const other = createChecksProjectionOutputs({
+    kind: request.run.projectionKind === "mjs" ? "ts" : "mjs",
+  });
+  const names =
+    other.kind === "ts" ? [other.configuration] : [other.configuration, other.declaration];
+  const files = [request.slices.root, ...request.slices.packages].flatMap(({ directory }) =>
+    names.map((name) => pathInSlice({ directory, name })),
+  );
+  const { fileText, path } = request.platform;
+  return files.filter(
+    (file) =>
+      fileText.exists({ path: path.join({ segments: [request.run.repoRoot, file] }) }) ===
+      "present",
+  );
+};
+
 const currentProjectionStatus = (
-  request: SliceRequest,
+  request: ProjectionStatusRequest,
 ): Result<ProjectionStatus, RunnerFailure> => {
   const expected = expectedFilesOf(request);
   if (expected.outcome === "failed") {
@@ -569,9 +580,15 @@ const currentProjectionStatus = (
       packageProblemOf({ states: states.value, expected: file }),
     ),
   });
-  return problems.outcome === "failed"
-    ? problems
-    : { outcome: "ok", value: { projection: rootState.value, slices: problems.value } };
+  if (problems.outcome === "failed") return problems;
+  const removals = findRemovedProjectionFiles(request).map((slice): ChecksSliceProblem => ({
+    slice,
+    state: "out-of-date",
+  }));
+  return {
+    outcome: "ok",
+    value: { projection: rootState.value, slices: [...problems.value, ...removals] },
+  };
 };
 
 const unconfiguredSlicesOf = (request: {
@@ -594,7 +611,7 @@ const unconfiguredSlicesOf = (request: {
 
 type LintRequest = {
   readonly answeredByPlace: AnsweredByPlace;
-  readonly run: NamedEngineRunRequest;
+  readonly run: NamedEslintRunRequest;
   readonly selected: readonly SelectedNamedCheck[];
   readonly checkRuleIds: readonly string[];
   readonly projectionSelected: readonly SelectedNamedCheck[];
@@ -861,11 +878,13 @@ const queriedRun = async (request: QueriedRunRequest): Promise<MeasuredRun> => {
 };
 
 type ProjectedRunRequest = {
-  readonly run: NamedEngineRunRequest;
+  readonly run: NamedEslintRunRequest;
   readonly ports: ChecksRunnerPorts;
   readonly platform: EslintPlatformPorts;
   readonly versionOneProjection: CheckedVersionOneProjection | undefined;
-  readonly projectionStatusOf: (request: SliceRequest) => Result<ProjectionStatus, RunnerFailure>;
+  readonly projectionStatusOf: (
+    request: ProjectionStatusRequest,
+  ) => Result<ProjectionStatus, RunnerFailure>;
 };
 
 const readProjectionStatus = (
@@ -945,10 +964,10 @@ const projectedRun = async (request: ProjectedRunRequest): Promise<MeasuredRun> 
 };
 
 const projectedFilesOf = (request: {
-  readonly run: NamedEngineRunRequest;
+  readonly run: NamedEslintRunRequest;
   readonly ports: ChecksRunnerPorts;
   readonly platform: EslintPlatformPorts;
-}): Outcome<readonly ProjectedFile[]> => {
+}): Outcome<readonly ProjectionEntry[]> => {
   const projected = projectedNamedChecksOf({
     checks: request.run.checks ?? [],
     bindings: request.run.bindings,
@@ -963,18 +982,14 @@ const projectedFilesOf = (request: {
   if (selected.outcome === "failed" || selected.value.length === 0) {
     return selected.outcome === "failed" ? selected : { outcome: "ok", value: [] };
   }
-  const expected = expectedFilesOf({
-    run: request.run,
-    ports: request.ports,
-    projected: projected.value,
-    slices: slicesOver({ run: request.run, lookup: lookupOf(request) }),
-  });
-  return expected.outcome === "failed"
-    ? expected
-    : {
-        outcome: "ok",
-        value: [expected.value.root, ...expected.value.packages, ...expected.value.declarations],
-      };
+  const slices = slicesOver({ run: request.run, lookup: lookupOf(request) });
+  const expected = expectedFilesOf({ ...request, projected: projected.value, slices });
+  if (expected.outcome === "failed") return expected;
+  const { root, packages, declarations } = expected.value;
+  const removals = findRemovedProjectionFiles({ ...request, slices }).map(
+    (file): ProjectionEntry => ({ kind: "remove", file }),
+  );
+  return { outcome: "ok", value: [root, ...packages, ...declarations, ...removals] };
 };
 
 export const checksRunnerOver = (request: {
@@ -995,7 +1010,7 @@ export const checksRunnerOver = (request: {
   measureVersionOne: ({ run, projection }) =>
     projectedRun({
       ...request,
-      run,
+      run: { ...run, projectionKind: "mjs" },
       versionOneProjection: projection,
       projectionStatusOf: () => ({
         outcome: "ok",

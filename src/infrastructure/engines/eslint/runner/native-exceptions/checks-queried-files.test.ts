@@ -53,9 +53,9 @@ const ANSWERED_B: readonly AnsweredFile[] = [
   { ruleSet: "hone", symptom: "untyped-value", file: B },
 ];
 
-type Outcome<Value> = Result<Value, RunnerFailure>;
-
-const ignoredOutcome = (request: { readonly state: IgnoredState }): Outcome<IgnoredState> => ({
+const ignoredOutcome = (request: {
+  readonly state: IgnoredState;
+}): Result<IgnoredState, RunnerFailure> => ({
   outcome: "ok",
   value: request.state,
 });
@@ -71,7 +71,7 @@ const BROKEN_CONFIG: ConfigFileSearch = {
 
 const ROOT_CONFIG: ConfigFileSearch = { kind: "found", path: "/repo/eslint.config.mjs" };
 
-const CONFIG_UNLOADABLE: Outcome<IgnoredState> = {
+const CONFIG_UNLOADABLE: Result<IgnoredState, RunnerFailure> = {
   outcome: "failed",
   error: { kind: "team-config-unloadable", detail: "Unexpected token ';'" },
 };

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { CommandRequest } from "../application/ports/command-request.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
@@ -39,12 +40,14 @@ import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
 const ranVersionTwoProject = (request: {
-  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>;
+  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest> & {
+    readonly fileRemoval?: FileRemovalPort;
+  };
   readonly command: CommandRequest;
 }) => {
   const handler = commandOf({
     tool: VERSION_TWO_PROJECT,
-    ports: { ...request.command, ...request.ports },
+    ports: { fileRemoval: { remove: vi.fn() }, ...request.command, ...request.ports },
   });
   return handler(request.command);
 };
@@ -314,7 +317,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const FILE: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
 const SETTINGS: NamedSettingsReading = {
   available: [],

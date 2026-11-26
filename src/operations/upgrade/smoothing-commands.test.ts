@@ -112,7 +112,7 @@ const stagesHolding = (request: {
     .mockResolvedValue({ outcome: "ok", value: [request.run] }),
   projections: vi.fn<VersionTwoStages["projections"]>().mockResolvedValue({
     outcome: "ok",
-    value: [{ file: repoPathOf("hone.eslint.mjs"), text: "the projection" }],
+    value: [{ kind: "write", file: repoPathOf("hone.eslint.mjs"), text: "the projection" }],
   }),
   renamed: vi
     .fn<VersionTwoStages["renamed"]>()
@@ -123,8 +123,15 @@ const stagesHolding = (request: {
 });
 
 describe("createSmoothingCommands", () => {
-  it("projects over the found tree of the files written, giving the projected files to write", async () => {
+  it("projects over the found tree of the files written, giving the projected files to write and remove", async () => {
     const stages = stagesHolding({ records: [], run: CURRENT_ESLINT_RUN });
+    vi.mocked(stages.projections).mockResolvedValue({
+      outcome: "ok",
+      value: [
+        { kind: "write", file: repoPathOf("hone.eslint.mjs"), text: "the projection" },
+        { kind: "remove", file: repoPathOf("hone.eslint.ts") },
+      ],
+    });
     const reach = vi
       .fn<(request: { readonly written: readonly string[] }) => FoundTreeReach>()
       .mockReturnValue({ stages, recordsSourceFor: vi.fn() });
@@ -149,7 +156,7 @@ describe("createSmoothingCommands", () => {
         outcome: "ok",
         value: {
           write: [{ file: repoPathOf("hone.eslint.mjs"), text: "the projection" }],
-          remove: [],
+          remove: [repoPathOf("hone.eslint.ts")],
         },
       },
       reachedFor: [[written]],

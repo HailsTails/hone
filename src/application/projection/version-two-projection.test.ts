@@ -71,6 +71,7 @@ const RECORDS: RecordsReading = {
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 
 const WRITTEN: ProjectedFile = {
+  kind: "write",
   file: repoPathOf("hone.eslint.mjs"),
   text: "export default [];\n",
 };

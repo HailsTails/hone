@@ -4,7 +4,7 @@ import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import type { ProjectionKind } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
+import type { AnsweredFile, ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
 import type { Conventions } from "../../../domain/settings/conventions.ts";
 import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
 import type {
@@ -56,7 +56,6 @@ export const mapEnginesRequestToRunRequest = (
     request.settings.eslintConfigLookup.lookup === "declared"
       ? request.settings.eslintConfigLookup.value
       : undefined,
-  projectionKind: request.settings.eslintProjectionKind,
   testFiles: request.settings.conventions.testFiles,
 });
 
@@ -103,7 +102,16 @@ const loadNamedEngines = async (
   const engines = await callSelectedEngines({
     ...request,
     engineRequest,
-    call: (location) => request.engine.load(location),
+    call: (location) =>
+      request.engine.load(
+        location.mechanism === "eslint"
+          ? {
+              ...location,
+              mechanism: "eslint",
+              projectionKind: request.settings.eslintProjectionKind,
+            }
+          : { ...location, mechanism: "walker" },
+      ),
   });
   return engines.outcome === "failed"
     ? engines
@@ -113,7 +121,7 @@ const loadNamedEngines = async (
 const projectLoadedEngines = async ({
   engines,
   engineRequest,
-}: LoadedEngines): Promise<Result<readonly ProjectedFile[], NamedEngineFailure>> =>
+}: LoadedEngines): Promise<Result<readonly ProjectionEntry[], NamedEngineFailure>> =>
   gatheredOutcomes({
     outcomes: await Promise.all(engines.map((engine) => engine.project(engineRequest))),
   });
@@ -140,7 +148,7 @@ export const runNamedEngines = async (
 
 export const projectNamedEngines = async (
   request: NamedEnginesRequest,
-): Promise<Result<readonly ProjectedFile[], NamedEngineFailure>> => {
+): Promise<Result<readonly ProjectionEntry[], NamedEngineFailure>> => {
   const loaded = await loadNamedEngines(request);
   return loaded.outcome === "failed" ? loaded : projectLoadedEngines(loaded.value);
 };

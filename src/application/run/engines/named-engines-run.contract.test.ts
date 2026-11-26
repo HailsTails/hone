@@ -12,6 +12,7 @@ import type { Result } from "../../../domain/result.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { LoadedEngine, NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type {
@@ -181,7 +182,6 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
-  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
@@ -237,6 +237,7 @@ describe("runNamedEngines", () => {
         [
           expect.objectContaining({
             mechanism: ESLINT,
+            projectionKind: "mjs",
             installRoot: INSTALL,
             moduleExtension: ".ts",
             modules: MODULES,
@@ -267,7 +268,7 @@ describe("runNamedEngines", () => {
     engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({
       outcome: "ok",
-      value: [{ file, text: "export {};" }],
+      value: [{ kind: "write", file, text: "export {};" }],
     });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     const request = enginesRequestOf({
@@ -367,7 +368,11 @@ describe("runNamedEngines", () => {
   });
 });
 
-const WRITTEN_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN_PROJECTION: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
 describe("projectNamedEngines", () => {
   it("gives the files the checks runner wrote", async () => {

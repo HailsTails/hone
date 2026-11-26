@@ -95,7 +95,15 @@ const runProject = async (
   });
   return projected.outcome === "failed"
     ? runFailed({ failure: projected.error })
-    : { outcome: "ok", value: { write: projected.value, remove: [] } };
+    : {
+        outcome: "ok",
+        value: {
+          write: projected.value.flatMap((entry) =>
+            entry.kind === "write" ? [{ file: entry.file, text: entry.text }] : [],
+          ),
+          remove: projected.value.flatMap((entry) => (entry.kind === "remove" ? [entry.file] : [])),
+        },
+      };
 };
 
 const runRemoveCarried = async (

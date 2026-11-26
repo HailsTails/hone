@@ -12,7 +12,7 @@ export type ChecksSlices = {
   readonly packages: readonly ChecksSlice[];
 };
 
-const pathInSlice = (request: {
+export const pathInSlice = (request: {
   readonly directory: RepoPath | undefined;
   readonly name: RepoPath;
 }): RepoPath =>

@@ -45,13 +45,13 @@ const REPORT = {
 
 describe("the checks runner's ties to its module schema", () => {
   it("declares each required runner capability and its projected kinds", () => {
-    expect(Object.keys(namedChecksRunnerModuleSchema.shape).sort()).toEqual([
-      "conform",
-      "fileScope",
-      "project",
-      "projectedKinds",
-      "run",
-    ]);
+    expect(namedChecksRunnerModuleSchema.shape).toEqual({
+      conform: expect.anything(),
+      fileScope: expect.anything(),
+      project: expect.anything(),
+      projectedKinds: expect.anything(),
+      run: expect.anything(),
+    });
   });
 
   it("holds the same slice problem, misnamed rule id and projected file as the types", () => {
@@ -179,15 +179,29 @@ describe("namedChecksRunnerModuleSchema", () => {
 });
 
 describe("checksProjectResultSchema", () => {
-  it("accepts the files to write, keeping every field", () => {
+  it("accepts entries to write and remove, keeping every field", () => {
     const projected = {
       outcome: "ok",
-      value: [{ file: "hone.eslint.mjs", text: "export default [];\n" }],
+      value: [
+        { kind: "write", file: "hone.eslint.mjs", text: "export default [];\n" },
+        { kind: "remove", file: "hone.eslint.ts" },
+      ],
     };
-    expect(checksProjectResultSchema.safeParse(projected)).toEqual({
-      success: true,
-      data: projected,
-    });
+
+    const parsed = checksProjectResultSchema.safeParse(projected);
+
+    expect(parsed).toEqual({ success: true, data: projected });
+  });
+
+  it.each([
+    { kind: "replace", file: "hone.eslint.ts" },
+    { kind: "remove", file: "hone.eslint.ts", text: "unexpected" },
+    { kind: "write", file: "hone.eslint.ts" },
+    { file: "hone.eslint.ts", text: "export {};" },
+  ])("rejects an invalid projection entry %#", (entry) => {
+    const parsed = checksProjectResultSchema.safeParse({ outcome: "ok", value: [entry] });
+
+    expect(parsed.success).toBe(false);
   });
 
   it("accepts a runner failure", () => {
@@ -283,16 +297,16 @@ describe("namedChecksRunResultSchema", () => {
   });
 
   it("preserves nested folder reach as report metadata and validates repository paths", () => {
-    const value = {
+    const report = {
       ...REPORT,
       projection: "not-included",
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
-    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value })).toMatchObject({
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toMatchObject({
       success: true,
       data: {
-        value: { nestedConfigurations: ["pkg"], unprojectedFolders: value.unprojectedFolders },
+        value: { nestedConfigurations: ["pkg"], unprojectedFolders: report.unprojectedFolders },
       },
     });
     expect(

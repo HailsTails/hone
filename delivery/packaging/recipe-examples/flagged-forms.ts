@@ -73,7 +73,6 @@ const readFlaggedForms = async (
     answered: [],
     declaredConfigRoots: [],
     declaredConfigLookup: undefined,
-    projectionKind: "mjs",
     testFiles: { suffixes: ["test", "spec"], folders: [] },
   });
   return report.outcome === "failed"

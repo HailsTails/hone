@@ -498,6 +498,7 @@ describe("versionTwoStagesOver", () => {
           ],
         },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: DEFAULT_CONVENTIONS,
       },
       records: { records: [] },

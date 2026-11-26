@@ -24,12 +24,15 @@ describe("runnerEnginesOver", () => {
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
       mechanism: "eslint",
     } as const;
-    await expect(runnerEnginesOver({ runnerModuleOf }).namedEngine.load(location)).resolves.toEqual(
-      {
-        outcome: "failed",
-        error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
-      },
-    );
+    await expect(
+      runnerEnginesOver({ runnerModuleOf }).namedEngine.load({
+        ...location,
+        projectionKind: "mjs",
+      }),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
+    });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(location);
   });
 
@@ -90,7 +93,6 @@ describe("runnerEnginesOver", () => {
           answered: [],
           declaredConfigRoots: [],
           declaredConfigLookup: undefined,
-          projectionKind: "mjs",
           testFiles: { suffixes: ["test"], folders: [] },
           bindings: [],
         },

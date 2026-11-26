@@ -225,6 +225,7 @@ const LOOPS_SETTINGS = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: {
     conventions: {
       generated: [],

@@ -5,7 +5,7 @@ import type {
 import type { Result } from "../../../../domain/result.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
-import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
 
@@ -13,15 +13,13 @@ export type ChecksRunFailure = RunnerFailure;
 
 export type NamedChecksRunReport = Omit<NamedEngineRun, "mechanism" | "coverableKinds">;
 
-export type NamedChecksRunner = {
-  readonly run: (
-    request: NamedEngineRunRequest,
-  ) => Promise<Result<NamedChecksRunReport, ChecksRunFailure>>;
+export type NamedChecksRunner<Request extends NamedEngineRunRequest = NamedEngineRunRequest> = {
+  readonly run: (request: Request) => Promise<Result<NamedChecksRunReport, ChecksRunFailure>>;
   readonly conform: (request: {
     readonly binding: CheckBinding;
     readonly cases: readonly SourceCase[];
   }) => Promise<Result<readonly CaseVerdict[], RunnerFailure>>;
   readonly project: (
-    request: NamedEngineRunRequest,
-  ) => Promise<Result<readonly ProjectedFile[], ChecksRunFailure>>;
+    request: Request,
+  ) => Promise<Result<readonly ProjectionEntry[], ChecksRunFailure>>;
 };

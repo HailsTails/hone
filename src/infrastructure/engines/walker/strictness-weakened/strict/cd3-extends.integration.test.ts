@@ -325,7 +325,6 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
-        projectionKind: "mjs",
         testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
 

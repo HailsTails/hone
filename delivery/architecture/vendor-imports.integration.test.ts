@@ -1,7 +1,6 @@
 import { assert, describe, expect, it } from "vitest";
 
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { createChecksDeclarationText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { installedEslintBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import {
   defaultTypeScriptPeers,
@@ -143,7 +142,7 @@ describe("the declaration hone project writes", () => {
 
     const imports = readModuleImports({
       file: "hone.eslint.d.mts",
-      text: createChecksDeclarationText({ projectionTypeText: installed.value.projectionTypeText }),
+      text: installed.value.declarationText,
     });
 
     expect(imports).toEqual([]);

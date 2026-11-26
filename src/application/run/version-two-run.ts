@@ -11,7 +11,7 @@ import type { ProjectionKind } from "../../domain/repository/projection-outputs.
 import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
 import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
 import {
@@ -64,7 +64,7 @@ export type VersionTwoStages = {
   ) => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>;
   readonly projections: (
     request: EngineStageRequest,
-  ) => Promise<Result<readonly ProjectedFile[], RunLoadFailure>>;
+  ) => Promise<Result<readonly ProjectionEntry[], RunLoadFailure>>;
   readonly renamed: () => RenamedSinceBase;
   readonly touched: (request: {
     readonly assessment: Assessment;

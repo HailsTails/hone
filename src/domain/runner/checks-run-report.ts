@@ -1,7 +1,11 @@
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 
-export type ProjectedFile = { readonly file: RepoPath; readonly text: string };
+export type ProjectionEntry =
+  | { readonly kind: "write"; readonly file: RepoPath; readonly text: string }
+  | { readonly kind: "remove"; readonly file: RepoPath };
+
+export type ProjectedFile = Extract<ProjectionEntry, { readonly kind: "write" }>;
 
 export type AnsweredFile = {
   readonly ruleSet: RuleSetIdentity;

@@ -183,21 +183,6 @@ const TYPESCRIPT_CONFIG_SETUP: ConsumerSetup = {
       name: "eslint.config.ts",
       text: 'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.js";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n',
     },
-    {
-      name: "lint.mjs",
-      text: `import { ESLint } from "eslint";
-
-const eslint = new ESLint({ cwd: import.meta.dirname });
-const results = await eslint.lintFiles(["."]);
-const lines = results.flatMap((result) =>
-  result.messages.map(
-    (message) => \`\${result.filePath.slice(import.meta.dirname.length + 1).replaceAll("\\\\", "/")}:\${message.line}:\${message.column} \${message.ruleId}\`,
-  ),
-);
-process.stdout.write(lines.map((line) => \`\${line}\\n\`).join(""));
-process.exitCode = lines.length === 0 ? 0 : 1;
-`,
-    },
   ],
 };
 
@@ -220,14 +205,6 @@ const TYPESCRIPT_CONFIG_ACTIONS: readonly ProofAction[] = [
   { kind: "read", path: TYPESCRIPT_PROJECTION, text: TYPESCRIPT_CONFIG_PROJECTION },
   { kind: "commit", message: "project" },
   ESLINT_CHECK,
-  {
-    kind: "run",
-    script: "lint.mjs",
-    expectation: {
-      exitCode: 1,
-      output: "src/kept.ts:1:8 hone/authored-class-or-this#class-keyword\n",
-    },
-  },
 ];
 
 const AUDIT_CONSUMER_ACTIONS: readonly ProofAction[] = [

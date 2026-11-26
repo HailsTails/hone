@@ -99,10 +99,23 @@ export const measurementResultSchema = z.discriminatedUnion("outcome", [
     .readonly(),
 ]);
 
-export const projectedFileSchema = z.object({ file: repoPathSchema, text: z.string() }).readonly();
+const projectedFileSchema = z
+  .strictObject({
+    kind: z.literal("write"),
+    file: repoPathSchema,
+    text: z.string(),
+  })
+  .readonly();
+
+const projectionEntrySchema = z.discriminatedUnion("kind", [
+  projectedFileSchema,
+  z.strictObject({ kind: z.literal("remove"), file: repoPathSchema }).readonly(),
+]);
 
 export const checksProjectResultSchema = z.union([
-  z.object({ outcome: z.literal("ok"), value: z.array(projectedFileSchema).readonly() }).readonly(),
+  z
+    .object({ outcome: z.literal("ok"), value: z.array(projectionEntrySchema).readonly() })
+    .readonly(),
   z
     .object({
       outcome: z.literal("failed"),

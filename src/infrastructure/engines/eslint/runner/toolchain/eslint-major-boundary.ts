@@ -8,6 +8,8 @@ export const PROJECTION_TYPE_TEXT = `{
   rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
 }[]`;
 
+export const PROJECTION_DECLARATION_TEXT = `declare const projection: ${PROJECTION_TYPE_TEXT};\nexport default projection;\n`;
+
 export type ReportDataValue = string | number | bigint | boolean | null | undefined;
 
 export type ReportData = Readonly<Record<string, ReportDataValue>>;
@@ -19,5 +21,5 @@ export type EslintMajorBoundary = {
   readonly reportDataOf: (request: {
     readonly descriptor: Rule.ReportDescriptor;
   }) => ReportData | undefined;
-  readonly projectionTypeText: string;
+  readonly declarationText: string;
 };

@@ -182,7 +182,7 @@ export const VERSION_TWO_NEEDED: ToolCommand<
 export const VERSION_TWO_PROJECT: ToolCommand<
   ProjectArguments,
   readonly ProjectionWrite[],
-  VersionTwoRepositoryPorts
+  VersionTwoRepositoryPorts & Pick<ToolPorts, "fileRemoval">
 > = {
   parse: parseProjectArguments,
   run: async ({ command, ports, parsed }) => {
@@ -201,6 +201,7 @@ export const VERSION_TWO_PROJECT: ToolCommand<
         located: located.value,
         baseRevision: undefined,
       }),
+      fileRemoval: ports.fileRemoval,
       fileText: ports.fileText,
       path: ports.path,
       repoRoot: located.value.repoRoot,

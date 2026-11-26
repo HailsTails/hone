@@ -2,7 +2,7 @@ import { afterAll, assert, describe, expect, it } from "vitest";
 
 import type {
   EngineCheck,
-  NamedEngineRunRequest,
+  NamedEslintRunRequest,
 } from "../../src/application/ports/engine/engine-run.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
@@ -106,7 +106,7 @@ const CHECKS: readonly EngineCheck[] = [
   },
 ];
 
-const BINDINGS: NamedEngineRunRequest["bindings"] = [
+const BINDINGS: NamedEslintRunRequest["bindings"] = [
   {
     address: "authored-class-or-this#class-keyword",
     ruleSet: TOOL_RULE_SET,
@@ -408,9 +408,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
       fileText.write({ path: `${repo}/hone.eslint.mjs`, text: projection }),
       fileText.write({
         path: `${repo}/hone.eslint.d.mts`,
-        text: createChecksDeclarationText({
-          projectionTypeText: eslint.boundary.projectionTypeText,
-        }),
+        text: eslint.boundary.declarationText,
       }),
       fileText.write({ path: `${repo}/kept.ts`, text: source }),
     ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
@@ -533,9 +531,7 @@ export default projection;
       fileText.write({ path: `${repo}/hone.eslint.mjs`, text: PROJECTION }),
       fileText.write({
         path: `${repo}/hone.eslint.d.mts`,
-        text: createChecksDeclarationText({
-          projectionTypeText: eslint.boundary.projectionTypeText,
-        }),
+        text: eslint.boundary.declarationText,
       }),
       fileText.write({ path: `${repo}/dist/x.d.ts`, text: ONE_CLASS }),
     ];
@@ -674,9 +670,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     });
     assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
     const eslint = createEslintPort({ toolchain: toolchain.value });
-    const declarationText = createChecksDeclarationText({
-      projectionTypeText: eslint.boundary.projectionTypeText,
-    });
+    const declarationText = eslint.boundary.declarationText;
     expect([
       scratch.removeTree({ path: repo }),
       scratch.makeDirectory({ path: `${repo}/sub` }),

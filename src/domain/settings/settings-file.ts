@@ -11,6 +11,8 @@ import type { VersionTwoReportOutput } from "./report-output.ts";
 
 export const SETTINGS_FILE_NAME = "hone.config.json";
 
+export const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
+
 export const VERSION_ONE_SETTINGS_FILE_NAME = "disciplines.json";
 
 export type RuleSetLocation =

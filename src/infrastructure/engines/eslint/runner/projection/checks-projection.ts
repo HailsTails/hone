@@ -11,6 +11,7 @@ import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CHECKS_PLUGIN_NAMESPACE } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
+import { PROJECTION_TYPE_TEXT } from "../toolchain/eslint-major-boundary.ts";
 import { escapedGlobPath } from "./projection.ts";
 
 export type ProjectedCheck = {
@@ -35,10 +36,6 @@ type RuleEntry = { readonly ruleId: string; readonly entry: string };
 export type ChecksProjectionOutputs =
   | { readonly kind: "mjs"; readonly configuration: RepoPath; readonly declaration: RepoPath }
   | { readonly kind: "ts"; readonly configuration: RepoPath };
-
-export type ChecksProjectionForm =
-  | { readonly kind: "mjs" }
-  | { readonly kind: "ts"; readonly projectionTypeText: string };
 
 const ESLINT_ENGINE_NAME = "eslint";
 
@@ -68,11 +65,6 @@ export const mapChecksProjectionOutputsToTypedFile = (request: {
       return request.outputs.configuration;
   }
 };
-
-export const createChecksDeclarationText = (request: {
-  readonly projectionTypeText: string;
-}): string =>
-  `declare const projection: ${request.projectionTypeText};\nexport default projection;\n`;
 
 const SOURCE_FILES = "**/*.{ts,tsx,mts,cts}";
 
@@ -179,20 +171,20 @@ const answeredBlock = (request: {
 };
 
 const exportedProjectionText = (request: {
-  readonly form: ChecksProjectionForm;
+  readonly kind: ProjectionKind;
   readonly blocks: readonly string[];
 }): string => {
   const list = `[${request.blocks.join(",\n")}]`;
-  switch (request.form.kind) {
+  switch (request.kind) {
     case "mjs":
       return `export default ${list};\n`;
     case "ts":
-      return `const projection: ${request.form.projectionTypeText} = ${list};\nexport default projection;\n`;
+      return `const projection: ${PROJECTION_TYPE_TEXT} = ${list};\nexport default projection;\n`;
   }
 };
 
 export const checksProjectionText = (request: {
-  readonly form: ChecksProjectionForm;
+  readonly kind: ProjectionKind;
   readonly pluginImport: string;
   readonly plugins?: readonly ProjectedPlugin[];
   readonly checks: readonly ProjectedCheck[];
@@ -203,8 +195,8 @@ export const checksProjectionText = (request: {
     ({ specifier }, index) => `import plugin${index} from ${quoted({ text: specifier })};\n`,
   );
   const blocks = [
-    checksBlock({ kind: request.form.kind, checks: request.checks, plugins }),
+    checksBlock({ kind: request.kind, checks: request.checks, plugins }),
     ...answeredGroupsOf(request).map((group) => answeredBlock({ group, checks: request.checks })),
   ];
-  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\n${imports.join("")}${exportedProjectionText({ form: request.form, blocks })}`;
+  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\n${imports.join("")}${exportedProjectionText({ kind: request.kind, blocks })}`;
 };

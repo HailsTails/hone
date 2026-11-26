@@ -38,6 +38,7 @@ describe("versionTwoProjectedOf", () => {
     expect(
       await versionTwoProjectedOf({
         stages: stagesFailingCatalogue(),
+        fileRemoval: { remove: vi.fn() },
         fileText,
         path,
         repoRoot: absoluteRootOf("/repo"),

@@ -13,6 +13,7 @@ import type {
   ConsumerSelectionFile,
 } from "../../settings/selection/selection-file.ts";
 import {
+  DEFAULT_PROJECTION_KIND,
   type CheckState,
   eslintConfigLookupOf,
   type GivenCheckSettings,
@@ -167,7 +168,7 @@ export const mappedSettings = (
         checkEditions: selection.checkEditions,
         eslintConfigLookup: eslintConfigLookupOf({ declared: selection.eslintConfigLookup }),
         eslintConfigRoots: selection.eslintConfigRoots,
-        eslintProjectionKind: "mjs",
+        eslintProjectionKind: DEFAULT_PROJECTION_KIND,
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
       drops: whyChainDropsOf({ selection }),

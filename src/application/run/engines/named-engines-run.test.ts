@@ -58,7 +58,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
-      projectionKind: "mjs",
       testFiles: { suffixes: ["test"], folders: [] },
     });
   });
@@ -88,7 +87,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: "nearest-to-file",
-      projectionKind: "mjs",
       testFiles: { suffixes: ["test"], folders: [] },
     });
   });
@@ -118,7 +116,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [repoPathOf("packages/app")],
       declaredConfigLookup: undefined,
-      projectionKind: "mjs",
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     });
   });
@@ -161,8 +158,9 @@ describe("runNamedEngines", () => {
     expect(run.mock.calls).toMatchObject([[{ files: [TYPESCRIPT] }]]);
   });
 
-  it("runs every engine over the files no engine projects", async () => {
-    const file = repoPathOf("hone.eslint.d.mts");
+  it("omits the paths every engine writes or removes from all runs", async () => {
+    const written = repoPathOf("hone.eslint.ts");
+    const removed = repoPathOf("hone.eslint.d.mts");
     const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
       outcome: "failed",
       error: {
@@ -181,7 +179,13 @@ describe("runNamedEngines", () => {
         outcome: "ok",
         value: {
           run,
-          project: async () => ({ outcome: "ok", value: [{ file, text: "export {};" }] }),
+          project: async () => ({
+            outcome: "ok",
+            value: [
+              { kind: "write", file: written, text: "export {};" },
+              { kind: "remove", file: removed },
+            ],
+          }),
         },
       });
 
@@ -202,7 +206,7 @@ describe("runNamedEngines", () => {
       engine: { load },
       checks: [CHECK],
       answered: [],
-      tree: { tracked: [TYPESCRIPT, file], declaredConfigRoots: [] },
+      tree: { tracked: [TYPESCRIPT, written, removed], declaredConfigRoots: [] },
     });
 
     expect(run.mock.calls).toMatchObject([

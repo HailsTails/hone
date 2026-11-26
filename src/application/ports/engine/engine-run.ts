@@ -33,10 +33,13 @@ export type NamedEngineRunRequest = {
   readonly answered: readonly AnsweredFile[];
   readonly declaredConfigRoots: readonly RepoPath[];
   readonly declaredConfigLookup: EslintConfigLookup | undefined;
-  readonly projectionKind: ProjectionKind;
   readonly testFiles: TestFiles;
   readonly bindings: readonly CheckBinding[];
   readonly checks?: readonly EngineCheck[];
+};
+
+export type NamedEslintRunRequest = NamedEngineRunRequest & {
+  readonly projectionKind: ProjectionKind;
 };
 
 export type NamedEngineRun = {

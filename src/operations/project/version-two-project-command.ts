@@ -1,3 +1,4 @@
+import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { projectedFilesWrittenOf } from "../../application/projection/projected-files-written.ts";
@@ -11,6 +12,7 @@ import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts
 export type VersionTwoProjectInput = {
   readonly stages: VersionTwoStages;
   readonly fileText: FileTextPort;
+  readonly fileRemoval: FileRemovalPort;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
 };
@@ -23,6 +25,7 @@ export const versionTwoProjectedOf = async (
     ? projected
     : projectedFilesWrittenOf({
         fileText: request.fileText,
+        fileRemoval: request.fileRemoval,
         path: request.path,
         repoRoot: request.repoRoot,
         files: projected.value,

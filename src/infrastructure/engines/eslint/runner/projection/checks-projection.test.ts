@@ -4,7 +4,6 @@ import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import {
   checksProjectionText,
-  createChecksDeclarationText,
   createChecksProjectionOutputs,
   mapChecksProjectionOutputsToTypedFile,
   type ProjectedCheck,
@@ -86,20 +85,10 @@ describe("mapChecksProjectionOutputsToTypedFile", () => {
   });
 });
 
-describe("createChecksDeclarationText", () => {
-  it("declares the projection's default export with the type it is given", () => {
-    const text = createChecksDeclarationText({ projectionTypeText: "{ name: string }[]" });
-
-    expect(text).toBe(
-      "declare const projection: { name: string }[];\nexport default projection;\n",
-    );
-  });
-});
-
 describe("checksProjectionText", () => {
   it("imports a team's plugin and switches off its named check only on the team's answered files", () => {
     const projection = checksProjectionText({
-      form: { kind: "mjs" },
+      kind: "mjs",
       pluginImport: PACKAGE_IMPORT,
       plugins: [{ namespace: "team", specifier: "./tools/plugin.ts" }],
       checks: [SKIPPED_TESTS, { ...SKIPPED_TESTS, ruleSet: TEAM, ruleId: "team/no-skips" }],
@@ -126,7 +115,7 @@ describe("checksProjectionText", () => {
   it("writes the plan's projection byte for byte", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS],
         answered: [],
@@ -139,7 +128,7 @@ describe("checksProjectionText", () => {
   it("enables every check's rule in code-unit order, with its options", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: "./api/eslint-plugin.ts",
         checks: [SKIPPED_TESTS, PARAMETER_COUNT, FOCUSED_TESTS],
         answered: [],
@@ -152,7 +141,7 @@ describe("checksProjectionText", () => {
   it("switches off, on each answered file, every rule of the symptoms its records answer, one block per set of symptoms", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS, FOCUSED_TESTS, NON_NULL_ASSERTIONS],
         answered: [
@@ -174,7 +163,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
   it("switches off, on a file whose record names one check of its symptom, only that check's rule", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS, FOCUSED_TESTS],
         answered: [
@@ -199,7 +188,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
   it("writes no block for a record whose check does not run on ESLint", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS],
         answered: [
@@ -219,7 +208,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
   it("escapes glob characters in an answered file's path", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [NON_NULL_ASSERTIONS],
         answered: [
@@ -234,7 +223,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
   it("writes no block for a record whose symptom has no check on ESLint", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS],
         answered: [{ ruleSet: "hone", symptom: "loop-keyword", file: repoPathOf("src/a.ts") }],
@@ -246,7 +235,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
 
   it("writes the ts kind as a typed list that leaves its own file out, with a team's plugin and an answered file", () => {
     const projection = checksProjectionText({
-      form: { kind: "ts", projectionTypeText: "{ name: string }[]" },
+      kind: "ts",
       pluginImport: PACKAGE_IMPORT,
       plugins: [{ namespace: "team", specifier: "./tools/plugin.ts" }],
       checks: [SKIPPED_TESTS],
@@ -263,7 +252,13 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     expect(projection).toBe(
       `import hone from "@hailstails/hone/eslint-plugin";
 import plugin0 from "./tools/plugin.ts";
-const projection: { name: string }[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone, "team": plugin0 }, rules: { "hone/test-switched-off#skipped-tests": "error" } },
+const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone, "team": plugin0 }, rules: { "hone/test-switched-off#skipped-tests": "error" } },
 { name: "hone/answered/test-switched-off#skipped-tests", files: ["src/b.ts"], rules: { "hone/test-switched-off#skipped-tests": "off" } }];
 export default projection;
 `,
@@ -273,7 +268,7 @@ export default projection;
   it("writes an empty rule set when no check runs on ESLint", () => {
     expect(
       checksProjectionText({
-        form: { kind: "mjs" },
+        kind: "mjs",
         pluginImport: PACKAGE_IMPORT,
         checks: [],
         answered: [],

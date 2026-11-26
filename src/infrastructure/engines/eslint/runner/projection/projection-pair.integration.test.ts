@@ -132,7 +132,7 @@ const versionTwoText = (): string => {
   });
   assert(checks.outcome === "ok", "the version 2 checks project");
   return checksProjectionText({
-    form: { kind: "mjs" },
+    kind: "mjs",
     pluginImport: specifierOf({
       modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }),
     }),

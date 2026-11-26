@@ -14,6 +14,7 @@ import type { EslintConfigLookup } from "../../domain/settings/eslint-config-loo
 import { listedAddressText } from "../../domain/settings/listed-address.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
+  DEFAULT_PROJECTION_KIND,
   type CheckState,
   type DeclaredRuleSet,
   eslintConfigLookupOf,
@@ -51,8 +52,6 @@ const DEFAULT_FORFEITURE: ForfeitureAssessment = "this-run";
 const DEFAULT_REPORT_OUTPUT: VersionTwoReportOutput = "full";
 
 const DEFAULT_CHECK_EDITIONS: CheckEditions = "pinned";
-
-const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
 const JSON_INDENT = 2;
 

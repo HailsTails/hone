@@ -185,18 +185,19 @@ export const plannedProjectionOf =
       modules: command.modules,
       engine: context.namedEngine,
     });
-    return projected.outcome === "failed"
-      ? refusedBy({
-          failure: runFailureOf({ engines: catalogue.value.engines, source: projected.error }),
-        })
-      : {
-          outcome: "ok",
-          value: {
-            files: projected.value,
-            projections: projectionsAmong({
-              files: projected.value,
-              engines: catalogue.value.engines,
-            }),
-          },
-        };
+    if (projected.outcome === "failed") {
+      return refusedBy({
+        failure: runFailureOf({ engines: catalogue.value.engines, source: projected.error }),
+      });
+    }
+    const files = projected.value.filter((entry) => entry.kind === "write");
+    return {
+      outcome: "ok",
+      value: {
+        files: files.map(({ file, text }) => ({ file, text })),
+        projections: projectionsAmong({ files, engines: catalogue.value.engines }).map(
+          ({ file, text }) => ({ file, text }),
+        ),
+      },
+    };
   };

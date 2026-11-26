@@ -1,10 +1,8 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { NamedEngineLocation } from "../../../../application/ports/engine/engine-port.ts";
 import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
-import type {
-  RunnerLocation,
-  RunnerModuleOf,
-} from "../../../../application/ports/engine/runner-location.ts";
+import type { RunnerModuleOf } from "../../../../application/ports/engine/runner-location.ts";
 import type { RunnerCall } from "../../../../application/ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
@@ -32,7 +30,7 @@ const namedRunner = () => ({
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
 
-const LOCATION: RunnerLocation = {
+const LOCATION: NamedEngineLocation = {
   mechanism: "walker",
   installRoot: INSTALL,
   moduleExtension: ".ts",
@@ -113,7 +111,6 @@ const REQUEST: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
-  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
@@ -390,7 +387,10 @@ describe("createNamedEnginePort", () => {
   });
 
   it("projects only the selected engine’s bindings and returns its requested writes", async () => {
-    const response = { outcome: "ok", value: [{ file: CONFIG, text: "export default [];\n" }] };
+    const response = {
+      outcome: "ok",
+      value: [{ kind: "write", file: CONFIG, text: "export default [];\n" }],
+    };
     const project = vi.fn().mockResolvedValue(response);
     const runner = { ...namedRunner(), project };
     const runnerModuleOf = vi
@@ -404,6 +404,30 @@ describe("createNamedEnginePort", () => {
     expect(projectedFiles).toEqual(response);
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
+  });
+
+  it("passes the required projection kind only into the named ESLint runner request", async () => {
+    const project = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: [] });
+    const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
+      outcome: "ok",
+      value: { namedChecksRunner: { ...namedRunner(), project } },
+    });
+    const engine = await createNamedEnginePort({ runnerModuleOf }).load({
+      ...LOCATION,
+      mechanism: "eslint",
+      projectionKind: "ts",
+    });
+    assert(engine.outcome === "ok");
+
+    const projected = await engine.value.project(REQUEST);
+
+    expect(projected).toEqual({ outcome: "ok", value: [] });
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith({ ...LOCATION, mechanism: "eslint" });
+    expect(project).toHaveBeenCalledExactlyOnceWith({
+      ...REQUEST,
+      bindings: [REQUEST.bindings[1]],
+      projectionKind: "ts",
+    });
   });
 
   it("refuses a projection result that contains no file path", async () => {
