@@ -349,7 +349,7 @@ describe("checksRunnerOver, measuring an inspected version one projection", () =
 });
 
 describe("checksRunnerOver, reporting the state of hone.eslint.ts for the ts projection kind", () => {
-  it("compares hone.eslint.ts alone, reports it current and lints every other file when it is what project would write", async () => {
+  it("compares hone.eslint.ts alone, reports it current and lints the files it is given when it is what project would write", async () => {
     const governance = lintingNothing();
     const currentOf = vi.fn<ProjectionFiles["currentOf"]>().mockReturnValue({
       outcome: "ok",
@@ -380,7 +380,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.ts for the ts pro
     const outcome = await runner.run({
       ...SELECTING_THE_CLASS_CHECK,
       projectionKind: "ts",
-      files: [repoPathOf("kept.ts"), repoPathOf("hone.eslint.ts")],
+      files: [repoPathOf("kept.ts")],
       trackedPaths: [repoPathOf("kept.ts"), repoPathOf("hone.eslint.ts")],
     });
 
