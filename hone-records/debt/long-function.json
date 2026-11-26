@@ -63,10 +63,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/composition/version-two-stages.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/application/run/engines/engine-checks.test.ts"
     },
     {

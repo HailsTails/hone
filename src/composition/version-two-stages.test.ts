@@ -8,7 +8,7 @@ import type { ModuleLoaderPort } from "../application/ports/host/module-loader-p
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { SettingsSources, SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
-import type { VersionTwoStages } from "../application/run/version-two-run.ts";
+import type { EngineStageRequest, VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
   Check,
@@ -36,6 +36,7 @@ import { createRecordsFolder } from "../infrastructure/hone-records-folder/folde
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import {
   createChildMeasuredStagesOver,
+  mapEngineStageToEnginesRequest,
   type VersionTwoLocations,
   type VersionTwoPorts,
   versionTwoStagesOver,
@@ -393,8 +394,52 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
+describe("mapEngineStageToEnginesRequest", () => {
+  it("hands the engines the stage's checks, with their symptoms' titles, and the files its records answer", () => {
+    const stage = {
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: { records: [] },
+      tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [
+        {
+          name: "clock-sources",
+          symptom: {
+            ruleSet: TOOL_RULE_SET,
+            name: "date-used-directly",
+            title: "Date used directly",
+          },
+          engines: [WALKER],
+        },
+      ],
+    } satisfies EngineStageRequest;
+    const ports = {
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+      modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
+      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+    };
+
+    const mapped = mapEngineStageToEnginesRequest({
+      ports,
+      locations: { repoRoot: REPO, installRoot: INSTALL, moduleExtension: ".ts" },
+      stage,
+    });
+
+    expect(mapped).toEqual({
+      ...stage,
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: ports.path,
+      modules: ports.modules,
+      engine: ports.namedEngine,
+      answered: [],
+    });
+  });
+});
+
 describe("versionTwoStagesOver", () => {
-  it("hands the engine the checks the run mapped for it, with their symptoms' titles", async () => {
+  it("runs each selected engine over the stage's request", async () => {
     const ports = portsOver({ git: GIT_LISTING_NOTHING });
     const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
       outcome: "failed",
@@ -427,19 +472,9 @@ describe("versionTwoStagesOver", () => {
     await stages.engines({
       catalogue: REPORT_CATALOGUE,
       settings: {
-        ...SETTINGS,
         selection: {
-          ...SETTINGS.selection,
           selected: [
             {
-              address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },
-              check: CLOCK_CHECK,
-              exceptions: "allowed",
-              editions: {
-                declared: [editionOf("1")],
-                default: editionOf("1"),
-                latest: editionOf("1"),
-              },
               binding: {
                 engine: "walker",
                 address: "date-used-directly#clock-sources",
@@ -453,46 +488,16 @@ describe("versionTwoStagesOver", () => {
             },
           ],
         },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: DEFAULT_CONVENTIONS,
       },
-      records: {
-        records: [],
-        refused: [],
-        notes: [],
-        base: { measured: "no", base: { state: "not-given" } },
-      },
+      records: { records: [] },
       tree: { tracked: [], declaredConfigRoots: [] },
-      checks: [
-        {
-          name: "clock-sources",
-          symptom: {
-            ruleSet: TOOL_RULE_SET,
-            name: "date-used-directly",
-            title: "Date used directly",
-          },
-          engines: [WALKER],
-        },
-      ],
+      checks: [],
     });
 
     expect(run.mock.calls).toMatchObject([
-      [
-        {
-          mechanism: "walker",
-          request: {
-            checks: [
-              {
-                name: "clock-sources",
-                symptom: {
-                  ruleSet: TOOL_RULE_SET,
-                  name: "date-used-directly",
-                  title: "Date used directly",
-                },
-                engines: [WALKER],
-              },
-            ],
-          },
-        },
-      ],
+      [{ mechanism: "walker", request: { checks: [], files: [] } }],
     ]);
   });
 
@@ -690,7 +695,7 @@ describe("createChildMeasuredStagesOver", () => {
     const runs = await stages.engines({
       catalogue: REPORT_CATALOGUE,
       settings: SETTINGS,
-      records: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+      records: { records: [] },
       tree: { tracked: [], declaredConfigRoots: [] },
       checks: [],
     });
