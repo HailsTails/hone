@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
@@ -72,6 +72,8 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   moduleUrl: "file:///install/src/hone.ts",
 };
 
+const UNUSED_SETTINGS_FORMAT = { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() };
+
 const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
 
 describe("plannedProjectionOf", () => {
@@ -84,11 +86,7 @@ describe("plannedProjectionOf", () => {
       directory: { list: vi.fn(), create: vi.fn() },
       recordsReader: { recordsReadingOf: vi.fn() },
       boundCatalogueOf: NO_CATALOGUE,
-      settingsFormat: {
-        fileOf: vi.fn(),
-        documentOf: vi.fn(),
-        textOf: vi.fn(),
-      },
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
       settingsSourcesOf: vi.fn(),
       checkPieceSourceOf: vi.fn(),
       namedEngine: { load: vi.fn() },
@@ -145,11 +143,7 @@ describe("plannedProjectionOf", () => {
           },
         },
       }),
-      settingsFormat: {
-        fileOf: vi.fn(),
-        documentOf: vi.fn(),
-        textOf: vi.fn(),
-      },
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
       settingsSourcesOf: vi.fn().mockReturnValue({
         settingsFile: vi.fn(),
         ruleSetRoot: vi.fn(),
@@ -161,11 +155,15 @@ describe("plannedProjectionOf", () => {
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
 
-    assert(projected.outcome === "failed");
-    expect(projected.error.kind).toBe("projection-failed");
-    expect(projected.error.failure).toEqual({
-      kind: "symptom-unheld",
-      symptom: { ruleSet: "hone", name: "loop-keyword" },
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "projection-failed",
+        failure: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: "hone", name: "loop-keyword" },
+        },
+      },
     });
     expect(load).not.toHaveBeenCalled();
   });

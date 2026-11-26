@@ -17,7 +17,6 @@ import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-r
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import type { TestFiles } from "../../../domain/settings/test-files.ts";
-export type RunnerFileScope = "tracked" | "typescript";
 
 export type EngineCheck = {
   readonly name: string;

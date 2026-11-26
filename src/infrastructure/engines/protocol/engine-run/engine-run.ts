@@ -70,7 +70,7 @@ const invalidChecksOutput = (request: {
 
 const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
 
-export type ParsedNamedRunner = z.output<typeof namedChecksRunnerModuleSchema>;
+type ParsedNamedRunner = z.output<typeof namedChecksRunnerModuleSchema>;
 
 type NamedEngineCall = {
   readonly mechanism: EngineId;
@@ -115,9 +115,7 @@ const verifiedNamedRun = (request: {
       };
 };
 
-export const runNamedEngine = async (
-  call: NamedEngineCall,
-): Promise<NamedOutcome<NamedEngineRun>> => {
+const runNamedEngine = async (call: NamedEngineCall): Promise<NamedOutcome<NamedEngineRun>> => {
   const requested = mapCallToRunnerRequest(call);
   const parsed = namedChecksRunResultSchema.safeParse(
     await returnedBy({ call: () => call.runner.run(requested) }),
@@ -187,7 +185,7 @@ const measuredVersionOne = async (
       };
 };
 
-export const projectNamedEngine = async (
+const projectNamedEngine = async (
   call: NamedEngineCall,
 ): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
   const parsed = checksProjectResultSchema.safeParse(

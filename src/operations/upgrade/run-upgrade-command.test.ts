@@ -618,80 +618,110 @@ describe("upgradeOf", () => {
     expect(write.mock.calls).toEqual([[{ path: projection, text: "projected" }]]);
   });
 
-  it.each([
-    {
-      step: "the version 2 run",
-      invoke: ({ sources, written }: { sources: ProofRunSources; written: ProofWritten }) =>
-        sources.versionTwo(written),
-      failure: { kind: "config-absent", repo: "/repo" },
-    },
-    {
-      step: "the smoothing projection",
-      invoke: ({
-        proof,
-        written,
-      }: {
-        proof: Parameters<UpgradeInput["proofOf"]>[0];
-        written: ProofWritten;
-      }) => proof.smoothing.project(written),
-      failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
-    },
-  ])(
-    "includes the team layout and proof writes when invoking $step",
-    async ({ invoke, failure }) => {
-      const proofRunsOf = vi.fn<ProofRunsOf>();
-      const proofOf = vi
-        .fn<UpgradeInput["proofOf"]>()
-        .mockResolvedValue({ outcome: "ok", value: EMPTY_PROOF });
-      const foundTreeReach = vi.fn<UpgradeInput["foundTreeReach"]>().mockReturnValue({
-        stages: {
-          catalogue: () => ({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
-          settings: vi.fn(),
-          records: vi.fn(),
-          tree: vi.fn(),
-          engines: vi.fn(),
-          projections: vi.fn(),
-          renamed: vi.fn(),
-          touched: vi.fn(),
-        },
-        recordsSourceFor: vi.fn(),
-      });
-      const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
-      kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
-      const join = vi.fn<PathPort["join"]>();
-      join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
-      join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
-      const input = inputWith({
-        git: gitListing({ tracked: TRACKED }),
-        path: { join, directoryOf: () => "/repo/acme/rules" },
-        ports: {
-          ...PORTS,
-          entryKind: { kindOf },
-          fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
-        },
-        itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
-        versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
-        proofRunsOf,
-        proofOf,
-        foundTreeReach,
-      });
-      const written = [repoPathOf("hone.eslint.d.mts")];
-      await upgradeOf(input);
-      const [[sources]] = proofRunsOf.mock.calls;
-      const [[proof]] = proofOf.mock.calls;
+  it("passes the team layout and proof writes to the version 2 run", async () => {
+    const proofRunsOf = vi.fn<ProofRunsOf>();
+    const foundTreeReach = vi.fn<UpgradeInput["foundTreeReach"]>().mockReturnValue({
+      stages: {
+        catalogue: () => ({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+        settings: vi.fn(),
+        records: vi.fn(),
+        tree: vi.fn(),
+        engines: vi.fn(),
+        projections: vi.fn(),
+        renamed: vi.fn(),
+        touched: vi.fn(),
+      },
+      recordsSourceFor: vi.fn(),
+    });
+    const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
+    kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const join = vi.fn<PathPort["join"]>();
+    join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
+    join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
+    const input = inputWith({
+      git: gitListing({ tracked: TRACKED }),
+      path: { join, directoryOf: () => "/repo/acme/rules" },
+      ports: {
+        ...PORTS,
+        entryKind: { kindOf },
+        fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
+      },
+      itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+      versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
+      proofRunsOf,
+      proofOf: async () => ({ outcome: "ok", value: EMPTY_PROOF }),
+      foundTreeReach,
+    });
+    const written = [repoPathOf("hone.eslint.d.mts")];
+    await upgradeOf(input);
+    const [[sources]] = proofRunsOf.mock.calls;
 
-      const observed = await invoke({ sources, proof, written: { written } });
+    const run = await sources.versionTwo({ written });
 
-      expect(observed).toEqual({ outcome: "failed", error: failure });
-      expect(sources.pointers).toEqual(input.pointers);
-      expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
-        written: [
-          "acme/rules/principles/repository-ready.md",
-          "acme/rules/version-one-names.json",
-          ...written,
-        ],
-        removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
-      });
-    },
-  );
+    expect(run).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } });
+    expect(sources.pointers).toEqual(input.pointers);
+    expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
+      written: [
+        "acme/rules/principles/repository-ready.md",
+        "acme/rules/version-one-names.json",
+        ...written,
+      ],
+      removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
+    });
+  });
+
+  it("passes the team layout and proof writes to the smoothing projection", async () => {
+    const proofOf = vi
+      .fn<UpgradeInput["proofOf"]>()
+      .mockResolvedValue({ outcome: "ok", value: EMPTY_PROOF });
+    const foundTreeReach = vi.fn<UpgradeInput["foundTreeReach"]>().mockReturnValue({
+      stages: {
+        catalogue: () => ({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+        settings: vi.fn(),
+        records: vi.fn(),
+        tree: vi.fn(),
+        engines: vi.fn(),
+        projections: vi.fn(),
+        renamed: vi.fn(),
+        touched: vi.fn(),
+      },
+      recordsSourceFor: vi.fn(),
+    });
+    const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
+    kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const join = vi.fn<PathPort["join"]>();
+    join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
+    join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
+    const input = inputWith({
+      git: gitListing({ tracked: TRACKED }),
+      path: { join, directoryOf: () => "/repo/acme/rules" },
+      ports: {
+        ...PORTS,
+        entryKind: { kindOf },
+        fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
+      },
+      itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+      versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
+      proofOf,
+      foundTreeReach,
+    });
+    const written = [repoPathOf("hone.eslint.d.mts")];
+    await upgradeOf(input);
+    const [[proof]] = proofOf.mock.calls;
+
+    const projected = await proof.smoothing.project({ written });
+
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+    });
+    expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
+      written: [
+        "acme/rules/principles/repository-ready.md",
+        "acme/rules/version-one-names.json",
+        ...written,
+      ],
+      removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
+    });
+  });
 });
