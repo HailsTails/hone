@@ -363,7 +363,7 @@ describe("versionTwoPruneDebtOf", () => {
 });
 
 describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
-  it("refuses with projection-stale naming the project command and writes no records", async () => {
+  it("names the out-of-date TypeScript projection and writes no records", async () => {
     const input = inputWithOutOfDateProjection();
 
     const pruned = await versionTwoPruneDebtOf({
@@ -381,9 +381,13 @@ describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
         outcome: "failed",
         error: {
           kind: "projection-stale",
-          problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+          problem: {
+            scope: "slice",
+            engine: { name: "eslint" },
+            state: "out-of-date",
+            slice: "hone.eslint.ts",
+          },
           projectCommand: PROJECT_COMMAND,
-          projectionKind: "ts",
         },
       },
       storesOpened: [],

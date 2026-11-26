@@ -3,7 +3,6 @@ import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
 import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
 import type { RecordsFolderFailure } from "../records/records-folder-failure.ts";
-import type { ProjectionKind } from "../repository/projection-outputs.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { RunnerFailure } from "../runner/runner-failure.ts";
@@ -102,7 +101,6 @@ export type RunLoadFailure =
       readonly kind: "projection-stale";
       readonly problem: RunProjectionProblem | MissingProjection;
       readonly projectCommand: string;
-      readonly projectionKind: ProjectionKind;
     }
   | {
       readonly kind: "records-folder-unreadable";

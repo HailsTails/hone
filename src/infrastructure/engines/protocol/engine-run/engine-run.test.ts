@@ -232,6 +232,7 @@ describe("createNamedEnginePort", () => {
     const engine = await createNamedEnginePort({ runnerModuleOf }).load({
       ...LOCATION,
       mechanism: "eslint",
+      projectionKind: "mjs",
     });
     assert(engine.outcome === "ok");
 

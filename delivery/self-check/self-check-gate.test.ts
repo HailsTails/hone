@@ -141,6 +141,24 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     });
   });
 
+  it("fails and names the missing TypeScript projection when the repository selects it", () => {
+    const produced = producedOf({
+      report: {
+        ...EMPTY_RUN_REPORT,
+        unmeasured: [{ kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" }],
+      },
+      output: "full",
+    });
+
+    const outcome = versionTwoSelfCheckOutcomeOf({
+      ports: SELF_CHECK_PORTS,
+      produced: { ...produced, run: { ...produced.run, projectionKind: "ts" } },
+    });
+
+    expect(outcome.code).toBe(1);
+    expect(outcome.text).toContain("hone.eslint.ts is not written");
+  });
+
   it("fails a run holding findings and unrecorded native exceptions, naming both after the report's sections", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({

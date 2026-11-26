@@ -312,7 +312,7 @@ describe("namedChecksRunResultSchema", () => {
     expect(
       namedChecksRunResultSchema.safeParse({
         outcome: "ok",
-        value: { ...value, nestedConfigurations: ["/pkg"] },
+        value: { ...report, nestedConfigurations: ["/pkg"] },
       }).success,
     ).toBe(false);
   });

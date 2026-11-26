@@ -364,7 +364,6 @@ Nothing was changed.
             kind: "projection-stale",
             problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
             projectCommand: "hone project --repo /repo",
-            projectionKind: "mjs",
           },
         },
         unrestored: [{ written: "file-removed", path: SETTINGS, detail: "EPERM" }],

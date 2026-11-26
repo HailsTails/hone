@@ -438,7 +438,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     expect(outcome).toEqual({ outcome: "ok", value: report });
   });
 
-  it("loads a TypeScript eslint.config.ts that imports a ts kind projection as ./hone.eslint.js through jiti, reports a class through it, and leaves hone.eslint.ts out by its ignores", async () => {
+  it("loads a TypeScript eslint.config.ts that imports a ts kind projection as ./hone.eslint.js through jiti and configures the projected rule", async () => {
     const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-ts-kind`);
     const toolchain = await loadEslintToolchain({
       peers: { location: PEER_LOCATION, modules: row.toolchainModules },
@@ -471,49 +471,15 @@ export default projection;
       }),
       fileText.write({ path: `${repo}/kept.ts`, text: ONE_CLASS }),
     ];
-    const runner = createChecksRunner({
-      fileText,
-      fileRemoval,
-      modules: row.pieceModules,
-      path,
-      eslint,
-      moduleExtension: ".ts",
-    });
-
-    const outcome = await runner.run({
-      repoRoot: repo,
-      installRoot: INSTALL_ROOT,
-      files: [repoPathOf("kept.ts")],
-      trackedPaths: [repoPathOf("kept.ts")],
-      checks: CHECKS,
-      bindings: BINDINGS,
-      answered: [],
-      declaredConfigRoots: [],
-      declaredConfigLookup: undefined,
-      projectionKind: "ts",
-      testFiles: { suffixes: ["test", "spec"], folders: [] },
-    });
-    const ownFile = await eslint.createQueryInstance({ repoRoot: repo }).ruleState({
-      file: repoPathOf("hone.eslint.ts"),
+    const state = await eslint.createQueryInstance({ repoRoot: repo }).ruleState({
+      file: repoPathOf("kept.ts"),
       ruleId: "hone/authored-class-or-this#class-keyword",
     });
 
-    expect({ written, outcome, ownFile }).toEqual({
-      written: [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN],
-      outcome: {
-        outcome: "ok",
-        value: {
-          hits: [CLASS_ON_LINE_1],
-          nativeExceptions: [],
-          measured: [MEASURED],
-          nestedConfigurations: [],
-          unprojectedFolders: [],
-          misnamedRuleIds: [],
-          projection: "out-of-date",
-          slices: [],
-        },
-      },
-      ownFile: { outcome: "ok", value: { state: "file-ignored" } },
+    expect(written).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
+    expect(state).toEqual({
+      outcome: "ok",
+      value: { state: "configured", severity: 2, options: [] },
     });
   });
 

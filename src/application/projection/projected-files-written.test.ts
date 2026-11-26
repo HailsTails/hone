@@ -87,6 +87,31 @@ describe("projectedFilesWrittenOf", () => {
     });
   });
 
+  it("keeps the previous projection when a replacement cannot be written", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>();
+    const fileText = {
+      ...fileTextAbsent(),
+      write: vi.fn<FileTextPort["write"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "unwritable", path: "/repo/hone.eslint.mjs", detail: "ENOSPC" },
+      }),
+    };
+
+    const written = projectedFilesWrittenOf({
+      fileText,
+      fileRemoval: { remove },
+      path: POSIX_PATH,
+      repoRoot: REPO,
+      files: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }, FILE],
+    });
+
+    expect(written).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unwritable", path: "/repo/hone.eslint.mjs", detail: "ENOSPC" },
+    });
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   it("writes a file the repository does not hold, and reports it written", () => {
     const fileText = fileTextAbsent();
     expect({

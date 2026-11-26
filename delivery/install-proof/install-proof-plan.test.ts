@@ -580,8 +580,9 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
 ];
 
 describe("the proof cases", () => {
-  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one whose TypeScript eslint.config.ts imports a ts kind projection through jiti, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import, and that workspace with no lint config but the package's own", () => {
-    expect(PROOF_CASES).toEqual([
+  it.each([
+    [
+      0,
       {
         consumer: "audit",
         fixture: "audit",
@@ -590,6 +591,9 @@ describe("the proof cases", () => {
         setup: WALKER_SETUP,
         actions: AUDIT_ACTIONS,
       },
+    ],
+    [
+      1,
       {
         consumer: "eslint-10",
         fixture: "eslint",
@@ -598,6 +602,9 @@ describe("the proof cases", () => {
         setup: ESLINT_SETUP,
         actions: ESLINT_ACTIONS,
       },
+    ],
+    [
+      2,
       {
         consumer: "eslint-9",
         fixture: "eslint",
@@ -606,6 +613,9 @@ describe("the proof cases", () => {
         setup: ESLINT_SETUP,
         actions: ESLINT_ACTIONS,
       },
+    ],
+    [
+      3,
       {
         consumer: "eslint-typescript-config",
         fixture: "eslint",
@@ -614,6 +624,9 @@ describe("the proof cases", () => {
         setup: TYPESCRIPT_CONFIG_SETUP,
         actions: TYPESCRIPT_CONFIG_ACTIONS,
       },
+    ],
+    [
+      4,
       {
         consumer: "eslint-missing",
         fixture: "eslint",
@@ -622,6 +635,9 @@ describe("the proof cases", () => {
         setup: ESLINT_SETUP,
         actions: ESLINT_MISSING_ACTIONS,
       },
+    ],
+    [
+      5,
       {
         consumer: "team-floor",
         fixture: "team",
@@ -629,6 +645,9 @@ describe("the proof cases", () => {
         typeStripping: "disabled",
         actions: [WRONG_FIELDS_REJECTED],
       },
+    ],
+    [
+      6,
       {
         consumer: "team",
         fixture: "team",
@@ -637,6 +656,9 @@ describe("the proof cases", () => {
         setup: TEAM_SETUP,
         actions: TEAM_ACTIONS,
       },
+    ],
+    [
+      7,
       {
         consumer: "workspace",
         fixture: "workspace",
@@ -645,6 +667,9 @@ describe("the proof cases", () => {
         setup: WORKSPACE_SETUP,
         actions: WORKSPACE_ACTIONS,
       },
+    ],
+    [
+      8,
       {
         consumer: "workspace-package-config",
         fixture: "workspace",
@@ -653,8 +678,15 @@ describe("the proof cases", () => {
         setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
         actions: WORKSPACE_ACTIONS,
       },
-    ]);
+    ],
+  ])("plans the packed consumer at position %s", (index, expected) => {
+    expect(PROOF_CASES[index]).toEqual(expected);
   });
+
+  it("plans nine packed consumers", () => {
+    expect(PROOF_CASES).toHaveLength(9);
+  });
+
   it("name a packaged consumer's scripts after the command and its subcommands", () => {
     expect(
       packagedScriptsOf({

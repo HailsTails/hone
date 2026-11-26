@@ -73,14 +73,20 @@ export const projectedFilesWrittenOf = (request: {
   readonly path: Pick<PathPort, "join">;
   readonly repoRoot: AbsolutePath;
   readonly files: readonly ProjectionEntry[];
-}): Result<readonly ProjectionWrite[], RunLoadFailure> =>
-  gatheredOutcomes({
-    outcomes: request.files.map((projected) =>
-      listedOutcome({
-        outcome:
-          projected.kind === "write"
-            ? writtenFileOf({ ...request, projected })
-            : removeFile({ ...request, projected }),
-      }),
-    ),
+}): Result<readonly ProjectionWrite[], RunLoadFailure> => {
+  const written = gatheredOutcomes({
+    outcomes: request.files
+      .filter((projected) => projected.kind === "write")
+      .map((projected) => listedOutcome({ outcome: writtenFileOf({ ...request, projected }) })),
   });
+  if (written.outcome === "failed") return written;
+
+  return gatheredOutcomes({
+    outcomes: [
+      written,
+      ...request.files
+        .filter((projected) => projected.kind === "remove")
+        .map((projected) => listedOutcome({ outcome: removeFile({ ...request, projected }) })),
+    ],
+  });
+};

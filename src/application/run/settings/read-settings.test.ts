@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type {
   Check,
@@ -551,12 +551,9 @@ describe("readNamedSettings", () => {
             clauses: [],
             checks: [
               {
-                name: "loops",
+                ...LOOP_KEYWORD_LOOPS,
                 symptom: { ruleSet: acme, name: "team-loop" },
                 page: "rules/typescript/symptoms/team-loop/loops.md",
-                engines: [WALKER],
-                forms: [],
-                findingSpecifics: [],
               },
             ],
           },
@@ -579,33 +576,31 @@ describe("readNamedSettings", () => {
         checkSettings: [],
       },
     });
-    const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
-      outcome: "ok",
-      value: { ...LOOPS_PIECE, forms: {} },
+
+    const read = readNamedSettings({
+      sources,
+      settingsFormat,
+      readPiece: vi
+        .fn<CheckPieceSource>()
+        .mockReturnValue({ outcome: "ok", value: { ...LOOPS_PIECE, forms: {} } }),
     });
 
-    const read = readNamedSettings({ sources, settingsFormat, readPiece });
-
-    expect(read).toMatchObject({
-      outcome: "ok",
-      value: {
-        externalCatalogues: [
-          {
-            ruleSet: acme,
-            catalogue: {
-              recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
-              symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
-              checks: [
-                {
-                  symptom: { ruleSet: acme, name: "team-loop" },
-                  page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
-                },
-              ],
+    assert(read.outcome === "ok");
+    expect(read.value.externalCatalogues).toMatchObject([
+      {
+        ruleSet: acme,
+        catalogue: {
+          recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
+          symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
+          checks: [
+            {
+              symptom: { ruleSet: acme, name: "team-loop" },
+              page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
             },
-          },
-        ],
+          ],
+        },
       },
-    });
+    ]);
   });
 
   it("binds a team's check under a symptom that shares its name with one of Hone's, beside Hone's own", () => {

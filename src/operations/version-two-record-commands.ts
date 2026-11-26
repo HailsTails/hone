@@ -22,7 +22,10 @@ import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
 import type { RecordRepointing } from "../domain/records/hone-records/records-edit.ts";
 import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load-failure.ts";
+import type { MissingProjection, RunProjectionProblem } from "../domain/report/run-report.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { ProjectionKind } from "../domain/repository/projection-outputs.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
@@ -55,6 +58,22 @@ const recordFailureOf = <Value>(request: {
 
 type ProjectCommand = { readonly projectCommand: string };
 
+const mapStaleProjectionToFailureProblem = (request: {
+  readonly problem: RunProjectionProblem | MissingProjection;
+  readonly projectionKind: ProjectionKind;
+}): RunProjectionProblem | MissingProjection => {
+  const { problem } = request;
+  if (request.projectionKind === "mjs" || ("scope" in problem && problem.scope === "slice")) {
+    return problem;
+  }
+  return {
+    scope: "slice",
+    engine: problem.engine,
+    state: "scope" in problem ? problem.state : "missing",
+    slice: repoPathOf("hone.eslint.ts"),
+  };
+};
+
 const runOverCurrentProjection = async (
   request: ProjectCommand & {
     readonly stages: VersionTwoStages;
@@ -76,9 +95,11 @@ const runOverCurrentProjection = async (
         outcome: "failed",
         error: {
           kind: "projection-stale",
-          problem: stale,
+          problem: mapStaleProjectionToFailureProblem({
+            problem: stale,
+            projectionKind: run.value.projectionKind,
+          }),
           projectCommand: request.projectCommand,
-          projectionKind: run.value.projectionKind,
         },
       };
 };

@@ -243,8 +243,12 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
     case "projection-stale":
       return [
         "scope" in failure.problem
-          ? projectionProblemLine({ ...failure, problem: failure.problem })
-          : projectionMissingLine({ ...failure, unmeasured: failure.problem }),
+          ? projectionProblemLine({ ...failure, problem: failure.problem, projectionKind: "mjs" })
+          : projectionMissingLine({
+              ...failure,
+              unmeasured: failure.problem,
+              projectionKind: "mjs",
+            }),
       ];
   }
 };
