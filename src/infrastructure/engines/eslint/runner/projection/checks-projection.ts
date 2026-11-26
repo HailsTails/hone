@@ -1,17 +1,14 @@
+import type { ProjectionKind } from "../../../../../application/ports/settings/settings-file-format.ts";
 import { CHECK_ADDRESS_SEPARATOR } from "../../../../../domain/language-layer/check-address-text.ts";
-import {
-  type ProjectionKind,
-  projectionOutputsOf,
-} from "../../../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { ownedNameText } from "../../../../../domain/rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CHECKS_PLUGIN_NAMESPACE } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
 import { PROJECTION_TYPE_TEXT } from "../toolchain/eslint-major-boundary.ts";
+import { type ChecksProjectionOutputs, createChecksProjectionOutputs } from "./projection-kinds.ts";
 import { escapedGlobPath } from "./projection.ts";
 
 export type ProjectedCheck = {
@@ -32,28 +29,6 @@ export type ProjectedPlugin = { readonly namespace: string; readonly specifier: 
 type AnsweredGroup = { readonly reaches: readonly string[]; readonly files: readonly RepoPath[] };
 
 type RuleEntry = { readonly ruleId: string; readonly entry: string };
-
-export type ChecksProjectionOutputs =
-  | { readonly kind: "mjs"; readonly configuration: RepoPath; readonly declaration: RepoPath }
-  | { readonly kind: "ts"; readonly configuration: RepoPath };
-
-const ESLINT_ENGINE_NAME = "eslint";
-
-export const createChecksProjectionOutputs = (request: {
-  readonly kind: ProjectionKind;
-}): ChecksProjectionOutputs => {
-  const outputs = projectionOutputsOf({ engineName: ESLINT_ENGINE_NAME, kind: request.kind });
-  switch (outputs.kind) {
-    case "mjs":
-      return {
-        kind: "mjs",
-        configuration: repoPathSchema.parse(outputs.configuration),
-        declaration: repoPathSchema.parse(outputs.declaration),
-      };
-    case "ts":
-      return { kind: "ts", configuration: repoPathSchema.parse(outputs.configuration) };
-  }
-};
 
 export const mapChecksProjectionOutputsToTypedFile = (request: {
   readonly outputs: ChecksProjectionOutputs;

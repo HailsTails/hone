@@ -136,9 +136,7 @@ const versionOneMeasurementModuleSchema = z.object({
 });
 
 const measureNamedRun = async (call: NamedEngineCall): ReturnType<MeasureVersionOneProjection> => {
-  const request: NamedEngineRunRequest | NamedEslintRunRequest =
-    call.mechanism === "eslint" ? { ...call.request, projectionKind: "mjs" } : call.request;
-  const report = await runNamedEngine({ ...call, request });
+  const report = await runNamedEngine(call);
   return report.outcome === "failed"
     ? report
     : { outcome: "ok", value: { report: report.value, unappliedSlices: [] } };

@@ -644,7 +644,7 @@ const floorVersions = (request: {
     { outcome: "ok", value: {} },
   );
 
-const configLoaderVersions = (request: {
+const readConfigLoaderVersions = (request: {
   readonly manifest: ToolchainManifest;
   readonly toolchain: ProofToolchain;
   readonly peers: FloorPins;
@@ -662,14 +662,14 @@ const configLoaderVersions = (request: {
     { outcome: "ok", value: request.peers },
   );
 
-const toolchainVersions = (request: {
+const readToolchainVersions = (request: {
   readonly manifest: ToolchainManifest;
   readonly toolchain: ProofToolchain;
 }): Result<FloorPins, ManifestFailure> => {
   const peers = floorVersions(request);
   return peers.outcome === "failed"
     ? peers
-    : configLoaderVersions({ ...request, peers: peers.value });
+    : readConfigLoaderVersions({ ...request, peers: peers.value });
 };
 
 export const toolchainPinsOf = (request: {
@@ -682,7 +682,7 @@ export const toolchainPinsOf = (request: {
   }
   const manifest = toolchainManifestSchema.safeParse(parsed.value);
   return manifest.success
-    ? toolchainVersions({ manifest: manifest.data, toolchain: request.toolchain })
+    ? readToolchainVersions({ manifest: manifest.data, toolchain: request.toolchain })
     : manifestInvalid({ detail: manifest.error.message });
 };
 

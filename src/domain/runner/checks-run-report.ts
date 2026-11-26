@@ -35,7 +35,11 @@ export type MisnamedRuleId =
 
 export type MisnamedRuleIdKind = MisnamedRuleId["kind"];
 
+export type ChecksProjectionProblem =
+  | ChecksSliceProblem
+  | { readonly state: "left-over"; readonly file: RepoPath };
+
 export type ChecksSliceProblem = {
-  readonly slice: RepoPath;
+  readonly file: RepoPath;
   readonly state: "missing" | "out-of-date" | "unconfigured";
 };

@@ -62,12 +62,12 @@ const removeFile = (request: {
   return removed.outcome === "failed"
     ? {
         outcome: "failed",
-        error: { kind: "file-unwritable", path: location, detail: removed.error.detail },
+        error: { kind: "file-unremovable", file, detail: removed.error.detail },
       }
     : { outcome: "ok", value: { path: file, effect: "removed" } };
 };
 
-export const projectedFilesWrittenOf = (request: {
+export const applyProjectionEntries = (request: {
   readonly fileText: FileTextPort;
   readonly fileRemoval: FileRemovalPort;
   readonly path: Pick<PathPort, "join">;

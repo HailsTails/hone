@@ -338,6 +338,7 @@ describe("checksRunnerOver, measuring an inspected version one projection", () =
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
+          projectionFile: "disciplines.eslint.mjs",
           slices: [],
         },
         unappliedSlices: [webProjection],
@@ -427,6 +428,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.ts for the ts pro
         unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "out-of-date",
+        projectionFile: "hone.eslint.ts",
         slices: [],
       },
     });
@@ -456,6 +458,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.ts for the ts pro
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "missing",
+          projectionFile: "hone.eslint.ts",
           slices: [],
         },
       },
@@ -483,6 +486,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "missing",
+          projectionFile: "hone.eslint.mjs",
           slices: [],
         },
       },
@@ -508,6 +512,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "out-of-date",
+          projectionFile: "hone.eslint.mjs",
           slices: [],
         },
       },
@@ -610,6 +615,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "out-of-date",
+          projectionFile: "hone.eslint.mjs",
           slices: [],
         },
       },
@@ -631,6 +637,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
       outcome: "ok",
       value: {
         projection: "not-included",
+        projectionFile: "hone.eslint.mjs",
         nestedConfigurations: [NESTED_FOLDER],
         unprojectedFolders: [{ folder: NESTED_FOLDER, selectionFolder: NESTED_FOLDER }],
         slices: [],
@@ -656,6 +663,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
+          projectionFile: "hone.eslint.mjs",
           slices: [],
         },
       },
@@ -820,7 +828,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
-        slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
+        slices: [{ file: PACKAGE_SLICE_PATH, state: "out-of-date" }],
       },
     });
   });
@@ -846,7 +854,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
+          slices: [{ file: PACKAGE_SLICE_PATH, state: "out-of-date" }],
         },
       },
       linted: [],
@@ -866,7 +874,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "out-of-date",
-        slices: [{ slice: PACKAGE_SLICE_PATH, state: "missing" }],
+        projectionFile: "hone.eslint.mjs",
+        slices: [{ file: PACKAGE_SLICE_PATH, state: "missing" }],
       },
     });
   });
@@ -884,6 +893,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "out-of-date",
+        projectionFile: "hone.eslint.mjs",
         slices: [],
       },
     });
@@ -902,6 +912,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "missing",
+        projectionFile: "hone.eslint.mjs",
         slices: [],
       },
     });
@@ -928,7 +939,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: CHECKS_DECLARATION_PATH, state: "missing" }],
+          slices: [{ file: CHECKS_DECLARATION_PATH, state: "missing" }],
         },
       },
       linted: [],
@@ -959,7 +970,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: PACKAGE_DECLARATION_PATH, state: "out-of-date" }],
+          slices: [{ file: PACKAGE_DECLARATION_PATH, state: "out-of-date" }],
         },
       },
       linted: [[{ files: WITH_A_PACKAGE_CONFIG.files }]],
@@ -1032,7 +1043,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: CHECKS_DECLARATION_PATH, state: "out-of-date" }],
+          slices: [{ file: CHECKS_DECLARATION_PATH, state: "out-of-date" }],
         },
       },
       linted: [[{ files: [CHECKS_DECLARATION_PATH] }]],
@@ -1092,7 +1103,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: PACKAGE_SLICE_PATH, state: "missing" }],
+          slices: [{ file: PACKAGE_SLICE_PATH, state: "missing" }],
         },
       },
       linted: [],
@@ -1120,7 +1131,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
+          slices: [{ file: PACKAGE_SLICE_PATH, state: "out-of-date" }],
         },
       },
       linted: [[{ files: WITH_A_PACKAGE_CONFIG.files }]],
@@ -1151,8 +1162,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         misnamedRuleIds: [],
         projection: "current",
         slices: [
-          { slice: PACKAGE_SLICE_PATH, state: "missing" },
-          { slice: PACKAGE_SLICE_PATH, state: "unconfigured" },
+          { file: PACKAGE_SLICE_PATH, state: "missing" },
+          { file: PACKAGE_SLICE_PATH, state: "unconfigured" },
         ],
       },
     });
@@ -1183,7 +1194,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ slice: PACKAGE_SLICE_PATH, state: "unconfigured" }],
+          slices: [{ file: PACKAGE_SLICE_PATH, state: "unconfigured" }],
         },
       },
       linted: [[{ files: request.files }]],
@@ -1398,14 +1409,20 @@ describe("checksRunnerOver, giving the ts projection kind as project", () => {
   });
 });
 
+const filesPresent = (files: readonly RepoPath[]): FileTextPort => {
+  const fileText = createDefaultFileTextPort({});
+  const paths = new Set(files.map((file) => path.join({ segments: [SCRATCH_REPO_ROOT, file] })));
+  return {
+    ...fileText,
+    exists: (location) => (paths.has(location.path) ? "present" : fileText.exists(location)),
+  };
+};
+
 describe("checksRunnerOver, removing alternate projection files", () => {
   it("returns removal entries only for existing alternate files in the selected config roots", async () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("absent");
-    exists.mockReturnValueOnce("present");
-    exists.mockReturnValueOnce("absent");
-    exists.mockReturnValueOnce("absent");
-    exists.mockReturnValueOnce("present");
-    const { runnerOver } = projectingRunner({ ...createDefaultFileTextPort({}), exists });
+    const { runnerOver } = projectingRunner(
+      filesPresent([repoPathOf("hone.eslint.mjs"), repoPathOf("packages/web/hone.eslint.d.mts")]),
+    );
 
     const outcome = await runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, projectionKind: "ts" });
 
@@ -1420,20 +1437,28 @@ describe("checksRunnerOver, removing alternate projection files", () => {
     });
   });
 
-  it("reports an existing alternate file out of date even without the file in the run request", async () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
+  it("reports an obsolete projection file even without the file in the run request", async () => {
     const runner = runnerOverProjectionReading({
       currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
       ruleState: CONFIGURED_ON,
       governance: lintingNothing(),
-      fileText: { ...createDefaultFileTextPort({}), exists },
+      fileText: filesPresent([repoPathOf("hone.eslint.ts")]),
     });
 
     const outcome = await runner.run(SELECTING_THE_CLASS_CHECK);
 
-    expect(outcome).toMatchObject({
+    expect(outcome).toEqual({
       outcome: "ok",
-      value: { projection: "current", slices: [{ slice: "hone.eslint.ts", state: "out-of-date" }] },
+      value: {
+        projection: "current",
+        slices: [{ file: "hone.eslint.ts", state: "left-over" }],
+        hits: [],
+        nativeExceptions: [],
+        measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+      },
     });
   });
 });

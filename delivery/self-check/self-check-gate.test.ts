@@ -122,7 +122,6 @@ const producedOf = (request: {
     content: { symptoms: new Map() },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
-    projectionKind: "mjs",
     runs: [],
     moved: [],
   },
@@ -145,18 +144,22 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     const produced = producedOf({
       report: {
         ...EMPTY_RUN_REPORT,
-        unmeasured: [{ kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" }],
+        unmeasured: [
+          {
+            kind: "engine-not-run",
+            engine: { name: "eslint" },
+            projection: "missing",
+            file: repoPathOf("hone.eslint.ts"),
+          },
+        ],
       },
       output: "full",
     });
 
-    const outcome = versionTwoSelfCheckOutcomeOf({
-      ports: SELF_CHECK_PORTS,
-      produced: { ...produced, run: { ...produced.run, projectionKind: "ts" } },
+    expect(versionTwoSelfCheckOutcomeOf({ ports: SELF_CHECK_PORTS, produced })).toEqual({
+      code: 1,
+      text: `unmeasured (1)\nengine-not-run eslint missing: hone.eslint.ts is not written; run ${PROJECT_COMMAND} and commit every file it writes\nself-check: fail, failing sections hold entries: unmeasured (1)\n`,
     });
-
-    expect(outcome.code).toBe(1);
-    expect(outcome.text).toContain("hone.eslint.ts is not written");
   });
 
   it("fails a run holding findings and unrecorded native exceptions, naming both after the report's sections", () => {

@@ -8,10 +8,6 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../domain/report/run-report.ts";
-import {
-  type ProjectionKind,
-  projectionOutputsOf,
-} from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { SettingsNote, UnreadConventionKey } from "../../domain/settings/settings-note.ts";
@@ -19,8 +15,6 @@ import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration
 import { counted, quoted } from "./printed-text.ts";
 
 export type ProjectCommand = { readonly projectCommand: string };
-
-export type ProjectionRefresh = ProjectCommand & { readonly projectionKind: ProjectionKind };
 
 const PASS_A_BASE = "pass --base-revision with the branch's base, such as origin/main";
 
@@ -62,17 +56,10 @@ const recordsUnmeasuredLine = (request: { readonly unmeasured: RecordsUnmeasured
   }
 };
 
-const projectionFileOf = (request: {
-  readonly engine: Engine;
-  readonly projectionKind: ProjectionKind;
-}): string =>
-  projectionOutputsOf({ engineName: request.engine.name, kind: request.projectionKind })
-    .configuration;
-
 const refreshStep = (request: ProjectCommand): string =>
   `run ${request.projectCommand} and commit every file it writes`;
 
-type EngineRequest = ProjectionRefresh & { readonly problems: readonly RunProjectionProblem[] };
+type EngineRequest = ProjectCommand & { readonly problems: readonly RunProjectionProblem[] };
 
 const sliceNote = (request: EngineRequest & { readonly engine: Engine }): string =>
   request.problems.some(
@@ -92,10 +79,10 @@ const measuredNothingNextStep = (request: EngineRequest & { readonly engine: Eng
     : `check that the ${request.engine.name} configuration lints the files under check`;
 
 export const projectionMissingLine = (
-  request: ProjectionRefresh & { readonly unmeasured: MissingProjection },
+  request: ProjectCommand & { readonly unmeasured: MissingProjection },
 ): string => {
   const { engine } = request.unmeasured;
-  return `${request.unmeasured.kind} ${engine.name} missing: ${projectionFileOf({ ...request, engine })} is not written; ${refreshStep(request)}`;
+  return `${request.unmeasured.kind} ${engine.name} missing: ${request.unmeasured.file} is not written; ${refreshStep(request)}`;
 };
 
 const engineNotRunLine = (
@@ -103,14 +90,13 @@ const engineNotRunLine = (
 ): string => {
   const { unmeasured } = request;
   const { engine } = unmeasured;
-  const file = projectionFileOf({ ...request, engine });
   switch (unmeasured.projection) {
     case "missing":
       return projectionMissingLine({ ...request, unmeasured });
     case "measured-nothing":
       return `${unmeasured.kind} ${engine.name} measured-nothing: the ${engine.name} engine measured no file in this run, so the records its checks answer were not judged, neither kept as answering nor removed as stale; ${measuredNothingNextStep({ ...request, engine })}`;
     case "not-included":
-      return `${unmeasured.kind} ${engine.name} not-included: the ${engine.name} configuration leaves the projection out of effect for a file under check; spread the default export of ${file}, or of a package's own ${file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, engine })}${nestedNote({ ...request, folders: unmeasured.nestedConfigurations })}`;
+      return `${unmeasured.kind} ${engine.name} not-included: the ${engine.name} configuration leaves the projection out of effect for a file under check; spread the default export of ${unmeasured.file}, or of a package's own ${unmeasured.file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, engine })}${nestedNote({ ...request, folders: unmeasured.nestedConfigurations })}`;
   }
 };
 
@@ -135,8 +121,8 @@ const folderOf = (request: { readonly slice: RepoPath }): string =>
 const sliceProblemReason = (
   request: ProjectCommand & { readonly problem: SliceProblem },
 ): string => {
-  const { engine, slice } = request.problem;
-  const folder = folderOf({ slice });
+  const { engine, file } = request.problem;
+  const folder = folderOf({ slice: file });
   switch (request.problem.state) {
     case "out-of-date":
       return `that slice differs from what hone project writes now; ${refreshStep(request)}`;
@@ -148,14 +134,16 @@ const sliceProblemReason = (
 };
 
 export const projectionProblemLine = (
-  request: ProjectionRefresh & { readonly problem: RunProjectionProblem },
+  request: ProjectCommand & { readonly problem: RunProjectionProblem },
 ): string => {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
-      return `${problem.engine.name} ${problem.state}: ${projectionFileOf({ ...request, engine: problem.engine })} differs from what hone project writes now; ${refreshStep(request)}`;
+      return `${problem.engine.name} ${problem.state}: ${problem.file} differs from what hone project writes now; ${refreshStep(request)}`;
+    case "file":
+      return `${problem.engine.name} left-over ${problem.file}: hone project no longer writes this file for the selected projection kind; run ${request.projectCommand} to remove it`;
     case "slice":
-      return `${problem.engine.name} ${problem.state} ${problem.slice}: ${sliceProblemReason({ ...request, problem })}`;
+      return `${problem.engine.name} ${problem.state} ${problem.file}: ${sliceProblemReason({ ...request, problem })}`;
   }
 };
 

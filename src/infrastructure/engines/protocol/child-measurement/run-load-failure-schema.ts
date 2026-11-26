@@ -32,17 +32,25 @@ const projectionProblemSchema = z.union([
     scope: z.literal("projection"),
     engine: engineSchema,
     state: z.literal("out-of-date"),
+    file: repoPathSchema,
+  }),
+  z.strictObject({
+    scope: z.literal("file"),
+    engine: engineSchema,
+    state: z.literal("left-over"),
+    file: repoPathSchema,
   }),
   z.strictObject({
     scope: z.literal("slice"),
     engine: engineSchema,
     state: z.enum(["out-of-date", "missing", "unconfigured"]),
-    slice: repoPathSchema,
+    file: repoPathSchema,
   }),
   z.strictObject({
     kind: z.literal("engine-not-run"),
     engine: engineSchema,
     projection: z.literal("missing"),
+    file: repoPathSchema,
   }),
 ]);
 
@@ -77,6 +85,7 @@ export const runLoadFailureSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("file-unreadable"), path: z.string(), detail: z.string() }),
   z.strictObject({ kind: z.literal("file-malformed"), path: z.string(), detail: z.string() }),
   z.strictObject({ kind: z.literal("file-unwritable"), path: z.string(), detail: z.string() }),
+  z.strictObject({ kind: z.literal("file-unremovable"), file: repoPathSchema, detail: z.string() }),
   z.strictObject({ kind: z.literal("unsupported-version"), path: z.string(), found: z.unknown() }),
   z.strictObject({ kind: z.literal("reserved-rule-set-name"), name: z.string() }),
   z.strictObject({

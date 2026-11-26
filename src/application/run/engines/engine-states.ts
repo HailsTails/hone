@@ -9,7 +9,6 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../../domain/report/run-report.ts";
-import { projectionOutputNamesOf } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
@@ -72,10 +71,10 @@ const measuredNothingOf = (request: {
   readonly engine: Engine;
   readonly measurement: RunMeasurement;
   readonly tracked: readonly RepoPath[];
+  readonly comparedOutputs: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
-  const ownOutputs = projectionOutputNamesOf({ engineNames: [request.engine.name] });
   const inReach = typescriptFilesOf({ tracked: request.tracked }).filter(
-    (file) => !ownOutputs.includes(file.slice(file.lastIndexOf("/") + 1)),
+    (file) => !request.comparedOutputs.includes(file),
   );
   return engineMeasurementOf({ run: request.measurement, inReach }) === "measured-nothing"
     ? [{ kind: "engine-not-run", engine: request.engine, projection: "measured-nothing" }]
@@ -90,26 +89,46 @@ const notRunOf = (request: {
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   const { nestedConfigurations, measured } = request.run;
-  const notIncluded: EngineNotRun = {
-    kind: "engine-not-run",
-    engine,
-    projection: "not-included",
-    nestedConfigurations,
-  };
+  const { projectionFile } = request.run;
   switch (request.run.projection) {
     case "missing":
-      return [{ kind: "engine-not-run", engine, projection: "missing" }];
+      return [
+        { kind: "engine-not-run", engine, projection: "missing", file: request.run.projectionFile },
+      ];
     case "not-included":
-      return [notIncluded];
+      return [
+        {
+          kind: "engine-not-run",
+          engine,
+          projection: "not-included",
+          file: request.run.projectionFile,
+          nestedConfigurations,
+        },
+      ];
     case "none":
       return [];
     case "current":
     case "out-of-date":
-      if (measured.length === 0 && nestedConfigurations.length > 0) return [notIncluded];
+      if (
+        projectionFile !== undefined &&
+        measured.length === 0 &&
+        nestedConfigurations.length > 0
+      ) {
+        return [
+          {
+            kind: "engine-not-run",
+            engine,
+            projection: "not-included",
+            file: projectionFile,
+            nestedConfigurations,
+          },
+        ];
+      }
       return measuredNothingOf({
         engine,
         measurement: runMeasurementOf(request),
         tracked: request.tracked,
+        comparedOutputs: request.run.comparedOutputs ?? [],
       });
   }
 };
@@ -119,7 +138,14 @@ const projectionProblemOf = (request: {
   readonly run: NamedEngineRun;
 }): readonly RunProjectionProblem[] =>
   request.run.projection === "out-of-date"
-    ? [{ scope: "projection", engine: request.engine, state: "out-of-date" }]
+    ? [
+        {
+          scope: "projection",
+          engine: request.engine,
+          state: "out-of-date",
+          file: request.run.projectionFile,
+        },
+      ]
     : [];
 
 const problemOf = (request: {
@@ -129,12 +155,11 @@ const problemOf = (request: {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   return [
     ...projectionProblemOf({ engine, run: request.run }),
-    ...request.run.slices.map(({ state, slice }): RunProjectionProblem => ({
-      scope: "slice",
-      engine,
-      state,
-      slice,
-    })),
+    ...request.run.slices.map((problem): RunProjectionProblem =>
+      problem.state === "left-over"
+        ? { ...problem, scope: "file", engine }
+        : { scope: "slice", engine, state: problem.state, file: problem.file },
+    ),
   ];
 };
 
@@ -167,6 +192,7 @@ const refreshableProblemOf = (request: {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
+    case "file":
       return problem;
     case "slice":
       switch (problem.state) {

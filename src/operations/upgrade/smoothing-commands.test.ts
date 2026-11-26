@@ -228,7 +228,11 @@ describe("createSmoothingCommands", () => {
       reach: () => ({
         stages: stagesHolding({
           records: [],
-          run: { ...CURRENT_ESLINT_RUN, projection: "missing" },
+          run: {
+            ...CURRENT_ESLINT_RUN,
+            projection: "missing",
+            projectionFile: repoPathOf("hone.eslint.mjs"),
+          },
         }),
         recordsSourceFor: () => ({ read, readAt: vi.fn<RecordsSource["readAt"]>() }),
       }),
@@ -251,7 +255,12 @@ describe("createSmoothingCommands", () => {
         error: {
           kind: "run-unmeasured",
           unmeasured: [
-            { kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" },
+            {
+              kind: "engine-not-run",
+              engine: { name: "eslint" },
+              projection: "missing",
+              file: repoPathOf("hone.eslint.mjs"),
+            },
           ],
         },
       },
@@ -309,7 +318,11 @@ describe("createSmoothingCommands", () => {
       reach: () => ({
         stages: stagesHolding({
           records: [],
-          run: { ...CURRENT_ESLINT_RUN, projection: "out-of-date" },
+          run: {
+            ...CURRENT_ESLINT_RUN,
+            projection: "out-of-date",
+            projectionFile: repoPathOf("hone.eslint.mjs"),
+          },
         }),
         recordsSourceFor: vi.fn(),
       }),
@@ -332,7 +345,12 @@ describe("createSmoothingCommands", () => {
         kind: "run-failed",
         failure: {
           kind: "projection-stale",
-          problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+          problem: {
+            scope: "projection",
+            engine: { name: "eslint" },
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
           projectCommand: PROJECT_COMMAND,
         },
       },

@@ -1,6 +1,5 @@
 import { createClauseChecks } from "../../../domain/language-layer/clause-checks.ts";
 import { mappedSettings } from "../../../domain/records/upgrade/settings-mapping.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
@@ -73,21 +72,27 @@ const settingsFor = (
 
 const projectionProblemOf = (request: {
   readonly measurements: readonly ProjectionMeasurement<NamedEngineRun>[];
-  readonly projection: CheckedVersionOneProjection | undefined;
 }): EnginePassFailure | undefined => {
   const unapplied = request.measurements.flatMap(({ unappliedSlices }) => unappliedSlices)[0];
   if (unapplied !== undefined) {
     return { kind: "projection-not-current", file: unapplied, state: "not-applied" };
   }
-  const state = request.measurements
-    .map(({ report }) => report.projection)
-    .find((candidate) => candidate !== "none" && candidate !== "current");
-  return state === undefined
+  const problem = request.measurements
+    .map(({ report }) => report)
+    .find(
+      (
+        report,
+      ): report is Extract<
+        NamedEngineRun,
+        { readonly projection: Exclude<NamedEngineRun["projection"], "none" | "current"> }
+      > => report.projection !== "none" && report.projection !== "current",
+    );
+  return problem === undefined
     ? undefined
     : {
         kind: "projection-not-current",
-        file: request.projection?.projectionFile ?? repoPathOf("disciplines.eslint.mjs"),
-        state,
+        file: problem.projectionFile,
+        state: problem.projection,
       };
 };
 
@@ -122,7 +127,6 @@ const findingsFor = async (
   }
   const problem = projectionProblemOf({
     measurements: ran.value,
-    projection: checkedProjection.value,
   });
   return problem === undefined
     ? versionOneObservationsOf({ names: names.value, runs: ran.value.map(({ report }) => report) })

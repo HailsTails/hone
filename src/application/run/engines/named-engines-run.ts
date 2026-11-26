@@ -1,7 +1,6 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
-import type { ProjectionKind } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
@@ -18,6 +17,7 @@ import type {
   NamedEngineRunRequest,
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
+import type { ProjectionKind } from "../../ports/settings/settings-file-format.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
 import { mapRequestToJudgedRequest } from "./judged-request.ts";
 
@@ -135,13 +135,21 @@ export const runNamedEngines = async (
   if (projected.outcome === "failed") return projected;
 
   const { engines, engineRequest } = loaded.value;
-  const judged = mapRequestToJudgedRequest({
-    engineRequest,
-    outputs: projected.value.map(({ file }) => file),
-  });
+  const outputs = projected.value.map(({ file }) => file);
+  const judged = mapRequestToJudgedRequest({ engineRequest, outputs });
   return gatheredOutcomes({
     outcomes: await Promise.all(
-      engines.map(async (engine) => listedOutcome({ outcome: await engine.run(judged) })),
+      engines.map(async (engine) => {
+        const outcome = await engine.run(judged);
+        return listedOutcome({
+          outcome:
+            outcome.outcome === "failed" ||
+            outcome.value.projection === "none" ||
+            outputs.length === 0
+              ? outcome
+              : { outcome: "ok", value: { ...outcome.value, comparedOutputs: outputs } },
+        });
+      }),
     ),
   });
 };

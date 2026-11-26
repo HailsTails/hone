@@ -50,7 +50,6 @@ const BASE_SETTINGS: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
-  eslintProjectionKind: "mjs",
   conventions: {
     conventions: {
       generated: [],

@@ -362,7 +362,12 @@ Nothing was changed.
           kind: "run-failed",
           failure: {
             kind: "projection-stale",
-            problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+            problem: {
+              scope: "projection",
+              engine: { name: "eslint" },
+              state: "out-of-date",
+              file: repoPathOf("hone.eslint.mjs"),
+            },
             projectCommand: "hone project --repo /repo",
           },
         },

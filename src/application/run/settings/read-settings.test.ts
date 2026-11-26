@@ -21,13 +21,16 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
-import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
+import type { SettingsFileFault } from "../../../domain/settings/settings-file.ts";
 import type {
   CheckPieceSource,
   PieceClause,
   SettingsSources,
 } from "../../ports/settings-sources.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 import { type NamedSettingsReading, readNamedSettings } from "./read-settings.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -166,7 +169,7 @@ const DOCUMENT = { version: 2 };
 
 const LOOPS_ADDRESS: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" };
 
-const SETTINGS_FILE: SettingsFile = {
+const SETTINGS_FILE: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [
@@ -191,7 +194,7 @@ const SETTINGS_FILE: SettingsFile = {
 };
 
 const formatGiving = (
-  file: Result<SettingsFile, SettingsFileFault>,
+  file: Result<VersionTwoSettingsFile, SettingsFileFault>,
 ): Pick<SettingsFileFormat, "fileOf"> => ({
   fileOf: vi.fn<SettingsFileFormat["fileOf"]>().mockReturnValue(file),
 });

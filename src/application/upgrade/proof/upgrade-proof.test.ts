@@ -482,7 +482,10 @@ const PRUNED_DEBT: PrunableDebt = {
 
 const ROOT_PROJECTION_FILES: Awaited<ReturnType<ProjectionFilesOf>> = {
   outcome: "ok",
-  value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] },
+  value: {
+    entries: [{ ...ROOT_PROJECTION_FILE, kind: "write" }],
+    projections: [ROOT_PROJECTION_FILE],
+  },
 };
 
 const SLICE_REMOVED: VersionOneProjectionsReading = {
@@ -653,12 +656,20 @@ describe("upgradeProof", () => {
     ).resolves.toEqual({ outcome: "ok", value: CARRIED_OVER });
   });
 
-  it("asks the oracle about each record, applies the patching, then the writing, runs version 2 over every file it created, then applies the removal, undoing nothing", async () => {
+  it("asks the oracle about each record, applies the patching, then the writes and obsolete projection removal, runs version 2 over every file it created, then applies the removal, undoing nothing", async () => {
+    const obsolete = {
+      kind: "remove-restorable-file",
+      path: absoluteRootOf("/repo/hone.eslint.ts"),
+      original: CONFIG_READ.value,
+    } as const;
     const answer = vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED);
     const apply = vi
       .fn<ProofEffects["apply"]>()
       .mockReturnValueOnce(NOTHING_PATCHED)
-      .mockReturnValueOnce(ALL_WRITTEN)
+      .mockReturnValueOnce({
+        ...ALL_WRITTEN,
+        settled: [...ALL_WRITTEN.settled, { effect: obsolete, outcome: "applied" }],
+      })
       .mockReturnValueOnce(VERSION_ONE_REMOVED);
     const undo = vi.fn<ProofEffects["undo"]>();
     const versionTwo = vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN);
@@ -671,7 +682,10 @@ describe("upgradeProof", () => {
           exists: vi.fn<FileTextPort["exists"]>(),
         },
         entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
-        path: recordsFolderPath(),
+        path: {
+          ...recordsFolderPath(),
+          join: joiningRecordsFolderFiles().mockReturnValueOnce("/repo/hone.eslint.ts"),
+        },
       },
       effects: { apply, undo },
       oracle: { answer },
@@ -679,7 +693,16 @@ describe("upgradeProof", () => {
         versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
         versionTwo,
       },
-      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({
+        outcome: "ok",
+        value: {
+          projections: [ROOT_PROJECTION_FILE],
+          entries: [
+            { ...ROOT_PROJECTION_FILE, kind: "write" },
+            { kind: "remove", file: repoPathOf("hone.eslint.ts") },
+          ],
+        },
+      }),
       versionOneProjectionsOf: vi
         .fn<VersionOneProjectionsOf>()
         .mockResolvedValue(FOUND_PROJECTIONS),
@@ -687,7 +710,7 @@ describe("upgradeProof", () => {
 
     expect([answer.mock.calls, apply.mock.calls, versionTwo.mock.calls, undo.mock.calls]).toEqual([
       [[{ records: [CARVE_OUT] }]],
-      [[PATCHING_NOTHING], [WRITING], [REMOVING_VERSION_ONE]],
+      [[PATCHING_NOTHING], [{ effects: [...WRITING.effects, obsolete] }], [REMOVING_VERSION_ONE]],
       [[{ written: WRITTEN_FILES }]],
       [],
     ]);
@@ -968,7 +991,7 @@ describe("upgradeProof", () => {
             clause: LOOPS_CLAUSE,
             file: repoPathOf("src/a.ts"),
             anchor: { line: 3, column: 1 },
-            snippet: "for (;;) {}",
+            snippet: "loop at the anchor",
             mechanism: AUDIT,
           },
         ],
@@ -1729,7 +1752,10 @@ describe("upgradeProof", () => {
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({
           outcome: "ok",
           value: {
-            files: [ROOT_PROJECTION_FILE, SLICE_PROJECTION_FILE],
+            entries: [
+              { ...ROOT_PROJECTION_FILE, kind: "write" },
+              { ...SLICE_PROJECTION_FILE, kind: "write" },
+            ],
             projections: [ROOT_PROJECTION_FILE, SLICE_PROJECTION_FILE],
           },
         }),

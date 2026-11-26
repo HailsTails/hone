@@ -218,13 +218,14 @@ export const writtenProofFiles = (request: {
   readonly effects: ProofEffects;
   readonly files: readonly PlannedFile[];
   readonly replacements: readonly PlannedFile[];
+  readonly following?: readonly ProofEffect[];
 }): Result<ProofWrites, ProofWriteRefusal> => {
   const effects = proofWriteEffectsOf(request);
   if (effects.outcome === "failed") {
     return { outcome: "failed", error: { failure: effects.error, unrestored: [] } };
   }
   const applied = proofWritesAppliedOf({
-    applied: request.effects.apply({ effects: effects.value }),
+    applied: request.effects.apply({ effects: [...effects.value, ...(request.following ?? [])] }),
   });
   return applied.outcome === "written"
     ? { outcome: "ok", value: applied.writes }

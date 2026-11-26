@@ -282,7 +282,10 @@ describe("runNamedEngines", () => {
       tree: { tracked: [A, README, file], declaredConfigRoots: [] },
     });
 
-    expect(run).toEqual({ outcome: "ok", value: [ESLINT_RUN] });
+    expect(run).toEqual({
+      outcome: "ok",
+      value: [{ ...ESLINT_RUN, comparedOutputs: [repoPathOf("hone.eslint.d.mts")] }],
+    });
     expect(engine.projectChecks).toHaveBeenCalledExactlyOnceWith({
       ...ESLINT_RUN_REQUEST,
       files: [A, file],

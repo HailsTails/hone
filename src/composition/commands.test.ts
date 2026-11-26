@@ -1010,7 +1010,13 @@ claimed-type#cast-expressions unrecordable src/a.ts: an entry in the suppression
       stages: stagesGiving({
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [CAST] }), projection: "out-of-date" }],
+          value: [
+            {
+              ...runOf({ hits: [CAST] }),
+              projection: "out-of-date",
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
       }),
       held: nothingHeld(),
@@ -1123,7 +1129,13 @@ describe("versionTwoPruneDebtCommandOf", () => {
 
   it("keeps the debt, printing nothing, when the engine measuring its check was not in effect, since nothing was measured to show it stale", async () => {
     expect(
-      await prunedWhileEngineRan({ run: { ...runOf({ hits: [] }), projection: "not-included" } }),
+      await prunedWhileEngineRan({
+        run: {
+          ...runOf({ hits: [] }),
+          projection: "not-included",
+          projectionFile: repoPathOf("hone.eslint.mjs"),
+        },
+      }),
     ).toEqual({
       writes: [[{ text: "" }]],
       exits: [[{ code: 0 }]],
@@ -1133,7 +1145,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
 
   it("refuses, keeping the debt, when a package slice is missing, naming the project command that writes it", async () => {
     const missingSlice: ChecksSliceProblem = {
-      slice: repoPathOf("packages/a/hone.eslint.mjs"),
+      file: repoPathOf("packages/a/hone.eslint.mjs"),
       state: "missing",
     };
     expect(
@@ -1167,7 +1179,13 @@ describe("versionTwoPruneDebtCommandOf", () => {
           .mockReturnValue({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [] }), projection: "not-included" }],
+          value: [
+            {
+              ...runOf({ hits: [] }),
+              projection: "not-included",
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
         renamed: vi
           .fn<VersionTwoStages["renamed"]>()
@@ -1209,7 +1227,13 @@ describe("versionTwoPruneDebtCommandOf", () => {
           .mockReturnValue({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [] }), projection: "not-included" }],
+          value: [
+            {
+              ...runOf({ hits: [] }),
+              projection: "not-included",
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
       }),
       held: debtHeld({ text: DEBT_DOCUMENT }),

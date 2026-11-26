@@ -351,7 +351,6 @@ const mapSmoothingFailureToLines = (request: {
               unmeasured,
               problems: [],
               projectCommand: PROJECT_COMMAND,
-              projectionKind: "mjs",
             })}`,
         ),
         "Fix what it names, then run the upgrade again.",

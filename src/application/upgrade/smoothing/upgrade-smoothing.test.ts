@@ -8,113 +8,96 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
 import type { SmoothingCommands } from "../../ports/upgrade/smoothing-commands.ts";
+import type { ProofQueries } from "../proof-writes/proof-writes.ts";
 import { runSmoothing } from "./upgrade-smoothing.ts";
+
+const EMPTY_CHANGES = { write: [], remove: [] };
+
+const commandsWith = (overrides: Partial<SmoothingCommands>): SmoothingCommands => ({
+  project: vi
+    .fn<SmoothingCommands["project"]>()
+    .mockResolvedValue({ outcome: "ok", value: EMPTY_CHANGES }),
+  removeCarried: vi
+    .fn<SmoothingCommands["removeCarried"]>()
+    .mockResolvedValue({ outcome: "ok", value: { changes: EMPTY_CHANGES, done: [] } }),
+  recordDebt: vi
+    .fn<SmoothingCommands["recordDebt"]>()
+    .mockResolvedValue({ outcome: "ok", value: { changes: EMPTY_CHANGES, done: [] } }),
+  pruneDebt: vi
+    .fn<SmoothingCommands["pruneDebt"]>()
+    .mockResolvedValue({ outcome: "ok", value: { changes: EMPTY_CHANGES, done: [] } }),
+  ...overrides,
+});
+
+const queryWith = (
+  request: Partial<{
+    readonly read: FileTextPort["read"];
+    readonly kindOf: EntryKindPort["kindOf"];
+    readonly join: PathPort["join"];
+    readonly directoryOf: PathPort["directoryOf"];
+  }>,
+): ProofQueries => ({
+  fileText: { read: request.read ?? vi.fn(), exists: vi.fn() },
+  entryKind: { kindOf: request.kindOf ?? vi.fn() },
+  path: {
+    join: request.join ?? vi.fn(),
+    relative: vi.fn(),
+    directoryOf: request.directoryOf ?? vi.fn(),
+  },
+});
+
+const createFilesAt = (request: {
+  readonly root: string;
+  readonly files: readonly string[];
+}): ProofQueries => {
+  const absences = new Map(
+    request.files.map((file) => [`${request.root}/${file}`, "absent"] as const),
+  );
+  return queryWith({
+    kindOf: ({ path }) => absences.get(path) ?? "directory",
+    join: ({ segments }) => segments.join("/"),
+    directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue(request.root),
+  });
+};
+
+const addedFile = (path: string, text: string): ReturnType<ProofEffects["apply"]> => ({
+  outcome: "all-applied",
+  settled: [
+    { effect: { kind: "create-file", path: absoluteRootOf(path), text }, outcome: "applied" },
+  ],
+});
+
+const projectionWriting = (
+  file: string,
+  text: string,
+): Awaited<ReturnType<SmoothingCommands["project"]>> => ({
+  outcome: "ok",
+  value: { write: [{ file: repoPathOf(file), text }], remove: [] },
+});
 
 describe("runSmoothing", () => {
   it("projects, removes carried records that answer nothing, projects, records debt, projects, prunes debt and projects, each over the files written so far", async () => {
-    const nothing = { write: [], remove: [] };
     const settings = repoPathOf("hone.config.json");
     const firstProjected = repoPathOf("a.mjs");
     const secondProjected = repoPathOf("b.mjs");
     const thirdProjected = repoPathOf("c.mjs");
-    const commands: SmoothingCommands = {
+    const commands = commandsWith({
       project: vi
         .fn<SmoothingCommands["project"]>()
-        .mockResolvedValueOnce({
-          outcome: "ok",
-          value: { write: [{ file: repoPathOf("a.mjs"), text: "a" }], remove: [] },
-        })
-        .mockResolvedValueOnce({
-          outcome: "ok",
-          value: { write: [{ file: repoPathOf("b.mjs"), text: "b" }], remove: [] },
-        })
-        .mockResolvedValueOnce({
-          outcome: "ok",
-          value: { write: [{ file: repoPathOf("c.mjs"), text: "c" }], remove: [] },
-        })
-        .mockResolvedValueOnce({
-          outcome: "ok",
-          value: { write: [{ file: repoPathOf("d.mjs"), text: "d" }], remove: [] },
-        }),
-      removeCarried: vi
-        .fn<SmoothingCommands["removeCarried"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-      recordDebt: vi
-        .fn<SmoothingCommands["recordDebt"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-      pruneDebt: vi
-        .fn<SmoothingCommands["pruneDebt"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-    };
+        .mockResolvedValueOnce(projectionWriting("a.mjs", "a"))
+        .mockResolvedValueOnce(projectionWriting("b.mjs", "b"))
+        .mockResolvedValueOnce(projectionWriting("c.mjs", "c"))
+        .mockResolvedValueOnce(projectionWriting("d.mjs", "d")),
+    });
     const apply = vi
       .fn<ProofEffects["apply"]>()
-      .mockReturnValueOnce({
-        outcome: "all-applied",
-        settled: [
-          {
-            effect: { kind: "create-file", path: absoluteRootOf("/repo/a.mjs"), text: "a" },
-            outcome: "applied",
-          },
-        ],
-      })
-      .mockReturnValueOnce({
-        outcome: "all-applied",
-        settled: [
-          {
-            effect: { kind: "create-file", path: absoluteRootOf("/repo/b.mjs"), text: "b" },
-            outcome: "applied",
-          },
-        ],
-      })
-      .mockReturnValueOnce({
-        outcome: "all-applied",
-        settled: [
-          {
-            effect: { kind: "create-file", path: absoluteRootOf("/repo/c.mjs"), text: "c" },
-            outcome: "applied",
-          },
-        ],
-      })
-      .mockReturnValueOnce({
-        outcome: "all-applied",
-        settled: [
-          {
-            effect: { kind: "create-file", path: absoluteRootOf("/repo/d.mjs"), text: "d" },
-            outcome: "applied",
-          },
-        ],
-      });
+      .mockReturnValueOnce(addedFile("/repo/a.mjs", "a"))
+      .mockReturnValueOnce(addedFile("/repo/b.mjs", "b"))
+      .mockReturnValueOnce(addedFile("/repo/c.mjs", "c"))
+      .mockReturnValueOnce(addedFile("/repo/d.mjs", "d"));
 
     await runSmoothing({
-      queries: {
-        fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
-        entryKind: {
-          kindOf: vi
-            .fn<EntryKindPort["kindOf"]>()
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("directory")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("directory")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("directory")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("directory"),
-        },
-        path: {
-          join: vi
-            .fn<PathPort["join"]>()
-            .mockReturnValueOnce("/repo/a.mjs")
-            .mockReturnValueOnce("/repo/b.mjs")
-            .mockReturnValueOnce("/repo/c.mjs")
-            .mockReturnValueOnce("/repo/d.mjs"),
-          relative: vi.fn<PathPort["relative"]>(),
-          directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue("/repo"),
-        },
-      },
+      queries: createFilesAt({ root: "/repo", files: ["a.mjs", "b.mjs", "c.mjs", "d.mjs"] }),
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       commands,
       repoRoot: absoluteRootOf("/repo"),
@@ -141,7 +124,6 @@ describe("runSmoothing", () => {
   });
 
   it("applies the files a step writes, hands them to every later step, and keeps what the step did", async () => {
-    const nothing = { write: [], remove: [] };
     const debtFile = repoPathOf("hone-records/debt/loop-keyword.json");
     const debtPath = absoluteRootOf("/repo/hone-records/debt/loop-keyword.json");
     const recorded = {
@@ -150,13 +132,7 @@ describe("runSmoothing", () => {
       ruleSet: TOOL_RULE_SET,
       effect: "recorded",
     } as const;
-    const commands: SmoothingCommands = {
-      project: vi
-        .fn<SmoothingCommands["project"]>()
-        .mockResolvedValue({ outcome: "ok", value: nothing }),
-      removeCarried: vi
-        .fn<SmoothingCommands["removeCarried"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
+    const commands = commandsWith({
       recordDebt: vi.fn<SmoothingCommands["recordDebt"]>().mockResolvedValue({
         outcome: "ok",
         value: {
@@ -164,36 +140,24 @@ describe("runSmoothing", () => {
           done: [recorded],
         },
       }),
-      pruneDebt: vi
-        .fn<SmoothingCommands["pruneDebt"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-    };
-    const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce({
-      outcome: "all-applied",
-      settled: [
-        { effect: { kind: "create-file", path: debtPath, text: "the debt" }, outcome: "applied" },
-      ],
     });
+    const apply = vi
+      .fn<ProofEffects["apply"]>()
+      .mockReturnValueOnce(addedFile(debtPath, "the debt"));
     const settings = repoPathOf("hone.config.json");
 
     const smoothed = await runSmoothing({
-      queries: {
-        fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
-        entryKind: {
-          kindOf: vi
-            .fn<EntryKindPort["kindOf"]>()
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("directory"),
-        },
-        path: {
-          join: vi.fn<PathPort["join"]>().mockReturnValueOnce(debtPath),
-          relative: vi.fn<PathPort["relative"]>(),
-          directoryOf: vi
-            .fn<PathPort["directoryOf"]>()
-            .mockReturnValueOnce("/repo/hone-records/debt"),
-        },
-      },
+      queries: queryWith({
+        kindOf: vi
+          .fn<EntryKindPort["kindOf"]>()
+          .mockReturnValueOnce("absent")
+          .mockReturnValueOnce("absent")
+          .mockReturnValueOnce("directory"),
+        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(debtPath),
+        directoryOf: vi
+          .fn<PathPort["directoryOf"]>()
+          .mockReturnValueOnce("/repo/hone-records/debt"),
+      }),
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       commands,
       repoRoot: absoluteRootOf("/repo"),
@@ -225,54 +189,43 @@ describe("runSmoothing", () => {
   });
 
   it("stops at a prune-debt that finds the projection stale, runs no later step, and undoes what was written", async () => {
-    const nothing = { write: [], remove: [] };
     const stale = {
       kind: "run-failed",
       failure: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+        problem: {
+          scope: "projection",
+          engine: { name: "eslint" },
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.mjs"),
+        },
         projectCommand: "hone project --repo /repo",
       },
     } as const;
-    const commands: SmoothingCommands = {
-      project: vi
-        .fn<SmoothingCommands["project"]>()
-        .mockResolvedValue({ outcome: "ok", value: nothing }),
-      removeCarried: vi
-        .fn<SmoothingCommands["removeCarried"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-      recordDebt: vi
-        .fn<SmoothingCommands["recordDebt"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
+    const commands = commandsWith({
       pruneDebt: vi
         .fn<SmoothingCommands["pruneDebt"]>()
         .mockResolvedValue({ outcome: "failed", error: stale }),
-    };
-    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([
-      {
-        written: "file-created",
-        path: absoluteRootOf("/repo/hone.config.json"),
-        detail: "EBUSY",
-      },
-    ]);
+    });
+    const originalSettings = {
+      kind: "file-created",
+      path: absoluteRootOf("/repo/hone.config.json"),
+    } as const;
+    const recordsDirectory = {
+      kind: "directory-created",
+      path: absoluteRootOf("/repo/hone-records"),
+    } as const;
+    const unrestored = [
+      { written: "file-created", path: originalSettings.path, detail: "EBUSY" },
+    ] as const;
+    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce(unrestored);
 
     const smoothed = await runSmoothing({
-      queries: {
-        fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
-        entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
-        path: {
-          join: vi.fn<PathPort["join"]>(),
-          relative: vi.fn<PathPort["relative"]>(),
-          directoryOf: vi.fn<PathPort["directoryOf"]>(),
-        },
-      },
+      queries: queryWith({}),
       effects: { apply: vi.fn<ProofEffects["apply"]>(), undo },
       commands,
       repoRoot: absoluteRootOf("/repo"),
-      writes: [
-        { kind: "directory-created", path: absoluteRootOf("/repo/hone-records") },
-        { kind: "file-created", path: absoluteRootOf("/repo/hone.config.json") },
-      ],
+      writes: [recordsDirectory, originalSettings],
       written: [repoPathOf("hone.config.json")],
     });
 
@@ -287,13 +240,7 @@ describe("runSmoothing", () => {
           kind: "smoothing-failed",
           step: "prune-debt",
           failure: stale,
-          unrestored: [
-            {
-              written: "file-created",
-              path: absoluteRootOf("/repo/hone.config.json"),
-              detail: "EBUSY",
-            },
-          ],
+          unrestored,
           removedByVersionOne: [],
         },
       },
@@ -302,16 +249,7 @@ describe("runSmoothing", () => {
         [{ written: [repoPathOf("hone.config.json")] }],
         [{ written: [repoPathOf("hone.config.json")] }],
       ],
-      undone: [
-        [
-          {
-            writes: [
-              { kind: "file-created", path: absoluteRootOf("/repo/hone.config.json") },
-              { kind: "directory-created", path: absoluteRootOf("/repo/hone-records") },
-            ],
-          },
-        ],
-      ],
+      undone: [[{ writes: [originalSettings, recordsDirectory] }]],
     });
   });
 
@@ -364,37 +302,20 @@ describe("runSmoothing", () => {
   });
 
   it("undoes what was written, the step's attempt included, when applying a step's files stops", async () => {
-    const nothing = { write: [], remove: [] };
     const debtPath = absoluteRootOf("/repo/hone-records/debt/loop-keyword.json");
-    const commands: SmoothingCommands = {
-      project: vi.fn<SmoothingCommands["project"]>().mockResolvedValue({
-        outcome: "ok",
-        value: {
-          write: [{ file: repoPathOf("hone-records/debt/loop-keyword.json"), text: "new" }],
-          remove: [],
-        },
-      }),
-      removeCarried: vi
-        .fn<SmoothingCommands["removeCarried"]>()
-        .mockResolvedValue({ outcome: "ok", value: { changes: nothing, done: [] } }),
-      recordDebt: vi.fn<SmoothingCommands["recordDebt"]>(),
-      pruneDebt: vi.fn<SmoothingCommands["pruneDebt"]>(),
-    };
+    const commands = commandsWith({
+      project: vi
+        .fn<SmoothingCommands["project"]>()
+        .mockResolvedValue(projectionWriting("hone-records/debt/loop-keyword.json", "new")),
+    });
     const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([]);
 
     const smoothed = await runSmoothing({
-      queries: {
-        fileText: {
-          read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: "old" }),
-          exists: vi.fn<FileTextPort["exists"]>(),
-        },
-        entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValueOnce("file") },
-        path: {
-          join: vi.fn<PathPort["join"]>().mockReturnValueOnce(debtPath),
-          relative: vi.fn<PathPort["relative"]>(),
-          directoryOf: vi.fn<PathPort["directoryOf"]>(),
-        },
-      },
+      queries: queryWith({
+        read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: "old" }),
+        kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValueOnce("file"),
+        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(debtPath),
+      }),
       effects: {
         apply: vi.fn<ProofEffects["apply"]>().mockReturnValueOnce({
           outcome: "stopped",

@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
+import type {
+  ProjectionKind,
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../application/ports/settings/settings-file-format.ts";
 import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
-import type { ProjectionKind } from "../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
@@ -14,16 +17,15 @@ import type { EslintConfigLookup } from "../../domain/settings/eslint-config-loo
 import { listedAddressText } from "../../domain/settings/listed-address.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
-  DEFAULT_PROJECTION_KIND,
   type CheckState,
   type DeclaredRuleSet,
   eslintConfigLookupOf,
   RENAMED_SETTINGS,
   type RuleSetLocation,
-  type SettingsFile,
   type SettingsFileFault,
 } from "../../domain/settings/settings-file.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
+import { DEFAULT_PROJECTION_KIND } from "../engines/eslint/runner/projection/projection-kinds.ts";
 import {
   brandedRepoPathSchema,
   repoPathSchema,
@@ -179,7 +181,7 @@ const ruleSetFaultOf = (request: {
 const settingsFileOfWire = (request: {
   readonly wire: SettingsFileWire;
   readonly conventions: ConventionsReading;
-}): SettingsFile => ({
+}): VersionTwoSettingsFile => ({
   exclude: request.wire.exclude,
   ruleSets: request.wire.ruleSets.map(([name, location]) => ({ name, location })),
   checks: request.wire.checks.map(([address, state]) => ({ address, state })),
@@ -241,7 +243,7 @@ const withheldWhenDefault = <Value>(request: {
   request.value === request.standard ? {} : { given: request.value };
 
 const settingsWireOfDefaults = (request: {
-  readonly settings: SettingsFile;
+  readonly settings: VersionTwoSettingsFile;
 }): Omit<SettingsWire, "version" | "ruleSets" | "checks"> => {
   const { settings } = request;
   const forfeiture = withheldWhenDefault({
@@ -286,7 +288,9 @@ const settingsWireOfDefaults = (request: {
   };
 };
 
-export const settingsWireOf = (request: { readonly settings: SettingsFile }): SettingsWire => ({
+export const settingsWireOf = (request: {
+  readonly settings: VersionTwoSettingsFile;
+}): SettingsWire => ({
   version: SETTINGS_FILE_VERSION,
   ruleSets: sortedRecordOf({
     entries: request.settings.ruleSets.map(({ name, location }): WireEntry<string> => [
@@ -303,12 +307,12 @@ export const settingsWireOf = (request: { readonly settings: SettingsFile }): Se
   ...settingsWireOfDefaults({ settings: request.settings }),
 });
 
-export const settingsTextOf = (request: { readonly settings: SettingsFile }): string =>
+export const settingsTextOf = (request: { readonly settings: VersionTwoSettingsFile }): string =>
   `${JSON.stringify(settingsWireOf({ settings: request.settings }), null, JSON_INDENT)}\n`;
 
 export const settingsFileOf = (request: {
   readonly document: unknown;
-}): Result<SettingsFile, SettingsFileFault> => {
+}): Result<VersionTwoSettingsFile, SettingsFileFault> => {
   const parsed = settingsFileWireSchema.safeParse(request.document);
   if (!parsed.success) {
     return {

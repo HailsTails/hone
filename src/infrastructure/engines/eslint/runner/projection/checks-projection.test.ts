@@ -4,7 +4,6 @@ import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import {
   checksProjectionText,
-  createChecksProjectionOutputs,
   mapChecksProjectionOutputsToTypedFile,
   type ProjectedCheck,
 } from "./checks-projection.ts";
@@ -44,24 +43,6 @@ const NON_NULL_ASSERTIONS: ProjectedCheck = {
   ruleId: "hone/claimed-type#non-null-assertions",
   options: [],
 };
-
-describe("createChecksProjectionOutputs", () => {
-  it("names hone.eslint.mjs and its declaration for the mjs kind", () => {
-    const outputs = createChecksProjectionOutputs({ kind: "mjs" });
-
-    expect(outputs).toEqual({
-      kind: "mjs",
-      configuration: "hone.eslint.mjs",
-      declaration: "hone.eslint.d.mts",
-    });
-  });
-
-  it("names hone.eslint.ts alone for the ts kind", () => {
-    const outputs = createChecksProjectionOutputs({ kind: "ts" });
-
-    expect(outputs).toEqual({ kind: "ts", configuration: "hone.eslint.ts" });
-  });
-});
 
 describe("mapChecksProjectionOutputsToTypedFile", () => {
   it("gives the declaration as the typed file of the mjs kind", () => {

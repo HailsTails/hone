@@ -28,7 +28,7 @@ const REPORT = {
   ],
   measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
   projection: "current",
-  slices: [{ slice: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
+  slices: [{ file: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [
@@ -289,7 +289,7 @@ describe("namedChecksRunResultSchema", () => {
   it("rejects a slice problem in a state that is not a slice state", () => {
     const report = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "stale" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "stale" }],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(
       false,
@@ -300,6 +300,7 @@ describe("namedChecksRunResultSchema", () => {
     const report = {
       ...REPORT,
       projection: "not-included",
+      projectionFile: "hone.eslint.mjs",
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
@@ -317,14 +318,26 @@ describe("namedChecksRunResultSchema", () => {
     ).toBe(false);
   });
 
+  it("decodes an obsolete output as its own file", () => {
+    const report = {
+      ...REPORT,
+      slices: [{ file: "packages/web/hone.eslint.ts", state: "left-over" }],
+    };
+
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
+      success: true,
+      data: { outcome: "ok", value: report },
+    });
+  });
+
   it("rejects the slice states that only a version 1 runner reports", () => {
     const notApplied = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "not-applied" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "not-applied" }],
     };
     const nested = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "nested-configuration" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "nested-configuration" }],
     };
     expect([
       namedChecksRunResultSchema.safeParse({ outcome: "ok", value: notApplied }).success,
@@ -336,9 +349,9 @@ describe("namedChecksRunResultSchema", () => {
     const report = {
       ...REPORT,
       slices: [
-        { slice: "packages/a/hone.eslint.mjs", state: "missing" },
-        { slice: "packages/b/hone.eslint.mjs", state: "out-of-date" },
-        { slice: "packages/c/hone.eslint.mjs", state: "unconfigured" },
+        { file: "packages/a/hone.eslint.mjs", state: "missing" },
+        { file: "packages/b/hone.eslint.mjs", state: "out-of-date" },
+        { file: "packages/c/hone.eslint.mjs", state: "unconfigured" },
       ],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({

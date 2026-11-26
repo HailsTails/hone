@@ -247,12 +247,12 @@ describe("runEnginesMeasurement over a tree that does not parse", () => {
 });
 
 describe("decodeMeasuredRuns", () => {
-  it("reads each engine's kinds and report back as its run", () => {
+  it("reads the engine's projection file, compared outputs and measurements", () => {
     const runs = decodeMeasuredRuns({
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["config-override","inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date"}}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["config-override","inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date","projectionFile":"hone.eslint.ts"},"comparedOutputs":["hone.eslint.ts","hone.eslint.d.mts"]}]}',
     });
 
     expect(runs).toEqual({
@@ -275,6 +275,8 @@ describe("decodeMeasuredRuns", () => {
           ],
           measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
           projection: "out-of-date",
+          projectionFile: repoPathOf("hone.eslint.ts"),
+          comparedOutputs: [repoPathOf("hone.eslint.ts"), repoPathOf("hone.eslint.d.mts")],
         },
       ],
     });

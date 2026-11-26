@@ -1,11 +1,11 @@
 import type { RunFailureSource } from "../../../domain/report/run-failure.ts";
-import type { ProjectionKind } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
 import type { CheckConformanceFailure } from "../../../domain/runner/conformance-types.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { ProjectionKind } from "../settings/settings-file-format.ts";
 import type { NamedEngineRun, NamedEngineRunRequest } from "./engine-run.ts";
 import type { RunnerInvalid, RunnerLocation } from "./runner-location.ts";
 import type { RunnerCall } from "./runner-module.ts";

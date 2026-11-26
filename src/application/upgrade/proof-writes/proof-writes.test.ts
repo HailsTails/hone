@@ -336,10 +336,17 @@ describe("rolledBackWrites", () => {
 });
 
 describe("writtenProofFiles", () => {
-  it("applies the planned effects and records what it wrote", () => {
+  it("applies projection removals after writes and records both for rollback", () => {
+    const previousProjection = absoluteRootOf("/repo/hone.eslint.ts");
+    const removal = {
+      kind: "remove-restorable-file",
+      path: previousProjection,
+      original: "export default [];",
+    } as const;
     const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce({
       outcome: "all-applied",
       settled: [
+        { effect: removal, outcome: "applied" },
         {
           effect: { kind: "create-file", path: PROJECTION_FILE, text: "projection" },
           outcome: "applied",
@@ -361,10 +368,17 @@ describe("writtenProofFiles", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
         files: [{ path: PROJECTION_FILE, text: "projection" }],
         replacements: [],
+        following: [removal],
       }),
-    ).toEqual({ outcome: "ok", value: [{ kind: "file-created", path: PROJECTION_FILE }] });
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        { kind: "file-removed", path: previousProjection, original: "export default [];" },
+        { kind: "file-created", path: PROJECTION_FILE },
+      ],
+    });
     expect(apply.mock.calls).toEqual([
-      [{ effects: [{ kind: "create-file", path: PROJECTION_FILE, text: "projection" }] }],
+      [{ effects: [{ kind: "create-file", path: PROJECTION_FILE, text: "projection" }, removal] }],
     ]);
   });
 

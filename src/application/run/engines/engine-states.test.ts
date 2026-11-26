@@ -64,6 +64,7 @@ const runWith = (request: {
   nativeExceptions: [],
   coverableKinds: [],
   projection: request.projection,
+  projectionFile: repoPathOf("hone.eslint.mjs"),
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -82,7 +83,14 @@ describe("engineUnmeasuredOf", () => {
         tracked: TRACKED,
         selected: [],
       }),
-    ).toEqual([{ kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" }]);
+    ).toEqual([
+      {
+        kind: "engine-not-run",
+        engine: ESLINT_ENGINE,
+        projection: "missing",
+        file: repoPathOf("hone.eslint.mjs"),
+      },
+    ]);
   });
 
   it("names the engine a run left out of effect because the team's configuration does not include its projection", () => {
@@ -98,6 +106,7 @@ describe("engineUnmeasuredOf", () => {
         kind: "engine-not-run",
         engine: ESLINT_ENGINE,
         projection: "not-included",
+        file: repoPathOf("hone.eslint.mjs"),
         nestedConfigurations: [],
       },
     ]);
@@ -124,6 +133,7 @@ describe("engineUnmeasuredOf", () => {
           kind: "engine-not-run",
           engine: ESLINT_ENGINE,
           projection: "not-included",
+          file: repoPathOf("hone.eslint.mjs"),
           nestedConfigurations: [folder],
         },
       ]);
@@ -138,7 +148,14 @@ describe("engineUnmeasuredOf", () => {
         tracked: TRACKED,
         selected: [],
       }),
-    ).toEqual([{ kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" }]);
+    ).toEqual([
+      {
+        kind: "engine-not-run",
+        engine: { name: "eslint" },
+        projection: "missing",
+        file: repoPathOf("hone.eslint.mjs"),
+      },
+    ]);
   });
 
   it("names nothing for a run whose projection is current, out of date or not needed", () => {
@@ -196,7 +213,15 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
   it("names nothing when the only TypeScript files are the engine's own projection outputs", () => {
     const unmeasured = engineUnmeasuredOf({
       catalogue: REPORT_CATALOGUE,
-      runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+      runs: [
+        {
+          ...runWith({ mechanism: ESLINT, projection: "current" }),
+          comparedOutputs: [
+            repoPathOf("hone.eslint.d.mts"),
+            repoPathOf("packages/a/hone.eslint.d.mts"),
+          ],
+        },
+      ],
       tracked: [repoPathOf("hone.eslint.d.mts"), repoPathOf("packages/a/hone.eslint.d.mts")],
       selected: SELECTED,
     });
@@ -207,7 +232,12 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
   it("names nothing when the only TypeScript files are the engine's own typed projections", () => {
     const unmeasured = engineUnmeasuredOf({
       catalogue: REPORT_CATALOGUE,
-      runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+      runs: [
+        {
+          ...runWith({ mechanism: ESLINT, projection: "current" }),
+          comparedOutputs: [repoPathOf("hone.eslint.ts"), repoPathOf("packages/a/hone.eslint.ts")],
+        },
+      ],
       tracked: [repoPathOf("hone.eslint.ts"), repoPathOf("packages/a/hone.eslint.ts")],
       selected: SELECTED,
     });
@@ -220,7 +250,12 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     (file) => {
       const unmeasured = engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+        runs: [
+          {
+            ...runWith({ mechanism: ESLINT, projection: "current" }),
+            comparedOutputs: [repoPathOf("hone.eslint.d.mts")],
+          },
+        ],
         tracked: [repoPathOf("hone.eslint.d.mts"), file],
         selected: SELECTED,
       });
@@ -237,7 +272,14 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
         tracked: TRACKED,
         selected: SELECTED,
       }),
-    ).toEqual([{ kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" }]);
+    ).toEqual([
+      {
+        kind: "engine-not-run",
+        engine: ESLINT_ENGINE,
+        projection: "missing",
+        file: repoPathOf("hone.eslint.mjs"),
+      },
+    ]);
   });
 
   it("names nothing for an engine that measured a file, one that needs no projection, or one with no selected check", () => {
@@ -310,22 +352,44 @@ describe("engineMeasurementOf", () => {
 });
 
 describe("engineProblemsOf", () => {
+  it("turns an obsolete runner output into a problem naming the file", () => {
+    const file = repoPathOf("hone.eslint.ts");
+
+    expect(
+      engineProblemsOf({
+        catalogue: REPORT_CATALOGUE,
+        runs: [
+          {
+            ...runWith({ mechanism: ESLINT, projection: "current" }),
+            slices: [{ state: "left-over", file }],
+          },
+        ],
+      }),
+    ).toEqual([{ scope: "file", engine: ESLINT_ENGINE, state: "left-over", file }]);
+  });
   it("names the engine whose projection differs from what project writes now", () => {
     expect(
       engineProblemsOf({
         catalogue: REPORT_CATALOGUE,
         runs: [runWith({ mechanism: ESLINT, projection: "out-of-date" })],
       }),
-    ).toEqual([{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }]);
+    ).toEqual([
+      {
+        scope: "projection",
+        engine: ESLINT_ENGINE,
+        state: "out-of-date",
+        file: repoPathOf("hone.eslint.mjs"),
+      },
+    ]);
   });
 
   it("names each package file a run found missing, out of date or not loaded, beside a current root projection", () => {
     const run: NamedEngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "current" }),
       slices: [
-        { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
-        { slice: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
-        { slice: repoPathOf("packages/c/hone.eslint.mjs"), state: "unconfigured" },
+        { file: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
+        { file: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
+        { file: repoPathOf("packages/c/hone.eslint.mjs"), state: "unconfigured" },
       ],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
@@ -333,19 +397,19 @@ describe("engineProblemsOf", () => {
         scope: "slice",
         engine: ESLINT_ENGINE,
         state: "missing",
-        slice: "packages/a/hone.eslint.mjs",
+        file: "packages/a/hone.eslint.mjs",
       },
       {
         scope: "slice",
         engine: ESLINT_ENGINE,
         state: "out-of-date",
-        slice: "packages/b/hone.eslint.mjs",
+        file: "packages/b/hone.eslint.mjs",
       },
       {
         scope: "slice",
         engine: ESLINT_ENGINE,
         state: "unconfigured",
-        slice: "packages/c/hone.eslint.mjs",
+        file: "packages/c/hone.eslint.mjs",
       },
     ]);
   });
@@ -353,15 +417,20 @@ describe("engineProblemsOf", () => {
   it("names the root projection first, then the package files, when both differ", () => {
     const run: NamedEngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "out-of-date" }),
-      slices: [{ slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
+      slices: [{ file: repoPathOf("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
-      { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+      {
+        scope: "projection",
+        engine: ESLINT_ENGINE,
+        state: "out-of-date",
+        file: repoPathOf("hone.eslint.mjs"),
+      },
       {
         scope: "slice",
         engine: ESLINT_ENGINE,
         state: "out-of-date",
-        slice: "packages/a/hone.eslint.mjs",
+        file: "packages/a/hone.eslint.mjs",
       },
     ]);
   });
@@ -382,12 +451,23 @@ describe("engineProblemsOf", () => {
 });
 
 describe("refreshableProjectionOf", () => {
+  it("requires refreshing when an obsolete projection file is present", () => {
+    const problem = {
+      scope: "file",
+      engine: ESLINT_ENGINE,
+      state: "left-over",
+      file: repoPathOf("hone.eslint.ts"),
+    } as const;
+
+    expect(refreshableProjectionOf({ problems: [problem], unmeasured: [] })).toEqual(problem);
+  });
   const SLICE = repoPathOf("packages/a/hone.eslint.mjs");
 
   const MISSING_ROOT = {
     kind: "engine-not-run",
     engine: ESLINT_ENGINE,
     projection: "missing",
+    file: repoPathOf("hone.eslint.mjs"),
   } as const;
 
   it("is nothing when there are no problems and nothing unmeasured", () => {
@@ -397,7 +477,7 @@ describe("refreshableProjectionOf", () => {
   it("is nothing for a slice no configuration loads, which project does not repair", () => {
     expect(
       refreshableProjectionOf({
-        problems: [{ scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE }],
+        problems: [{ scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE }],
         unmeasured: [],
       }),
     ).toBeUndefined();
@@ -413,6 +493,7 @@ describe("refreshableProjectionOf", () => {
             kind: "engine-not-run",
             engine: ESLINT_ENGINE,
             projection: "not-included",
+            file: repoPathOf("hone.eslint.mjs"),
             nestedConfigurations: [],
           },
         ],
@@ -421,7 +502,12 @@ describe("refreshableProjectionOf", () => {
   });
 
   it("is the out-of-date root projection", () => {
-    const problem = { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" } as const;
+    const problem = {
+      scope: "projection",
+      engine: ESLINT_ENGINE,
+      state: "out-of-date",
+      file: repoPathOf("hone.eslint.mjs"),
+    } as const;
 
     expect(refreshableProjectionOf({ problems: [problem], unmeasured: [] })).toBe(problem);
   });
@@ -433,12 +519,12 @@ describe("refreshableProjectionOf", () => {
   });
 
   it.each(["missing", "out-of-date"] as const)("is a slice that is %s", (state) => {
-    const problem = { scope: "slice", engine: ESLINT_ENGINE, state, slice: SLICE } as const;
+    const problem = { scope: "slice", engine: ESLINT_ENGINE, state, file: SLICE } as const;
 
     expect(
       refreshableProjectionOf({
         problems: [
-          { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE },
+          { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE },
           problem,
         ],
         unmeasured: [],

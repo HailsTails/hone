@@ -12,7 +12,7 @@ export type ChecksSlices = {
   readonly packages: readonly ChecksSlice[];
 };
 
-export const pathInSlice = (request: {
+export const joinSlicePath = (request: {
   readonly directory: RepoPath | undefined;
   readonly name: RepoPath;
 }): RepoPath =>
@@ -25,13 +25,13 @@ const packageSliceOf = (request: {
   readonly configuration: RepoPath;
 }): ChecksSlice => {
   const directory = repoPathSchema.parse(request.directory);
-  return { directory, file: pathInSlice({ directory, name: request.configuration }) };
+  return { directory, file: joinSlicePath({ directory, name: request.configuration }) };
 };
 
 export const declarationPathOf = (request: {
   readonly slice: ChecksSlice;
   readonly declaration: RepoPath;
-}): RepoPath => pathInSlice({ directory: request.slice.directory, name: request.declaration });
+}): RepoPath => joinSlicePath({ directory: request.slice.directory, name: request.declaration });
 
 export const slicesOf = (request: {
   readonly trackedPaths: readonly RepoPath[];

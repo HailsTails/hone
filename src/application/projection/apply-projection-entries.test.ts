@@ -6,7 +6,7 @@ import type { ProjectedFile, ProjectionEntry } from "../../domain/runner/checks-
 import type { FileRemovalPort } from "../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { projectedFilesWrittenOf } from "./projected-files-written.ts";
+import { applyProjectionEntries } from "./apply-projection-entries.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -36,7 +36,7 @@ const writtenOver = (request: {
   readonly fileText: FileTextPort;
   readonly files: readonly ProjectionEntry[];
 }) =>
-  projectedFilesWrittenOf({
+  applyProjectionEntries({
     fileText: request.fileText,
     fileRemoval: { remove: vi.fn() },
     path: POSIX_PATH,
@@ -44,7 +44,7 @@ const writtenOver = (request: {
     files: request.files,
   });
 
-describe("projectedFilesWrittenOf", () => {
+describe("applyProjectionEntries", () => {
   it("removes a projected file and reports it removed", () => {
     const file = repoPathOf("hone.eslint.ts");
     const remove = vi
@@ -53,7 +53,7 @@ describe("projectedFilesWrittenOf", () => {
     const join = vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.ts");
     const fileText = fileTextAbsent();
 
-    const written = projectedFilesWrittenOf({
+    const written = applyProjectionEntries({
       fileText,
       fileRemoval: { remove },
       path: { join },
@@ -73,7 +73,7 @@ describe("projectedFilesWrittenOf", () => {
       error: { kind: "unremovable", path: "/repo/hone.eslint.ts", detail: "EACCES" },
     });
 
-    const written = projectedFilesWrittenOf({
+    const written = applyProjectionEntries({
       fileText: fileTextAbsent(),
       fileRemoval: { remove },
       path: { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.ts") },
@@ -83,7 +83,7 @@ describe("projectedFilesWrittenOf", () => {
 
     expect(written).toEqual({
       outcome: "failed",
-      error: { kind: "file-unwritable", path: "/repo/hone.eslint.ts", detail: "EACCES" },
+      error: { kind: "file-unremovable", file: "hone.eslint.ts", detail: "EACCES" },
     });
   });
 
@@ -97,7 +97,7 @@ describe("projectedFilesWrittenOf", () => {
       }),
     };
 
-    const written = projectedFilesWrittenOf({
+    const written = applyProjectionEntries({
       fileText,
       fileRemoval: { remove },
       path: POSIX_PATH,

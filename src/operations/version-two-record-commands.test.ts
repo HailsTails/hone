@@ -124,6 +124,7 @@ const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "out-of-date",
+  projectionFile: repoPathOf("hone.eslint.ts"),
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -336,10 +337,10 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
       error: {
         kind: "projection-stale",
         problem: {
-          scope: "slice",
+          scope: "projection",
           engine: { name: "eslint" },
-          slice: repoPathOf("hone.eslint.ts"),
           state: "out-of-date",
+          file: repoPathOf("hone.eslint.ts"),
         },
         projectCommand: PROJECT_COMMAND,
       },
@@ -367,7 +368,7 @@ describe("versionTwoPruneDebtOf", () => {
 });
 
 describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
-  it("names the out-of-date TypeScript projection and writes no records", async () => {
+  it("refuses with projection-stale naming the project command and writes no records", async () => {
     const input = inputWithOutOfDateProjection();
 
     const pruned = await versionTwoPruneDebtOf({
@@ -386,10 +387,10 @@ describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
         error: {
           kind: "projection-stale",
           problem: {
-            scope: "slice",
+            scope: "projection",
             engine: { name: "eslint" },
             state: "out-of-date",
-            slice: "hone.eslint.ts",
+            file: repoPathOf("hone.eslint.ts"),
           },
           projectCommand: PROJECT_COMMAND,
         },

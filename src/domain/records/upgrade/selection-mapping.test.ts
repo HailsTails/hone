@@ -4,7 +4,6 @@ import type { Check } from "../../language-layer/symptom-catalogue.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { DEFAULT_CONVENTIONS } from "../../settings/conventions.ts";
 import { mapSelectionToVersionTwo, readConfinedPackages } from "./selection-mapping.ts";
 
 describe("mapSelectionToVersionTwo", () => {
@@ -61,8 +60,14 @@ describe("mapSelectionToVersionTwo", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
-        eslintProjectionKind: "mjs",
-        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+        conventions: {
+          conventions: {
+            generated: [],
+            layers: [],
+            testFiles: { suffixes: ["test", "spec"], folders: [] },
+          },
+          declared: [],
+        },
       },
     });
   });

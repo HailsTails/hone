@@ -98,6 +98,11 @@ export type RunLoadFailure =
     }
   | { readonly kind: "check-settings-differ"; readonly check: string; readonly other: string }
   | {
+      readonly kind: "file-unremovable";
+      readonly file: RepoPath;
+      readonly detail: string;
+    }
+  | {
       readonly kind: "projection-stale";
       readonly problem: RunProjectionProblem | MissingProjection;
       readonly projectCommand: string;

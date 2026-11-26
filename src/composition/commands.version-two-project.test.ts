@@ -412,11 +412,13 @@ const ranWith = async (request: {
   readonly stagesOver: StagesOver;
   readonly moduleUrl: string;
   readonly fileText: FileTextPort;
+  readonly fileRemoval?: FileRemovalPort;
 }) => {
   const processPort = processWith({ arguments: request.arguments });
   const { fileText } = request;
   await ranVersionTwoProject({
     ports: {
+      fileRemoval: request.fileRemoval ?? { remove: vi.fn<FileRemovalPort["remove"]>() },
       namedEngine: { load: vi.fn() },
       gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
       directory: {
@@ -451,6 +453,29 @@ describe("versionTwoProjectCommandOf", () => {
     expect({ ran, written: vi.mocked(fileText.write).mock.calls }).toEqual({
       ran: { writes: [[{ text: "hone.eslint.mjs written\n" }]], exits: [[{ code: 0 }]] },
       written: [[{ path: "/repo/hone.eslint.mjs", text: "export default [];\n" }]],
+    });
+  });
+
+  it("removes a projection returned by the engine and reports the removal", async () => {
+    const remove = vi
+      .fn<FileRemovalPort["remove"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+    const ran = await ranWith({
+      moduleUrl: ENTRY_URL,
+      arguments: ["--repo", "/repo"],
+      fileText: fileTextAbsent(),
+      fileRemoval: { remove },
+      stagesOver: stagesOverProjecting({
+        projected: {
+          outcome: "ok",
+          value: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }],
+        },
+      }),
+    });
+
+    expect({ ran, removed: remove.mock.calls }).toEqual({
+      ran: { writes: [[{ text: "hone.eslint.ts removed\n" }]], exits: [[{ code: 0 }]] },
+      removed: [[{ path: "/repo/hone.eslint.ts" }]],
     });
   });
 

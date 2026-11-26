@@ -494,7 +494,14 @@ const EVERY_SECTION: RunReport = {
     },
   ],
   unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
-  "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
+  "projection-problems": [
+    {
+      scope: "projection",
+      engine: ESLINT_ENGINE,
+      state: "out-of-date",
+      file: repoPathOf("hone.eslint.mjs"),
+    },
+  ],
   assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }],
   "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
   "record-notes": [
@@ -555,7 +562,6 @@ const rendered = (request: {
     },
     symptomPage: SYMPTOM_PAGE,
     projectCommand: PROJECT_COMMAND,
-    projectionKind: "mjs",
     pruneCommand: PRUNE_COMMAND,
   });
 
@@ -575,7 +581,6 @@ describe("mapRunReportToFailingLines", () => {
       },
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
-      projectionKind: "mjs",
       pruneCommand: PRUNE_COMMAND,
     });
 
@@ -614,7 +619,6 @@ describe("mapRunReportToFailingLines", () => {
       },
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
-      projectionKind: "mjs",
       pruneCommand: PRUNE_COMMAND,
     });
 
@@ -721,7 +725,6 @@ describe("renderRunSectionsText", () => {
         },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
-        projectionKind: "mjs",
         pruneCommand: PRUNE_COMMAND,
       }),
     ).toBe(`findings (1)\n${LINES.findings}\nrefused (1)\n${LINES.refused}\n`);
@@ -742,7 +745,6 @@ describe("renderRunSectionsText", () => {
         },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
-        projectionKind: "mjs",
         pruneCommand: PRUNE_COMMAND,
       }),
     ).toBe("");

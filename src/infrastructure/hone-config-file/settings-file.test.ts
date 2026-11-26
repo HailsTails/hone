@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { VersionTwoSettingsFile } from "../../application/ports/settings/settings-file-format.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { SettingsFile, SettingsFileFault } from "../../domain/settings/settings-file.ts";
+import type { SettingsFileFault } from "../../domain/settings/settings-file.ts";
 import {
   SETTINGS_FILE_FORMAT,
   settingsFileOf,
@@ -14,7 +15,7 @@ import {
 
 const SMALLEST_DOCUMENT = { version: 2, ruleSets: {}, checks: {} };
 
-const SMALLEST_FILE: SettingsFile = {
+const SMALLEST_FILE: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [],
@@ -28,18 +29,6 @@ const SMALLEST_FILE: SettingsFile = {
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
-type KeyRow = {
-  readonly name: string;
-  readonly document: ReadonlyJsonValue;
-  readonly file: SettingsFile;
-};
-
-type RefusalRow = {
-  readonly name: string;
-  readonly document: ReadonlyJsonValue;
-  readonly fault: SettingsFileFault;
-};
-
 describe("settingsFileOf", () => {
   it("reads the smallest file with every default today's version 1 file gives", () => {
     expect(settingsFileOf({ document: SMALLEST_DOCUMENT })).toEqual({
@@ -48,7 +37,11 @@ describe("settingsFileOf", () => {
     });
   });
 
-  it.each<KeyRow>([
+  it.each<{
+    readonly name: string;
+    readonly document: ReadonlyJsonValue;
+    readonly file: VersionTwoSettingsFile;
+  }>([
     {
       name: "an excluded path",
       document: { version: 2, ruleSets: {}, checks: {}, exclude: ["vendor"] },
@@ -326,7 +319,11 @@ describe("settingsFileOf", () => {
     });
   });
 
-  it.each<RefusalRow>([
+  it.each<{
+    readonly name: string;
+    readonly document: ReadonlyJsonValue;
+    readonly fault: SettingsFileFault;
+  }>([
     {
       name: "the reason-only option, which version 2 does not have",
       document: { ...SMALLEST_DOCUMENT, fileExceptionWhyChains: "optional" },
@@ -474,7 +471,7 @@ describe("settingsFileOf", () => {
   });
 });
 
-const FULL_FILE: SettingsFile = {
+const FULL_FILE: VersionTwoSettingsFile = {
   exclude: [repoPathOf("vendor")],
   ruleSets: [
     { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
@@ -524,7 +521,7 @@ const FULL_FILE: SettingsFile = {
   },
 };
 
-const UNSORTED_FILE: SettingsFile = {
+const UNSORTED_FILE: VersionTwoSettingsFile = {
   ...SMALLEST_FILE,
   ruleSets: [
     {

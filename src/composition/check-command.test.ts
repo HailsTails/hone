@@ -386,8 +386,8 @@ const FAILING_RUN: NamedEngineRun = {
 const SLICES_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
   slices: [
-    { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
-    { slice: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
+    { file: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
+    { file: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
   ],
 };
 
@@ -702,7 +702,6 @@ describe("versionTwoReportRequestOf", () => {
             content: { symptoms: new Map([["claimed-type", CLAIMED_TYPE]]) },
             touched: { measured: "yes", paths: new Set() },
             output: "counts",
-            projectionKind: "ts",
             runs: [],
             moved: [],
           },
@@ -713,7 +712,6 @@ describe("versionTwoReportRequestOf", () => {
       catalogue: REPORT_CATALOGUE,
       content: { symptoms: new Map([["claimed-type", CLAIMED_TYPE]]) },
       output: "counts",
-      projectionKind: "ts",
       symptomPage: "../install/rules/typescript/symptoms.md",
       projectCommand: "node /install/src/hone.ts project --repo /repo",
       pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",

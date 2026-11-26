@@ -1,4 +1,5 @@
 import type {
+  NamedEngineProjection,
   NamedEngineRun,
   NamedEngineRunRequest,
 } from "../../../../application/ports/engine/engine-run.ts";
@@ -11,7 +12,11 @@ import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.
 
 export type ChecksRunFailure = RunnerFailure;
 
-export type NamedChecksRunReport = Omit<NamedEngineRun, "mechanism" | "coverableKinds">;
+export type NamedChecksRunReport = NamedEngineProjection &
+  Omit<
+    NamedEngineRun,
+    "mechanism" | "coverableKinds" | "comparedOutputs" | keyof NamedEngineProjection
+  >;
 
 export type NamedChecksRunner<Request extends NamedEngineRunRequest = NamedEngineRunRequest> = {
   readonly run: (request: Request) => Promise<Result<NamedChecksRunReport, ChecksRunFailure>>;

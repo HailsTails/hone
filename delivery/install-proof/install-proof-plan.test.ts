@@ -12,6 +12,7 @@ import {
   packagedScriptsOf,
   type ConsumerSetup,
   type ProofAction,
+  type ProofCase,
   type StepExpectation,
   toolchainPinsOf,
 } from "./install-proof-plan.ts";
@@ -579,112 +580,83 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   },
 ];
 
-describe("the proof cases", () => {
-  it.each([
-    [
-      0,
-      {
-        consumer: "audit",
-        fixture: "audit",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        setup: WALKER_SETUP,
-        actions: AUDIT_ACTIONS,
-      },
-    ],
-    [
-      1,
-      {
-        consumer: "eslint-10",
-        fixture: "eslint",
-        toolchain: "current",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_ACTIONS,
-      },
-    ],
-    [
-      2,
-      {
-        consumer: "eslint-9",
-        fixture: "eslint",
-        toolchain: "eslint-9",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_ACTIONS,
-      },
-    ],
-    [
-      3,
-      {
-        consumer: "eslint-typescript-config",
-        fixture: "eslint",
-        toolchain: "typescript-config",
-        typeStripping: "disabled",
-        setup: TYPESCRIPT_CONFIG_SETUP,
-        actions: TYPESCRIPT_CONFIG_ACTIONS,
-      },
-    ],
-    [
-      4,
-      {
-        consumer: "eslint-missing",
-        fixture: "eslint",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_MISSING_ACTIONS,
-      },
-    ],
-    [
-      5,
-      {
-        consumer: "team-floor",
-        fixture: "team",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        actions: [WRONG_FIELDS_REJECTED],
-      },
-    ],
-    [
-      6,
-      {
-        consumer: "team",
-        fixture: "team",
-        toolchain: "current",
-        typeStripping: "enabled",
-        setup: TEAM_SETUP,
-        actions: TEAM_ACTIONS,
-      },
-    ],
-    [
-      7,
-      {
-        consumer: "workspace",
-        fixture: "workspace",
-        toolchain: "current",
-        typeStripping: "disabled",
-        setup: WORKSPACE_SETUP,
-        actions: WORKSPACE_ACTIONS,
-      },
-    ],
-    [
-      8,
-      {
-        consumer: "workspace-package-config",
-        fixture: "workspace",
-        toolchain: "current",
-        typeStripping: "disabled",
-        setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
-        actions: WORKSPACE_ACTIONS,
-      },
-    ],
-  ])("plans the packed consumer at position %s", (index, expected) => {
-    expect(PROOF_CASES[index]).toEqual(expected);
-  });
+const EXPECTED_PROOF_CASES: readonly ProofCase[] = [
+  {
+    consumer: "audit",
+    fixture: "audit",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    setup: WALKER_SETUP,
+    actions: AUDIT_ACTIONS,
+  },
+  {
+    consumer: "eslint-10",
+    fixture: "eslint",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_ACTIONS,
+  },
+  {
+    consumer: "eslint-9",
+    fixture: "eslint",
+    toolchain: "eslint-9",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_ACTIONS,
+  },
+  {
+    consumer: "eslint-typescript-config",
+    fixture: "eslint",
+    toolchain: "typescript-config",
+    typeStripping: "disabled",
+    setup: TYPESCRIPT_CONFIG_SETUP,
+    actions: TYPESCRIPT_CONFIG_ACTIONS,
+  },
+  {
+    consumer: "eslint-missing",
+    fixture: "eslint",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_MISSING_ACTIONS,
+  },
+  {
+    consumer: "team-floor",
+    fixture: "team",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    actions: [WRONG_FIELDS_REJECTED],
+  },
+  {
+    consumer: "team",
+    fixture: "team",
+    toolchain: "current",
+    typeStripping: "enabled",
+    setup: TEAM_SETUP,
+    actions: TEAM_ACTIONS,
+  },
+  {
+    consumer: "workspace",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: WORKSPACE_SETUP,
+    actions: WORKSPACE_ACTIONS,
+  },
+  {
+    consumer: "workspace-package-config",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
+    actions: WORKSPACE_ACTIONS,
+  },
+];
 
-  it("plans nine packed consumers", () => {
-    expect(PROOF_CASES).toHaveLength(9);
+describe("the proof cases", () => {
+  it("plans the supported packed consumers", () => {
+    expect(PROOF_CASES).toEqual(EXPECTED_PROOF_CASES);
   });
 
   it("name a packaged consumer's scripts after the command and its subcommands", () => {

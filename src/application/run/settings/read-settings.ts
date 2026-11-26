@@ -29,24 +29,24 @@ import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
-import type {
-  EslintConfigLookupChoice,
-  SettingsFile,
-} from "../../../domain/settings/settings-file.ts";
+import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
 import type {
   CheckPieceSource,
   SettingsDocument,
   SettingsSources,
 } from "../../ports/settings-sources.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
-type SourcesRequest = { readonly sources: SettingsSources; readonly file: SettingsFile };
+type SourcesRequest = { readonly sources: SettingsSources; readonly file: VersionTwoSettingsFile };
 
 const ruleSetsListed = (request: {
-  readonly file: SettingsFile;
+  readonly file: VersionTwoSettingsFile;
 }): readonly ClauseAddress["ruleSet"][] => {
   const ruleSets = [
     ...request.file.checks.map((listed) => listed.address),
@@ -87,7 +87,7 @@ const cataloguesHeld = (
 
 const parsedSettingsFile = (
   request: Pick<NamedSettingsRequest, "sources" | "settingsFormat">,
-): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
+): Result<SettingsDocument & { readonly file: VersionTwoSettingsFile }, VersionTwoLoadFailure> => {
   const document = request.sources.settingsFile({});
   if (document.outcome === "failed") {
     return document;
@@ -116,7 +116,7 @@ export type NamedSettingsReading = {
   readonly externalCatalogues?: readonly RuleSetCatalogue[];
   readonly runSettings: RunSettings<VersionTwoReportOutput>;
   readonly eslintConfigLookup: EslintConfigLookupChoice;
-  readonly eslintProjectionKind: SettingsFile["eslintProjectionKind"];
+  readonly eslintProjectionKind: VersionTwoSettingsFile["eslintProjectionKind"];
   readonly conventions: Conventions;
   readonly notes: readonly SettingsNote[];
   readonly available: readonly Check[];
@@ -124,8 +124,8 @@ export type NamedSettingsReading = {
     readonly selected: readonly SelectedCheck[];
     readonly notRun: readonly ChosenCheck[];
     readonly notAdopted: readonly ChosenCheck[];
-    readonly excluded: SettingsFile["exclude"];
-    readonly eslintConfigRoots: SettingsFile["eslintConfigRoots"];
+    readonly excluded: VersionTwoSettingsFile["exclude"];
+    readonly eslintConfigRoots: VersionTwoSettingsFile["eslintConfigRoots"];
   };
 };
 
@@ -155,7 +155,7 @@ export const catalogueWithExternalChecks = (request: {
 
 const withNamedSource = (request: {
   readonly held: RuleSetCatalogue;
-  readonly ruleSets: SettingsFile["ruleSets"];
+  readonly ruleSets: VersionTwoSettingsFile["ruleSets"];
 }): RuleSetCatalogue => {
   const { ruleSet, catalogue } = request.held;
   if (ruleSet === TOOL_RULE_SET) return request.held;
