@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ParsedNamedRunner } from "../../../application/ports/engine/engine-run.ts";
+import type { NamedConformancePort } from "../../../application/ports/engine/engine-port.ts";
+import type { RunnerCall } from "../../../application/ports/engine/runner-module.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
@@ -34,15 +35,11 @@ const NO_CLASS: SourceCase = {
 
 const CASES: readonly SourceCase[] = [CLASS_ON_LINES_1_AND_3, NO_CLASS];
 
-const conformingWith = (returned: unknown): ParsedNamedRunner => ({
-  fileScope: "tracked",
-  projectedKinds: [],
-  project: vi.fn(),
-  run: vi.fn<ParsedNamedRunner["run"]>().mockResolvedValue({ outcome: "ok", value: [] }),
-  conform: vi.fn<ParsedNamedRunner["conform"]>().mockResolvedValue(returned),
+const conformingWith = (returned: unknown) => ({
+  conform: vi.fn<RunnerCall>().mockResolvedValue(returned),
 });
 
-const conformanceOf = (request: { readonly runner: ParsedNamedRunner }) =>
+const conformanceOf = (request: Pick<Parameters<NamedConformancePort["conform"]>[0], "runner">) =>
   namedCheckConformance({ binding: CLASS_BINDING, cases: CASES, runner: request.runner });
 
 describe("namedCheckConformance", () => {
@@ -68,11 +65,13 @@ describe("namedCheckConformance", () => {
         { caseName: "no class", flaggedLines: [] },
       ],
     });
-    const conformance = await conformanceOf({ runner });
+    const run = vi.fn();
+    const engine = { ...runner, run };
+    const conformance = await conformanceOf({ runner: engine });
     expect({
       conformance,
       conformCalls: vi.mocked(runner.conform).mock.calls,
-      runCalls: vi.mocked(runner.run).mock.calls,
+      runCalls: run.mock.calls,
     }).toEqual({
       conformance: { outcome: "ok", value: [] },
       conformCalls: [[{ binding: CLASS_BINDING, cases: CASES }]],
@@ -259,9 +258,9 @@ describe("namedCheckConformance", () => {
   });
 
   it("is runner-invalid-output when conform throws synchronously", async () => {
-    const runner: ParsedNamedRunner = {
+    const runner = {
       ...conformingWith({ outcome: "ok", value: [] }),
-      conform: vi.fn<ParsedNamedRunner["conform"]>().mockThrow(new Error("the runner threw")),
+      conform: vi.fn<RunnerCall>().mockThrow(new Error("the runner threw")),
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",
@@ -273,11 +272,9 @@ describe("namedCheckConformance", () => {
   });
 
   it("is runner-invalid-output when conform rejects", async () => {
-    const runner: ParsedNamedRunner = {
+    const runner = {
       ...conformingWith({ outcome: "ok", value: [] }),
-      conform: vi
-        .fn<ParsedNamedRunner["conform"]>()
-        .mockRejectedValue(new Error("the runner rejected")),
+      conform: vi.fn<RunnerCall>().mockRejectedValue(new Error("the runner rejected")),
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",

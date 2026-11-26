@@ -29,6 +29,8 @@ export const namedChecksRunnerModuleSchema = z.object({
   project: runnerCallSchema,
 });
 
+export type RunnerFileScope = z.output<typeof namedChecksRunnerModuleSchema>["fileScope"];
+
 const misnamedDirectiveShape = {
   ruleId: z.string().min(1),
   file: repoPathSchema,

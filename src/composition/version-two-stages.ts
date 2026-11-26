@@ -11,8 +11,8 @@ import { readHoneRecords } from "../application/records/read-hone-records.ts";
 import { checkedTreeOf } from "../application/run/checked-tree-of.ts";
 import {
   type NamedEnginesRequest,
-  namedEngineProjectionsOf,
-  namedEngineRunsOf,
+  projectNamedEngines,
+  runNamedEngines,
 } from "../application/run/engines/named-engines-run.ts";
 import {
   readNamedSettings,
@@ -168,14 +168,12 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
   engines: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineRunsOf(mapEngineStageToEnginesRequest({ ...request, stage })),
+      outcome: await runNamedEngines(mapEngineStageToEnginesRequest({ ...request, stage })),
     }),
   projections: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineProjectionsOf(
-        mapEngineStageToEnginesRequest({ ...request, stage }),
-      ),
+      outcome: await projectNamedEngines(mapEngineStageToEnginesRequest({ ...request, stage })),
     }),
   renamed: () =>
     renamedSinceBaseOf({

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { NamedEnginePort } from "../application/ports/engine/engine-port.ts";
+import type { LoadedEngine, NamedEnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -352,7 +352,7 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   fileText: { ...NOTHING_PRESENT, write: vi.fn<FileTextPort["write"]>() },
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn() },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: request.git,
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
@@ -429,7 +429,7 @@ describe("mapEngineStageToEnginesRequest", () => {
     const ports = {
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
       modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      namedEngine: { load: vi.fn() },
     };
 
     const mapped = mapEngineStageToEnginesRequest({
@@ -456,7 +456,7 @@ describe("mapEngineStageToEnginesRequest", () => {
 describe("versionTwoStagesOver", () => {
   it("runs the engine over the stage's checks", async () => {
     const ports = portsOver({ git: GIT_LISTING_NOTHING });
-    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
       outcome: "failed",
       error: {
         kind: "runner-failed",
@@ -466,16 +466,10 @@ describe("versionTwoStagesOver", () => {
     });
     const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
       outcome: "ok",
-      value: {
-        fileScope: "tracked",
-        projectedKinds: [],
-        run: vi.fn(),
-        conform: vi.fn(),
-        project: vi.fn(),
-      },
+      value: { run, project: vi.fn() },
     });
     const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      ports: { ...ports, namedEngine: { load } },
       locations: {
         repoRoot: REPO,
         installRoot: INSTALL,
@@ -484,7 +478,7 @@ describe("versionTwoStagesOver", () => {
       },
     });
 
-    await stages.engines({
+    const outcome = await stages.engines({
       catalogue: REPORT_CATALOGUE,
       settings: {
         selection: {
@@ -511,14 +505,13 @@ describe("versionTwoStagesOver", () => {
       checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
     });
 
-    expect(run.mock.calls).toMatchObject([
-      [{ mechanism: "walker", request: { checks: [{ name: "clock-sources" }] } }],
-    ]);
+    expect(outcome.outcome).toBe("failed");
+    expect(run.mock.calls).toMatchObject([[{ checks: [{ name: "clock-sources" }] }]]);
   });
 
   it("runs the engine over the stage's files", async () => {
     const ports = portsOver({ git: GIT_LISTING_NOTHING });
-    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
       outcome: "failed",
       error: {
         kind: "runner-failed",
@@ -528,16 +521,10 @@ describe("versionTwoStagesOver", () => {
     });
     const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
       outcome: "ok",
-      value: {
-        fileScope: "tracked",
-        projectedKinds: [],
-        run: vi.fn(),
-        conform: vi.fn(),
-        project: vi.fn(),
-      },
+      value: { run, project: vi.fn() },
     });
     const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      ports: { ...ports, namedEngine: { load } },
       locations: {
         repoRoot: REPO,
         installRoot: INSTALL,
@@ -546,7 +533,7 @@ describe("versionTwoStagesOver", () => {
       },
     });
 
-    await stages.engines({
+    const outcome = await stages.engines({
       catalogue: REPORT_CATALOGUE,
       settings: {
         selection: {
@@ -573,9 +560,8 @@ describe("versionTwoStagesOver", () => {
       checks: [],
     });
 
-    expect(run.mock.calls).toMatchObject([
-      [{ mechanism: "walker", request: { files: [repoPathOf("src/clock.ts")] } }],
-    ]);
+    expect(outcome.outcome).toBe("failed");
+    expect(run.mock.calls).toMatchObject([[{ files: [repoPathOf("src/clock.ts")] }]]);
   });
 
   it("fails as a catalogue not read, absent, when the install holds nothing", () => {

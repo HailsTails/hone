@@ -72,6 +72,8 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   moduleUrl: "file:///install/src/hone.ts",
 };
 
+const UNUSED_SETTINGS_FORMAT = { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() };
+
 const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
 
 describe("plannedProjectionOf", () => {
@@ -84,14 +86,10 @@ describe("plannedProjectionOf", () => {
       directory: { list: vi.fn(), create: vi.fn() },
       recordsReader: { recordsReadingOf: vi.fn() },
       boundCatalogueOf: NO_CATALOGUE,
-      settingsFormat: {
-        fileOf: vi.fn(),
-        documentOf: vi.fn(),
-        textOf: vi.fn(),
-      },
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
       settingsSourcesOf: vi.fn(),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      namedEngine: { load: vi.fn() },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
@@ -110,8 +108,8 @@ describe("plannedProjectionOf", () => {
     expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
   });
 
-  it("fails naming the symptom a check names and no catalogue holds, and projects nothing", async () => {
-    const project = vi.fn();
+  it("fails naming the symptom a check names and no catalogue holds, and loads no engine", async () => {
+    const load = vi.fn();
     const plan = plannedProjectionOf({
       command: EMPTY_REPOSITORY_COMMAND,
       repoRoot: absoluteRootOf("/repo"),
@@ -145,34 +143,28 @@ describe("plannedProjectionOf", () => {
           },
         },
       }),
-      settingsFormat: {
-        fileOf: vi.fn(),
-        documentOf: vi.fn(),
-        textOf: vi.fn(),
-      },
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
       settingsSourcesOf: vi.fn().mockReturnValue({
         settingsFile: vi.fn(),
         ruleSetRoot: vi.fn(),
         catalogue: vi.fn(),
       }),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project },
+      namedEngine: { load },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
 
-    expect({ projected, project: project.mock.calls }).toEqual({
-      projected: {
-        outcome: "failed",
-        error: {
-          kind: "projection-failed",
-          failure: {
-            kind: "symptom-unheld",
-            symptom: { ruleSet: "hone", name: "loop-keyword" },
-          },
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "projection-failed",
+        failure: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: "hone", name: "loop-keyword" },
         },
       },
-      project: [],
     });
+    expect(load).not.toHaveBeenCalled();
   });
 });

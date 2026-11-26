@@ -14,13 +14,12 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
-import type { ProofRuns, ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
+import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
 import type {
   ImportsRewrittenOf,
   VersionOneTeamLayout,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
-import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
@@ -49,7 +48,10 @@ const gitListing = (request: {
   renamedSince: vi.fn(),
 });
 
-const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts => ({
+const commandOver = (request: {
+  readonly git: GitPort;
+  readonly path?: Partial<PathPort> | undefined;
+}): VersionOneCommandPorts => ({
   path: {
     join: vi.fn(),
     joinRepository: vi.fn(),
@@ -58,6 +60,7 @@ const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts
     repositoryDirectoryOf: vi.fn(),
     resolve: vi.fn(),
     fromFileUrl: vi.fn(),
+    ...request.path,
   },
   fileText: { read: vi.fn(), exists: vi.fn(), write: vi.fn() },
   modules: { load: vi.fn() },
@@ -79,7 +82,7 @@ const PORTS: UpgradePorts = {
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
   checkPieceSourceOf: vi.fn(),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn() },
   versionOneProjectionOf: vi.fn(),
   directory: { list: vi.fn(), create: vi.fn() },
   fileCreation: { createNew: vi.fn() },
@@ -94,32 +97,6 @@ const PORTS: UpgradePorts = {
     documentsWithRemoved: vi.fn(),
   },
 };
-
-const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): UpgradeInput => ({
-  command: commandOver({ git: request.git }),
-  ports: PORTS,
-  measureVersionOne: vi.fn<UpgradeInput["measureVersionOne"]>(),
-  located: { repoRoot: REPO_ROOT, installRoot: absoluteRootOf("/install") },
-  runSettingsOf: vi.fn<RunSettingsOf>().mockReturnValue(SETTINGS_READ),
-  catalogues: () => ({ outcome: "ok", value: [] }),
-  externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
-  versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
-  itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>(),
-  importsRewriterOf: vi
-    .fn<UpgradeInput["importsRewriterOf"]>()
-    .mockResolvedValue({ outcome: "ok", value: vi.fn<ImportsRewrittenOf>() }),
-  recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
-  versionOneReadOf: vi.fn<VersionOneReadOf>(),
-  proofRunsOf: vi.fn(),
-  proofOf: vi.fn(),
-  foundTreeReach: vi.fn(),
-  pointers: {
-    symptomPage: "rules/typescript/symptoms.md",
-    pruneCommand: "hone prune-debt --repo /repo",
-    projectCommand: "hone project --repo /repo",
-  },
-  ...request,
-});
 
 const TRACKED: ReturnType<GitPort["trackedPaths"]> = { outcome: "ok", value: [] };
 
@@ -155,16 +132,56 @@ const RECORDS_ON_DISK: ReturnType<RecordsOnDiskOf> = {
   value: { files: [], folders: [], root: { kind: "repository" } },
 };
 
+const inputWith = (
+  request: Partial<UpgradeInput> & {
+    readonly git: GitPort;
+    readonly path?: Partial<PathPort> | undefined;
+  },
+): UpgradeInput => ({
+  command: commandOver({ git: request.git, path: request.path }),
+  ports: PORTS,
+  measureVersionOne: vi.fn<UpgradeInput["measureVersionOne"]>(),
+  located: { repoRoot: REPO_ROOT, installRoot: absoluteRootOf("/install") },
+  runSettingsOf: vi.fn<RunSettingsOf>().mockReturnValue(SETTINGS_READ),
+  catalogues: () => ({ outcome: "ok", value: [] }),
+  externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
+  versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
+  itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>(),
+  importsRewriterOf: vi
+    .fn<UpgradeInput["importsRewriterOf"]>()
+    .mockResolvedValue({ outcome: "ok", value: vi.fn<ImportsRewrittenOf>() }),
+  recordsOnDiskOf: () => RECORDS_ON_DISK,
+  versionOneReadOf: () => VERSION_ONE_READ_EXCLUDING_VENDOR,
+  proofRunsOf: vi.fn(),
+  proofOf: vi.fn(),
+  foundTreeReach: vi.fn(),
+  pointers: {
+    symptomPage: "rules/typescript/symptoms.md",
+    pruneCommand: "hone prune-debt --repo /repo",
+    projectCommand: "hone project --repo /repo",
+  },
+  ...request,
+});
+
 const CONSOLE_CLAUSE = {
   ruleSet: { name: ruleSetNameOf("acme") },
   discipline: disciplineIdOf("ACME-1"),
   clause: clauseIdOf("console-calls"),
 };
 
-const UNPIECED_LAYOUT: VersionOneTeamLayout = {
+const TEAM_LAYOUT: VersionOneTeamLayout = {
   ruleSet: { name: ruleSetNameOf("acme") },
   location: { location: "folder", path: repoPathOf("acme") },
   namesFile: repoPathOf("acme/version-two-names.json"),
+  clauses: [],
+  definitions: [
+    { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
+  ],
+  versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
+};
+
+const UNPIECED_LAYOUT: VersionOneTeamLayout = {
+  ...TEAM_LAYOUT,
   clauses: [
     {
       clause: CONSOLE_CLAUSE,
@@ -176,8 +193,6 @@ const UNPIECED_LAYOUT: VersionOneTeamLayout = {
       pieces: [],
     },
   ],
-  definitions: [],
-  versionOneFiles: [],
 };
 
 const PIECED_LAYOUT: VersionOneTeamLayout = {
@@ -203,6 +218,14 @@ const PIECED_LAYOUT: VersionOneTeamLayout = {
       ],
     },
   ],
+};
+
+const EMPTY_PROOF: ProofCarriedOver = {
+  written: [],
+  replaced: [],
+  removed: { files: [], folders: [] },
+  records: [],
+  smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
 };
 
 describe("upgradeOf", () => {
@@ -290,10 +313,6 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-          versionOneReadOf: vi
-            .fn<VersionOneReadOf>()
-            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({ outcome: "failed", error: SELECTION_ABSENT }),
           proofOf,
         }),
@@ -309,10 +328,6 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-          versionOneReadOf: vi
-            .fn<VersionOneReadOf>()
-            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [PIECED_LAYOUT] }),
           importsRewriterOf: vi
             .fn<UpgradeInput["importsRewriterOf"]>()
@@ -332,10 +347,6 @@ describe("upgradeOf", () => {
       await upgradeOf(
         inputWith({
           git: gitListing({ tracked: TRACKED }),
-          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-          versionOneReadOf: vi
-            .fn<VersionOneReadOf>()
-            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           versionOneTeamLayoutsOf: () => ({
             outcome: "ok",
             value: [UNPIECED_LAYOUT],
@@ -369,14 +380,6 @@ describe("upgradeOf", () => {
   });
 
   describe("reading mentions once the proof is decided", () => {
-    const CARRIED: ProofCarriedOver = {
-      written: [],
-      replaced: [],
-      removed: { files: [], folders: [] },
-      records: [],
-      smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
-    };
-
     it("reads every tracked file, the version 1 exclude included, and returns what they mention when the proof is ok", async () => {
       const git = gitListing({
         tracked: {
@@ -392,29 +395,21 @@ describe("upgradeOf", () => {
         .fn<PathPort["join"]>()
         .mockReturnValueOnce("/repo/package.json")
         .mockReturnValueOnce("/repo/vendor/x.md");
-      const proofOf = vi.fn().mockResolvedValue({ outcome: "ok", value: CARRIED });
-      const command = commandOver({ git });
+      const proofOf = vi.fn().mockResolvedValue({ outcome: "ok", value: EMPTY_PROOF });
+      const command = commandOver({ git, path: { join } });
 
       expect(
         await upgradeOf(
           inputWith({
             git,
-            command: {
-              ...command,
-              fileText: { ...command.fileText, read },
-              path: { ...command.path, join },
-            },
-            recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-            versionOneReadOf: vi
-              .fn<VersionOneReadOf>()
-              .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+            command: { ...command, fileText: { ...command.fileText, read } },
             proofOf,
           }),
         ),
       ).toEqual({
         outcome: "ok",
         value: {
-          ...CARRIED,
+          ...EMPTY_PROOF,
           mentions: [
             { file: "package.json", line: 1 },
             { file: "vendor/x.md", line: 1 },
@@ -448,10 +443,6 @@ describe("upgradeOf", () => {
           inputWith({
             git,
             command: { ...command, fileText: { ...command.fileText, read } },
-            recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-            versionOneReadOf: vi
-              .fn<VersionOneReadOf>()
-              .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
             proofOf,
           }),
         ),
@@ -507,10 +498,6 @@ describe("upgradeOf", () => {
             fileRemoval: { remove },
             directoryRemoval: { removeEmpty },
           },
-          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-          versionOneReadOf: vi
-            .fn<VersionOneReadOf>()
-            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           proofOf,
         }),
       );
@@ -555,10 +542,6 @@ describe("upgradeOf", () => {
           git,
           command: { ...command, fileText: { ...command.fileText, write } },
           ports: { ...PORTS, fileRemoval: { remove }, directoryRemoval: { removeEmpty } },
-          recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-          versionOneReadOf: vi
-            .fn<VersionOneReadOf>()
-            .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
           proofOf,
         }),
       );
@@ -630,140 +613,110 @@ describe("upgradeOf", () => {
     expect(write.mock.calls).toEqual([[{ path: projection, text: "projected" }]]);
   });
 
-  it("runs the version 2 proof and the smoothing commands over the found tree with the team layout and the files the upgrade wrote, less those the layout removes, handing the check the report pointers", async () => {
-    const proofRunsOf = vi.fn<ProofRunsOf>().mockReturnValue({
-      versionOne: vi.fn<ProofRuns["versionOne"]>(),
-      versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
-    });
-    const stages: VersionTwoStages = {
-      catalogue: vi
-        .fn<VersionTwoStages["catalogue"]>()
-        .mockReturnValue({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
-      settings: vi.fn<VersionTwoStages["settings"]>(),
-      records: vi.fn<VersionTwoStages["records"]>(),
-      tree: vi.fn<VersionTwoStages["tree"]>(),
-      engines: vi.fn<VersionTwoStages["engines"]>(),
-      projections: vi.fn<VersionTwoStages["projections"]>(),
-      renamed: vi
-        .fn<VersionTwoStages["renamed"]>()
-        .mockReturnValue({ measured: "yes", renamed: new Map() }),
-      touched: vi.fn<VersionTwoStages["touched"]>(),
-    };
-    const foundTreeReach = vi
-      .fn<UpgradeInput["foundTreeReach"]>()
-      .mockReturnValue({ stages, recordsSourceFor: vi.fn() });
-    const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
-      outcome: "ok",
-      value: {
-        written: [],
-        replaced: [],
-        removed: { files: [], folders: [] },
-        records: [],
-        smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
+  it("passes the team layout and proof writes to the version 2 run", async () => {
+    const proofRunsOf = vi.fn<ProofRunsOf>();
+    const foundTreeReach = vi.fn<UpgradeInput["foundTreeReach"]>().mockReturnValue({
+      stages: {
+        catalogue: () => ({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+        settings: vi.fn(),
+        records: vi.fn(),
+        tree: vi.fn(),
+        engines: vi.fn(),
+        projections: vi.fn(),
+        renamed: vi.fn(),
+        touched: vi.fn(),
       },
+      recordsSourceFor: vi.fn(),
     });
-    const git = gitListing({ tracked: TRACKED });
-    const command = commandOver({ git });
-    const layout: VersionOneTeamLayout = {
-      ruleSet: { name: ruleSetNameOf("acme") },
-      location: { location: "folder", path: repoPathOf("acme") },
-      namesFile: repoPathOf("acme/version-two-names.json"),
-      clauses: [],
-      definitions: [
-        { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
-      ],
-      versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
-    };
-    const written = { written: [repoPathOf("hone.eslint.d.mts")] };
-    await upgradeOf(
-      inputWith({
-        git,
-        command: {
-          ...command,
-          path: {
-            ...command.path,
-            join: vi
-              .fn<PathPort["join"]>()
-              .mockReturnValue("/repo/acme/rules/principles/repository-ready.md"),
-            directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue("/repo/acme"),
-          },
-        },
-        ports: {
-          ...PORTS,
-          entryKind: {
-            kindOf: vi
-              .fn<EntryKindPort["kindOf"]>()
-              .mockReturnValueOnce("absent")
-              .mockReturnValueOnce("absent")
-              .mockReturnValue("directory"),
-          },
-          fileCreation: {
-            createNew: vi
-              .fn<FileCreationPort["createNew"]>()
-              .mockReturnValue({ outcome: "ok", value: undefined }),
-          },
-        },
-        versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [layout] }),
-        itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
-        recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-        versionOneReadOf: vi
-          .fn<VersionOneReadOf>()
-          .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
-        proofRunsOf,
-        proofOf,
-        foundTreeReach,
-      }),
-    );
+    const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
+    kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const join = vi.fn<PathPort["join"]>();
+    join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
+    join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
+    const input = inputWith({
+      git: gitListing({ tracked: TRACKED }),
+      path: { join, directoryOf: () => "/repo/acme/rules" },
+      ports: {
+        ...PORTS,
+        entryKind: { kindOf },
+        fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
+      },
+      itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+      versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
+      proofRunsOf,
+      proofOf: async () => ({ outcome: "ok", value: EMPTY_PROOF }),
+      foundTreeReach,
+    });
+    const written = [repoPathOf("hone.eslint.d.mts")];
+    await upgradeOf(input);
     const [[sources]] = proofRunsOf.mock.calls;
-    const [[proofRequest]] = proofOf.mock.calls;
 
-    const run = await sources.versionTwo(written);
-    const projected = await proofRequest.smoothing.project(written);
+    const run = await sources.versionTwo({ written });
 
-    expect({
-      run,
-      projected,
-      pointers: sources.pointers,
-      reachedFor: foundTreeReach.mock.calls,
-    }).toEqual({
-      run: { outcome: "failed", error: { kind: "config-absent", repo: "/repo" } },
-      projected: {
-        outcome: "failed",
-        error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
-      },
-      pointers: {
-        symptomPage: "rules/typescript/symptoms.md",
-        pruneCommand: "hone prune-debt --repo /repo",
-        projectCommand: "hone project --repo /repo",
-      },
-      reachedFor: [
-        [
-          {
-            written: [
-              repoPathOf("acme/rules/principles/repository-ready.md"),
-              repoPathOf("acme/rules/version-one-names.json"),
-              repoPathOf("hone.eslint.d.mts"),
-            ],
-            removed: [
-              repoPathOf("acme/rules/ACME-1/discipline.json"),
-              repoPathOf("acme/version-two-names.json"),
-            ],
-          },
-        ],
-        [
-          {
-            written: [
-              repoPathOf("acme/rules/principles/repository-ready.md"),
-              repoPathOf("acme/rules/version-one-names.json"),
-              repoPathOf("hone.eslint.d.mts"),
-            ],
-            removed: [
-              repoPathOf("acme/rules/ACME-1/discipline.json"),
-              repoPathOf("acme/version-two-names.json"),
-            ],
-          },
-        ],
+    expect(run).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } });
+    expect(sources.pointers).toEqual(input.pointers);
+    expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
+      written: [
+        "acme/rules/principles/repository-ready.md",
+        "acme/rules/version-one-names.json",
+        ...written,
       ],
+      removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
+    });
+  });
+
+  it("passes the team layout and proof writes to the smoothing projection", async () => {
+    const proofOf = vi
+      .fn<UpgradeInput["proofOf"]>()
+      .mockResolvedValue({ outcome: "ok", value: EMPTY_PROOF });
+    const foundTreeReach = vi.fn<UpgradeInput["foundTreeReach"]>().mockReturnValue({
+      stages: {
+        catalogue: () => ({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+        settings: vi.fn(),
+        records: vi.fn(),
+        tree: vi.fn(),
+        engines: vi.fn(),
+        projections: vi.fn(),
+        renamed: vi.fn(),
+        touched: vi.fn(),
+      },
+      recordsSourceFor: vi.fn(),
+    });
+    const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
+    kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const join = vi.fn<PathPort["join"]>();
+    join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
+    join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
+    const input = inputWith({
+      git: gitListing({ tracked: TRACKED }),
+      path: { join, directoryOf: () => "/repo/acme/rules" },
+      ports: {
+        ...PORTS,
+        entryKind: { kindOf },
+        fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
+      },
+      itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+      versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
+      proofOf,
+      foundTreeReach,
+    });
+    const written = [repoPathOf("hone.eslint.d.mts")];
+    await upgradeOf(input);
+    const [[proof]] = proofOf.mock.calls;
+
+    const projected = await proof.smoothing.project({ written });
+
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+    });
+    expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
+      written: [
+        "acme/rules/principles/repository-ready.md",
+        "acme/rules/version-one-names.json",
+        ...written,
+      ],
+      removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
     });
   });
 });

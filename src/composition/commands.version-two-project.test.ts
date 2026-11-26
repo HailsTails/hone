@@ -409,7 +409,7 @@ const ranWith = async (request: {
   const { fileText } = request;
   await ranVersionTwoProject({
     ports: {
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      namedEngine: { load: vi.fn() },
       gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
       directory: {
         list: vi.fn<DirectoryPort["list"]>(),

@@ -16,7 +16,6 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
 import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { VersionOneProjectionInspection } from "../../ports/upgrade/version-one-projection-port.ts";
 import { createUpgradeBefore } from "./upgrade-before.ts";
@@ -89,14 +88,6 @@ const CATALOGUE: SymptomCatalogue = {
   clauses: [{ clause: CLAUSE, sight: { kind: "one-symptom", symptom: LOOP.symptom } }],
   checks: [LOOP],
   namedBans: [],
-};
-
-const RUNNER: ParsedNamedRunner = {
-  fileScope: "tracked",
-  projectedKinds: [],
-  run: vi.fn(),
-  conform: vi.fn(),
-  project: vi.fn(),
 };
 
 const FIRST = editionOf("1");
@@ -205,7 +196,6 @@ const inputsWith = (
     },
     selectionRepository: { read },
   },
-  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
   measureVersionOne: vi.fn(),
   sources: { settingsFile: vi.fn(), ruleSetRoot: vi.fn(), catalogue: vi.fn() },
   readPiece: vi.fn(),
@@ -257,11 +247,6 @@ describe("createUpgradeBefore", () => {
           trackedPaths: vi.fn().mockReturnValue({ outcome: "ok", value: [] }),
         },
       },
-      engine: {
-        load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
-        run: vi.fn(),
-        project: vi.fn(),
-      },
       sources: SOURCES,
       readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: PIECE }),
       projection: {
@@ -283,7 +268,9 @@ describe("createUpgradeBefore", () => {
       },
     });
     expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
-      call: { mechanism: "eslint", runner: RUNNER, request: expect.anything() },
+      request: expect.objectContaining({
+        bindings: [expect.objectContaining({ engine: "eslint" })],
+      }),
       location: expect.anything(),
       projection: {
         settingsFile: "disciplines.json",

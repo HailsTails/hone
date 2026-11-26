@@ -21,7 +21,7 @@ import {
 } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { namedChecksRunnerModuleSchema } from "../infrastructure/engines/protocol/checks/checks-runner-module-schema.ts";
 import { namedCheckConformance } from "../infrastructure/engines/protocol/conformance.ts";
-import { loadedNamedRunnerOver } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import { createRunnerLoader } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { runnerModuleAt } from "../infrastructure/engines/protocol/runner-module/runner-module-at.ts";
 import { toolchainBoundNamedChecksRunner } from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
@@ -110,7 +110,7 @@ describe("the ESLint checks runner, loaded as core loads it, conforms to each ES
         }),
         loadFailureDetail,
         enginePort: {
-          load: loadedNamedRunnerOver({ runnerModuleOf: runnerModuleAt }),
+          load: createRunnerLoader({ runnerModuleOf: runnerModuleAt }),
           conform: namedCheckConformance,
         },
       });

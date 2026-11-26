@@ -35,13 +35,7 @@ import { versionOneProofReportOf } from "./version-one-proof-report.ts";
 
 type BeforeInput = Pick<
   NamedVersionOnePassRequest,
-  | "engine"
-  | "sources"
-  | "readPiece"
-  | "selection"
-  | "catalogues"
-  | "loadFailureDetail"
-  | "measureVersionOne"
+  "sources" | "readPiece" | "selection" | "catalogues" | "loadFailureDetail" | "measureVersionOne"
 > & {
   readonly check: VersionOneCheckInput;
   readonly projection: VersionOneProjectionPort;
@@ -130,7 +124,6 @@ const checkedProjectionOf = async (
 const namedPassOf = (request: BeforeInput & { readonly ready: Ready }): EnginePass =>
   createNamedVersionOneEnginePass({
     ...request.check,
-    engine: request.engine,
     measureVersionOne: request.measureVersionOne,
     selected: request.ready.selected.selection.selected,
     selection: request.selection,

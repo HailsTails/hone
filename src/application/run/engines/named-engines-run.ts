@@ -7,7 +7,7 @@ import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-
 import type { Conventions } from "../../../domain/settings/conventions.ts";
 import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
 import type {
-  NamedEngineCall,
+  LoadedEngine,
   NamedEngineFailure,
   NamedEnginePort,
 } from "../../ports/engine/engine-port.ts";
@@ -25,18 +25,19 @@ export type EngineSettings = {
   readonly conventions: Pick<Conventions, "testFiles">;
 };
 
-export type NamedEnginesRequest = Omit<RunnerLocation, "mechanism"> & {
+type EnginesRequest = Omit<RunnerLocation, "mechanism"> & {
   readonly settings: EngineSettings;
   readonly repoRoot: AbsolutePath;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
   readonly answered: readonly AnsweredFile[];
-  readonly engine: NamedEnginePort;
 };
+
+export type NamedEnginesRequest = EnginesRequest & { readonly engine: NamedEnginePort };
 
 export const mapEnginesRequestToRunRequest = (
   request: Pick<
-    NamedEnginesRequest,
+    EnginesRequest,
     "repoRoot" | "installRoot" | "tree" | "settings" | "checks" | "answered"
   >,
 ): NamedEngineRunRequest => ({
@@ -55,42 +56,55 @@ export const mapEnginesRequestToRunRequest = (
   testFiles: request.settings.conventions.testFiles,
 });
 
-export const namedEngineCallsOf = async <Value>(
-  request: NamedEnginesRequest & {
-    readonly call: (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
+export const callNamedEngines = async <Value>(
+  request: EnginesRequest & {
+    readonly call: (
+      location: RunnerLocation,
+      request: NamedEngineRunRequest,
+    ) => Promise<Result<Value, NamedEngineFailure>>;
   },
 ): Promise<Result<readonly Value[], NamedEngineFailure>> => {
   const engineRequest = mapEnginesRequestToRunRequest(request);
   const mechanisms = new Set(engineRequest.bindings.map(({ engine }) => engine));
+  const { installRoot, moduleExtension, modules, path } = request;
   const outcomes = await Promise.all(
     [...mechanisms].map(async (mechanism) => {
-      const { installRoot, moduleExtension, modules, path } = request;
-      const runner = await request.engine.load({
-        installRoot,
-        moduleExtension,
-        modules,
-        path,
-        mechanism,
-      });
-      const outcome =
-        runner.outcome === "failed"
-          ? runner
-          : await request.call({ mechanism, runner: runner.value, request: engineRequest });
+      const outcome = await request.call(
+        { installRoot, moduleExtension, modules, path, mechanism },
+        engineRequest,
+      );
       return listedOutcome({ outcome });
     }),
   );
   return gatheredOutcomes({ outcomes });
 };
 
-export const namedEngineRunsOf = (
+const callLoadedEngines = <Value>(
+  request: NamedEnginesRequest,
+  call: (
+    engine: LoadedEngine,
+    request: NamedEngineRunRequest,
+  ) => Promise<Result<Value, NamedEngineFailure>>,
+): Promise<Result<readonly Value[], NamedEngineFailure>> =>
+  callNamedEngines({
+    ...request,
+    call: async (location, engineRequest) => {
+      const engine = await request.engine.load(location);
+      return engine.outcome === "failed" ? engine : call(engine.value, engineRequest);
+    },
+  });
+
+export const runNamedEngines = (
   request: NamedEnginesRequest,
 ): Promise<Result<readonly NamedEngineRun[], NamedEngineFailure>> =>
-  namedEngineCallsOf({ ...request, call: request.engine.run });
+  callLoadedEngines(request, (engine, engineRequest) => engine.run(engineRequest));
 
-export const namedEngineProjectionsOf = async (
+export const projectNamedEngines = async (
   request: NamedEnginesRequest,
 ): Promise<Result<readonly ProjectedFile[], NamedEngineFailure>> => {
-  const projected = await namedEngineCallsOf({ ...request, call: request.engine.project });
+  const projected = await callLoadedEngines(request, (engine, engineRequest) =>
+    engine.project(engineRequest),
+  );
   return projected.outcome === "failed"
     ? projected
     : { outcome: "ok", value: projected.value.flat() };
