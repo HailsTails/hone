@@ -1,40 +1,30 @@
-import { z } from "zod";
-
 import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { installRootOfRunnerEntry } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import {
-  OXLINT_RULES,
-  runOxlint,
-  type OxlintRule,
-  type RunOxlint,
-} from "../../../node/process/oxlint-port.ts";
+import { runOxlint, type RunOxlint } from "../../../node/process/oxlint-port.ts";
 import type { RunnerFileScope } from "../../protocol/checks/checks-runner-module-schema.ts";
 import type {
   NamedChecksRunner,
   NamedChecksRunReport,
 } from "../../protocol/checks/checks-runner-types.ts";
+import { readRule, type SelectedOxlintRule } from "./selected-rule.ts";
 
-const settingsSchema = z.strictObject({ rule: z.enum(OXLINT_RULES) });
+const installRoot = installRootOfRunnerEntry({ entryFile: import.meta.filename });
 
-const readRule = (binding: CheckBinding): Result<OxlintRule, RunnerFailure> => {
-  const settings = settingsSchema.safeParse(binding.settings);
-  return settings.success
-    ? { outcome: "ok", value: settings.data.rule }
-    : {
-        outcome: "failed",
-        error: {
-          kind: "piece-invalid",
-          pieceRoot: binding.pieceRoot,
-          detail: z.prettifyError(settings.error),
-        },
-      };
+const createRuleRequest = (
+  rules: readonly SelectedOxlintRule[],
+): Pick<Parameters<RunOxlint>[0], "rules" | "pluginRules"> => {
+  const pluginRules = rules.filter((rule) => rule.kind === "plugin");
+  return {
+    rules: rules.filter((rule) => rule.kind === "native").map(({ id }) => id),
+    ...(pluginRules.length > 0 ? { pluginRules } : {}),
+  };
 };
 
 const path = createDefaultPathPort({});
@@ -85,17 +75,17 @@ const createRun =
     const sources = read.value;
     const checks = gatheredOutcomes({
       outcomes: request.bindings.map((binding) => {
-        const rule = readRule(binding);
+        const rule = readRule({ installRoot, binding });
         return rule.outcome === "failed"
           ? rule
           : { outcome: "ok", value: [{ rule: rule.value, check: binding.address }] };
       }),
     });
     if (checks.outcome === "failed") return checks;
-    const checksByRule = Map.groupBy(checks.value, ({ rule }) => rule);
+    const checksByRule = Map.groupBy(checks.value, ({ rule }) => rule.id);
     const linted = await ports.lint({
       resolveFrom: request.repoRoot,
-      rules: [...checksByRule.keys()],
+      ...createRuleRequest([...checksByRule.values()].map(([{ rule }]) => rule)),
       sources,
     });
     if (linted.outcome === "failed") return linted;
@@ -123,11 +113,11 @@ const createRun =
 const createConform =
   (lint: RunOxlint): NamedChecksRunner["conform"] =>
   async ({ binding, cases }) => {
-    const rule = readRule(binding);
+    const rule = readRule({ installRoot, binding });
     if (rule.outcome === "failed") return rule;
     const linted = await lint({
       resolveFrom: binding.pieceRoot,
-      rules: [rule.value],
+      ...createRuleRequest([rule.value]),
       sources: cases,
     });
     return linted.outcome === "failed"

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "identifier"
+  },
+  "settings": {
+    "plugin": "eslint",
+    "adapter": "naming-convention"
+  }
+}

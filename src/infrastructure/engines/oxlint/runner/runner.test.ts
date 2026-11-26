@@ -74,6 +74,39 @@ describe("createOxlintRunner", () => {
     });
   });
 
+  it("passes a shared lint rule and its requested edition to Oxlint", async () => {
+    const lint = vi.fn<RunOxlint>().mockResolvedValue({ outcome: "ok", value: [] });
+    const runner = createOxlintRunner({ lint, fileText: { read: vi.fn<FileTextPort["read"]>() } });
+    const binding: CheckBinding = {
+      address: "test-switched-off#skipped-tests",
+      engine: "oxlint",
+      ruleSet: TOOL_RULE_SET,
+      anchor: { kind: "keyword", keyword: "skip" },
+      pieceRoot: "/hone/skipped-tests",
+      settings: { plugin: "eslint" },
+      checkSettings: {},
+      edition: editionOf("2"),
+    };
+
+    const report = await runner.conform({ binding, cases: [] });
+
+    expect(report).toEqual({ outcome: "ok", value: [] });
+    expect(lint).toHaveBeenCalledWith({
+      resolveFrom: "/hone/skipped-tests",
+      rules: [],
+      sources: [],
+      pluginRules: [
+        {
+          kind: "plugin",
+          id: "hone-test-switched-off-focused-tests/skipped-tests",
+          namespace: "hone-test-switched-off-focused-tests",
+          module: expect.stringMatching(/focused-tests[/\\]eslint-plugin\.ts$/u),
+          options: ["conditional-and-todo"],
+        },
+      ],
+    });
+  });
+
   it("attributes batched findings by rule and measures every selected check on the file", async () => {
     const file = repoPathOf("src/value.ts");
     const root = absoluteRootOf("/repo");

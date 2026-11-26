@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "skip"
+  },
+  "editions": ["1", "2"],
+  "settings": {
+    "plugin": "eslint"
+  }
+}

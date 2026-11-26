@@ -4,6 +4,7 @@ import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryTreePort } from "../file-system/directory-tree-port.ts";
 import {
@@ -32,7 +33,7 @@ const execution = createDefaultExecutionPort({
 
 const spanSchema = z.object({
   offset: z.number().int().nonnegative(),
-  length: z.number().int().positive(),
+  length: z.number().int().nonnegative(),
   line: z.number().int().positive(),
 });
 
@@ -67,8 +68,15 @@ const RULE_CONFIG: Readonly<Record<OxlintRule, unknown>> = {
   "eslint/no-param-reassign": ["error", { props: false }],
 };
 
+export type OxlintPluginRule = {
+  readonly namespace: string;
+  readonly id: string;
+  readonly module: string;
+  readonly options: readonly ReadonlyJsonValue[];
+};
+
 export type OxlintSite = {
-  readonly rule: OxlintRule;
+  readonly rule: string;
   readonly index: number;
   readonly line: number;
   readonly column: number;
@@ -77,6 +85,7 @@ export type OxlintSite = {
 export type RunOxlint = (request: {
   readonly resolveFrom: string;
   readonly rules: readonly OxlintRule[];
+  readonly pluginRules?: readonly OxlintPluginRule[];
   readonly sources: readonly { readonly fileName: string; readonly source: string }[];
 }) => Promise<Result<readonly OxlintSite[], RunnerFailure>>;
 
@@ -108,8 +117,8 @@ const lint = (
   });
   if (executed.outcome === "failed") throw new Error(executed.error.detail);
   const { status, stdout, stderr } = executed.value;
-  if ((status !== 0 && status !== 1) || stdout.trim() === "") {
-    throw new Error(stderr.trim() || `Oxlint exited with status ${status}`);
+  if ((status !== 0 && status !== 1) || !stdout.trimStart().startsWith("{")) {
+    throw new Error(stderr.trim() || stdout.trim() || `Oxlint exited with status ${status}`);
   }
   const output = outputSchema.parse(JSON.parse(stdout));
   if (output.number_of_files !== request.files.length || output.number_of_rules !== request.rules) {
@@ -182,7 +191,7 @@ const readSites = (request: {
   readonly diagnostics: readonly Diagnostic[];
   readonly files: readonly string[];
   readonly sources: readonly { readonly fileName: string; readonly source: string }[];
-  readonly rules: readonly OxlintRule[];
+  readonly rules: readonly string[];
 }): readonly OxlintSite[] => {
   const indices = new Map(request.files.map((file, index) => [file, index]));
   return request.diagnostics.map((diagnostic) => {
@@ -214,8 +223,7 @@ const runInScratch = (
   },
 ): readonly OxlintSite[] => {
   const files = request.sources.map(
-    ({ fileName }, index) =>
-      `sources/${index}${/\.(?:d\.)?[cm]?tsx?$/u.exec(fileName)?.[0] ?? ".ts"}`,
+    ({ fileName }, index) => `sources/${index}/${fileName.split("/").at(-1)}`,
   );
   const sources = new Map(
     files.map((file, index) => [file, Buffer.from(request.sources[index].source)]),
@@ -223,16 +231,34 @@ const runInScratch = (
   const configuration = { folder: request.folder, file: ".oxlintrc.json" };
   const categories = { correctness: "off" };
   const invocation = { cli: request.cli, folder: request.folder, files };
-  createDirectory(absolutePathSchema.parse(path.join({ segments: [request.folder, "sources"] })));
+  files.forEach((file) =>
+    createDirectory(
+      absolutePathSchema.parse(
+        path.directoryOf({
+          path: path.join({ segments: [request.folder, file] }),
+        }),
+      ),
+    ),
+  );
   write({ ...configuration, contents: JSON.stringify({ categories }) });
   sources.forEach((source, file) =>
     write({ folder: request.folder, file, contents: source.toString() }),
   );
   removeDisableDirectives({ ...invocation, sources });
-  const rules = Object.fromEntries(request.rules.map((rule) => [rule, RULE_CONFIG[rule]]));
-  write({ ...configuration, contents: JSON.stringify({ categories, rules }) });
-  const diagnostics = lint({ ...invocation, options: [], rules: request.rules.length });
-  return readSites({ ...request, diagnostics, files });
+  const pluginRules = request.pluginRules ?? [];
+  const ruleEntries = [
+    ...request.rules.map((rule) => [rule, RULE_CONFIG[rule]]),
+    ...pluginRules.map(({ id, options }) => [id, ["error", ...options]]),
+  ];
+  const rules = Object.fromEntries(ruleEntries);
+  const pluginsByNamespace = new Map(
+    pluginRules.map(({ namespace, module }) => [namespace, module]),
+  );
+  const jsPlugins = [...pluginsByNamespace].map(([name, specifier]) => ({ name, specifier }));
+  write({ ...configuration, contents: JSON.stringify({ categories, rules, jsPlugins }) });
+  const selected = [...request.rules, ...pluginRules.map(({ id }) => id)];
+  const diagnostics = lint({ ...invocation, options: [], rules: selected.length });
+  return readSites({ ...request, diagnostics, files, rules: selected });
 };
 
 const runWithOxlint = (
@@ -259,7 +285,7 @@ const runWithOxlint = (
 };
 
 export const runOxlint: RunOxlint = (request) => {
-  if (request.sources.length === 0 || request.rules.length === 0)
+  if (request.sources.length === 0 || (request.rules.length === 0 && !request.pluginRules?.length))
     return Promise.resolve({ outcome: "ok", value: [] });
   const manifest = manifests.locateManifestFrom({
     folder: request.resolveFrom,

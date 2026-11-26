@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "only"
+  },
+  "settings": {
+    "plugin": "eslint"
+  }
+}
