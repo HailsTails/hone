@@ -370,7 +370,7 @@ describe("namedEngineProjectionsOf", () => {
     });
   });
 
-  it("asks the engine to project the very request it would run, so a run and a projection cannot see different inputs", async () => {
+  it("gives the engine the same request to project as to run when nothing is projected", async () => {
     const engine = engineFake();
     engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
     engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
