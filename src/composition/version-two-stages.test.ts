@@ -395,7 +395,7 @@ const SETTINGS: NamedSettingsReading = {
 };
 
 describe("mapEngineStageToEnginesRequest", () => {
-  it("hands the engines the stage's checks, with their symptoms' titles, and the files its records answer", () => {
+  it("hands the engines the stage's checks, with their symptoms' titles, alongside the ports and locations", () => {
     const stage = {
       catalogue: REPORT_CATALOGUE,
       settings: SETTINGS,

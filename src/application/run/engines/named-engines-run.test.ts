@@ -12,11 +12,7 @@ import type {
   ParsedNamedRunner,
 } from "../../ports/engine/engine-run.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import {
-  type EngineSettings,
-  mapEnginesRequestToRunRequest,
-  namedEngineRunsOf,
-} from "./named-engines-run.ts";
+import { mapEnginesRequestToRunRequest, namedEngineRunsOf } from "./named-engines-run.ts";
 
 const REPO = absoluteRootOf("/repo");
 const INSTALL = absoluteRootOf("/install");
@@ -42,17 +38,15 @@ const BINDING: CheckBinding = {
 
 describe("mapEnginesRequestToRunRequest", () => {
   it("judges the TypeScript among the tracked files, leaving the config lookup to the engine when none is declared", () => {
-    const settings: EngineSettings = {
-      selection: { selected: [] },
-      eslintConfigLookup: { lookup: "detected" },
-      conventions: { testFiles: { suffixes: ["test"], folders: [] } },
-    };
-
     const mapped = mapEnginesRequestToRunRequest({
       repoRoot: REPO,
       installRoot: INSTALL,
       tree: { tracked: [TYPESCRIPT, MANIFEST], declaredConfigRoots: [] },
-      settings,
+      settings: {
+        selection: { selected: [] },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["test"], folders: [] } },
+      },
       checks: [CHECK],
       answered: [],
     });
@@ -72,17 +66,15 @@ describe("mapEnginesRequestToRunRequest", () => {
   });
 
   it("hands on the declared config lookup", () => {
-    const settings: EngineSettings = {
-      selection: { selected: [] },
-      eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
-      conventions: { testFiles: { suffixes: ["test"], folders: [] } },
-    };
-
     const mapped = mapEnginesRequestToRunRequest({
       repoRoot: REPO,
       installRoot: INSTALL,
       tree: { tracked: [], declaredConfigRoots: [] },
-      settings,
+      settings: {
+        selection: { selected: [] },
+        eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
+        conventions: { testFiles: { suffixes: ["test"], folders: [] } },
+      },
       checks: [],
       answered: [],
     });
@@ -102,17 +94,15 @@ describe("mapEnginesRequestToRunRequest", () => {
   });
 
   it("passes on the selected bindings, the declared test files and the declared config roots", () => {
-    const settings: EngineSettings = {
-      selection: { selected: [{ binding: BINDING }] },
-      eslintConfigLookup: { lookup: "detected" },
-      conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
-    };
-
     const mapped = mapEnginesRequestToRunRequest({
       repoRoot: REPO,
       installRoot: INSTALL,
       tree: { tracked: [], declaredConfigRoots: [repoPathOf("packages/app")] },
-      settings,
+      settings: {
+        selection: { selected: [{ binding: BINDING }] },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
+      },
       checks: [],
       answered: [],
     });
