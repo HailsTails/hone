@@ -4,7 +4,7 @@ These rules hold for every session and subagent working in this repository. They
 
 ## Ordinary use
 
-Hone's customer is a tech lead and their engineers, and the AI agents working for them, adopting Hone on a large existing repository. Their ordinary use: install with pnpm, run `hone check` in a pre-push hook and in CI, leave forfeiture out of CI at first, hold existing debt in exception records, and read the red report, often by tailing it from an agent. An obligation is owed only if that use reaches it.
+Hone's customer is a tech lead and their engineers, and the AI agents working for them, adopting Hone on a large existing repository. Their ordinary use: install with pnpm, run `hone check` in a pre-push hook and in CI, leave forfeiture out of CI at first, hold existing debt in exception records, and read the red report, often by tailing it from an agent.
 
 ## Code
 
