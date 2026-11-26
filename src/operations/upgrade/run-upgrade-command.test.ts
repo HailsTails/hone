@@ -14,12 +14,7 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
-import type {
-  ProofRuns,
-  ProofRunSources,
-  ProofRunsOf,
-  ProofWritten,
-} from "../../application/ports/upgrade/proof-runs.ts";
+import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
 import type {
   ImportsRewrittenOf,
   VersionOneTeamLayout,

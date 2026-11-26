@@ -168,6 +168,7 @@ describe("createNamedEnginePort", () => {
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
+
   it("honors the runner's TypeScript scope even when the mechanism is walker", async () => {
     const runner = {
       fileScope: "typescript",
@@ -386,6 +387,7 @@ describe("createNamedEnginePort", () => {
       },
     });
   });
+
   it("projects only the selected engine’s bindings and returns its requested writes", async () => {
     const response = { outcome: "ok", value: [{ file: CONFIG, text: "export default [];\n" }] };
     const project = vi.fn().mockResolvedValue(response);
@@ -402,6 +404,7 @@ describe("createNamedEnginePort", () => {
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
+
   it("refuses a projection result that contains no file path", async () => {
     const project = vi.fn().mockResolvedValue({ outcome: "ok", value: [{ text: "no file" }] });
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
