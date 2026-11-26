@@ -474,8 +474,11 @@ describe("versionTwoStagesOver", () => {
         project: vi.fn(),
       },
     });
+    const project = vi
+      .fn<NamedEnginePort["project"]>()
+      .mockResolvedValue({ outcome: "ok", value: [] });
     const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      ports: { ...ports, namedEngine: { load, run, project } },
       locations: {
         repoRoot: REPO,
         installRoot: INSTALL,
