@@ -256,7 +256,7 @@ const versionTwoRunFor = (request: {
     },
   });
 
-export const createReachOverLayout =
+const createReachOverLayout =
   (
     request: Pick<UpgradeInput, "foundTreeReach"> & {
       readonly layout: Pick<TeamLayoutPlan, "files" | "removed">;

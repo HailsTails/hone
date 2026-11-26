@@ -91,33 +91,48 @@ describe("createRunnerLoader", () => {
   });
 });
 
-describe("runNamedEngine", () => {
-  const BINDING: CheckBinding = {
-    address: "leftover-debugging#debug-call",
-    ruleSet: "hone",
-    engine: "walker",
-    anchor: { kind: "file" },
-    pieceRoot: "/install/pieces/debug-call",
-    settings: { module: "debug-call.ts" },
-    checkSettings: {},
-    edition: editionOf("1"),
-  };
+const BINDING: CheckBinding = {
+  address: "leftover-debugging#debug-call",
+  ruleSet: "hone",
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/pieces/debug-call",
+  settings: { module: "debug-call.ts" },
+  checkSettings: {},
+  edition: editionOf("1"),
+};
 
-  const CONFIG = repoPathOf("tsconfig.json");
-  const REQUEST: NamedEngineRunRequest = {
-    repoRoot: REPO,
-    installRoot: INSTALL,
-    files: [FILE_A],
-    trackedPaths: [FILE_A, CONFIG],
-    bindings: [
-      BINDING,
-      { ...BINDING, address: "leftover-debugging#debug-statement", engine: "eslint" },
-    ],
-    answered: [],
-    declaredConfigRoots: [],
-    declaredConfigLookup: undefined,
-    testFiles: { suffixes: ["test", "spec"], folders: [] },
-  };
+const CONFIG = repoPathOf("tsconfig.json");
+const REQUEST: NamedEngineRunRequest = {
+  repoRoot: REPO,
+  installRoot: INSTALL,
+  files: [FILE_A],
+  trackedPaths: [FILE_A, CONFIG],
+  bindings: [
+    BINDING,
+    { ...BINDING, address: "leftover-debugging#debug-statement", engine: "eslint" },
+  ],
+  answered: [],
+  declaredConfigRoots: [],
+  declaredConfigLookup: undefined,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
+};
+
+describe("createNamedEnginePort", () => {
+  it("returns the runner load failure for the requested engine", async () => {
+    const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "module-unloadable", path: "/install/runner.ts", detail: "install missing" },
+    });
+    const engine = createNamedEnginePort({ runnerModuleOf });
+
+    const loaded = await engine.load(LOCATION);
+
+    expect(loaded).toEqual({
+      outcome: "failed",
+      error: { kind: "runner-invalid", mechanism: "walker", detail: "install missing" },
+    });
+  });
 
   it("passes only the engine's named bindings and accepts a walker measurement on a tracked config file", async () => {
     const measured = [{ check: BINDING.address, file: CONFIG }];
@@ -157,7 +172,9 @@ describe("runNamedEngine", () => {
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
+});
 
+describe("runNamedEngine", () => {
   it("honors the runner's TypeScript scope even when the mechanism is walker", async () => {
     const runner: ParsedNamedRunner = {
       fileScope: "typescript",
@@ -225,7 +242,9 @@ describe("runNamedEngine", () => {
       },
     });
   });
+});
 
+describe("measureVersionOneProjectionOver", () => {
   it("uses an engine’s declared upgrade export and returns the inspected slice separately from the named report", async () => {
     const slice = repoPathOf("packages/web/disciplines.eslint.mjs");
     const projection = {
@@ -286,6 +305,26 @@ describe("runNamedEngine", () => {
     expect(run).not.toHaveBeenCalled();
   });
 
+  it("returns an invalid runner when version one measurement cannot load the named module", async () => {
+    const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "module-unloadable", path: "/install/runner.ts", detail: "install missing" },
+    });
+    const measureVersionOne = measureVersionOneProjectionOver({ runnerModuleOf });
+
+    const measured = await measureVersionOne({
+      request: REQUEST,
+      location: LOCATION,
+      projection: undefined,
+    });
+
+    expect(measured).toEqual({
+      outcome: "failed",
+      error: { kind: "runner-invalid", mechanism: "walker", detail: "install missing" },
+    });
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
+  });
+
   it.each([
     { label: "no projection", projection: undefined },
     {
@@ -339,7 +378,9 @@ describe("runNamedEngine", () => {
     });
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
+});
 
+describe("runNamedEngine observation validation", () => {
   it("refuses a measurement for a check selected on a different engine", async () => {
     const report = {
       hits: [],
@@ -451,7 +492,9 @@ describe("runNamedEngine", () => {
       },
     });
   });
+});
 
+describe("createNamedEnginePort projection", () => {
   it("projects only the selected engine’s bindings and returns its requested writes", async () => {
     const response = { outcome: "ok", value: [{ file: CONFIG, text: "export default [];\n" }] };
     const project = vi.fn().mockResolvedValue(response);

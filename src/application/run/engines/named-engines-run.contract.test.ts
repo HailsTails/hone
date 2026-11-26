@@ -188,13 +188,17 @@ const RUNNER_INVALID: Result<LoadedEngine, RunnerInvalid> = {
 
 describe("runNamedEngines", () => {
   it("runs each mechanism the selection binds once, loading its engine from the install", async () => {
-    const engine = engineFake();
-    engine.load
-      .mockResolvedValueOnce({ outcome: "ok", value: engine.loaded })
-      .mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
-    engine.runChecks
-      .mockResolvedValueOnce({ outcome: "ok", value: AUDIT_RUN })
-      .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
+    const audit = vi
+      .fn<LoadedEngine["run"]>()
+      .mockResolvedValue({ outcome: "ok", value: AUDIT_RUN });
+    const eslint = vi
+      .fn<LoadedEngine["run"]>()
+      .mockResolvedValue({ outcome: "ok", value: ESLINT_RUN });
+    const load = vi
+      .fn<NamedEnginePort["load"]>()
+      .mockResolvedValueOnce({ outcome: "ok", value: { run: audit, project: vi.fn() } })
+      .mockResolvedValueOnce({ outcome: "ok", value: { run: eslint, project: vi.fn() } });
+
     const run = await runNamedEngines(
       enginesRequestOf({
         selected: [
@@ -203,10 +207,12 @@ describe("runNamedEngines", () => {
           selectedOn({ mechanism: AUDIT }),
         ],
         lookup: DETECTED,
-        engine: engine.port,
+        engine: { load },
       }),
     );
-    expect({ run, loaded: engine.load.mock.calls }).toEqual({
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(eslint).toHaveBeenCalledTimes(1);
+    expect({ run, loaded: load.mock.calls }).toEqual({
       run: { outcome: "ok", value: [AUDIT_RUN, ESLINT_RUN] },
       loaded: [
         [
