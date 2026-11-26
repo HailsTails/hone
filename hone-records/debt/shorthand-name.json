@@ -15,10 +15,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/walker/answer-set-in-a-hook/hook-answer/hook-answers.test.ts"
     },
     {

@@ -839,7 +839,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     });
   });
 
-  it("queries and lints neither declaration it compares, and every other file, whatever its name", async () => {
+  it("queries and lints every file it is given, whatever its name", async () => {
     const authored = [
       repoPathOf("kept.ts"),
       repoPathOf("hone.walker.mts"),
@@ -858,10 +858,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
       governance,
     });
 
-    const outcome = await projecting.run({
-      ...WITH_A_PACKAGE_CONFIG,
-      files: [...authored, CHECKS_DECLARATION_PATH, PACKAGE_DECLARATION_PATH],
-    });
+    const outcome = await projecting.run({ ...WITH_A_PACKAGE_CONFIG, files: authored });
 
     expect({
       outcome,
@@ -885,7 +882,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     expect(query.ignoredState).toHaveBeenCalledTimes(4);
   });
 
-  it("names a declaration it compares out of date when it was altered, linting the other files", async () => {
+  it("names a declaration it compares out of date when it was altered, linting the files it is given", async () => {
     const governance = lintingNothing();
     const currents = new Map(
       slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PACKAGE_PROJECTION_PRESENT }),
@@ -894,7 +891,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
 
     const outcome = await projecting.run({
       ...WITH_A_PACKAGE_CONFIG,
-      files: [repoPathOf("kept.ts"), CHECKS_DECLARATION_PATH],
+      files: [repoPathOf("kept.ts")],
     });
 
     expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
@@ -915,7 +912,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     });
   });
 
-  it("reports the projection current when the declaration it compares is the only file to check", async () => {
+  it("reports the projection current when it is given no file to check", async () => {
     const governance = lintingNothing();
     const projecting = runnerOverProjection({
       currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
@@ -925,8 +922,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
 
     const outcome = await projecting.run({
       ...SELECTING_THE_CLASS_CHECK,
-      files: [CHECKS_DECLARATION_PATH],
-      trackedPaths: [CHECKS_DECLARATION_PATH],
+      files: [],
+      trackedPaths: [],
     });
 
     expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
@@ -1231,6 +1228,54 @@ const projectingRunner = () => {
   });
   return { runnerOver, repositoryAt };
 };
+
+describe("checksRunnerOver, naming the outputs it compares", () => {
+  it("names the root projection and its declaration, and touches no repository", async () => {
+    const { runnerOver, repositoryAt } = projectingRunner();
+
+    const outcome = await runnerOver.outputPaths(SELECTING_THE_CLASS_CHECK);
+
+    expect({ outcome, touched: repositoryAt.mock.calls }).toEqual({
+      outcome: { outcome: "ok", value: [CHECKS_PROJECTION_PATH, CHECKS_DECLARATION_PATH] },
+      touched: [],
+    });
+  });
+
+  it("names each slice's projection and declaration, and never an authored file of the same name elsewhere", async () => {
+    const { runnerOver } = projectingRunner();
+
+    const outcome = await runnerOver.outputPaths({
+      ...WITH_A_PACKAGE_CONFIG,
+      trackedPaths: [
+        ...WITH_A_PACKAGE_CONFIG.trackedPaths,
+        repoPathOf("src/hone.eslint.d.mts"),
+        repoPathOf("packages/old/hone.eslint.mjs"),
+      ],
+    });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: [
+        CHECKS_PROJECTION_PATH,
+        PACKAGE_SLICE_PATH,
+        CHECKS_DECLARATION_PATH,
+        PACKAGE_DECLARATION_PATH,
+      ],
+    });
+  });
+
+  it("names no output when no ESLint check is selected", async () => {
+    const { runnerOver } = projectingRunner();
+
+    const outcome = await runnerOver.outputPaths({
+      ...SELECTING_THE_CLASS_CHECK,
+      checks: [],
+      bindings: [],
+    });
+
+    expect(outcome).toEqual({ outcome: "ok", value: [] });
+  });
+});
 
 describe("checksRunnerOver, giving the projection as project", () => {
   it("gives exactly the text a run compares against, for hone.eslint.mjs, and touches no repository", async () => {

@@ -42,7 +42,7 @@ const PORTS = {
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
   checkPieceSourceOf: vi.fn(),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
   versionOneProjectionOf: vi.fn(),
   measureVersionOne: vi.fn(),
 };

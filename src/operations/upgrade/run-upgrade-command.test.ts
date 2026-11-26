@@ -79,7 +79,7 @@ const PORTS: UpgradePorts = {
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
   checkPieceSourceOf: vi.fn(),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
   versionOneProjectionOf: vi.fn(),
   directory: { list: vi.fn(), create: vi.fn() },
   fileCreation: { createNew: vi.fn() },
@@ -202,6 +202,85 @@ const PIECED_LAYOUT: VersionOneTeamLayout = {
         },
       ],
     },
+  ],
+};
+
+const CONFIG_ABSENT_STAGES: VersionTwoStages = {
+  catalogue: vi
+    .fn<VersionTwoStages["catalogue"]>()
+    .mockReturnValue({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+  settings: vi.fn<VersionTwoStages["settings"]>(),
+  records: vi.fn<VersionTwoStages["records"]>(),
+  tree: vi.fn<VersionTwoStages["tree"]>(),
+  engines: vi.fn<VersionTwoStages["engines"]>(),
+  projections: vi.fn<VersionTwoStages["projections"]>(),
+  renamed: vi
+    .fn<VersionTwoStages["renamed"]>()
+    .mockReturnValue({ measured: "yes", renamed: new Map() }),
+  touched: vi.fn<VersionTwoStages["touched"]>(),
+};
+
+const NOTHING_PROVED: Awaited<ReturnType<UpgradeInput["proofOf"]>> = {
+  outcome: "ok",
+  value: {
+    written: [],
+    replaced: [],
+    removed: { files: [], folders: [] },
+    records: [],
+    smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
+  },
+};
+
+const ACME_LAYOUT: VersionOneTeamLayout = {
+  ruleSet: { name: ruleSetNameOf("acme") },
+  location: { location: "folder", path: repoPathOf("acme") },
+  namesFile: repoPathOf("acme/version-two-names.json"),
+  clauses: [],
+  definitions: [
+    { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
+  ],
+  versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
+};
+
+const CREATING_EVERY_FILE: UpgradePorts["fileCreation"] = {
+  createNew: vi
+    .fn<FileCreationPort["createNew"]>()
+    .mockReturnValue({ outcome: "ok", value: undefined }),
+};
+
+const ACME_TEAM_READS: Pick<
+  UpgradeInput,
+  "versionOneTeamLayoutsOf" | "itemTextOf" | "recordsOnDiskOf" | "versionOneReadOf"
+> = {
+  versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [ACME_LAYOUT] }),
+  itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+  recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
+  versionOneReadOf: vi.fn<VersionOneReadOf>().mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+};
+
+const ABSENT_TWICE_THEN_A_DIRECTORY: UpgradePorts["entryKind"] = {
+  kindOf: vi
+    .fn<EntryKindPort["kindOf"]>()
+    .mockReturnValueOnce("absent")
+    .mockReturnValueOnce("absent")
+    .mockReturnValue("directory"),
+};
+
+const REPORT_POINTERS = {
+  symptomPage: "rules/typescript/symptoms.md",
+  pruneCommand: "hone prune-debt --repo /repo",
+  projectCommand: "hone project --repo /repo",
+};
+
+const ACME_WRITES_LESS_ITS_REMOVALS = {
+  written: [
+    repoPathOf("acme/rules/principles/repository-ready.md"),
+    repoPathOf("acme/rules/version-one-names.json"),
+    repoPathOf("hone.eslint.d.mts"),
+  ],
+  removed: [
+    repoPathOf("acme/rules/ACME-1/discipline.json"),
+    repoPathOf("acme/version-two-names.json"),
   ],
 };
 
@@ -635,45 +714,12 @@ describe("upgradeOf", () => {
       versionOne: vi.fn<ProofRuns["versionOne"]>(),
       versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
     });
-    const stages: VersionTwoStages = {
-      catalogue: vi
-        .fn<VersionTwoStages["catalogue"]>()
-        .mockReturnValue({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
-      settings: vi.fn<VersionTwoStages["settings"]>(),
-      records: vi.fn<VersionTwoStages["records"]>(),
-      tree: vi.fn<VersionTwoStages["tree"]>(),
-      engines: vi.fn<VersionTwoStages["engines"]>(),
-      projections: vi.fn<VersionTwoStages["projections"]>(),
-      renamed: vi
-        .fn<VersionTwoStages["renamed"]>()
-        .mockReturnValue({ measured: "yes", renamed: new Map() }),
-      touched: vi.fn<VersionTwoStages["touched"]>(),
-    };
     const foundTreeReach = vi
       .fn<UpgradeInput["foundTreeReach"]>()
-      .mockReturnValue({ stages, recordsSourceFor: vi.fn() });
-    const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
-      outcome: "ok",
-      value: {
-        written: [],
-        replaced: [],
-        removed: { files: [], folders: [] },
-        records: [],
-        smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
-      },
-    });
+      .mockReturnValue({ stages: CONFIG_ABSENT_STAGES, recordsSourceFor: vi.fn() });
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue(NOTHING_PROVED);
     const git = gitListing({ tracked: TRACKED });
     const command = commandOver({ git });
-    const layout: VersionOneTeamLayout = {
-      ruleSet: { name: ruleSetNameOf("acme") },
-      location: { location: "folder", path: repoPathOf("acme") },
-      namesFile: repoPathOf("acme/version-two-names.json"),
-      clauses: [],
-      definitions: [
-        { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
-      ],
-      versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
-    };
     const written = { written: [repoPathOf("hone.eslint.d.mts")] };
     await upgradeOf(
       inputWith({
@@ -690,25 +736,10 @@ describe("upgradeOf", () => {
         },
         ports: {
           ...PORTS,
-          entryKind: {
-            kindOf: vi
-              .fn<EntryKindPort["kindOf"]>()
-              .mockReturnValueOnce("absent")
-              .mockReturnValueOnce("absent")
-              .mockReturnValue("directory"),
-          },
-          fileCreation: {
-            createNew: vi
-              .fn<FileCreationPort["createNew"]>()
-              .mockReturnValue({ outcome: "ok", value: undefined }),
-          },
+          entryKind: ABSENT_TWICE_THEN_A_DIRECTORY,
+          fileCreation: CREATING_EVERY_FILE,
         },
-        versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [layout] }),
-        itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
-        recordsOnDiskOf: vi.fn<RecordsOnDiskOf>().mockReturnValue(RECORDS_ON_DISK),
-        versionOneReadOf: vi
-          .fn<VersionOneReadOf>()
-          .mockReturnValue(VERSION_ONE_READ_EXCLUDING_VENDOR),
+        ...ACME_TEAM_READS,
         proofRunsOf,
         proofOf,
         foundTreeReach,
@@ -731,39 +762,8 @@ describe("upgradeOf", () => {
         outcome: "failed",
         error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
       },
-      pointers: {
-        symptomPage: "rules/typescript/symptoms.md",
-        pruneCommand: "hone prune-debt --repo /repo",
-        projectCommand: "hone project --repo /repo",
-      },
-      reachedFor: [
-        [
-          {
-            written: [
-              repoPathOf("acme/rules/principles/repository-ready.md"),
-              repoPathOf("acme/rules/version-one-names.json"),
-              repoPathOf("hone.eslint.d.mts"),
-            ],
-            removed: [
-              repoPathOf("acme/rules/ACME-1/discipline.json"),
-              repoPathOf("acme/version-two-names.json"),
-            ],
-          },
-        ],
-        [
-          {
-            written: [
-              repoPathOf("acme/rules/principles/repository-ready.md"),
-              repoPathOf("acme/rules/version-one-names.json"),
-              repoPathOf("hone.eslint.d.mts"),
-            ],
-            removed: [
-              repoPathOf("acme/rules/ACME-1/discipline.json"),
-              repoPathOf("acme/version-two-names.json"),
-            ],
-          },
-        ],
-      ],
+      pointers: REPORT_POINTERS,
+      reachedFor: [[ACME_WRITES_LESS_ITS_REMOVALS], [ACME_WRITES_LESS_ITS_REMOVALS]],
     });
   });
 });

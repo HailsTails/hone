@@ -227,10 +227,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/moved-imports.test.ts"
     },
     {

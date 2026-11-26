@@ -91,6 +91,7 @@ describe("runnerEnginesOver", () => {
             run: vi.fn<ParsedNamedRunner["run"]>(),
             conform: vi.fn<ParsedNamedRunner["conform"]>(),
             project: vi.fn<ParsedNamedRunner["project"]>(),
+            outputPaths: vi.fn<ParsedNamedRunner["outputPaths"]>(),
           },
           request: {
             repoRoot: absoluteRootOf("/repo"),
@@ -117,5 +118,40 @@ describe("runnerEnginesOver", () => {
       error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
     });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(location);
+  });
+
+  it("asks a loaded runner for the output paths it compares", async () => {
+    const runnerModuleOf = vi.fn<RunnerModuleOf>();
+    const outputPaths = vi
+      .fn<ParsedNamedRunner["outputPaths"]>()
+      .mockResolvedValue({ outcome: "ok", value: ["hone.eslint.mjs"] });
+
+    const outputs = await runnerEnginesOver({ runnerModuleOf }).namedEngine.outputPaths({
+      mechanism: "eslint",
+      runner: {
+        fileScope: "typescript",
+        projectedKinds: [],
+        run: vi.fn<ParsedNamedRunner["run"]>(),
+        conform: vi.fn<ParsedNamedRunner["conform"]>(),
+        project: vi.fn<ParsedNamedRunner["project"]>(),
+        outputPaths,
+      },
+      request: {
+        repoRoot: absoluteRootOf("/repo"),
+        installRoot: absoluteRootOf("/install"),
+        files: [],
+        trackedPaths: [],
+        answered: [],
+        declaredConfigRoots: [],
+        declaredConfigLookup: undefined,
+        testFiles: { suffixes: ["test"], folders: [] },
+        bindings: [],
+      },
+    });
+
+    expect({ outputs, loaded: runnerModuleOf.mock.calls }).toEqual({
+      outputs: { outcome: "ok", value: [repoPathOf("hone.eslint.mjs")] },
+      loaded: [],
+    });
   });
 });

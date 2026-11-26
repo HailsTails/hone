@@ -2,6 +2,7 @@ import type { RunnerModuleOf } from "../application/ports/engine/runner-location
 import {
   loadedNamedRunnerOver,
   measureVersionOneProjectionOver,
+  namedEngineOutputPathsOf,
   namedEngineProjectionOf,
   namedEngineRunOf,
 } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
@@ -20,6 +21,7 @@ export const runnerEnginesOver = (ports: {
     load: loadedNamedRunnerOver(ports),
     run: namedEngineRunOf,
     project: namedEngineProjectionOf,
+    outputPaths: namedEngineOutputPathsOf,
   },
   versionOneProjectionOf: versionOneProjectionPortOver(ports),
   measureVersionOne: measureVersionOneProjectionOver(ports),

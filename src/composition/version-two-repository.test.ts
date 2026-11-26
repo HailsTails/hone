@@ -132,7 +132,7 @@ describe("stagesOverRepository", () => {
     const built = stagesOverRepository({
       ports: {
         ...command,
-        namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+        namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
         gitTree,
         directory: memory.directory,
         recordsSourceOf,

@@ -38,6 +38,7 @@ const conformingWith = (returned: unknown): ParsedNamedRunner => ({
   fileScope: "tracked",
   projectedKinds: [],
   project: vi.fn(),
+  outputPaths: vi.fn(),
   run: vi.fn<ParsedNamedRunner["run"]>().mockResolvedValue({ outcome: "ok", value: [] }),
   conform: vi.fn<ParsedNamedRunner["conform"]>().mockResolvedValue(returned),
 });

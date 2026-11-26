@@ -97,6 +97,7 @@ const RUNNER: ParsedNamedRunner = {
   run: vi.fn(),
   conform: vi.fn(),
   project: vi.fn(),
+  outputPaths: vi.fn(),
 };
 
 const FIRST = editionOf("1");
@@ -205,7 +206,7 @@ const inputsWith = (
     },
     selectionRepository: { read },
   },
-  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
   measureVersionOne: vi.fn(),
   sources: { settingsFile: vi.fn(), ruleSetRoot: vi.fn(), catalogue: vi.fn() },
   readPiece: vi.fn(),
@@ -261,6 +262,7 @@ describe("createUpgradeBefore", () => {
         load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
         run: vi.fn(),
         project: vi.fn(),
+        outputPaths: vi.fn(),
       },
       sources: SOURCES,
       readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: PIECE }),

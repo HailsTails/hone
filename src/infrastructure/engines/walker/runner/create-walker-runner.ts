@@ -348,4 +348,5 @@ export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
   },
   conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
   project: () => Promise.resolve({ outcome: "ok", value: [] }),
+  outputPaths: () => Promise.resolve({ outcome: "ok", value: [] }),
 });

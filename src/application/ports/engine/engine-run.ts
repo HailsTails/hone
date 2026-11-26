@@ -27,6 +27,7 @@ export type ParsedNamedRunner = {
   readonly run: RunnerCall;
   readonly conform: RunnerCall;
   readonly project: RunnerCall;
+  readonly outputPaths: RunnerCall;
 };
 
 export type EngineCheck = {

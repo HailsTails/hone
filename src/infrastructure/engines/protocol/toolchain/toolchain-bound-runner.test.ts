@@ -24,14 +24,12 @@ import {
   toolchainBoundStandaloneRunner,
 } from "./toolchain-bound-runner.ts";
 
-type Toolchain = { readonly name: "loaded-toolchain" };
-
-const LOADED: Result<Toolchain, RunnerFailure> = {
+const LOADED: Result<string, RunnerFailure> = {
   outcome: "ok",
-  value: { name: "loaded-toolchain" },
+  value: "loaded-toolchain",
 };
 
-const UNAVAILABLE: Result<Toolchain, RunnerFailure> = {
+const UNAVAILABLE: Result<string, RunnerFailure> = {
   outcome: "failed",
   error: {
     kind: "toolchain-unavailable",
@@ -103,7 +101,7 @@ const embeddedOver = (): EmbeddedRunner => ({
 describe("toolchainBoundStandaloneRunner", () => {
   it("builds the runner once from the loaded toolchain and delegates every run and conform to it", async () => {
     const inner = standaloneOver();
-    const runnerOf = vi.fn<(toolchain: Toolchain) => StandaloneRunner>().mockReturnValue(inner);
+    const runnerOf = vi.fn<(toolchain: string) => StandaloneRunner>().mockReturnValue(inner);
     const bound = toolchainBoundStandaloneRunner({ toolchain: Promise.resolve(LOADED), runnerOf });
     await bound.run(RUN);
     await bound.run(RUN);
@@ -115,14 +113,14 @@ describe("toolchainBoundStandaloneRunner", () => {
       conform: vi.mocked(inner.conform).mock.calls,
     }).toEqual({
       exceptionPath: "standalone",
-      toolchains: [[{ name: "loaded-toolchain" }]],
+      toolchains: [["loaded-toolchain"]],
       run: [[RUN], [RUN]],
       conform: [[{ clause: CLAUSE, cases: [] }]],
     });
   });
 
   it("answers run and conform with the toolchain failure and never builds the runner when the toolchain is unavailable", async () => {
-    const runnerOf = vi.fn<(toolchain: Toolchain) => StandaloneRunner>();
+    const runnerOf = vi.fn<(toolchain: string) => StandaloneRunner>();
     const bound = toolchainBoundStandaloneRunner({
       toolchain: Promise.resolve(UNAVAILABLE),
       runnerOf,
@@ -138,7 +136,7 @@ describe("toolchainBoundStandaloneRunner", () => {
 describe("toolchainBoundEmbeddedRunner", () => {
   it("declares the projected kinds it is given and delegates run, conform and project to the runner built from the toolchain", async () => {
     const inner = embeddedOver();
-    const runnerOf = vi.fn<(toolchain: Toolchain) => EmbeddedRunner>().mockReturnValue(inner);
+    const runnerOf = vi.fn<(toolchain: string) => EmbeddedRunner>().mockReturnValue(inner);
     const bound = toolchainBoundEmbeddedRunner({
       toolchain: Promise.resolve(LOADED),
       projectedKinds: ["config-override"],
@@ -165,7 +163,7 @@ describe("toolchainBoundEmbeddedRunner", () => {
   });
 
   it("answers run, conform and project with the toolchain failure when the toolchain is unavailable", async () => {
-    const runnerOf = vi.fn<(toolchain: Toolchain) => EmbeddedRunner>();
+    const runnerOf = vi.fn<(toolchain: string) => EmbeddedRunner>();
     const bound = toolchainBoundEmbeddedRunner({
       toolchain: Promise.resolve(UNAVAILABLE),
       projectedKinds: ["config-override"],
@@ -222,12 +220,15 @@ const checksOver = (): NamedChecksRunner => ({
   project: vi
     .fn<NamedChecksRunner["project"]>()
     .mockResolvedValue({ outcome: "ok", value: [WRITTEN] }),
+  outputPaths: vi
+    .fn<NamedChecksRunner["outputPaths"]>()
+    .mockResolvedValue({ outcome: "ok", value: [WRITTEN.file] }),
 });
 
 describe("toolchainBoundNamedChecksRunner", () => {
   it("declares the file scope and projected kinds it is given and delegates every run to the runner built once from the toolchain", async () => {
     const inner = checksOver();
-    const runnerOf = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>().mockReturnValue(inner);
+    const runnerOf = vi.fn<(toolchain: string) => NamedChecksRunner>().mockReturnValue(inner);
     const bound = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(LOADED),
       fileScope: "typescript",
@@ -252,7 +253,7 @@ describe("toolchainBoundNamedChecksRunner", () => {
   });
 
   it("answers run with the toolchain failure and never builds the runner when the toolchain is unavailable", async () => {
-    const runnerOf = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>();
+    const runnerOf = vi.fn<(toolchain: string) => NamedChecksRunner>();
     const bound = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(UNAVAILABLE),
       fileScope: "typescript",
@@ -267,14 +268,14 @@ describe("toolchainBoundNamedChecksRunner", () => {
 
   it("delegates conform to the runner built once, and answers it with the toolchain failure, building nothing, when the toolchain is unavailable", async () => {
     const inner = checksOver();
-    const runnerOf = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>().mockReturnValue(inner);
+    const runnerOf = vi.fn<(toolchain: string) => NamedChecksRunner>().mockReturnValue(inner);
     const bound = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(LOADED),
       fileScope: "typescript",
       projectedKinds: ["config-override"],
       runnerOf,
     });
-    const unbuilt = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>();
+    const unbuilt = vi.fn<(toolchain: string) => NamedChecksRunner>();
     const unavailable = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(UNAVAILABLE),
       fileScope: "typescript",
@@ -298,14 +299,14 @@ describe("toolchainBoundNamedChecksRunner", () => {
 
   it("delegates project to the runner built once, and answers it with the toolchain failure, building nothing, when the toolchain is unavailable", async () => {
     const inner = checksOver();
-    const runnerOf = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>().mockReturnValue(inner);
+    const runnerOf = vi.fn<(toolchain: string) => NamedChecksRunner>().mockReturnValue(inner);
     const bound = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(LOADED),
       fileScope: "typescript",
       projectedKinds: ["config-override"],
       runnerOf,
     });
-    const unbuilt = vi.fn<(toolchain: Toolchain) => NamedChecksRunner>();
+    const unbuilt = vi.fn<(toolchain: string) => NamedChecksRunner>();
     const unavailable = toolchainBoundNamedChecksRunner({
       toolchain: Promise.resolve(UNAVAILABLE),
       fileScope: "typescript",
@@ -320,6 +321,41 @@ describe("toolchainBoundNamedChecksRunner", () => {
       unbuilt: unbuilt.mock.calls.length,
     }).toEqual({
       projected: { outcome: "ok", value: [WRITTEN] },
+      built: 1,
+      delegated: [[CHECKS_RUN]],
+      refused: UNAVAILABLE,
+      unbuilt: 0,
+    });
+  });
+
+  it("delegates outputPaths to the runner built once, and answers it with the toolchain failure, building nothing, when the toolchain is unavailable", async () => {
+    const inner = checksOver();
+    const runnerOf = vi.fn<(toolchain: string) => NamedChecksRunner>().mockReturnValue(inner);
+    const bound = toolchainBoundNamedChecksRunner({
+      toolchain: Promise.resolve(LOADED),
+      fileScope: "typescript",
+      projectedKinds: ["config-override"],
+      runnerOf,
+    });
+    const unbuilt = vi.fn<(toolchain: string) => NamedChecksRunner>();
+    const unavailable = toolchainBoundNamedChecksRunner({
+      toolchain: Promise.resolve(UNAVAILABLE),
+      fileScope: "typescript",
+      projectedKinds: ["config-override"],
+      runnerOf: unbuilt,
+    });
+
+    const outputs = await bound.outputPaths(CHECKS_RUN);
+    const refused = await unavailable.outputPaths(CHECKS_RUN);
+
+    expect({
+      outputs,
+      built: runnerOf.mock.calls.length,
+      delegated: vi.mocked(inner.outputPaths).mock.calls,
+      refused,
+      unbuilt: unbuilt.mock.calls.length,
+    }).toEqual({
+      outputs: { outcome: "ok", value: [WRITTEN.file] },
       built: 1,
       delegated: [[CHECKS_RUN]],
       refused: UNAVAILABLE,

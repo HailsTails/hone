@@ -1,4 +1,5 @@
 import type { RunFailureSource } from "../../../domain/report/run-failure.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
@@ -37,4 +38,7 @@ export type NamedEnginePort = {
   readonly project: (
     request: NamedEngineCall,
   ) => Promise<Result<readonly ProjectedFile[], NamedEngineFailure>>;
+  readonly outputPaths: (
+    request: NamedEngineCall,
+  ) => Promise<Result<readonly RepoPath[], NamedEngineFailure>>;
 };

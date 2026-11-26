@@ -1,6 +1,7 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
@@ -50,16 +51,17 @@ const engineRequestOf = (request: NamedEnginesRequest): NamedEngineRunRequest =>
   testFiles: request.settings.conventions.testFiles,
 });
 
-export const namedEngineCallsOf = async <Value>(
-  request: NamedEnginesRequest & {
-    readonly call: (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
-  },
-): Promise<Result<readonly Value[], NamedEngineFailure>> => {
-  const engineRequest = engineRequestOf(request);
-  const mechanisms = new Set(engineRequest.bindings.map(({ engine }) => engine));
+type EngineCall<Value> = (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
+
+type LoadedEngine = Pick<NamedEngineCall, "mechanism" | "runner">;
+
+const loadedEnginesOf = async (
+  request: NamedEnginesRequest & { readonly engineRequest: NamedEngineRunRequest },
+): Promise<Result<readonly LoadedEngine[], NamedEngineFailure>> => {
+  const mechanisms = new Set(request.engineRequest.bindings.map(({ engine }) => engine));
+  const { installRoot, moduleExtension, modules, path } = request;
   const outcomes = await Promise.all(
     [...mechanisms].map(async (mechanism) => {
-      const { installRoot, moduleExtension, modules, path } = request;
       const runner = await request.engine.load({
         installRoot,
         moduleExtension,
@@ -67,20 +69,75 @@ export const namedEngineCallsOf = async <Value>(
         path,
         mechanism,
       });
-      const outcome =
-        runner.outcome === "failed"
-          ? runner
-          : await request.call({ mechanism, runner: runner.value, request: engineRequest });
-      return listedOutcome({ outcome });
+      return listedOutcome({
+        outcome:
+          runner.outcome === "failed"
+            ? runner
+            : { outcome: "ok", value: { mechanism, runner: runner.value } },
+      });
     }),
   );
   return gatheredOutcomes({ outcomes });
 };
 
-export const namedEngineRunsOf = (
+const calledEnginesOf = async <Value>(request: {
+  readonly engines: readonly LoadedEngine[];
+  readonly engineRequest: NamedEngineRunRequest;
+  readonly call: EngineCall<Value>;
+}): Promise<Result<readonly Value[], NamedEngineFailure>> =>
+  gatheredOutcomes({
+    outcomes: await Promise.all(
+      request.engines.map(async (engine) =>
+        listedOutcome({
+          outcome: await request.call({ ...engine, request: request.engineRequest }),
+        }),
+      ),
+    ),
+  });
+
+export const namedEngineCallsOf = async <Value>(
+  request: NamedEnginesRequest & { readonly call: EngineCall<Value> },
+): Promise<Result<readonly Value[], NamedEngineFailure>> => {
+  const engineRequest = engineRequestOf(request);
+  const engines = await loadedEnginesOf({ ...request, engineRequest });
+  return engines.outcome === "failed"
+    ? engines
+    : calledEnginesOf({ engines: engines.value, engineRequest, call: request.call });
+};
+
+const unjudgedOutputsOf = (request: {
+  readonly engineRequest: NamedEngineRunRequest;
+  readonly outputs: readonly RepoPath[];
+}): NamedEngineRunRequest => {
+  const outputs = new Set(request.outputs);
+  return {
+    ...request.engineRequest,
+    files: request.engineRequest.files.filter((file) => !outputs.has(file)),
+    trackedPaths: request.engineRequest.trackedPaths.filter((file) => !outputs.has(file)),
+  };
+};
+
+export const namedEngineRunsOf = async (
   request: NamedEnginesRequest,
-): Promise<Result<readonly NamedEngineRun[], NamedEngineFailure>> =>
-  namedEngineCallsOf({ ...request, call: request.engine.run });
+): Promise<Result<readonly NamedEngineRun[], NamedEngineFailure>> => {
+  const engineRequest = engineRequestOf(request);
+  const engines = await loadedEnginesOf({ ...request, engineRequest });
+  if (engines.outcome === "failed") {
+    return engines;
+  }
+  const outputs = await calledEnginesOf({
+    engines: engines.value,
+    engineRequest,
+    call: request.engine.outputPaths,
+  });
+  return outputs.outcome === "failed"
+    ? outputs
+    : calledEnginesOf({
+        engines: engines.value,
+        engineRequest: unjudgedOutputsOf({ engineRequest, outputs: outputs.value.flat() }),
+        call: request.engine.run,
+      });
+};
 
 export const namedEngineProjectionsOf = async (
   request: NamedEnginesRequest,

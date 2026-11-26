@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { NamedEnginePort } from "../application/ports/engine/engine-port.ts";
+import type { EngineCheck, ParsedNamedRunner } from "../application/ports/engine/engine-run.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -351,7 +352,7 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   fileText: { ...NOTHING_PRESENT, write: vi.fn<FileTextPort["write"]>() },
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: request.git,
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
@@ -393,29 +394,77 @@ const SETTINGS: NamedSettingsReading = {
   notes: [],
 };
 
+const WALKER_STOPPED: Awaited<ReturnType<NamedEnginePort["run"]>> = {
+  outcome: "failed",
+  error: {
+    kind: "runner-failed",
+    mechanism: "walker",
+    failure: { kind: "tool-failed", detail: "stopped" },
+  },
+};
+
+const LOADED_WALKER: ParsedNamedRunner = {
+  fileScope: "tracked",
+  projectedKinds: [],
+  run: vi.fn(),
+  conform: vi.fn(),
+  project: vi.fn(),
+  outputPaths: vi.fn(),
+};
+
+const NO_OUTPUTS: Awaited<ReturnType<NamedEnginePort["outputPaths"]>> = {
+  outcome: "ok",
+  value: [],
+};
+
+const CLOCK_ON_THE_WALKER: NamedSettingsReading["selection"]["selected"][number] = {
+  address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },
+  check: CLOCK_CHECK,
+  exceptions: "allowed",
+  editions: {
+    declared: [editionOf("1")],
+    default: editionOf("1"),
+    latest: editionOf("1"),
+  },
+  binding: {
+    engine: "walker",
+    address: "date-used-directly#clock-sources",
+    ruleSet: TOOL_RULE_SET,
+    anchor: { kind: "file" },
+    pieceRoot: "/install/pieces",
+    checkSettings: {},
+    edition: editionOf("1"),
+    settings: {},
+  },
+};
+
+const CLOCK_ENGINE_CHECK: EngineCheck = {
+  name: "clock-sources",
+  symptom: {
+    ruleSet: TOOL_RULE_SET,
+    name: "date-used-directly",
+    title: "Date used directly",
+  },
+  engines: [WALKER],
+};
+
 describe("versionTwoStagesOver", () => {
   it("hands the engine the checks the run mapped for it, with their symptoms' titles", async () => {
     const ports = portsOver({ git: GIT_LISTING_NOTHING });
-    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
-      outcome: "failed",
-      error: {
-        kind: "runner-failed",
-        mechanism: "walker",
-        failure: { kind: "tool-failed", detail: "stopped" },
-      },
-    });
-    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
-      outcome: "ok",
-      value: {
-        fileScope: "tracked",
-        projectedKinds: [],
-        run: vi.fn(),
-        conform: vi.fn(),
-        project: vi.fn(),
-      },
-    });
+    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue(WALKER_STOPPED);
+    const load = vi
+      .fn<NamedEnginePort["load"]>()
+      .mockResolvedValue({ outcome: "ok", value: LOADED_WALKER });
     const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      ports: {
+        ...ports,
+        namedEngine: {
+          load,
+          run,
+          project: vi.fn(),
+          outputPaths: vi.fn<NamedEnginePort["outputPaths"]>().mockResolvedValue(NO_OUTPUTS),
+        },
+      },
       locations: {
         repoRoot: REPO,
         installRoot: INSTALL,
@@ -430,28 +479,7 @@ describe("versionTwoStagesOver", () => {
         ...SETTINGS,
         selection: {
           ...SETTINGS.selection,
-          selected: [
-            {
-              address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },
-              check: CLOCK_CHECK,
-              exceptions: "allowed",
-              editions: {
-                declared: [editionOf("1")],
-                default: editionOf("1"),
-                latest: editionOf("1"),
-              },
-              binding: {
-                engine: "walker",
-                address: "date-used-directly#clock-sources",
-                ruleSet: TOOL_RULE_SET,
-                anchor: { kind: "file" },
-                pieceRoot: "/install/pieces",
-                checkSettings: {},
-                edition: editionOf("1"),
-                settings: {},
-              },
-            },
-          ],
+          selected: [CLOCK_ON_THE_WALKER],
         },
       },
       records: {
@@ -461,36 +489,14 @@ describe("versionTwoStagesOver", () => {
         base: { measured: "no", base: { state: "not-given" } },
       },
       tree: { tracked: [], declaredConfigRoots: [] },
-      checks: [
-        {
-          name: "clock-sources",
-          symptom: {
-            ruleSet: TOOL_RULE_SET,
-            name: "date-used-directly",
-            title: "Date used directly",
-          },
-          engines: [WALKER],
-        },
-      ],
+      checks: [CLOCK_ENGINE_CHECK],
     });
 
     expect(run.mock.calls).toMatchObject([
       [
         {
           mechanism: "walker",
-          request: {
-            checks: [
-              {
-                name: "clock-sources",
-                symptom: {
-                  ruleSet: TOOL_RULE_SET,
-                  name: "date-used-directly",
-                  title: "Date used directly",
-                },
-                engines: [WALKER],
-              },
-            ],
-          },
+          request: { checks: [CLOCK_ENGINE_CHECK] },
         },
       ],
     ]);

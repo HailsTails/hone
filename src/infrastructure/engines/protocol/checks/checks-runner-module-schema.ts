@@ -27,6 +27,7 @@ export const namedChecksRunnerModuleSchema = z.object({
   run: runnerCallSchema,
   conform: runnerCallSchema,
   project: runnerCallSchema,
+  outputPaths: runnerCallSchema,
 });
 
 const misnamedDirectiveShape = {
@@ -101,6 +102,16 @@ export const projectedFileSchema = z.object({ file: repoPathSchema, text: z.stri
 
 export const checksProjectResultSchema = z.union([
   z.object({ outcome: z.literal("ok"), value: z.array(projectedFileSchema).readonly() }).readonly(),
+  z
+    .object({
+      outcome: z.literal("failed"),
+      error: runnerFailureSchema,
+    })
+    .readonly(),
+]);
+
+export const checksOutputPathsResultSchema = z.union([
+  z.object({ outcome: z.literal("ok"), value: z.array(repoPathSchema).readonly() }).readonly(),
   z
     .object({
       outcome: z.literal("failed"),

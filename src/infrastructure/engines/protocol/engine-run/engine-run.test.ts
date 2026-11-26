@@ -17,6 +17,7 @@ import { createPathPort } from "../../../node/path-port.ts";
 import {
   loadedNamedRunnerOver,
   measureVersionOneProjectionOver,
+  namedEngineOutputPathsOf,
   namedEngineProjectionOf,
   namedEngineRunOf,
 } from "./engine-run.ts";
@@ -31,6 +32,7 @@ const namedRunner = (): ParsedNamedRunner => ({
   run: vi.fn(),
   conform: vi.fn(),
   project: vi.fn(),
+  outputPaths: vi.fn(),
 });
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
@@ -141,6 +143,7 @@ describe("namedEngineRunOf", () => {
       run,
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
 
     await expect(
@@ -171,6 +174,7 @@ describe("namedEngineRunOf", () => {
       }),
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
     await expect(
       namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
@@ -203,6 +207,7 @@ describe("namedEngineRunOf", () => {
       }),
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
 
     await expect(
@@ -249,6 +254,7 @@ describe("namedEngineRunOf", () => {
       run,
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
     const measureVersionOneProjection = measureVersionOneProjectionOver({
       runnerModuleOf: vi
@@ -310,6 +316,7 @@ describe("namedEngineRunOf", () => {
       run,
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
     const measureVersionOneProjection = measureVersionOneProjectionOver({
       runnerModuleOf: vi.fn<RunnerModuleOf>().mockResolvedValue({ outcome: "ok", value: {} }),
@@ -348,6 +355,7 @@ describe("namedEngineRunOf", () => {
       run: vi.fn<ParsedNamedRunner["run"]>().mockResolvedValue({ outcome: "ok", value: report }),
       conform: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
 
     await expect(
@@ -464,6 +472,58 @@ describe("namedEngineRunOf", () => {
     ).resolves.toMatchObject({
       outcome: "failed",
       error: { kind: "runner-failed", failure: { kind: "runner-invalid-output" } },
+    });
+  });
+
+  it("asks for output paths with only for the selected engine's bindings and returns the output paths it compares", async () => {
+    const response = { outcome: "ok", value: [CONFIG] };
+    const outputPaths = vi.fn().mockResolvedValue(response);
+    const runner = { ...namedRunner(), outputPaths };
+
+    const outcome = await namedEngineOutputPathsOf({
+      mechanism: "walker",
+      runner,
+      request: REQUEST,
+    });
+
+    expect({ outcome, asked: outputPaths.mock.calls }).toEqual({
+      outcome: response,
+      asked: [[{ ...REQUEST, bindings: [BINDING] }]],
+    });
+  });
+
+  it("reports a runner's failure to name its output paths as the engine's", async () => {
+    const failure = { kind: "tool-failed", detail: "stopped" };
+    const outputPaths = vi.fn().mockResolvedValue({ outcome: "failed", error: failure });
+
+    const outcome = await namedEngineOutputPathsOf({
+      mechanism: "walker",
+      runner: { ...namedRunner(), outputPaths },
+      request: REQUEST,
+    });
+
+    expect(outcome).toEqual({
+      outcome: "failed",
+      error: { kind: "runner-failed", mechanism: "walker", failure },
+    });
+  });
+
+  it("refuses a named output path outside the repository as invalid output", async () => {
+    const outputPaths = vi.fn().mockResolvedValue({ outcome: "ok", value: ["../hone.eslint.mjs"] });
+
+    const outcome = await namedEngineOutputPathsOf({
+      mechanism: "walker",
+      runner: { ...namedRunner(), outputPaths },
+      request: REQUEST,
+    });
+
+    expect(outcome).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "runner-invalid-output", detail: expect.any(String) },
+      },
     });
   });
 });

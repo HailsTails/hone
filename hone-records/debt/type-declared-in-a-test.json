@@ -123,10 +123,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
     },
     {
@@ -140,10 +136,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

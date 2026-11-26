@@ -74,6 +74,34 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
 
 const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
 
+const CATALOGUE_NAMING_AN_UNHELD_SYMPTOM: BoundCatalogueOf = () => ({
+  outcome: "ok",
+  value: {
+    held: "catalogue",
+    catalogue: {
+      principles: [],
+      rules: [],
+      cases: [],
+      recipes: [],
+      recordKinds: [],
+      engines: [{ name: "walker" }],
+      symptoms: [],
+      clauses: [],
+      checks: [
+        {
+          name: "loops",
+          symptom: { ruleSet: "hone", name: "loop-keyword" },
+          page: "loop-keyword/loops.md",
+          engines: [{ name: "walker" }],
+          forms: [],
+          findingSpecifics: [],
+        },
+      ],
+      namedBans: [],
+    },
+  },
+});
+
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
@@ -91,7 +119,7 @@ describe("plannedProjectionOf", () => {
       },
       settingsSourcesOf: vi.fn(),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
@@ -118,33 +146,7 @@ describe("plannedProjectionOf", () => {
       installRoot: absoluteRootOf("/install"),
       directory: { list: vi.fn(), create: vi.fn() },
       recordsReader: { recordsReadingOf: vi.fn() },
-      boundCatalogueOf: () => ({
-        outcome: "ok",
-        value: {
-          held: "catalogue",
-          catalogue: {
-            principles: [],
-            rules: [],
-            cases: [],
-            recipes: [],
-            recordKinds: [],
-            engines: [{ name: "walker" }],
-            symptoms: [],
-            clauses: [],
-            checks: [
-              {
-                name: "loops",
-                symptom: { ruleSet: "hone", name: "loop-keyword" },
-                page: "loop-keyword/loops.md",
-                engines: [{ name: "walker" }],
-                forms: [],
-                findingSpecifics: [],
-              },
-            ],
-            namedBans: [],
-          },
-        },
-      }),
+      boundCatalogueOf: CATALOGUE_NAMING_AN_UNHELD_SYMPTOM,
       settingsFormat: {
         fileOf: vi.fn(),
         documentOf: vi.fn(),
@@ -156,7 +158,7 @@ describe("plannedProjectionOf", () => {
         catalogue: vi.fn(),
       }),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project },
+      namedEngine: { load: vi.fn(), run: vi.fn(), project, outputPaths: vi.fn() },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  checksOutputPathsResultSchema,
   checksProjectResultSchema,
   namedChecksRunnerModuleSchema,
   namedChecksRunResultSchema,
@@ -45,13 +46,14 @@ const REPORT = {
 
 describe("the checks runner's ties to its module schema", () => {
   it("declares each required runner capability and its projected kinds", () => {
-    expect(Object.keys(namedChecksRunnerModuleSchema.shape).sort()).toEqual([
-      "conform",
-      "fileScope",
-      "project",
-      "projectedKinds",
-      "run",
-    ]);
+    expect(namedChecksRunnerModuleSchema.shape).toEqual({
+      conform: expect.anything(),
+      fileScope: expect.anything(),
+      outputPaths: expect.anything(),
+      project: expect.anything(),
+      projectedKinds: expect.anything(),
+      run: expect.anything(),
+    });
   });
 
   it("holds the same slice problem, misnamed rule id and projected file as the types", () => {
@@ -104,13 +106,14 @@ describe("misnamedRuleIdSchema", () => {
 });
 
 describe("namedChecksRunnerModuleSchema", () => {
-  it("accepts a module exporting the native exception kinds it projects, a run, a conform and a project", () => {
+  it("accepts a module exporting the native exception kinds it projects, a run, a conform, a project and its output paths", () => {
     const module = {
       fileScope: "tracked",
       projectedKinds: ["config-override", "inline-disable"],
       run: () => Promise.resolve(undefined),
       conform: () => Promise.resolve(undefined),
       project: () => Promise.resolve(undefined),
+      outputPaths: () => Promise.resolve(undefined),
     };
     expect(namedChecksRunnerModuleSchema.safeParse(module).success).toBe(true);
   });
@@ -123,6 +126,7 @@ describe("namedChecksRunnerModuleSchema", () => {
         run: "run",
         conform: () => Promise.resolve(undefined),
         project: () => Promise.resolve(undefined),
+        outputPaths: () => Promise.resolve(undefined),
       }).success,
     ).toBe(false);
   });
@@ -133,6 +137,7 @@ describe("namedChecksRunnerModuleSchema", () => {
       projectedKinds: [],
       run: () => Promise.resolve(undefined),
       project: () => Promise.resolve(undefined),
+      outputPaths: () => Promise.resolve(undefined),
     };
     expect(namedChecksRunnerModuleSchema.safeParse(module)).toMatchObject({
       success: false,
@@ -148,6 +153,7 @@ describe("namedChecksRunnerModuleSchema", () => {
         run: () => Promise.resolve(undefined),
         conform: "conform",
         project: () => Promise.resolve(undefined),
+        outputPaths: () => Promise.resolve(undefined),
       }).success,
     ).toBe(false);
   });
@@ -158,10 +164,28 @@ describe("namedChecksRunnerModuleSchema", () => {
       projectedKinds: [],
       run: () => Promise.resolve(undefined),
       conform: () => Promise.resolve(undefined),
+      outputPaths: () => Promise.resolve(undefined),
     };
     expect(namedChecksRunnerModuleSchema.safeParse(module)).toMatchObject({
       success: false,
       error: { issues: [{ path: ["project"] }] },
+    });
+  });
+
+  it("rejects a module with no output paths, at the outputPaths key", () => {
+    const module = {
+      fileScope: "tracked",
+      projectedKinds: [],
+      run: () => Promise.resolve(undefined),
+      conform: () => Promise.resolve(undefined),
+      project: () => Promise.resolve(undefined),
+    };
+
+    const parsed = namedChecksRunnerModuleSchema.safeParse(module);
+
+    expect(parsed).toMatchObject({
+      success: false,
+      error: { issues: [{ path: ["outputPaths"] }] },
     });
   });
 
@@ -173,7 +197,33 @@ describe("namedChecksRunnerModuleSchema", () => {
         run: () => Promise.resolve(undefined),
         conform: () => Promise.resolve(undefined),
         project: "project",
+        outputPaths: () => Promise.resolve(undefined),
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe("checksOutputPathsResultSchema", () => {
+  it("accepts the repository paths of the outputs it compares, keeping every field", () => {
+    const outputs = { outcome: "ok", value: ["hone.eslint.mjs", "packages/web/hone.eslint.d.mts"] };
+    expect(checksOutputPathsResultSchema.safeParse(outputs)).toEqual({
+      success: true,
+      data: outputs,
+    });
+  });
+
+  it("accepts a runner failure", () => {
+    const failed = { outcome: "failed", error: { kind: "tool-failed", detail: "disk full" } };
+    expect(checksOutputPathsResultSchema.safeParse(failed)).toEqual({
+      success: true,
+      data: failed,
+    });
+  });
+
+  it("rejects an output path outside the repository", () => {
+    expect(
+      checksOutputPathsResultSchema.safeParse({ outcome: "ok", value: ["../hone.eslint.mjs"] })
+        .success,
     ).toBe(false);
   });
 });
@@ -283,22 +333,27 @@ describe("namedChecksRunResultSchema", () => {
   });
 
   it("preserves nested folder reach as report metadata and validates repository paths", () => {
-    const value = {
+    const reachingReport = {
       ...REPORT,
       projection: "not-included",
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
-    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value })).toMatchObject({
+    expect(
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: reachingReport }),
+    ).toMatchObject({
       success: true,
       data: {
-        value: { nestedConfigurations: ["pkg"], unprojectedFolders: value.unprojectedFolders },
+        value: {
+          nestedConfigurations: ["pkg"],
+          unprojectedFolders: reachingReport.unprojectedFolders,
+        },
       },
     });
     expect(
       namedChecksRunResultSchema.safeParse({
         outcome: "ok",
-        value: { ...value, nestedConfigurations: ["/pkg"] },
+        value: { ...reachingReport, nestedConfigurations: ["/pkg"] },
       }).success,
     ).toBe(false);
   });

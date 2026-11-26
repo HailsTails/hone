@@ -379,7 +379,6 @@ type ExpectedFiles = {
 type ProjectionStatus = {
   readonly projection: GeneratedState;
   readonly slices: readonly ChecksSliceProblem[];
-  readonly compared: readonly RepoPath[];
 };
 
 const importingDirectoryOf = (request: {
@@ -521,8 +520,9 @@ const currentProjectionStatus = (
   }
   const { root, packages, declarations } = expected.value;
   const repository = request.ports.repositoryAt({ repoRoot: request.run.repoRoot });
-  const compared = [root, ...packages, ...declarations].map(({ file }) => file);
-  const states = repository.projectionFiles.currentOf({ files: compared });
+  const states = repository.projectionFiles.currentOf({
+    files: [root, ...packages, ...declarations].map(({ file }) => file),
+  });
   if (states.outcome === "failed") {
     return states;
   }
@@ -537,7 +537,7 @@ const currentProjectionStatus = (
   });
   return problems.outcome === "failed"
     ? problems
-    : { outcome: "ok", value: { projection: rootState.value, slices: problems.value, compared } };
+    : { outcome: "ok", value: { projection: rootState.value, slices: problems.value } };
 };
 
 const unconfiguredSlicesOf = (request: {
@@ -896,7 +896,7 @@ const projectedRun = async (request: ProjectedRunRequest): Promise<MeasuredRun> 
   if (plugins.outcome === "failed") return plugins;
   return queriedRun({
     ...request,
-    run: { ...run, files: run.files.filter((file) => !status.compared.includes(file)) },
+    run,
     selected: selected.value,
     checkRuleIds,
     plugins: plugins.value,
@@ -906,29 +906,63 @@ const projectedRun = async (request: ProjectedRunRequest): Promise<MeasuredRun> 
   });
 };
 
+type ProjectedSelection =
+  | { readonly selection: "none" }
+  | { readonly selection: "some"; readonly projected: readonly ProjectedCheck[] };
+
+const projectedSelectionOf = (request: {
+  readonly run: NamedEngineRunRequest;
+}): Outcome<ProjectedSelection> => {
+  const checks = request.run.checks ?? [];
+  const projected = projectedNamedChecksOf({ checks, bindings: request.run.bindings });
+  if (projected.outcome === "failed") {
+    return { outcome: "failed", error: projectionFailureOf({ failure: projected.error }) };
+  }
+  const selected = selectedNamedChecksOf({ checks, projected: projected.value });
+  if (selected.outcome === "failed") {
+    return selected;
+  }
+  return {
+    outcome: "ok",
+    value:
+      selected.value.length === 0
+        ? { selection: "none" }
+        : { selection: "some", projected: projected.value },
+  };
+};
+
+const projectedOutputPathsOf = (request: {
+  readonly run: NamedEngineRunRequest;
+  readonly platform: EslintPlatformPorts;
+}): Outcome<readonly RepoPath[]> => {
+  const selection = projectedSelectionOf(request);
+  if (selection.outcome === "failed" || selection.value.selection === "none") {
+    return selection.outcome === "failed" ? selection : { outcome: "ok", value: [] };
+  }
+  const slices = slicesOver({ run: request.run, lookup: lookupOf(request) });
+  const sliced = [slices.root, ...slices.packages];
+  return {
+    outcome: "ok",
+    value: [
+      ...sliced.map(({ file }) => file),
+      ...sliced.map((slice) => declarationPathOf({ slice })),
+    ],
+  };
+};
+
 const projectedFilesOf = (request: {
   readonly run: NamedEngineRunRequest;
   readonly ports: ChecksRunnerPorts;
   readonly platform: EslintPlatformPorts;
 }): Outcome<readonly ProjectedFile[]> => {
-  const projected = projectedNamedChecksOf({
-    checks: request.run.checks ?? [],
-    bindings: request.run.bindings,
-  });
-  if (projected.outcome === "failed") {
-    return { outcome: "failed", error: projectionFailureOf({ failure: projected.error }) };
-  }
-  const selected = selectedNamedChecksOf({
-    checks: request.run.checks ?? [],
-    projected: projected.value,
-  });
-  if (selected.outcome === "failed" || selected.value.length === 0) {
-    return selected.outcome === "failed" ? selected : { outcome: "ok", value: [] };
+  const selection = projectedSelectionOf(request);
+  if (selection.outcome === "failed" || selection.value.selection === "none") {
+    return selection.outcome === "failed" ? selection : { outcome: "ok", value: [] };
   }
   const expected = expectedFilesOf({
     run: request.run,
     ports: request.ports,
-    projected: projected.value,
+    projected: selection.value.projected,
     slices: slicesOver({ run: request.run, lookup: lookupOf(request) }),
   });
   return expected.outcome === "failed"
@@ -961,10 +995,11 @@ export const checksRunnerOver = (request: {
       versionOneProjection: projection,
       projectionStatusOf: () => ({
         outcome: "ok",
-        value: { projection: "current", slices: [], compared: [] },
+        value: { projection: "current", slices: [] },
       }),
     }),
   project: (run) => Promise.resolve(projectedFilesOf({ ...request, run })),
+  outputPaths: (run) => Promise.resolve(projectedOutputPathsOf({ ...request, run })),
   conform: (conform) =>
     conformedNamedCases({
       binding: conform.binding,

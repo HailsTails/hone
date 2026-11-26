@@ -54,7 +54,7 @@ const INPUT: NamedVersionOnePassRequest = {
   path: { join: vi.fn() },
   modules: { load: vi.fn() },
   tree: { tracked: [], declaredConfigRoots: [] },
-  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
   settingsPath: "hone.config.json",
   sources: { settingsFile: vi.fn(), ruleSetRoot: vi.fn(), catalogue: vi.fn() },
   readPiece: vi.fn(),
@@ -116,6 +116,7 @@ const RUNNER: ParsedNamedRunner = {
   run: vi.fn(),
   conform: vi.fn(),
   project: vi.fn(),
+  outputPaths: vi.fn(),
 };
 
 const PROJECTION = {
@@ -177,6 +178,31 @@ const WALKER_LOCATION: RunnerLocation = {
   modules: INPUT.modules,
 };
 
+const TOOL_AND_TEAM_CATALOGUES: NamedVersionOnePassRequest["catalogues"] = [
+  { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
+  {
+    ruleSet: ACME,
+    catalogue: {
+      ...CATALOGUE,
+      symptoms: [{ ...LOOP_KEYWORD, ruleSet: ACME }],
+      checks: [TEAM_LOOP],
+    },
+  },
+];
+
+const TOOL_AND_TEAM_LOOP_CHECKS = [
+  {
+    name: "loops",
+    symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword", title: "Loop keyword" },
+    engines: [{ name: "walker" }],
+  },
+  {
+    name: "loops",
+    symptom: { ruleSet: ACME, name: "loop-keyword", title: "Loop keyword" },
+    engines: [{ name: "walker" }],
+  },
+];
+
 describe("createNamedVersionOneEnginePass", () => {
   it("refuses a legacy selection whose clause cannot be matched to a named check", async () => {
     const pass = createNamedVersionOneEnginePass(INPUT);
@@ -199,6 +225,7 @@ describe("createNamedVersionOneEnginePass", () => {
       load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
       run: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
     const pass = createNamedVersionOneEnginePass({
       ...INPUT,
@@ -239,20 +266,11 @@ describe("createNamedVersionOneEnginePass", () => {
       load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
       run: vi.fn(),
       project: vi.fn(),
+      outputPaths: vi.fn(),
     };
     const pass = createNamedVersionOneEnginePass({
       ...INPUT,
-      catalogues: [
-        { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
-        {
-          ruleSet: ACME,
-          catalogue: {
-            ...CATALOGUE,
-            symptoms: [{ ...LOOP_KEYWORD, ruleSet: ACME }],
-            checks: [TEAM_LOOP],
-          },
-        },
-      ],
+      catalogues: TOOL_AND_TEAM_CATALOGUES,
       sources: {
         ...INPUT.sources,
         ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
@@ -277,18 +295,7 @@ describe("createNamedVersionOneEnginePass", () => {
           files: [],
           trackedPaths: [],
           bindings: [LOOP_BINDING],
-          checks: [
-            {
-              name: "loops",
-              symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword", title: "Loop keyword" },
-              engines: [{ name: "walker" }],
-            },
-            {
-              name: "loops",
-              symptom: { ruleSet: ACME, name: "loop-keyword", title: "Loop keyword" },
-              engines: [{ name: "walker" }],
-            },
-          ],
+          checks: TOOL_AND_TEAM_LOOP_CHECKS,
           answered: [],
           declaredConfigRoots: [],
           testFiles: DEFAULT_TEST_FILES,

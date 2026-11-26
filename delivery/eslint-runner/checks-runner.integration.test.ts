@@ -5,15 +5,22 @@ import type {
   NamedEngineRunRequest,
 } from "../../src/application/ports/engine/engine-run.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import {
+  type NamedEnginesRequest,
+  namedEngineRunsOf,
+} from "../../src/application/run/engines/named-engines-run.ts";
+import { runnerEnginesOver } from "../../src/composition/runner-engines.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 import { editionOf } from "../../src/domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../src/domain/runner/check-binding.ts";
 import type { CheckHit, CheckMeasurement } from "../../src/domain/runner/check-observations.ts";
 import type { AnsweredFile } from "../../src/domain/runner/checks-run-report.ts";
 import type { EslintConfigLookup } from "../../src/domain/settings/eslint-config-lookup.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
@@ -26,6 +33,7 @@ import {
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import type { NamedChecksRunReport } from "../../src/infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import { runnerModuleAt } from "../../src/infrastructure/engines/protocol/runner-module/runner-module-at.ts";
 import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
@@ -437,7 +445,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     expect(outcome).toEqual({ outcome: "ok", value: report });
   });
 
-  it("measures nothing, and lints no untracked file, when the declaration it compares is the only TypeScript file tracked", async () => {
+  it("measures nothing, and lints no untracked file, when it is given no file to check", async () => {
     const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-declaration-only`);
     const toolchain = await loadEslintToolchain({
       peers: { location: PEER_LOCATION, modules: row.toolchainModules },
@@ -467,8 +475,8 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     const outcome = await runner.run({
       repoRoot: repo,
       installRoot: INSTALL_ROOT,
-      files: [repoPathOf("hone.eslint.d.mts")],
-      trackedPaths: [repoPathOf("hone.eslint.d.mts"), repoPathOf("hone.eslint.mjs")],
+      files: [],
+      trackedPaths: [],
       checks: CHECKS,
       bindings: BINDINGS,
       answered: [],
@@ -624,5 +632,151 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     });
 
     expect(outcome).toEqual({ outcome: "ok", value: subfolder.report });
+  });
+});
+
+const UNJUDGED_REPO = absolutePathSchema.parse(`${SCRATCH}/compared-outputs-unjudged`);
+
+const STALE_DECLARATION = "declare const projection: unknown[];\nexport default projection;\n";
+
+const STALE_PACKAGE_PROJECTION_IGNORING_NOTHING = `import hone from "../../../../../src/eslint-plugin.ts";
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
+`;
+
+const CAST_WALKER_BINDING: CheckBinding = {
+  address: "claimed-type#cast-to-any",
+  ruleSet: TOOL_RULE_SET,
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/claimed-type/cast-to-any`,
+  settings: { module: "any-cast.ts" },
+  checkSettings: {},
+  edition: editionOf("1"),
+};
+
+const CLASS_ESLINT_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  ruleSet: TOOL_RULE_SET,
+  engine: "eslint",
+  anchor: { kind: "keyword", keyword: "class" },
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+  settings: {
+    pluginNamespace: "hone",
+    pluginModule: "eslint-plugin.ts",
+    rule: "no-class-authoring",
+  },
+  checkSettings: {},
+  edition: editionOf("1"),
+};
+
+const WALKER_AND_ESLINT_OVER_A_SLICE: NamedEnginesRequest = {
+  settings: {
+    selection: { selected: [{ binding: CAST_WALKER_BINDING }, { binding: CLASS_ESLINT_BINDING }] },
+    eslintConfigLookup: { lookup: "detected" },
+    conventions: { testFiles: { suffixes: ["test", "spec"], folders: [] } },
+  },
+  repoRoot: UNJUDGED_REPO,
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  path,
+  modules: createDefaultModuleLoaderPort({}),
+  engine: runnerEnginesOver({ runnerModuleOf: runnerModuleAt }).namedEngine,
+  checks: CHECKS,
+  answered: [],
+  tree: {
+    tracked: [
+      repoPathOf("eslint.config.mjs"),
+      repoPathOf("hone.eslint.mjs"),
+      repoPathOf("hone.eslint.d.mts"),
+      repoPathOf("packages/web/eslint.config.mjs"),
+      repoPathOf("packages/web/hone.eslint.mjs"),
+      repoPathOf("packages/web/hone.eslint.d.mts"),
+      repoPathOf("packages/web/src/kept.ts"),
+      repoPathOf("src/hone.eslint.d.mts"),
+    ],
+    declaredConfigRoots: [],
+  },
+};
+
+const KEPT_IN_WEB = repoPathOf("packages/web/src/kept.ts");
+
+const RUNS_LEAVING_THE_OUTPUTS_UNJUDGED = {
+  outcome: "ok",
+  value: [
+    {
+      mechanism: "walker",
+      coverableKinds: ["inline-disable"],
+      hits: [],
+      measured: [{ check: "claimed-type#cast-to-any", file: KEPT_IN_WEB }],
+      nativeExceptions: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+      projection: "none",
+      slices: [],
+    },
+    {
+      mechanism: "eslint",
+      coverableKinds: ESLINT_PROJECTED_KINDS,
+      hits: [{ ...CLASS_ON_LINE_1, file: KEPT_IN_WEB }],
+      measured: [
+        { ...MEASURED, file: KEPT_IN_WEB },
+        { ...MEASURED, file: repoPathOf("src/hone.eslint.d.mts") },
+      ],
+      nativeExceptions: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+      projection: "current",
+      slices: [
+        { slice: repoPathOf("packages/web/hone.eslint.mjs"), state: "out-of-date" },
+        { slice: repoPathOf("hone.eslint.d.mts"), state: "out-of-date" },
+        { slice: repoPathOf("packages/web/hone.eslint.d.mts"), state: "out-of-date" },
+      ],
+    },
+  ],
+};
+
+describe("the application over the real walker and ESLint engines", () => {
+  it("leaves a slice's compared outputs out of what the walker and ESLint judge, even when its stale projection ignores nothing, still names them out of date, and judges an authored file of the same name", async () => {
+    const repo = UNJUDGED_REPO;
+    const written = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: `${repo}/packages/web/src` }),
+      scratch.makeDirectory({ path: `${repo}/src` }),
+      fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repo}/hone.eslint.mjs`, text: PROJECTION }),
+      fileText.write({ path: `${repo}/hone.eslint.d.mts`, text: STALE_DECLARATION }),
+      fileText.write({ path: `${repo}/packages/web/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({
+        path: `${repo}/packages/web/hone.eslint.mjs`,
+        text: STALE_PACKAGE_PROJECTION_IGNORING_NOTHING,
+      }),
+      fileText.write({ path: `${repo}/packages/web/hone.eslint.d.mts`, text: STALE_DECLARATION }),
+      fileText.write({ path: `${repo}/packages/web/src/kept.ts`, text: ONE_CLASS }),
+      fileText.write({
+        path: `${repo}/src/hone.eslint.d.mts`,
+        text: "export declare class Authored {}\n",
+      }),
+    ];
+
+    const runs = await namedEngineRunsOf(WALKER_AND_ESLINT_OVER_A_SLICE);
+
+    expect({ written, runs }).toEqual({
+      written: [
+        DONE,
+        DONE,
+        DONE,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+        WRITTEN,
+      ],
+      runs: RUNS_LEAVING_THE_OUTPUTS_UNJUDGED,
+    });
   });
 });

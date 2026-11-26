@@ -131,6 +131,7 @@ const AUDIT_LOADED: ParsedNamedRunner = {
   run: UNCALLED_RUNNER,
   conform: UNCALLED_RUNNER,
   project: UNCALLED_RUNNER,
+  outputPaths: UNCALLED_RUNNER,
 };
 
 const ESLINT_LOADED: ParsedNamedRunner = { ...AUDIT_LOADED, fileScope: "typescript" };
@@ -154,14 +155,19 @@ const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
   const runChecks = vi.fn<NamedEnginePort["run"]>();
   const projectChecks = vi.fn<NamedEnginePort["project"]>();
+  const outputPaths = vi
+    .fn<NamedEnginePort["outputPaths"]>()
+    .mockResolvedValue({ outcome: "ok", value: [] });
   return {
     load,
     runChecks,
     projectChecks,
+    outputPaths,
     port: {
       load,
       run: runChecks,
       project: projectChecks,
+      outputPaths,
     },
   };
 };

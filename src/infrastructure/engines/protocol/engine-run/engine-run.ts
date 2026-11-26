@@ -18,6 +18,7 @@ import type {
   CheckedVersionOneProjection,
   MeasureVersionOneProjection,
 } from "../../../../application/ports/upgrade/version-one-measurement.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { checkedObservations } from "../../../../domain/runner/checked-observations.ts";
@@ -28,6 +29,7 @@ import {
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
 import {
+  checksOutputPathsResultSchema,
   checksProjectResultSchema,
   measurementResultSchema,
   namedChecksRunReportSchema,
@@ -185,6 +187,20 @@ export const namedEngineProjectionOf = async (
 ): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
   const parsed = checksProjectResultSchema.safeParse(
     await returnedBy({ call: () => call.runner.project(namedRequestOf(call)) }),
+  );
+  if (!parsed.success) {
+    return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
+  }
+  return parsed.data.outcome === "failed"
+    ? runnerFailed({ mechanism: call.mechanism, failure: parsed.data.error })
+    : parsed.data;
+};
+
+export const namedEngineOutputPathsOf = async (
+  call: NamedEngineCall,
+): Promise<NamedOutcome<readonly RepoPath[]>> => {
+  const parsed = checksOutputPathsResultSchema.safeParse(
+    await returnedBy({ call: () => call.runner.outputPaths(namedRequestOf(call)) }),
   );
   if (!parsed.success) {
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });

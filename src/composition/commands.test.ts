@@ -656,7 +656,7 @@ const ranWith = async (request: {
     exitWith: vi.fn<ProcessPort["exitWith"]>(),
   };
   const command = request.handler({
-    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn(), outputPaths: vi.fn() },
     gitTree: gitTreeStub(),
     directory: held.directory,
     fileRemoval: held.fileRemoval,

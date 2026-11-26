@@ -59,14 +59,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/composition/version-two-stages.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/application/run/engines/engine-checks.test.ts"
     },
     {
@@ -104,10 +96,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/application/upgrade/smoothing/upgrade-smoothing.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/operations/upgrade/run-upgrade-command.test.ts"
     },
     {
       "answers": "long-function#function-length",

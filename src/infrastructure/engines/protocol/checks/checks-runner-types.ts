@@ -2,6 +2,7 @@ import type {
   NamedEngineRun,
   NamedEngineRunRequest,
 } from "../../../../application/ports/engine/engine-run.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
@@ -24,4 +25,7 @@ export type NamedChecksRunner = {
   readonly project: (
     request: NamedEngineRunRequest,
   ) => Promise<Result<readonly ProjectedFile[], ChecksRunFailure>>;
+  readonly outputPaths: (
+    request: NamedEngineRunRequest,
+  ) => Promise<Result<readonly RepoPath[], ChecksRunFailure>>;
 };

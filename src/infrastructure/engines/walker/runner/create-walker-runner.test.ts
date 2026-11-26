@@ -7,26 +7,23 @@ import type { ModuleLoaderPort } from "../../../../application/ports/host/module
 import type { CheckAddressText } from "../../../../domain/language-layer/check-address-text.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../../../domain/result.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import { createPathPort } from "../../../node/path-port.ts";
+import { toolchainBoundNamedChecksRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { CASE_ROOT } from "./pieces/walker-disk.ts";
-import type { PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
+import type { PreparedFileCheck, PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 
-const loadedParsePort = await loadParsePort({
+const DEVELOPMENT_PARSE_PORT = loadParsePort({
   peers: defaultTypeScriptPeers({
     installRoot: `${import.meta.dirname}/../../../../..`,
     installForm: "source",
   }),
 });
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const defaultParsePort = loadedParsePort.value;
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const ALPHA = repoPathOf("src/alpha.ts");
@@ -179,13 +176,30 @@ const runnerWith = (request: {
   readonly fileText: FileTextPort;
   readonly modules: ModuleLoaderPort;
 }) =>
-  createWalkerRunner({
-    fileText: request.fileText,
-    modules: request.modules,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
-    parse: defaultParsePort,
-    entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("absent") },
+  toolchainBoundNamedChecksRunner({
+    toolchain: DEVELOPMENT_PARSE_PORT,
+    fileScope: "tracked",
+    projectedKinds: ["inline-disable"],
+    runnerOf: (parse) =>
+      createWalkerRunner({
+        fileText: request.fileText,
+        modules: request.modules,
+        path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
+        parse,
+        entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("absent") },
+      }),
   });
+
+describe("the typescript line the walker parses with", () => {
+  it("loads TypeScript 6 from the development install", async () => {
+    const loaded = await DEVELOPMENT_PARSE_PORT;
+
+    expect(loaded).toMatchObject({
+      outcome: "ok",
+      value: { syntaxApi: { version: expect.stringMatching(/^6\./) } },
+    });
+  });
+});
 
 const skippingPrepare = () =>
   vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
@@ -401,14 +415,15 @@ const SKIPPED = repoPathOf("src/skipped.ts");
 
 const DIRECTIVE_SOURCE = `// ${NOCHECK}\n// ${EXPECTATION} legacy\nexport const a: number = "x";\n// ${IGNORE} reason (#42)\nexport const b = 1;\n// ordinary\n`;
 
-type PreparedFile = ReturnType<PreparedWalkerCheck["prepareFile"]>;
-
-const SYNTAX_FILE: PreparedFile = {
+const SYNTAX_FILE: Result<PreparedFileCheck, PieceFailure> = {
   outcome: "ok",
   value: { kind: "syntax", begin: () => ({ finish: () => [] }) },
 };
 
-const SKIPPED_FILE: PreparedFile = { outcome: "ok", value: { kind: "skipped" } };
+const SKIPPED_FILE: Result<PreparedFileCheck, PieceFailure> = {
+  outcome: "ok",
+  value: { kind: "skipped" },
+};
 
 const pieceReadingAlphaThenBeta = (): WalkerPiece => ({
   prepare: vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
@@ -673,5 +688,21 @@ describe("createWalkerRunner conform", () => {
         repository: expect.objectContaining({ files: [CONFIG] }),
       }),
     );
+  });
+});
+
+describe("createWalkerRunner outputPaths", () => {
+  it("names no output it compares, reading nothing and loading no piece", async () => {
+    const read = vi.fn<FileTextPort["read"]>();
+    const modules = modulesOf({ check: letKeywordPiece });
+    const runner = runnerWith({ fileText: fileTextOf({ read }), modules });
+
+    const outputs = await runner.outputPaths(RUN);
+
+    expect({ outputs, read: read.mock.calls, loaded: vi.mocked(modules.load).mock.calls }).toEqual({
+      outputs: { outcome: "ok", value: [] },
+      read: [],
+      loaded: [],
+    });
   });
 });
