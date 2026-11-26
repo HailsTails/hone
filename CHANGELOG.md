@@ -2,6 +2,22 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.2.0
+
+### Features
+
+- emit a typed ESLint projection on request (#509)
+
+### Fixes
+
+- leave Hone's compared projection outputs out of every engine's judgement (#503)
+
+### Other changes
+
+- hand the engines stage only what it reads, and prove its mappings on their own (#502)
+- the reviewer looks at quality first and holds bug and test findings to ordinary use (#507)
+- narrow the named engine port (#506)
+
 ## 2.1.0
 
 ### Features
