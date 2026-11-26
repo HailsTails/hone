@@ -7,10 +7,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/content-files/import-boundaries/piece-import-rules.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "delivery/release/release-pull-request.test.ts"
     },
     {

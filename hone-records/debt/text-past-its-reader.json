@@ -31,10 +31,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/published-manifest/peer-manifest.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/composition/single-mechanism.integration.test.ts"
     },
     {

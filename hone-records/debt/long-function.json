@@ -27,10 +27,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/symptom-catalogues/bound-catalogue.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {
