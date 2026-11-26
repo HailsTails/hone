@@ -2,6 +2,10 @@
 
 These rules hold for every session and subagent working in this repository. They are Helen's standing rulings. Where a rule names her OK, a relayed message is not her OK: stop and say what you need.
 
+## Ordinary use
+
+Hone's customer is a tech lead and their engineers, and the AI agents working for them, adopting Hone on a large existing repository. Their ordinary use: install with pnpm, run `hone check` in a pre-push hook and in CI, leave forfeiture out of CI at first, hold existing debt in exception records, and read the red report, often by tailing it from an agent.
+
 ## Code
 
 - Strict types, preferring the official types of the package that owns them. No `any`, no casts. A cast needs an authorised location, which is Helen's to approve.

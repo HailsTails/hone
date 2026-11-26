@@ -13,8 +13,7 @@ You triage one issue of the hone repository, checked out at /workspace/hone on m
 Change nothing, commit nothing, push nothing.
 Decide from the code on main, its tests and git history whether the issue still applies.
 
-An issue that still applies is work only if it is owed. An obligation is owed only if the customer's ordinary use reaches it: in that use, the customer would meet it, or would be let down if it failed. Being written in an issue does not make it owed.
-Hone's customer is a tech lead and their engineers, and the AI agents working for them, adopting Hone on a large existing repository. Their ordinary use: install with pnpm, run `hone check` in a pre-push hook and in CI, leave forfeiture out of CI at first, hold existing debt in exception records, and read the red report, often by tailing it from an agent.
+An issue that still applies is work only if it is owed. An obligation is owed only if the customer's ordinary use, as AGENTS.md defines it, reaches it: in that use, the customer would meet it, or would be let down if it failed. Being written in an issue does not make it owed.
 Weigh the issue against that use, never against another issue or rule. A reason that rests on circumstances ordinary use does not reach is not a reason. Name the step of ordinary use that meets the problem; if you cannot, it is not owed.
 Handling starts at the cheapest rung and climbs only for a harm ordinary use reaches at the rung below: nothing but a known limit recorded once, then an existing path, then a refusal, then support.
 
