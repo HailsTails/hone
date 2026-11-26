@@ -511,7 +511,9 @@ describe("createNamedEnginePort projection", () => {
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
+});
 
+describe("projectNamedEngine", () => {
   it("refuses a projection result that contains no file path", async () => {
     const project = vi.fn().mockResolvedValue({ outcome: "ok", value: [{ text: "no file" }] });
     await expect(

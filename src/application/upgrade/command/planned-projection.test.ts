@@ -162,6 +162,7 @@ describe("plannedProjectionOf", () => {
     const projected = await plan({ settings: SETTINGS, documents: [] });
 
     assert(projected.outcome === "failed");
+    expect(projected.error.kind).toBe("projection-failed");
     expect(projected.error.failure).toEqual({
       kind: "symptom-unheld",
       symptom: { ruleSet: "hone", name: "loop-keyword" },

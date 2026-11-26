@@ -53,7 +53,10 @@ const gitListing = (request: {
   renamedSince: vi.fn(),
 });
 
-const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts => ({
+const commandOver = (request: {
+  readonly git: GitPort;
+  readonly path?: Partial<PathPort> | undefined;
+}): VersionOneCommandPorts => ({
   path: {
     join: vi.fn(),
     joinRepository: vi.fn(),
@@ -62,6 +65,7 @@ const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts
     repositoryDirectoryOf: vi.fn(),
     resolve: vi.fn(),
     fromFileUrl: vi.fn(),
+    ...request.path,
   },
   fileText: { read: vi.fn(), exists: vi.fn(), write: vi.fn() },
   modules: { load: vi.fn() },
@@ -133,8 +137,13 @@ const RECORDS_ON_DISK: ReturnType<RecordsOnDiskOf> = {
   value: { files: [], folders: [], root: { kind: "repository" } },
 };
 
-const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): UpgradeInput => ({
-  command: commandOver({ git: request.git }),
+const inputWith = (
+  request: Partial<UpgradeInput> & {
+    readonly git: GitPort;
+    readonly path?: Partial<PathPort> | undefined;
+  },
+): UpgradeInput => ({
+  command: commandOver({ git: request.git, path: request.path }),
   ports: PORTS,
   measureVersionOne: vi.fn<UpgradeInput["measureVersionOne"]>(),
   located: { repoRoot: REPO_ROOT, installRoot: absoluteRootOf("/install") },
@@ -165,10 +174,19 @@ const CONSOLE_CLAUSE = {
   clause: clauseIdOf("console-calls"),
 };
 
-const UNPIECED_LAYOUT: VersionOneTeamLayout = {
+const TEAM_LAYOUT: VersionOneTeamLayout = {
   ruleSet: { name: ruleSetNameOf("acme") },
   location: { location: "folder", path: repoPathOf("acme") },
   namesFile: repoPathOf("acme/version-two-names.json"),
+  clauses: [],
+  definitions: [
+    { kind: "principle", name: "repository-ready", title: "Ready", facts: {}, refers: [] },
+  ],
+  versionOneFiles: [repoPathOf("acme/rules/ACME-1/discipline.json")],
+};
+
+const UNPIECED_LAYOUT: VersionOneTeamLayout = {
+  ...TEAM_LAYOUT,
   clauses: [
     {
       clause: CONSOLE_CLAUSE,
@@ -180,8 +198,6 @@ const UNPIECED_LAYOUT: VersionOneTeamLayout = {
       pieces: [],
     },
   ],
-  definitions: [],
-  versionOneFiles: [],
 };
 
 const PIECED_LAYOUT: VersionOneTeamLayout = {
@@ -385,17 +401,13 @@ describe("upgradeOf", () => {
         .mockReturnValueOnce("/repo/package.json")
         .mockReturnValueOnce("/repo/vendor/x.md");
       const proofOf = vi.fn().mockResolvedValue({ outcome: "ok", value: EMPTY_PROOF });
-      const command = commandOver({ git });
+      const command = commandOver({ git, path: { join } });
 
       expect(
         await upgradeOf(
           inputWith({
             git,
-            command: {
-              ...command,
-              fileText: { ...command.fileText, read },
-              path: { ...command.path, join },
-            },
+            command: { ...command, fileText: { ...command.fileText, read } },
             proofOf,
           }),
         ),
@@ -644,28 +656,21 @@ describe("upgradeOf", () => {
         },
         recordsSourceFor: vi.fn(),
       });
-      const command = commandOver({ git: gitListing({ tracked: TRACKED }) });
-      const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValueOnce("absent");
-      kindOf.mockReturnValue("directory");
+      const kindOf = vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory");
+      kindOf.mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+      const join = vi.fn<PathPort["join"]>();
+      join.mockReturnValueOnce("/repo/acme/rules/principles/repository-ready.md");
+      join.mockReturnValueOnce("/repo/acme/rules/version-one-names.json");
       const input = inputWith({
-        git: command.git,
-        command: {
-          ...command,
-          path: {
-            ...command.path,
-            join: () => "/repo/acme/rules/version-one-names.json",
-            directoryOf: () => "/repo/acme/rules",
-          },
-        },
+        git: gitListing({ tracked: TRACKED }),
+        path: { join, directoryOf: () => "/repo/acme/rules" },
         ports: {
           ...PORTS,
           entryKind: { kindOf },
           fileCreation: { createNew: () => ({ outcome: "ok", value: undefined }) },
         },
-        versionOneTeamLayoutsOf: () => ({
-          outcome: "ok",
-          value: [{ ...UNPIECED_LAYOUT, clauses: [] }],
-        }),
+        itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>().mockReturnValue("# Ready"),
+        versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [TEAM_LAYOUT] }),
         proofRunsOf,
         proofOf,
         foundTreeReach,
@@ -680,8 +685,12 @@ describe("upgradeOf", () => {
       expect(observed).toEqual({ outcome: "failed", error: failure });
       expect(sources.pointers).toEqual(input.pointers);
       expect(foundTreeReach).toHaveBeenCalledExactlyOnceWith({
-        written: [repoPathOf("acme/rules/version-one-names.json"), ...written],
-        removed: [repoPathOf("acme/version-two-names.json")],
+        written: [
+          "acme/rules/principles/repository-ready.md",
+          "acme/rules/version-one-names.json",
+          ...written,
+        ],
+        removed: ["acme/rules/ACME-1/discipline.json", "acme/version-two-names.json"],
       });
     },
   );
