@@ -60,6 +60,7 @@ export const debtWireSchema = z.strictObject(
     answers: recordedReachSchema,
     file: repoPathSchema,
     note: textSchema.optional(),
+    findings: z.int().positive().optional(),
     carried: carriedEntrySchema.optional(),
   },
   { error: addressFieldRetirement },
@@ -89,7 +90,8 @@ export const carriedAuthorisedLocationWireSchema = z.strictObject(
 
 export const isWrittenRecordEqual: Equal<
   DeepReadonly<
-    z.input<typeof debtWireSchema> | z.input<typeof carriedAuthorisedLocationWireSchema>
+    | Omit<z.input<typeof debtWireSchema>, "findings">
+    | z.input<typeof carriedAuthorisedLocationWireSchema>
   >,
   WrittenRecord
 > = true;

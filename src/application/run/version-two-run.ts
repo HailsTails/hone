@@ -17,6 +17,7 @@ import {
   type VersionTwoReportOutput,
   reportOutputInEffect,
 } from "../../domain/settings/report-output.ts";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
@@ -76,6 +77,7 @@ export type VersionTwoRequest = {
   readonly forfeiture: ForfeitureAssessment | undefined;
   readonly reportOutput: VersionTwoReportOutput | undefined;
   readonly measuring: TouchedMeasuring;
+  readonly compareDebtAt?: string;
 };
 
 type ReadStageInputs = {
@@ -210,6 +212,23 @@ export const versionTwoRunOver = async (request: {
     runs,
     tracked: tree.tracked,
     available: settings.available,
+    ...(request.arguments.compareDebtAt === undefined
+      ? {}
+      : {
+          compareDebt: {
+            revision: request.arguments.compareDebtAt,
+            settings:
+              touched.measured === "yes" &&
+              [...touched.paths].some((file) => file === SETTINGS_FILE_NAME)
+                ? "changed"
+                : "unchanged",
+            checks: settings.selection.selected.some(
+              ({ binding }) => typeof binding.ruleSet === "object",
+            )
+              ? "external"
+              : "shipped",
+          },
+        }),
   });
   if (report.outcome === "failed") {
     return report;

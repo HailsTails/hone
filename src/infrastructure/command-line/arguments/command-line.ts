@@ -110,6 +110,15 @@ export const FORFEITURE_OPTION: CommandOption = {
     "assess file carve-out decay in this run or leave it to another, over forfeiture in hone.config.json; this-run when neither is set",
 };
 
+export const CHECK_FORFEITURE_ASSESSMENTS = [...FORFEITURE_ASSESSMENTS, "no-new-findings"] as const;
+
+export const CHECK_FORFEITURE_OPTION: CommandOption = {
+  ...FORFEITURE_OPTION,
+  value: choiceValue({ choices: CHECK_FORFEITURE_ASSESSMENTS }),
+  summary:
+    "assess debt now, leave it to another run, or compare counted debt with a pinned landing commit in no-new-findings",
+};
+
 export const ADOPTION_BASE_REVISION_OPTION: CommandOption = {
   name: "--base-revision",
   value: "<revision>",
@@ -210,7 +219,9 @@ export const AUTHORISE_COMMAND_OPTIONS: readonly CommandOption[] = [
 
 export const COMMANDS: Readonly<Record<Subcommand, Pick<CommandSpec, "options">>> &
   Readonly<Record<MigrationSubcommand, CommandSpec>> = {
-  check: { options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, FORFEITURE_OPTION] },
+  check: {
+    options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, CHECK_FORFEITURE_OPTION],
+  },
   project: { options: [REPO_OPTION] },
   [RECORD_DEBT_SUBCOMMAND]: { options: [REPO_OPTION, ADOPTION_BASE_REVISION_OPTION, LEAVE_OPTION] },
   [PRUNE_DEBT_SUBCOMMAND]: { options: [REPO_OPTION, BASE_REVISION_OPTION, FORFEITURE_OPTION] },

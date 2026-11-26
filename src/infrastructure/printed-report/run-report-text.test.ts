@@ -762,3 +762,27 @@ describe("assessmentScopeOf", () => {
     ).toBe(" (partial assessment)");
   });
 });
+
+it("prints the landing ceiling and the observed count before the verdict", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    debtComparison: {
+      revision: "pinned",
+      issues: [
+        {
+          kind: "increased",
+          check: "claimed-type#cast-expressions",
+          file: repoPathOf("src/cart.ts"),
+          ceiling: 2,
+          observed: 3,
+        },
+      ],
+    },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toContain("src/cart.ts claimed-type#cast-expressions");
+  expect(text).toContain("landing 2, observed 3");
+  expect(text).toMatch(/verdict: fail\s*$/);
+});

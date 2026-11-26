@@ -2187,3 +2187,23 @@ describe("answerFindings, what the runs measured", () => {
     ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
 });
+
+it("retains touched debt when a finding comparison judges it", () => {
+  const request = {
+    catalogue: CATALOGUE,
+    content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
+    records: [DEBT_ON_CLASS_IN_A],
+    findings: [unreported(NO_CLASS_IN_A)],
+    touched: FILE_A_TOUCHED,
+    runs: [],
+    measurements: { runs: [], tracked: [], excluded: [] },
+    retainTouchedDebt: true,
+  } satisfies Parameters<typeof answerFindings>[0];
+
+  const answered = answerFindings(request);
+
+  expect(answered).toMatchObject({
+    outcome: "ok",
+    value: { forfeited: [], answered: [{ finding: NO_CLASS_IN_A }] },
+  });
+});

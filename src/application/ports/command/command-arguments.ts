@@ -7,6 +7,7 @@ export type CheckArguments<Output extends string> = {
   readonly repo: string;
   readonly baseRevision: string | undefined;
   readonly reportOutput: Output | undefined;
+  readonly compareDebtAt?: string;
   readonly forfeiture: ForfeitureAssessment | undefined;
 };
 

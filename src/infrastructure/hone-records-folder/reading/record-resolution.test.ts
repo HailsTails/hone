@@ -845,7 +845,7 @@ describe("recordOf, authorised locations", () => {
 describe("recordOf, a record naming one check of its symptom", () => {
   const DEBT_ON_CLAIMED_TYPE_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-  it("reads debt on <symptom>#<check> as reaching that check, filed in its symptom's file", () => {
+  it("reads a counted debt on <symptom>#<check> in its symptom's file", () => {
     expect(
       recordOf({
         symptoms: [CLAIMED_TYPE],
@@ -856,7 +856,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
-        entry: { answers: "claimed-type#cast-expressions", file: "src/adapters/stripe-webhook.ts" },
+        entry: {
+          answers: "claimed-type#cast-expressions",
+          file: "src/adapters/stripe-webhook.ts",
+          findings: 2,
+        },
       }),
     ).toEqual({
       outcome: "ok",
@@ -871,6 +875,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
           },
         },
         file: "src/adapters/stripe-webhook.ts",
+        findings: 2,
         holding: { held: "stated" },
       },
     });

@@ -735,3 +735,17 @@ describe("settledCatalogueOf", () => {
     expect(vi.mocked(stages.records).mock.calls).toEqual([]);
   });
 });
+
+it("carries the requested landing comparison revision into the finished report", async () => {
+  const argumentsForComparison = { ...NO_ARGUMENTS, compareDebtAt: "pinned" };
+
+  const run = await versionTwoRunOver({
+    stages: stagesGiving({}),
+    arguments: argumentsForComparison,
+  });
+
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: { report: { debtComparison: { revision: "pinned" } } },
+  });
+});

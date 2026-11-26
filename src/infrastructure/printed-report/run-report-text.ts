@@ -1,4 +1,5 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { DebtComparisonIssue } from "../../domain/records/answering/debt-comparison.ts";
 import {
   RUN_SECTION_NAMES,
   type RunSectionName,
@@ -152,5 +153,45 @@ export const mapRunReportToFailingLines = (
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => [headingOf({ section }), ...section.lines]);
 
+const debtIssueLine = (issue: DebtComparisonIssue): string => {
+  switch (issue.kind) {
+    case "base-unavailable":
+      return "landing records or changes could not be read";
+    case "base-refused":
+      return "landing records could not be validated";
+    case "settings-changed":
+      return "hone.config.json changed since the landing commit";
+    case "projection-unmeasured":
+      return "refresh the projection and restore measured coverage";
+    case "no-checks":
+      return "no checks selected";
+    case "external-checks":
+      return "the preview requires checks shipped with Hone";
+    case "whole-symptom":
+      return `${issue.file} ${issue.symptom}: check-specific landing debt required`;
+    case "base-count-missing":
+      return `${issue.file} ${issue.check}: landing count is missing`;
+    case "head-record-changed":
+      return `${issue.file} ${issue.check}: the proposed debt differs from recorded landing debt`;
+    case "unmeasured":
+      return `${issue.file} ${issue.check}: no verified measurement`;
+    case "suppressed":
+      return `${issue.file} ${issue.check}: suppressed coverage`;
+    case "uncovered":
+      return `${issue.file} ${issue.check}: no landing debt allowance, observed ${issue.observed}`;
+    case "increased":
+      return `${issue.file} ${issue.check}: landing ${issue.ceiling}, observed ${issue.observed}; reduce by ${issue.observed - issue.ceiling}`;
+  }
+};
+
+const renderDebtComparison = ({ report, output }: RunReportRequest): string => {
+  if (report.debtComparison === undefined || output === "verdict-only") return "";
+  const { revision, issues } = report.debtComparison;
+  const heading = `debt comparison (${issues.length}) against ${revision}\n`;
+  return output === "counts"
+    ? heading
+    : `${heading}${issues.map((issue) => `${debtIssueLine(issue)}\n`).join("")}`;
+};
+
 export const renderRunReportText = (request: RunReportRequest): string =>
-  `${renderRunSectionsText(request)}${verdictLine(request)}\n`;
+  `${renderRunSectionsText(request)}${renderDebtComparison(request)}${verdictLine(request)}\n`;

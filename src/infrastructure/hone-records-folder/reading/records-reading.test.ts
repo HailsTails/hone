@@ -373,7 +373,7 @@ describe("readRecords", () => {
     });
   });
 
-  it("says the base revision was measured when it was, with each record the base held and none it refuses", () => {
+  it("preserves the readable landing records and marks refused evidence incomplete", () => {
     expect(
       readRecords({
         documents: [],
@@ -407,6 +407,7 @@ describe("readRecords", () => {
         notes: [],
         base: {
           measured: "yes",
+          incomplete: true,
           held: [
             {
               kind: "debt",
@@ -1234,5 +1235,28 @@ describe("recordsReader", () => {
         base: UNMEASURED,
       },
     });
+  });
+});
+
+it("keeps readable landing records and marks incomplete evidence when a landing row is refused", () => {
+  const good = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings: 2 };
+  const bad = { answers: "claimed-type#cast-expressions", file: "src/order.ts", findings: -1 };
+  const documents = [{ file: DEBT_FILE, document: { version: 2, records: [good, bad] } }];
+
+  const read = readRecords({
+    documents: [],
+    base: { measured: "yes", documents },
+    symptoms: [CLAIMED_TYPE],
+    checks: [CAST_CHECK],
+    recipes: [],
+    cases: [],
+    namedBans: [],
+  });
+
+  expect(read).toMatchObject({
+    outcome: "ok",
+    value: {
+      base: { measured: "yes", held: [{ file: "src/cart.ts", findings: 2 }], incomplete: true },
+    },
   });
 });

@@ -228,3 +228,14 @@ describe("runVerdictOf", () => {
     ).toBe("fail");
   });
 });
+
+it("fails a run when the measured debt comparison refuses a pair", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const verdict = runVerdictOf({ report });
+
+  expect(verdict).toBe("fail");
+});

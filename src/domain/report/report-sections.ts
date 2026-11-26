@@ -1,6 +1,6 @@
 import type { RunReport } from "./run-report.ts";
 
-export type RunSectionName = keyof RunReport;
+export type RunSectionName = Exclude<keyof RunReport, "debtComparison">;
 
 export type RunSectionRole = "failing" | "next-step" | "informational" | "guidance";
 
@@ -58,6 +58,7 @@ export const runSectionRoleOf = (request: { readonly section: RunSectionName }):
   RUN_SECTION_ROLES[request.section];
 
 export const runVerdictOf = (request: { readonly report: RunReport }): RunVerdict =>
+  (request.report.debtComparison?.issues.length ?? 0) === 0 &&
   RUN_SECTION_NAMES.filter((section) => runSectionRoleOf({ section }) === "failing").every(
     (section) => request.report[section].length === 0,
   )

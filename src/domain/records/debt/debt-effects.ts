@@ -2,8 +2,8 @@ import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
+import { debtForfeitureAt } from "../answering/debt-forfeiture.ts";
 import type { Debt, PlacedRecord } from "../hone-records/hone-record.ts";
-import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import {
   type DebtOrigin,
   type DebtSite,

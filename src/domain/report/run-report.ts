@@ -6,6 +6,7 @@ import type {
   PaidDebt,
   StaleRecord,
 } from "../records/answering/answering.ts";
+import type { DebtComparison } from "../records/answering/debt-comparison.ts";
 import type {
   CarriedListing,
   PlacedRecord,
@@ -92,6 +93,7 @@ export type RunAssessment =
     };
 
 export type RunReport = {
+  readonly debtComparison?: DebtComparison;
   readonly excluded: readonly RepoPath[];
   readonly "not-adopted": readonly Check[];
   readonly "not-run": readonly Check[];

@@ -48,6 +48,7 @@ export type Debt = {
   readonly reach: SymptomReach;
   readonly file: RepoPath;
   readonly note?: string;
+  readonly findings?: number;
   readonly holding: Stated | Carried<never>;
 };
 
@@ -149,7 +150,7 @@ export type CarriedListing = {
 };
 
 export type BaseMeasurement =
-  | { readonly measured: "yes"; readonly held: readonly HoneRecord[] }
+  | { readonly measured: "yes"; readonly held: readonly HoneRecord[]; readonly incomplete?: true }
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export type RecordNote = { readonly place: RecordPlace; readonly note: CatalogueNote };

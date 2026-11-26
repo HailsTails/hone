@@ -12,7 +12,6 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { Result } from "../../result.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { CheckNativeException } from "../../runner/check-observations.ts";
-import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
   type MeasurementIndex,
@@ -20,6 +19,7 @@ import {
   measurementOf,
   type RunMeasurements,
 } from "../measurement/measured-at.ts";
+import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import {
   createResolvedSite,
   holdsAt,
@@ -68,6 +68,7 @@ export type AnsweringRequest = Catalogued & {
   readonly touched: TouchedSet;
   readonly runs: readonly NamedGovernedRun[];
   readonly measurements: RunMeasurements;
+  readonly retainTouchedDebt?: true;
 };
 
 export type Answering = {
@@ -353,7 +354,7 @@ const heldExceptions = (request: {
 
 export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> => {
   const { catalogue, content } = request;
-  const forfeited = forfeitedRecords(request);
+  const forfeited = request.retainTouchedDebt === true ? [] : forfeitedRecords(request);
   const forfeit = new Set(forfeited);
   const inForce = request.records.filter((placed) => !forfeit.has(placed));
   const byPlace = recordsByPlaceOf({ records: inForce });

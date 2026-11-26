@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
+import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import { versionTwoCheckOf } from "./version-two-check-command.ts";
 
 const SETTINGS_ABSENT: RunLoadFailure = { kind: "config-absent", repo: "/repo" };
@@ -32,5 +33,67 @@ describe("versionTwoCheckOf", () => {
       }),
     ).toEqual({ outcome: "failed", error: SETTINGS_ABSENT });
     expect(stages.engines).not.toHaveBeenCalled();
+  });
+});
+
+it("measures change for an explicitly requested comparison even when no debt is held", async () => {
+  const touched = vi
+    .fn<VersionTwoStages["touched"]>()
+    .mockReturnValue({ measured: "yes", paths: new Set() });
+  const stages: VersionTwoStages = {
+    ...stagesFailingCatalogue(),
+    catalogue: () => ({
+      outcome: "ok",
+      value: {
+        principles: [],
+        rules: [],
+        cases: [],
+        recipes: [],
+        recordKinds: [],
+        engines: [],
+        symptoms: [],
+        clauses: [],
+        checks: [],
+        namedBans: [],
+      },
+    }),
+    settings: () => ({
+      outcome: "ok",
+      value: {
+        available: [],
+        selection: {
+          selected: [],
+          notAdopted: [],
+          notRun: [],
+          excluded: [],
+          eslintConfigRoots: [],
+        },
+        runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
+        eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
+        conventions: DEFAULT_CONVENTIONS,
+        notes: [],
+      },
+    }),
+    records: () => ({
+      outcome: "ok",
+      value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+    }),
+    tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
+    engines: async () => ({ outcome: "ok", value: [] }),
+    touched,
+  };
+
+  const run = await versionTwoCheckOf({
+    stages,
+    arguments: { forfeiture: undefined, reportOutput: undefined, compareDebtAt: "pinned" },
+  });
+
+  expect(touched).toHaveBeenCalledWith(
+    expect.objectContaining({ assessment: { forfeiture: "this-run" }, measuring: "always" }),
+  );
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: { report: { debtComparison: { revision: "pinned" } } },
   });
 });

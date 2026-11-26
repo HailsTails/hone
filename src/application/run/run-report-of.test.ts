@@ -1089,3 +1089,18 @@ describe("namedRunReportOf, the selection and the settings", () => {
     ).toMatchObject({ outcome: "ok", value: { misnamed: [misnamed] } });
   });
 });
+
+it("adds landing comparison evidence only when requested", () => {
+  const request: RunReportRequest = {
+    ...REQUEST,
+    compareDebt: { revision: "pinned", checks: "shipped", settings: "unchanged" },
+    records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
+  };
+
+  const report = namedRunReportOf(request);
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] } },
+  });
+});

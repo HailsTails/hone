@@ -17,6 +17,7 @@ import {
   answerFindings,
   type RaisedFinding,
 } from "../../domain/records/answering/answering.ts";
+import { compareDebt } from "../../domain/records/answering/debt-comparison.ts";
 import type { PartyReport } from "../../domain/records/answering/record-reach.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { carriedListingOf } from "../../domain/records/hone-records/record-listings.ts";
@@ -29,12 +30,14 @@ import type {
   RunAssessment,
   RunReport,
 } from "../../domain/report/run-report.ts";
+import { excludeProjectionOutputs } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import { typescriptFilesOf } from "./checked-tree-of.ts";
 import {
   engineProblemsOf,
   engineUnmeasuredOf,
@@ -135,6 +138,7 @@ const reportAfterAnswering = (
   request: ReportInputs & {
     readonly answering: Answering;
     readonly status: ReportStatus;
+    readonly compareDebt?: RunReportRequest["compareDebt"];
     readonly runs: readonly NamedEngineRun[];
     readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
   },
@@ -162,7 +166,9 @@ const reportAfterAnswering = (
         records: records.records,
         base: records.base,
         touched: request.touched,
-      }),
+      }).filter(
+        ({ kind }) => request.compareDebt === undefined || kind !== "forfeiture-unmeasured",
+      ),
       ...engineUnmeasuredOf({
         catalogue,
         runs,
@@ -181,6 +187,10 @@ const reportAfterAnswering = (
 
 export type RunReportRequest = ReportInputs & {
   readonly selection: NamedSettingsReading["selection"];
+  readonly compareDebt?: Pick<
+    Parameters<typeof compareDebt>[0],
+    "revision" | "checks" | "settings"
+  >;
   readonly runs: readonly NamedEngineRun[];
 };
 
@@ -212,8 +222,30 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
     records: records.records,
     findings,
     measurements,
+    ...(request.compareDebt === undefined ? {} : { retainTouchedDebt: true }),
   });
-  return answering.outcome === "failed"
-    ? answering
-    : reportAfterAnswering({ ...request, selected, answering: answering.value, status });
+  if (answering.outcome === "failed") return answering;
+  const report = reportAfterAnswering({ ...request, selected, answering: answering.value, status });
+  if (report.outcome === "failed" || request.compareDebt === undefined) return report;
+  const debtComparison = compareDebt({
+    ...request.compareDebt,
+    ...records,
+    touched: request.touched,
+    selected: selected.map(({ address }) => address),
+    files: excludeProjectionOutputs({
+      files: typescriptFilesOf({ tracked: request.tracked }),
+      outputs: new Set(runs.flatMap(({ comparedOutputs }) => comparedOutputs ?? [])),
+    }),
+    findings: findings.map(({ finding }) => finding),
+    measured: measurements.runs.flatMap(({ measured, selected: addresses }) => {
+      const chosen = new Set(addresses);
+      return measured.filter(({ check }) => chosen.has(check));
+    }),
+    exceptions: runs.flatMap(({ nativeExceptions }) => nativeExceptions),
+    projection:
+      report.value["projection-problems"].length === 0 && report.value.unmeasured.length === 0
+        ? "current"
+        : "unmeasured",
+  });
+  return { outcome: "ok", value: { ...report.value, debtComparison } };
 };
