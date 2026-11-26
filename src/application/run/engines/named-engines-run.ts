@@ -34,7 +34,12 @@ export type NamedEnginesRequest = Omit<RunnerLocation, "mechanism"> & {
   readonly engine: NamedEnginePort;
 };
 
-const engineRequestOf = (request: NamedEnginesRequest): NamedEngineRunRequest => ({
+export const mapEnginesRequestToRunRequest = (
+  request: Pick<
+    NamedEnginesRequest,
+    "repoRoot" | "installRoot" | "tree" | "settings" | "checks" | "answered"
+  >,
+): NamedEngineRunRequest => ({
   repoRoot: request.repoRoot,
   installRoot: request.installRoot,
   files: typescriptFilesOf({ tracked: request.tree.tracked }),
@@ -55,7 +60,7 @@ export const namedEngineCallsOf = async <Value>(
     readonly call: (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
   },
 ): Promise<Result<readonly Value[], NamedEngineFailure>> => {
-  const engineRequest = engineRequestOf(request);
+  const engineRequest = mapEnginesRequestToRunRequest(request);
   const mechanisms = new Set(engineRequest.bindings.map(({ engine }) => engine));
   const outcomes = await Promise.all(
     [...mechanisms].map(async (mechanism) => {

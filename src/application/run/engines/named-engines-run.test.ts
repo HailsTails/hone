@@ -12,7 +12,11 @@ import type {
   ParsedNamedRunner,
 } from "../../ports/engine/engine-run.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import { namedEngineRunsOf } from "./named-engines-run.ts";
+import {
+  type EngineSettings,
+  mapEnginesRequestToRunRequest,
+  namedEngineRunsOf,
+} from "./named-engines-run.ts";
 
 const REPO = absoluteRootOf("/repo");
 const INSTALL = absoluteRootOf("/install");
@@ -36,8 +40,100 @@ const BINDING: CheckBinding = {
   edition: FIRST_EDITION,
 };
 
+describe("mapEnginesRequestToRunRequest", () => {
+  it("judges the TypeScript among the tracked files, leaving the config lookup to the engine when none is declared", () => {
+    const settings: EngineSettings = {
+      selection: { selected: [] },
+      eslintConfigLookup: { lookup: "detected" },
+      conventions: { testFiles: { suffixes: ["test"], folders: [] } },
+    };
+
+    const mapped = mapEnginesRequestToRunRequest({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      tree: { tracked: [TYPESCRIPT, MANIFEST], declaredConfigRoots: [] },
+      settings,
+      checks: [CHECK],
+      answered: [],
+    });
+
+    expect(mapped).toEqual({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      files: [TYPESCRIPT],
+      trackedPaths: [TYPESCRIPT, MANIFEST],
+      checks: [CHECK],
+      bindings: [],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["test"], folders: [] },
+    });
+  });
+
+  it("hands on the declared config lookup", () => {
+    const settings: EngineSettings = {
+      selection: { selected: [] },
+      eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
+      conventions: { testFiles: { suffixes: ["test"], folders: [] } },
+    };
+
+    const mapped = mapEnginesRequestToRunRequest({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      tree: { tracked: [], declaredConfigRoots: [] },
+      settings,
+      checks: [],
+      answered: [],
+    });
+
+    expect(mapped).toEqual({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      files: [],
+      trackedPaths: [],
+      checks: [],
+      bindings: [],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: "nearest-to-file",
+      testFiles: { suffixes: ["test"], folders: [] },
+    });
+  });
+
+  it("passes on the selected bindings, the declared test files and the declared config roots", () => {
+    const settings: EngineSettings = {
+      selection: { selected: [{ binding: BINDING }] },
+      eslintConfigLookup: { lookup: "detected" },
+      conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
+    };
+
+    const mapped = mapEnginesRequestToRunRequest({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      tree: { tracked: [], declaredConfigRoots: [repoPathOf("packages/app")] },
+      settings,
+      checks: [],
+      answered: [],
+    });
+
+    expect(mapped).toEqual({
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      files: [],
+      trackedPaths: [],
+      checks: [],
+      bindings: [BINDING],
+      answered: [],
+      declaredConfigRoots: [repoPathOf("packages/app")],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+    });
+  });
+});
+
 describe("namedEngineRunsOf", () => {
-  it("sends each engine the selected bindings, the declared test files and every tracked file as context", async () => {
+  it("loads each selected engine once and runs it over the mapped request", async () => {
     const runner: ParsedNamedRunner = {
       fileScope: "tracked",
       run: vi.fn(),
@@ -78,22 +174,9 @@ describe("namedEngineRunsOf", () => {
     expect(engine.load).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ mechanism: "walker" }),
     );
-    expect(engine.run).toHaveBeenCalledExactlyOnceWith({
-      mechanism: "walker",
-      runner,
-      request: {
-        repoRoot: REPO,
-        installRoot: INSTALL,
-        files: [TYPESCRIPT],
-        trackedPaths: [TYPESCRIPT, MANIFEST],
-        checks: [CHECK],
-        bindings: [BINDING],
-        answered: [],
-        declaredConfigRoots: [],
-        declaredConfigLookup: undefined,
-        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
-      },
-    });
+    expect(vi.mocked(engine.run).mock.calls).toMatchObject([
+      [{ mechanism: "walker", runner, request: { files: [TYPESCRIPT] } }],
+    ]);
   });
 
   it("gives back each engine's run", async () => {
