@@ -24,7 +24,10 @@ import type { RecordRepointing } from "../domain/records/hone-records/records-ed
 import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load-failure.ts";
 import type { MissingProjection, RunProjectionProblem } from "../domain/report/run-report.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import type { ProjectionKind } from "../domain/repository/projection-outputs.ts";
+import {
+  type ProjectionKind,
+  projectionOutputsOf,
+} from "../domain/repository/projection-outputs.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
@@ -70,7 +73,10 @@ const mapStaleProjectionToFailureProblem = (request: {
     scope: "slice",
     engine: problem.engine,
     state: "scope" in problem ? problem.state : "missing",
-    slice: repoPathOf("hone.eslint.ts"),
+    slice: repoPathOf(
+      projectionOutputsOf({ engineName: problem.engine.name, kind: request.projectionKind })
+        .configuration,
+    ),
   };
 };
 

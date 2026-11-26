@@ -128,12 +128,7 @@ describe.each(ESLINT_LINES)(
           entry: "hone.eslint.d.mts",
           resolution,
           form: "typescript",
-          texts: [
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-          ],
+          texts: [{ path: "hone.eslint.d.mts", text: boundary.value.declarationText }],
           packages: [],
         });
 
@@ -164,14 +159,8 @@ describe.each(ESLINT_LINES)(
             { path: "eslint.config.ts", text: ROOT_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-            {
-              path: "packages/a/hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
+            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
+            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -203,14 +192,8 @@ describe.each(ESLINT_LINES)(
             { path: "packages/a/eslint.config.ts", text: PACKAGE_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-            {
-              path: "packages/a/hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
+            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
+            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -242,14 +225,8 @@ describe.each(ESLINT_LINES)(
             { path: "eslint.config.mjs", text: ROOT_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-            {
-              path: "packages/a/hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
+            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
+            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -281,14 +258,8 @@ describe.each(ESLINT_LINES)(
             { path: "packages/a/eslint.config.mjs", text: PACKAGE_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-            {
-              path: "packages/a/hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
+            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
+            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -320,14 +291,8 @@ describe.each(ESLINT_LINES)(
             { path: "misuse.ts", text: MISUSE },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            {
-              path: "hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
-            {
-              path: "packages/a/hone.eslint.d.mts",
-              text: boundary.value.declarationText,
-            },
+            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
+            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },

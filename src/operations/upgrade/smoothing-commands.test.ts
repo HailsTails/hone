@@ -334,7 +334,6 @@ describe("createSmoothingCommands", () => {
           kind: "projection-stale",
           problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
           projectCommand: PROJECT_COMMAND,
-          projectionKind: "mjs",
         },
       },
     });
