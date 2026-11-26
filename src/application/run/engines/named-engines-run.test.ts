@@ -130,7 +130,7 @@ describe("runNamedEngines", () => {
     });
     const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
       outcome: "ok",
-      value: { run, project: vi.fn() },
+      value: { run, project: async () => ({ outcome: "ok", value: [] }) },
     });
 
     await runNamedEngines({
@@ -154,6 +154,91 @@ describe("runNamedEngines", () => {
     expect(run.mock.calls).toMatchObject([[{ files: [TYPESCRIPT] }]]);
   });
 
+  it("runs every engine over the files no engine projects", async () => {
+    const file = repoPathOf("hone.eslint.d.mts");
+    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "tool-failed", detail: "stopped" },
+      },
+    });
+    const load = vi
+      .fn<NamedEnginePort["load"]>()
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: { run, project: async () => ({ outcome: "ok", value: [] }) },
+      })
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: {
+          run,
+          project: async () => ({ outcome: "ok", value: [{ file, text: "export {};" }] }),
+        },
+      });
+
+    await runNamedEngines({
+      settings: {
+        selection: {
+          selected: [{ binding: BINDING }, { binding: { ...BINDING, engine: "eslint" } }],
+        },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["spec"], folders: [] } },
+      },
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: { join: vi.fn<PathPort["join"]>() },
+      modules: { load: vi.fn() },
+      engine: { load },
+      checks: [CHECK],
+      answered: [],
+      tree: { tracked: [TYPESCRIPT, file], declaredConfigRoots: [] },
+    });
+
+    expect(run.mock.calls).toMatchObject([
+      [{ files: [TYPESCRIPT], trackedPaths: [TYPESCRIPT] }],
+      [{ files: [TYPESCRIPT], trackedPaths: [TYPESCRIPT] }],
+    ]);
+  });
+
+  it("returns a failed projection without running any engine", async () => {
+    const failure: Awaited<ReturnType<LoadedEngine["project"]>> = {
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "tool-failed", detail: "stopped" },
+      },
+    };
+    const run = vi.fn<LoadedEngine["run"]>();
+    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+      outcome: "ok",
+      value: { run, project: vi.fn<LoadedEngine["project"]>().mockResolvedValue(failure) },
+    });
+
+    const outcome = await runNamedEngines({
+      settings: {
+        selection: { selected: [{ binding: BINDING }] },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["spec"], folders: [] } },
+      },
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: { join: vi.fn<PathPort["join"]>() },
+      modules: { load: vi.fn() },
+      engine: { load },
+      checks: [CHECK],
+      answered: [],
+      tree: { tracked: [TYPESCRIPT], declaredConfigRoots: [] },
+    });
+
+    expect(outcome).toEqual(failure);
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it("gives back each engine's run", async () => {
     const measured: NamedEngineRun = {
       mechanism: "walker",
@@ -171,7 +256,7 @@ describe("runNamedEngines", () => {
       outcome: "ok",
       value: {
         run: vi.fn<LoadedEngine["run"]>().mockResolvedValue({ outcome: "ok", value: measured }),
-        project: vi.fn(),
+        project: async () => ({ outcome: "ok", value: [] }),
       },
     });
 

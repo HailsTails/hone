@@ -454,8 +454,7 @@ describe("mapEngineStageToEnginesRequest", () => {
 });
 
 describe("versionTwoStagesOver", () => {
-  it("runs the engine over the stage's checks", async () => {
-    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+  it("runs the selected Walker check over the tracked TypeScript file", async () => {
     const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
       outcome: "failed",
       error: {
@@ -466,65 +465,10 @@ describe("versionTwoStagesOver", () => {
     });
     const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
       outcome: "ok",
-      value: { run, project: vi.fn() },
+      value: { run, project: async () => ({ outcome: "ok", value: [] }) },
     });
     const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load } },
-      locations: {
-        repoRoot: REPO,
-        installRoot: INSTALL,
-        moduleExtension: ".ts",
-        baseRevision: undefined,
-      },
-    });
-
-    const outcome = await stages.engines({
-      catalogue: REPORT_CATALOGUE,
-      settings: {
-        selection: {
-          selected: [
-            {
-              binding: {
-                engine: "walker",
-                address: "date-used-directly#clock-sources",
-                ruleSet: TOOL_RULE_SET,
-                anchor: { kind: "file" },
-                pieceRoot: "/install/pieces",
-                checkSettings: {},
-                edition: editionOf("1"),
-                settings: {},
-              },
-            },
-          ],
-        },
-        eslintConfigLookup: { lookup: "detected" },
-        conventions: DEFAULT_CONVENTIONS,
-      },
-      records: { records: [] },
-      tree: { tracked: [], declaredConfigRoots: [] },
-      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
-    });
-
-    expect(outcome.outcome).toBe("failed");
-    expect(run.mock.calls).toMatchObject([[{ checks: [{ name: "clock-sources" }] }]]);
-  });
-
-  it("runs the engine over the stage's files", async () => {
-    const ports = portsOver({ git: GIT_LISTING_NOTHING });
-    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
-      outcome: "failed",
-      error: {
-        kind: "runner-failed",
-        mechanism: "walker",
-        failure: { kind: "tool-failed", detail: "stopped" },
-      },
-    });
-    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
-      outcome: "ok",
-      value: { run, project: vi.fn() },
-    });
-    const stages = versionTwoStagesOver({
-      ports: { ...ports, namedEngine: { load } },
+      ports: { ...portsOver({ git: GIT_LISTING_NOTHING }), namedEngine: { load } },
       locations: {
         repoRoot: REPO,
         installRoot: INSTALL,
@@ -557,11 +501,13 @@ describe("versionTwoStagesOver", () => {
       },
       records: { records: [] },
       tree: { tracked: [repoPathOf("src/clock.ts")], declaredConfigRoots: [] },
-      checks: [],
+      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
     });
 
     expect(outcome.outcome).toBe("failed");
-    expect(run.mock.calls).toMatchObject([[{ files: [repoPathOf("src/clock.ts")] }]]);
+    expect(run.mock.calls).toMatchObject([
+      [{ checks: [{ name: "clock-sources" }], files: ["src/clock.ts"] }],
+    ]);
   });
 
   it("fails as a catalogue not read, absent, when the install holds nothing", () => {

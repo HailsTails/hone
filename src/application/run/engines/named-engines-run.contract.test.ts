@@ -139,7 +139,9 @@ const ESLINT_RUN: NamedEngineRun = { ...AUDIT_RUN, mechanism: ESLINT };
 const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
   const runChecks = vi.fn<LoadedEngine["run"]>();
-  const projectChecks = vi.fn<LoadedEngine["project"]>();
+  const projectChecks = vi
+    .fn<LoadedEngine["project"]>()
+    .mockResolvedValue({ outcome: "ok", value: [] });
   return {
     load,
     runChecks,
@@ -196,8 +198,14 @@ describe("runNamedEngines", () => {
       .mockResolvedValue({ outcome: "ok", value: ESLINT_RUN });
     const load = vi
       .fn<NamedEnginePort["load"]>()
-      .mockResolvedValueOnce({ outcome: "ok", value: { run: audit, project: vi.fn() } })
-      .mockResolvedValueOnce({ outcome: "ok", value: { run: eslint, project: vi.fn() } });
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: { run: audit, project: async () => ({ outcome: "ok", value: [] }) },
+      })
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: { run: eslint, project: async () => ({ outcome: "ok", value: [] }) },
+      });
 
     const run = await runNamedEngines(
       enginesRequestOf({
@@ -249,6 +257,35 @@ describe("runNamedEngines", () => {
       }),
     );
     expect(engine.runChecks.mock.calls).toEqual([[ESLINT_RUN_REQUEST]]);
+  });
+
+  it("projects the full request and runs the engine with projected paths removed", async () => {
+    const file = repoPathOf("hone.eslint.d.mts");
+    const engine = engineFake();
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
+    engine.projectChecks.mockResolvedValueOnce({
+      outcome: "ok",
+      value: [{ file, text: "export {};" }],
+    });
+    engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
+    const request = enginesRequestOf({
+      selected: [selectedOn({ mechanism: ESLINT })],
+      lookup: DETECTED,
+      engine: engine.port,
+    });
+
+    const run = await runNamedEngines({
+      ...request,
+      tree: { tracked: [A, README, file], declaredConfigRoots: [] },
+    });
+
+    expect(run).toEqual({ outcome: "ok", value: [ESLINT_RUN] });
+    expect(engine.projectChecks).toHaveBeenCalledExactlyOnceWith({
+      ...ESLINT_RUN_REQUEST,
+      files: [A, file],
+      trackedPaths: [A, README, file],
+    });
+    expect(engine.runChecks).toHaveBeenCalledExactlyOnceWith(ESLINT_RUN_REQUEST);
   });
 
   it("passes the ESLint config lookup the settings declare, and none when the settings leave it to be detected", async () => {
@@ -346,35 +383,6 @@ describe("projectNamedEngines", () => {
     ).toEqual({
       outcome: "ok",
       value: [WRITTEN_PROJECTION],
-    });
-  });
-
-  it("asks the engine to project the very request it would run, so a run and a projection cannot see different inputs", async () => {
-    const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
-    engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [] });
-    engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await projectNamedEngines(
-      enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
-        lookup: DETECTED,
-        engine: engine.port,
-      }),
-    );
-    await runNamedEngines(
-      enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
-        lookup: DETECTED,
-        engine: engine.port,
-      }),
-    );
-    expect({
-      projected: engine.projectChecks.mock.calls,
-      run: engine.runChecks.mock.calls,
-    }).toEqual({
-      projected: [[ESLINT_RUN_REQUEST]],
-      run: [[ESLINT_RUN_REQUEST]],
     });
   });
 
