@@ -20,6 +20,7 @@ import {
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
+import type { EngineSettings } from "./engines/named-engines-run.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {
   catalogueWithExternalChecks,
@@ -39,8 +40,8 @@ export type VersionTwoRun = {
 
 export type EngineStageRequest = {
   readonly catalogue: SymptomCatalogue;
-  readonly settings: NamedSettingsReading;
-  readonly records: RecordsReading;
+  readonly settings: EngineSettings;
+  readonly records: Pick<RecordsReading, "records">;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
 };
@@ -77,7 +78,13 @@ export type VersionTwoRequest = {
   readonly measuring: TouchedMeasuring;
 };
 
-type Inputs = Omit<EngineStageRequest, "tree"> & { readonly content: RuleContent };
+type ReadStageInputs = {
+  readonly settings: NamedSettingsReading;
+  readonly records: RecordsReading;
+};
+
+type Inputs = Omit<EngineStageRequest, "tree" | keyof ReadStageInputs> &
+  ReadStageInputs & { readonly content: RuleContent };
 
 export const settledCatalogueOf = (request: {
   readonly stages: Pick<VersionTwoStages, "catalogue" | "settings">;
@@ -122,10 +129,11 @@ export const versionTwoInputsOf = (request: {
       };
 };
 
-export type MeasuredEngines = EngineStageRequest & {
-  readonly content: RuleContent;
-  readonly runs: readonly NamedEngineRun[];
-};
+export type MeasuredEngines = Omit<EngineStageRequest, keyof ReadStageInputs> &
+  ReadStageInputs & {
+    readonly content: RuleContent;
+    readonly runs: readonly NamedEngineRun[];
+  };
 
 export const measureEngines = async (request: {
   readonly stages: VersionTwoStages;

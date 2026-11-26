@@ -127,9 +127,11 @@ const treeStage = (
     : tree;
 };
 
-const enginesRequestOf = (
-  request: StagesRequest & { readonly stage: EngineStageRequest },
-): NamedEnginesRequest => ({
+export const mapEngineStageToEnginesRequest = (request: {
+  readonly ports: Pick<VersionTwoPorts, "path" | "modules" | "namedEngine">;
+  readonly locations: Pick<VersionTwoLocations, "repoRoot" | "installRoot" | "moduleExtension">;
+  readonly stage: EngineStageRequest;
+}): NamedEnginesRequest => ({
   ...request.stage,
   repoRoot: request.locations.repoRoot,
   installRoot: request.locations.installRoot,
@@ -166,12 +168,14 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
   engines: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineRunsOf(enginesRequestOf({ ...request, stage })),
+      outcome: await namedEngineRunsOf(mapEngineStageToEnginesRequest({ ...request, stage })),
     }),
   projections: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineProjectionsOf(enginesRequestOf({ ...request, stage })),
+      outcome: await namedEngineProjectionsOf(
+        mapEngineStageToEnginesRequest({ ...request, stage }),
+      ),
     }),
   renamed: () =>
     renamedSinceBaseOf({
