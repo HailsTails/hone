@@ -54,6 +54,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -326,6 +327,7 @@ describe("createSmoothingCommands", () => {
           kind: "projection-stale",
           problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
           projectCommand: PROJECT_COMMAND,
+          projectionKind: "mjs",
         },
       },
     });

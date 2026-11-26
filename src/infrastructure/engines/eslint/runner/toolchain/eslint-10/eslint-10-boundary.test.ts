@@ -18,16 +18,14 @@ describe("the ESLint 10 boundary", () => {
     });
   });
 
-  it("declares the projection as the list of configuration blocks Hone writes, importing no package", () => {
-    expect(eslintBoundary.declarationText).toBe(`declare const projection: {
+  it("types the projection as the list of configuration blocks Hone writes, importing no package", () => {
+    expect(eslintBoundary.projectionTypeText).toBe(`{
   name: string;
   files: string[];
   ignores?: string[];
   plugins?: Record<string, object>;
   rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
-}[];
-export default projection;
-`);
+}[]`);
   });
 
   it("reads a report without data as having none", () => {

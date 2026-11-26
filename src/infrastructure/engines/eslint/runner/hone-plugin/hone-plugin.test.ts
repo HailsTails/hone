@@ -15,7 +15,7 @@ import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./h
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
   reportDataOf: () => undefined,
-  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+  projectionTypeText: "readonly unknown[]",
 };
 
 const SKIPPED_TESTS_CHECK: PluginCheck = {

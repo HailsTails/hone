@@ -41,6 +41,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [] },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["test"], folders: [] } },
       },
       checks: [CHECK],
@@ -57,6 +58,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test"], folders: [] },
     });
   });
@@ -69,6 +71,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [] },
         eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["test"], folders: [] } },
       },
       checks: [],
@@ -85,6 +88,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: "nearest-to-file",
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test"], folders: [] },
     });
   });
@@ -97,6 +101,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
       },
       checks: [],
@@ -113,6 +118,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [repoPathOf("packages/app")],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     });
   });
@@ -137,6 +143,7 @@ describe("runNamedEngines", () => {
       settings: {
         selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
       },
       repoRoot: REPO,
@@ -184,6 +191,7 @@ describe("runNamedEngines", () => {
           selected: [{ binding: BINDING }, { binding: { ...BINDING, engine: "eslint" } }],
         },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: [] } },
       },
       repoRoot: REPO,
@@ -222,6 +230,7 @@ describe("runNamedEngines", () => {
       settings: {
         selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: [] } },
       },
       repoRoot: REPO,
@@ -264,6 +273,7 @@ describe("runNamedEngines", () => {
       settings: {
         selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
       },
       repoRoot: REPO,

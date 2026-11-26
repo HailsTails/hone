@@ -122,6 +122,7 @@ const producedOf = (request: {
     content: { symptoms: new Map() },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
+    projectionKind: "mjs",
     runs: [],
     moved: [],
   },

@@ -204,6 +204,17 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(unmeasured).toEqual([]);
   });
 
+  it("names nothing when the only TypeScript files are the engine's own typed projections", () => {
+    const unmeasured = engineUnmeasuredOf({
+      catalogue: REPORT_CATALOGUE,
+      runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+      tracked: [repoPathOf("hone.eslint.ts"), repoPathOf("packages/a/hone.eslint.ts")],
+      selected: SELECTED,
+    });
+
+    expect(unmeasured).toEqual([]);
+  });
+
   it.each([repoPathOf("src/a.ts"), repoPathOf("hone.walker.d.mts")])(
     "names an engine that measured nothing when %s is tracked beside its own projection outputs",
     (file) => {

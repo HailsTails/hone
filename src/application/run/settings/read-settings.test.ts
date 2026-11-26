@@ -186,6 +186,7 @@ const SETTINGS_FILE: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "ts",
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
@@ -211,7 +212,7 @@ const sourcesHolding = (request: { readonly document: unknown }): SettingsSource
 });
 
 describe("readNamedSettings and the settings document", () => {
-  it("gives the check choices, binding, edition, and reporting settings from the document", () => {
+  it("gives the check choices, binding, edition, reporting settings and ESLint projection kind from the document", () => {
     expect(
       readNamedSettings({
         settingsFormat: SETTINGS_FORMAT,
@@ -265,6 +266,7 @@ describe("readNamedSettings and the settings document", () => {
         },
         runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "ts",
         conventions: DEFAULT_CONVENTIONS,
         notes: [],
       },

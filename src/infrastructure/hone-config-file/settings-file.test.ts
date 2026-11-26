@@ -24,6 +24,7 @@ const SMALLEST_FILE: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
@@ -61,6 +62,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -83,6 +85,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -125,6 +128,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -141,6 +145,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -157,6 +162,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -173,6 +179,7 @@ describe("settingsFileOf", () => {
         checkEditions: "latest",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -189,6 +196,24 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "the ts projection kind",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "ts" },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        eslintProjectionKind: "ts",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -205,6 +230,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [repoPathOf("web")],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -212,6 +238,17 @@ describe("settingsFileOf", () => {
     const read = settingsFileOf({ document });
 
     expect(read).toEqual({ outcome: "ok", value: file });
+  });
+
+  it("refuses a projection kind it does not know as malformed", () => {
+    const document = { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "d.mts" };
+
+    const read = settingsFileOf({ document });
+
+    expect(read).toEqual({
+      outcome: "failed",
+      error: { kind: "malformed", detail: expect.any(String) },
+    });
   });
 
   it("reads a top-level generated key into the conventions it declares", () => {
@@ -476,6 +513,7 @@ const FULL_FILE: SettingsFile = {
   checkEditions: "latest",
   eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
   eslintConfigRoots: [repoPathOf("web")],
+  eslintProjectionKind: "ts",
   conventions: {
     conventions: {
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
@@ -551,6 +589,7 @@ describe("settingsWireOf", () => {
       reportOutput: "counts",
       checkEditions: "latest",
       eslintConfigLookup: "nearest-to-file",
+      eslintProjectionKind: "ts",
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
       layers: { domain: ["src/domain"] },
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },

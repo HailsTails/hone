@@ -185,6 +185,40 @@ describe("toolchainPinsOf, over this package's own package.json read as a build-
     });
   });
 
+  it("pins every peer and the jiti config loader at the development versions for a TypeScript config consumer", () => {
+    expect(
+      toolchainPinsOf({
+        developmentManifest: packageFiles["../../package.json"],
+        toolchain: "typescript-config",
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        typescript: "6.0.3",
+        eslint: "10.15.0",
+        "@typescript-eslint/parser": "8.73.0",
+        "@typescript-eslint/eslint-plugin": "8.73.0",
+        jiti: "2.7.0",
+      },
+    });
+  });
+
+  it("fails naming a config loader with no development pin", () => {
+    expect(
+      toolchainPinsOf({
+        developmentManifest:
+          '{ "peerDependencies": { "typescript": ">=4.8.4 <7.0.0", "eslint": "^10.15.0", "@typescript-eslint/parser": "^8.73.0", "@typescript-eslint/eslint-plugin": "^8.73.0" }, "devDependencies": { "typescript": "6.0.3", "eslint": "10.15.0", "@typescript-eslint/parser": "8.73.0", "@typescript-eslint/eslint-plugin": "8.73.0" } }',
+        toolchain: "typescript-config",
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "manifest-invalid",
+        detail: "no development pin for the config loader jiti",
+      },
+    });
+  });
+
   it("fails on a manifest that is not JSON", () => {
     expect(
       toolchainPinsOf({ developmentManifest: "{", toolchain: "typescript-floor" }).outcome,
@@ -338,6 +372,19 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
 
+const ESLINT_CHECK: ProofAction = {
+  kind: "check",
+  expectation: {
+    exitCode: 1,
+    output: `findings (1)
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+symptoms (1)
+${CLASS_SYMPTOM}
+verdict: fail
+`,
+  },
+};
+
 const ESLINT_ACTIONS: readonly ProofAction[] = [
   {
     kind: "project",
@@ -345,16 +392,70 @@ const ESLINT_ACTIONS: readonly ProofAction[] = [
   },
   { kind: "read", path: V2_PROJECTION, text: ESLINT_PROJECTION },
   { kind: "commit", message: "project" },
+  ESLINT_CHECK,
+];
+
+const TYPESCRIPT_CONFIG_SETUP = {
+  replace: ["disciplines.json", "disciplines.eslint.mjs", "eslint.config.mjs"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "eslint"
+  },
+  "eslintProjectionKind": "ts"
+}\n`,
+    },
+    {
+      name: "eslint.config.ts",
+      text: 'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.js";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n',
+    },
+    {
+      name: "lint.mjs",
+      text: `import { ESLint } from "eslint";
+
+const eslint = new ESLint({ cwd: import.meta.dirname });
+const results = await eslint.lintFiles(["."]);
+const lines = results.flatMap((result) =>
+  result.messages.map(
+    (message) => \`\${result.filePath.slice(import.meta.dirname.length + 1).replaceAll("\\\\", "/")}:\${message.line}:\${message.column} \${message.ruleId}\`,
+  ),
+);
+process.stdout.write(lines.map((line) => \`\${line}\\n\`).join(""));
+process.exitCode = lines.length === 0 ? 0 : 1;
+`,
+    },
+  ],
+};
+
+const TYPESCRIPT_CONFIG_ACTIONS: readonly ProofAction[] = [
+  { kind: "project", expectation: { exitCode: 0, output: "hone.eslint.ts written\n" } },
   {
-    kind: "check",
+    kind: "read",
+    path: "hone.eslint.ts",
+    text: `import hone from "@hailstails/hone/eslint-plugin";
+const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default projection;
+`,
+  },
+  { kind: "commit", message: "project" },
+  ESLINT_CHECK,
+  {
+    kind: "run",
+    script: "lint.mjs",
     expectation: {
       exitCode: 1,
-      output: `findings (1)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-symptoms (1)
-${CLASS_SYMPTOM}
-verdict: fail
-`,
+      output: "src/kept.ts:1:8 hone/authored-class-or-this#class-keyword\n",
     },
   },
 ];
@@ -502,7 +603,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
 ];
 
 describe("the proof cases", () => {
-  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import, and that workspace with no lint config but the package's own", () => {
+  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one whose TypeScript eslint.config.ts imports a ts kind projection through jiti, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import, and that workspace with no lint config but the package's own", () => {
     expect(PROOF_CASES).toEqual([
       {
         consumer: "audit",
@@ -527,6 +628,14 @@ describe("the proof cases", () => {
         typeStripping: "disabled",
         setup: ESLINT_SETUP,
         actions: ESLINT_ACTIONS,
+      },
+      {
+        consumer: "eslint-typescript-config",
+        fixture: "eslint",
+        toolchain: "typescript-config",
+        typeStripping: "disabled",
+        setup: TYPESCRIPT_CONFIG_SETUP,
+        actions: TYPESCRIPT_CONFIG_ACTIONS,
       },
       {
         consumer: "eslint-missing",

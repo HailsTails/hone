@@ -151,6 +151,7 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
         },
         runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "ts",
         conventions: DEFAULT_CONVENTIONS,
         notes: [],
       },
@@ -336,6 +337,7 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
         kind: "projection-stale",
         problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
         projectCommand: PROJECT_COMMAND,
+        projectionKind: "ts",
       },
     });
     expect(input.recordsStoreOf).not.toHaveBeenCalled();
@@ -381,6 +383,7 @@ describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
           kind: "projection-stale",
           problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
           projectCommand: PROJECT_COMMAND,
+          projectionKind: "ts",
         },
       },
       storesOpened: [],

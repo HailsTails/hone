@@ -90,6 +90,7 @@ describe("runnerEnginesOver", () => {
           answered: [],
           declaredConfigRoots: [],
           declaredConfigLookup: undefined,
+          projectionKind: "mjs",
           testFiles: { suffixes: ["test"], folders: [] },
           bindings: [],
         },

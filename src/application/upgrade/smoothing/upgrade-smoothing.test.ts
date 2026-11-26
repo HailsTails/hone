@@ -232,6 +232,7 @@ describe("runSmoothing", () => {
         kind: "projection-stale",
         problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
         projectCommand: "hone project --repo /repo",
+        projectionKind: "mjs",
       },
     } as const;
     const commands: SmoothingCommands = {

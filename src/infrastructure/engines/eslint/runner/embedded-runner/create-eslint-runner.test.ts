@@ -48,7 +48,7 @@ import type { EslintRepository } from "./eslint-repository.ts";
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
   reportDataOf: () => undefined,
-  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+  projectionTypeText: "readonly unknown[]",
 };
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

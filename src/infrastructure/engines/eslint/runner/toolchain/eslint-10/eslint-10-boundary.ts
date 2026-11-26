@@ -1,7 +1,7 @@
-import { type EslintMajorBoundary, PROJECTION_DECLARATION_TEXT } from "../eslint-major-boundary.ts";
+import { type EslintMajorBoundary, PROJECTION_TYPE_TEXT } from "../eslint-major-boundary.ts";
 
 export const eslintBoundary: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
-  declarationText: PROJECTION_DECLARATION_TEXT,
+  projectionTypeText: PROJECTION_TYPE_TEXT,
   reportDataOf: (request) => request.descriptor.data,
 };

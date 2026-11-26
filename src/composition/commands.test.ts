@@ -497,6 +497,7 @@ const settingsWith = (request: {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: request.forfeiture } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 });

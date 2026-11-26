@@ -1,6 +1,7 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
+import type { ProjectionKind } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
@@ -23,6 +24,7 @@ import { mapRequestToJudgedRequest } from "./judged-request.ts";
 export type EngineSettings = {
   readonly selection: { readonly selected: readonly { readonly binding: CheckBinding }[] };
   readonly eslintConfigLookup: EslintConfigLookupChoice;
+  readonly eslintProjectionKind: ProjectionKind;
   readonly conventions: Pick<Conventions, "testFiles">;
 };
 
@@ -54,6 +56,7 @@ export const mapEnginesRequestToRunRequest = (
     request.settings.eslintConfigLookup.lookup === "declared"
       ? request.settings.eslintConfigLookup.value
       : undefined,
+  projectionKind: request.settings.eslintProjectionKind,
   testFiles: request.settings.conventions.testFiles,
 });
 
