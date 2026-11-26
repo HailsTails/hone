@@ -5,17 +5,15 @@ import { mapRequestToJudgedRequest } from "./judged-request.ts";
 
 describe("mapRequestToJudgedRequest", () => {
   it("leaves the listed outputs out of the files judged and the tracked paths", () => {
-    const engineRequest = {
-      files: [repoPathOf("src/source.ts"), repoPathOf("hone.eslint.d.mts")],
-      trackedPaths: [
-        repoPathOf("src/source.ts"),
-        repoPathOf("hone.eslint.mjs"),
-        repoPathOf("hone.eslint.d.mts"),
-      ],
-    };
-
     const judged = mapRequestToJudgedRequest({
-      engineRequest,
+      engineRequest: {
+        files: [repoPathOf("src/source.ts"), repoPathOf("hone.eslint.d.mts")],
+        trackedPaths: [
+          repoPathOf("src/source.ts"),
+          repoPathOf("hone.eslint.mjs"),
+          repoPathOf("hone.eslint.d.mts"),
+        ],
+      },
       outputs: [repoPathOf("hone.eslint.mjs"), repoPathOf("hone.eslint.d.mts")],
     });
 
@@ -26,13 +24,11 @@ describe("mapRequestToJudgedRequest", () => {
   });
 
   it("keeps an authored file named as an output elsewhere", () => {
-    const engineRequest = {
-      files: [repoPathOf("hone.eslint.d.mts"), repoPathOf("src/hone.eslint.d.mts")],
-      trackedPaths: [repoPathOf("hone.eslint.d.mts"), repoPathOf("src/hone.eslint.d.mts")],
-    };
-
     const judged = mapRequestToJudgedRequest({
-      engineRequest,
+      engineRequest: {
+        files: [repoPathOf("hone.eslint.d.mts"), repoPathOf("src/hone.eslint.d.mts")],
+        trackedPaths: [repoPathOf("hone.eslint.d.mts"), repoPathOf("src/hone.eslint.d.mts")],
+      },
       outputs: [repoPathOf("hone.eslint.d.mts")],
     });
 
@@ -43,12 +39,13 @@ describe("mapRequestToJudgedRequest", () => {
   });
 
   it("gives back the request unchanged when no output is listed", () => {
-    const engineRequest = {
-      files: [repoPathOf("src/source.ts")],
-      trackedPaths: [repoPathOf("src/source.ts"), repoPathOf("package.json")],
-    };
-
-    const judged = mapRequestToJudgedRequest({ engineRequest, outputs: [] });
+    const judged = mapRequestToJudgedRequest({
+      engineRequest: {
+        files: [repoPathOf("src/source.ts")],
+        trackedPaths: [repoPathOf("src/source.ts"), repoPathOf("package.json")],
+      },
+      outputs: [],
+    });
 
     expect(judged).toEqual({
       files: [repoPathOf("src/source.ts")],
