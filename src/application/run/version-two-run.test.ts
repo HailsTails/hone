@@ -320,6 +320,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -402,6 +403,19 @@ describe("versionTwoRunOver", () => {
         },
       },
     });
+  });
+
+  it("gives the ESLint projection kind the settings name", async () => {
+    const settings = vi
+      .fn<VersionTwoStages["settings"]>()
+      .mockReturnValue({ outcome: "ok", value: { ...SETTINGS, eslintProjectionKind: "ts" } });
+
+    const run = await versionTwoRunOver({
+      stages: stagesGiving({ settings }),
+      arguments: NO_ARGUMENTS,
+    });
+
+    expect(run).toMatchObject({ outcome: "ok", value: { projectionKind: "ts" } });
   });
 
   it("takes the report output and the forfeiture assessment the command line gave over the settings", async () => {

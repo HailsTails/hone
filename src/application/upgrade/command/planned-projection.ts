@@ -131,7 +131,7 @@ const projectionsAmong = (request: {
   readonly engines: readonly Engine[];
 }): readonly ProjectedFile[] => {
   const names = request.engines.map(
-    (engine) => projectionOutputsOf({ engineName: engine.name }).configuration,
+    (engine) => projectionOutputsOf({ engineName: engine.name, kind: "mjs" }).configuration,
   );
   return request.files.filter(({ file }) => names.includes(fileNameOf({ file })));
 };

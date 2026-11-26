@@ -104,15 +104,21 @@ describe("unmeasuredLine", () => {
       line: `${NOT_INCLUDED_TEXT}${NESTED_NOTE}`,
     },
   ])("prints $name", ({ unmeasured, line }) => {
-    expect(unmeasuredLine({ projectCommand: PROJECT_COMMAND, unmeasured, problems: [] })).toBe(
-      line,
-    );
+    expect(
+      unmeasuredLine({
+        projectCommand: PROJECT_COMMAND,
+        projectionKind: "mjs",
+        unmeasured,
+        problems: [],
+      }),
+    ).toBe(line);
   });
 
   it("points at the engine's slice problems when projection-problems names any", () => {
     expect(
       unmeasuredLine({
         projectCommand: PROJECT_COMMAND,
+        projectionKind: "mjs",
         unmeasured: NESTED_NOT_INCLUDED,
         problems: [ESLINT_SLICE_PROBLEM],
       }),
@@ -123,10 +129,24 @@ describe("unmeasuredLine", () => {
     expect(
       unmeasuredLine({
         projectCommand: PROJECT_COMMAND,
+        projectionKind: "mjs",
         unmeasured: NOT_INCLUDED,
         problems: [WALKER_SLICE_PROBLEM],
       }),
     ).toBe(NOT_INCLUDED_TEXT);
+  });
+
+  it("names the typed projection to spread when the repository projects the ts kind", () => {
+    const line = unmeasuredLine({
+      projectCommand: PROJECT_COMMAND,
+      projectionKind: "ts",
+      unmeasured: NOT_INCLUDED,
+      problems: [],
+    });
+
+    expect(line).toBe(
+      "engine-not-run eslint not-included: the eslint configuration leaves the projection out of effect for a file under check; spread the default export of hone.eslint.ts, or of a package's own hone.eslint.ts in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), or, where a tool such as sku generates the configuration, last in the configuration the tool takes",
+    );
   });
 });
 
@@ -165,7 +185,21 @@ describe("projectionProblemLine", () => {
       },
     ],
   )("prints $name", ({ problem, line }) => {
-    expect(projectionProblemLine({ projectCommand: PROJECT_COMMAND, problem })).toBe(line);
+    expect(
+      projectionProblemLine({ projectCommand: PROJECT_COMMAND, projectionKind: "mjs", problem }),
+    ).toBe(line);
+  });
+
+  it("names the typed projection when the repository projects the ts kind and it is out of date", () => {
+    const line = projectionProblemLine({
+      projectCommand: PROJECT_COMMAND,
+      projectionKind: "ts",
+      problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+    });
+
+    expect(line).toBe(
+      `eslint out-of-date: hone.eslint.ts differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
+    );
   });
 });
 
@@ -175,9 +209,22 @@ describe("projectionMissingLine", () => {
       projectionMissingLine({
         unmeasured: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
         projectCommand: "node /tool/hone.js project --repo /repo",
+        projectionKind: "mjs",
       }),
     ).toBe(
       "engine-not-run eslint missing: hone.eslint.mjs is not written; run node /tool/hone.js project --repo /repo and commit every file it writes",
+    );
+  });
+
+  it("names the typed projection when the repository projects the ts kind", () => {
+    const line = projectionMissingLine({
+      unmeasured: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+      projectCommand: "node /tool/hone.js project --repo /repo",
+      projectionKind: "ts",
+    });
+
+    expect(line).toBe(
+      "engine-not-run eslint missing: hone.eslint.ts is not written; run node /tool/hone.js project --repo /repo and commit every file it writes",
     );
   });
 });

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
 import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
+import type { ProjectionKind } from "../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
@@ -32,6 +33,7 @@ import { checkEditionsSchema } from "./check-editions.ts";
 import { type ConventionsWire, conventionsOf, conventionsWireOf } from "./conventions.ts";
 import { ruleSetNameSchema } from "./identifiers.ts";
 import { listedAddressSchema } from "./listed-address.ts";
+import { projectionKindSchema } from "./projection-kind.ts";
 import { versionTwoReportOutputSchema } from "./report-output.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
@@ -49,6 +51,8 @@ const DEFAULT_FORFEITURE: ForfeitureAssessment = "this-run";
 const DEFAULT_REPORT_OUTPUT: VersionTwoReportOutput = "full";
 
 const DEFAULT_CHECK_EDITIONS: CheckEditions = "pinned";
+
+const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
 const JSON_INDENT = 2;
 
@@ -128,6 +132,7 @@ const settingsFileWireSchema = z.strictObject({
   eslintConfigRoots: folderListSchema({
     refusal: "an eslintConfigRoots entry is a repository folder, not a glob",
   }),
+  eslintProjectionKind: projectionKindSchema.default(DEFAULT_PROJECTION_KIND),
   generated: z.unknown().optional(),
   layers: z.unknown().optional(),
   testFiles: z.unknown().optional(),
@@ -185,6 +190,7 @@ const settingsFileOfWire = (request: {
   checkEditions: request.wire.checkEditions,
   eslintConfigLookup: eslintConfigLookupOf({ declared: request.wire.eslintConfigLookup }),
   eslintConfigRoots: request.wire.eslintConfigRoots,
+  eslintProjectionKind: request.wire.eslintProjectionKind,
   conventions: request.conventions,
 });
 
@@ -201,6 +207,7 @@ export type SettingsWire = {
   readonly reportOutput?: VersionTwoReportOutput;
   readonly checkEditions?: CheckEditions;
   readonly eslintConfigLookup?: EslintConfigLookup;
+  readonly eslintProjectionKind?: ProjectionKind;
 } & ConventionsWire;
 
 const byKey = <Value>(request: {
@@ -250,6 +257,10 @@ const settingsWireOfDefaults = (request: {
     value: settings.checkEditions,
     standard: DEFAULT_CHECK_EDITIONS,
   }).given;
+  const eslintProjectionKind = withheldWhenDefault({
+    value: settings.eslintProjectionKind,
+    standard: DEFAULT_PROJECTION_KIND,
+  }).given;
   return {
     ...(settings.checkSettings.length === 0
       ? {}
@@ -271,6 +282,7 @@ const settingsWireOfDefaults = (request: {
     ...(settings.eslintConfigLookup.lookup === "declared"
       ? { eslintConfigLookup: settings.eslintConfigLookup.value }
       : {}),
+    ...(eslintProjectionKind === undefined ? {} : { eslintProjectionKind }),
     ...conventionsWireOf({ reading: settings.conventions }),
   };
 };

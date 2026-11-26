@@ -18,11 +18,7 @@ import { createDefaultFileTextPort } from "../../../../node/file-system/file-tex
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import ESLINT_CD_14_PIECE from "../../authored-class-or-this/class-keyword/piece.json" with { type: "json" };
-import {
-  CHECKS_DECLARATION_PATH,
-  CHECKS_PROJECTION_PATH,
-  checksProjectionText,
-} from "../projection/checks-projection.ts";
+import { checksProjectionText } from "../projection/checks-projection.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type {
@@ -35,13 +31,19 @@ import type { ChecksRunnerPorts } from "./checks-ports.ts";
 import type { ChecksRepository } from "./checks-repository.ts";
 import { checksRunnerOver } from "./checks-runner.ts";
 
+const CHECKS_PROJECTION_PATH = repoPathOf("hone.eslint.mjs");
+
+const CHECKS_DECLARATION_PATH = repoPathOf("hone.eslint.d.mts");
+
+const PROJECTION_TYPE_TEXT = "readonly unknown[]";
+
 const DECLARATION_TEXT =
   "declare const projection: readonly unknown[];\nexport default projection;\n";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
   reportDataOf: () => undefined,
-  declarationText: DECLARATION_TEXT,
+  projectionTypeText: PROJECTION_TYPE_TEXT,
 };
 
 const eslint: EslintPort = {
@@ -85,6 +87,7 @@ const REQUEST: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
@@ -155,6 +158,7 @@ const CLASS_PROJECTED = {
 };
 
 const CURRENT_PROJECTION_TEXT = checksProjectionText({
+  form: { kind: "mjs" },
   pluginImport: "../../src/eslint-plugin.ts",
   checks: [CLASS_PROJECTED],
   answered: [],
@@ -183,6 +187,7 @@ const SELECTING_THE_CLASS_CHECK: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: "nearest-to-file",
+  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
@@ -339,6 +344,124 @@ describe("checksRunnerOver, measuring an inspected version one projection", () =
         },
         unappliedSlices: [webProjection],
       },
+    });
+  });
+});
+
+describe("checksRunnerOver, reporting the state of hone.eslint.ts for the ts projection kind", () => {
+  it("compares hone.eslint.ts alone, reports it current and lints every other file when it is what project would write", async () => {
+    const governance = lintingNothing();
+    const currentOf = vi.fn<ProjectionFiles["currentOf"]>().mockReturnValue({
+      outcome: "ok",
+      value: new Map([
+        [
+          repoPathOf("hone.eslint.ts"),
+          {
+            presence: "present",
+            text: 'import hone from "../../src/eslint-plugin.ts";\nconst projection: readonly unknown[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];\nexport default projection;\n',
+          },
+        ],
+      ]),
+    });
+    const runner = runnerOverQuery({
+      currents: new Map(),
+      fileText: createDefaultFileTextPort({}),
+      query: queryInstanceOver(CONFIGURED_ON),
+      governance,
+      repository: {
+        projectionFiles: {
+          currentOf,
+          writeAt: vi.fn<ProjectionFiles["writeAt"]>(),
+          removeAt: vi.fn<ProjectionFiles["removeAt"]>(),
+        },
+      },
+    });
+
+    const outcome = await runner.run({
+      ...SELECTING_THE_CLASS_CHECK,
+      projectionKind: "ts",
+      files: [repoPathOf("kept.ts"), repoPathOf("hone.eslint.ts")],
+      trackedPaths: [repoPathOf("kept.ts"), repoPathOf("hone.eslint.ts")],
+    });
+
+    expect({
+      outcome,
+      compared: currentOf.mock.calls,
+      linted: vi.mocked(governance.lintFiles).mock.calls,
+    }).toEqual({
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "current",
+          slices: [],
+        },
+      },
+      compared: [[{ files: ["hone.eslint.ts"] }]],
+      linted: [[{ files: ["kept.ts"] }]],
+    });
+  });
+
+  it("reports hone.eslint.ts out of date when it differs from what project would write", async () => {
+    const governance = lintingNothing();
+    const runner = runnerOverProjection({
+      currents: new Map([
+        [repoPathOf("hone.eslint.ts"), { presence: "present", text: "export default [];\n" }],
+      ]),
+      ruleState: CONFIGURED_ON,
+      governance,
+    });
+
+    const outcome = await runner.run({ ...SELECTING_THE_CLASS_CHECK, projectionKind: "ts" });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: {
+        hits: [],
+        nativeExceptions: [],
+        measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+        misnamedRuleIds: [],
+        projection: "out-of-date",
+        slices: [],
+      },
+    });
+  });
+
+  it("reports hone.eslint.ts missing, and lints nothing, when only the mjs kind's files are written", async () => {
+    const governance = lintingNothing();
+    const runner = runnerOverProjection({
+      currents: new Map([
+        [repoPathOf("hone.eslint.ts"), { presence: "absent" }],
+        [repoPathOf("hone.eslint.mjs"), { presence: "present", text: "export default [];\n" }],
+      ]),
+      ruleState: CONFIGURED_ON,
+      governance,
+    });
+
+    const outcome = await runner.run({ ...SELECTING_THE_CLASS_CHECK, projectionKind: "ts" });
+
+    expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
+      outcome: {
+        outcome: "ok",
+        value: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          projection: "missing",
+          slices: [],
+        },
+      },
+      linted: [],
     });
   });
 });
@@ -600,6 +723,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
     }).run({
       ...SELECTING_THE_CLASS_CHECK,
       declaredConfigLookup: "repository-root",
+      projectionKind: "mjs",
       files: [NESTED_SOURCE],
       trackedPaths: [NESTED_SETTINGS, NESTED_ESLINT, NESTED_SOURCE],
     });
@@ -619,6 +743,7 @@ const ROOT_DECLARATION = { file: CHECKS_DECLARATION_PATH, text: DECLARATION_TEXT
 const PACKAGE_DECLARATION = { file: PACKAGE_DECLARATION_PATH, text: DECLARATION_TEXT };
 
 const PACKAGE_PROJECTION_TEXT = checksProjectionText({
+  form: { kind: "mjs" },
   pluginImport: "../../../../src/eslint-plugin.ts",
   checks: [CLASS_PROJECTED],
   answered: [],
@@ -1132,11 +1257,13 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     await runnerOverProjectionReading({ ...stubs, fileText: declaring }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: "nearest-to-file",
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     await runnerOverProjectionReading({ ...stubs, fileText: detecting }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     expect({
@@ -1277,6 +1404,41 @@ describe("checksRunnerOver, naming the outputs it compares", () => {
   });
 });
 
+describe("checksRunnerOver, giving the ts projection kind as project", () => {
+  it("gives hone.eslint.ts typed by the boundary, and no declaration", async () => {
+    const { runnerOver } = projectingRunner();
+
+    const outcome = await runnerOver.project({
+      ...SELECTING_THE_CLASS_CHECK,
+      projectionKind: "ts",
+    });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: "hone.eslint.ts",
+          text: 'import hone from "../../src/eslint-plugin.ts";\nconst projection: readonly unknown[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];\nexport default projection;\n',
+        },
+      ],
+    });
+  });
+
+  it("gives one hone.eslint.ts for each package slice beside the root's, and no declarations", async () => {
+    const { runnerOver } = projectingRunner();
+
+    const outcome = await runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, projectionKind: "ts" });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: [
+        { file: "hone.eslint.ts", text: expect.any(String) },
+        { file: "packages/web/hone.eslint.ts", text: expect.any(String) },
+      ],
+    });
+  });
+});
+
 describe("checksRunnerOver, giving the projection as project", () => {
   it("gives exactly the text a run compares against, for hone.eslint.mjs, and touches no repository", async () => {
     const { runnerOver, repositoryAt } = projectingRunner();
@@ -1326,6 +1488,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
         {
           file: CHECKS_PROJECTION_PATH,
           text: checksProjectionText({
+            form: { kind: "mjs" },
             pluginImport: "../../src/eslint-plugin.ts",
             checks: [CLASS_PROJECTED],
             answered,
@@ -1379,6 +1542,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
         {
           file: CHECKS_PROJECTION_PATH,
           text: checksProjectionText({
+            form: { kind: "mjs" },
             pluginImport: "../../src/eslint-plugin.ts",
             checks: [CLASS_PROJECTED],
             answered,
@@ -1387,6 +1551,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
         {
           file: PACKAGE_SLICE_PATH,
           text: checksProjectionText({
+            form: { kind: "mjs" },
             pluginImport: "../../../../src/eslint-plugin.ts",
             checks: [CLASS_PROJECTED],
             answered: rooted,
@@ -1403,6 +1568,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
       await projectingRunner().runnerOver.project({
         ...WITH_A_PACKAGE_CONFIG,
         declaredConfigLookup: "repository-root",
+        projectionKind: "mjs",
         testFiles: { suffixes: ["test", "spec"], folders: [] },
       }),
     ).toEqual({

@@ -7,6 +7,7 @@ import { recordsAtMovedPathsOf } from "../../domain/records/hone-records/records
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
+import type { ProjectionKind } from "../../domain/repository/projection-outputs.ts";
 import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
@@ -33,6 +34,7 @@ export type VersionTwoRun = {
   readonly content: RuleContent;
   readonly touched: TouchedSet;
   readonly output: VersionTwoReportOutput;
+  readonly projectionKind: ProjectionKind;
   readonly runs: readonly NamedGovernedRun[];
   readonly moved: readonly RecordRepointing[];
 };
@@ -215,6 +217,7 @@ export const versionTwoRunOver = async (request: {
       touched,
       runs,
       moved,
+      projectionKind: settings.eslintProjectionKind,
       output: reportOutputInEffect({
         requested: request.arguments.reportOutput,
         configured: settings.runSettings.reportOutput,

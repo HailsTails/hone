@@ -8,13 +8,12 @@ import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts"
 import type { PluginCheck } from "./check-rule-id.ts";
 import { checksPluginOf, inSymptomWords, reportInSymptomWords } from "./checks-plugin.ts";
 
-const DECLARATION_TEXT =
-  "declare const projection: readonly unknown[];\nexport default projection;\n";
+const PROJECTION_TYPE_TEXT = "readonly unknown[]";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
   reportDataOf: () => undefined,
-  declarationText: DECLARATION_TEXT,
+  projectionTypeText: PROJECTION_TYPE_TEXT,
 };
 
 const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
@@ -23,7 +22,7 @@ const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
     message:
       "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
   }),
-  declarationText: DECLARATION_TEXT,
+  projectionTypeText: PROJECTION_TYPE_TEXT,
 };
 
 const ESLINT: Engine = { name: "eslint" };

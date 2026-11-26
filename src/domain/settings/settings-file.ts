@@ -1,3 +1,4 @@
+import type { ProjectionKind } from "../repository/projection-outputs.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { RuleSetName } from "../rule-set/identifier-types.ts";
 import type { ClauseSettingValues } from "../runner/runner-module-types.ts";
@@ -44,6 +45,7 @@ export type SettingsFile = {
   readonly checkEditions: CheckEditions;
   readonly eslintConfigLookup: EslintConfigLookupChoice;
   readonly eslintConfigRoots: readonly RepoPath[];
+  readonly eslintProjectionKind: ProjectionKind;
   readonly conventions: ConventionsReading;
 };
 

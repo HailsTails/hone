@@ -167,6 +167,7 @@ export const mappedSettings = (
         checkEditions: selection.checkEditions,
         eslintConfigLookup: eslintConfigLookupOf({ declared: selection.eslintConfigLookup }),
         eslintConfigRoots: selection.eslintConfigRoots,
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
       drops: whyChainDropsOf({ selection }),

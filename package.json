@@ -40,6 +40,7 @@
     "esbuild": "0.25.12",
     "eslint": "10.15.0",
     "eslint-9": "npm:eslint@9.39.5",
+    "jiti": "2.7.0",
     "oxfmt": "0.79.0",
     "typescript": "6.0.3",
     "typescript-floor": "npm:typescript@4.8.4",

@@ -555,6 +555,7 @@ const rendered = (request: {
     },
     symptomPage: SYMPTOM_PAGE,
     projectCommand: PROJECT_COMMAND,
+    projectionKind: "mjs",
     pruneCommand: PRUNE_COMMAND,
   });
 
@@ -574,6 +575,7 @@ describe("mapRunReportToFailingLines", () => {
       },
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
+      projectionKind: "mjs",
       pruneCommand: PRUNE_COMMAND,
     });
 
@@ -612,6 +614,7 @@ describe("mapRunReportToFailingLines", () => {
       },
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
+      projectionKind: "mjs",
       pruneCommand: PRUNE_COMMAND,
     });
 
@@ -718,6 +721,7 @@ describe("renderRunSectionsText", () => {
         },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
+        projectionKind: "mjs",
         pruneCommand: PRUNE_COMMAND,
       }),
     ).toBe(`findings (1)\n${LINES.findings}\nrefused (1)\n${LINES.refused}\n`);
@@ -738,6 +742,7 @@ describe("renderRunSectionsText", () => {
         },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
+        projectionKind: "mjs",
         pruneCommand: PRUNE_COMMAND,
       }),
     ).toBe("");

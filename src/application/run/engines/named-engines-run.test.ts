@@ -75,6 +75,7 @@ const WALKER_ONLY: Omit<NamedEnginesRequest, "engine" | "tree"> = {
   settings: {
     selection: { selected: [{ binding: BINDING }] },
     eslintConfigLookup: { lookup: "detected" },
+    eslintProjectionKind: "ts",
     conventions: { testFiles: TEST_FILES },
   },
   repoRoot: REPO,
@@ -107,11 +108,12 @@ const BOTH_ENGINES_REQUEST = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  projectionKind: "ts",
   testFiles: TEST_FILES,
 };
 
 describe("namedEngineRunsOf", () => {
-  it("sends each engine the selected bindings, the declared test files and every tracked file as context", async () => {
+  it("sends each engine the selected bindings, the declared test files, the projection kind and every tracked file as context", async () => {
     const engine: NamedEnginePort = {
       load: vi.fn<NamedEnginePort["load"]>().mockResolvedValue({ outcome: "ok", value: RUNNER }),
       run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue(STOPPED),
@@ -141,6 +143,7 @@ describe("namedEngineRunsOf", () => {
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
+        projectionKind: "ts",
         testFiles: TEST_FILES,
       },
     });

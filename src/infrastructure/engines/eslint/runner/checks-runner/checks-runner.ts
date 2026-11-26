@@ -80,7 +80,11 @@ import {
   type LoadedEslintPlugin,
 } from "../pieces/eslint-plugin-schema.ts";
 import {
+  type ChecksProjectionForm,
+  type ChecksProjectionOutputs,
   checksProjectionText,
+  createChecksDeclarationText,
+  createChecksProjectionOutputs,
   type ProjectedCheck,
   type ProjectedPlugin,
 } from "../projection/checks-projection.ts";
@@ -227,7 +231,21 @@ const slicesOver = (request: {
     declared: request.run.declaredConfigRoots,
     lookup: request.lookup,
     nestedRepositories: nestedVersionTwoFoldersOf({ trackedPaths: request.run.trackedPaths }),
+    configuration: createChecksProjectionOutputs({ kind: request.run.projectionKind })
+      .configuration,
   });
+
+const createChecksProjectionForm = (request: {
+  readonly run: Pick<NamedEngineRunRequest, "projectionKind">;
+  readonly boundary: EslintMajorBoundary;
+}): ChecksProjectionForm => {
+  switch (request.run.projectionKind) {
+    case "mjs":
+      return { kind: "mjs" };
+    case "ts":
+      return { kind: "ts", projectionTypeText: request.boundary.projectionTypeText };
+  }
+};
 
 const queryInstanceOf = (request: {
   readonly run: NamedEngineRunRequest;
@@ -442,6 +460,10 @@ const expectedSliceOf = (
         value: {
           file: request.slice.file,
           text: checksProjectionText({
+            form: createChecksProjectionForm({
+              run: request.run,
+              boundary: request.ports.eslint.boundary,
+            }),
             pluginImport: pluginImport.specifier,
             plugins: plugins.value,
             checks: request.projected,
@@ -452,13 +474,23 @@ const expectedSliceOf = (
     : toolFailed({ detail: `the Hone plugin cannot be imported from ${importing.value}` });
 };
 
-const expectedDeclarationOf = (request: {
-  readonly slice: ChecksSlice;
+const expectedDeclarationsOf = (request: {
+  readonly slices: ChecksSlices;
+  readonly outputs: ChecksProjectionOutputs;
   readonly boundary: EslintMajorBoundary;
-}): ProjectedFile => ({
-  file: declarationPathOf(request),
-  text: request.boundary.declarationText,
-});
+}): readonly ProjectedFile[] => {
+  if (request.outputs.kind === "ts") {
+    return [];
+  }
+  const { declaration } = request.outputs;
+  const text = createChecksDeclarationText({
+    projectionTypeText: request.boundary.projectionTypeText,
+  });
+  return [request.slices.root, ...request.slices.packages].map((slice) => ({
+    file: declarationPathOf({ slice, declaration }),
+    text,
+  }));
+};
 
 const expectedFilesOf = (request: SliceRequest): Result<ExpectedFiles, RunnerFailure> => {
   const root = expectedSliceOf({ ...request, slice: request.slices.root });
@@ -477,9 +509,11 @@ const expectedFilesOf = (request: SliceRequest): Result<ExpectedFiles, RunnerFai
         value: {
           root: root.value,
           packages: packages.value,
-          declarations: [request.slices.root, ...request.slices.packages].map((slice) =>
-            expectedDeclarationOf({ slice, boundary: request.ports.eslint.boundary }),
-          ),
+          declarations: expectedDeclarationsOf({
+            slices: request.slices,
+            outputs: createChecksProjectionOutputs({ kind: request.run.projectionKind }),
+            boundary: request.ports.eslint.boundary,
+          }),
         },
       };
 };
@@ -746,7 +780,11 @@ const queryFiles = (
     },
   };
   return source === undefined
-    ? queriedFilesOf(lookup)
+    ? queriedFilesOf({
+        ...lookup,
+        projectionFile: createChecksProjectionOutputs({ kind: request.run.projectionKind })
+          .configuration,
+      })
     : queriedFiles({
         ...lookup,
         location: {
@@ -941,11 +979,14 @@ const projectedOutputPathsOf = (request: {
   }
   const slices = slicesOver({ run: request.run, lookup: lookupOf(request) });
   const sliced = [slices.root, ...slices.packages];
+  const outputs = createChecksProjectionOutputs({ kind: request.run.projectionKind });
   return {
     outcome: "ok",
     value: [
       ...sliced.map(({ file }) => file),
-      ...sliced.map((slice) => declarationPathOf({ slice })),
+      ...(outputs.kind === "ts"
+        ? []
+        : sliced.map((slice) => declarationPathOf({ slice, declaration: outputs.declaration }))),
     ],
   };
 };

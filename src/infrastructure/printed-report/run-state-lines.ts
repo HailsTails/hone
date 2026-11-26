@@ -8,7 +8,10 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../domain/report/run-report.ts";
-import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
+import {
+  type ProjectionKind,
+  projectionOutputsOf,
+} from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { SettingsNote, UnreadConventionKey } from "../../domain/settings/settings-note.ts";
@@ -16,6 +19,8 @@ import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration
 import { counted, quoted } from "./printed-text.ts";
 
 export type ProjectCommand = { readonly projectCommand: string };
+
+export type ProjectionRefresh = ProjectCommand & { readonly projectionKind: ProjectionKind };
 
 const PASS_A_BASE = "pass --base-revision with the branch's base, such as origin/main";
 
@@ -57,13 +62,17 @@ const recordsUnmeasuredLine = (request: { readonly unmeasured: RecordsUnmeasured
   }
 };
 
-const projectionFileOf = (request: { readonly engine: Engine }): string =>
-  projectionOutputsOf({ engineName: request.engine.name }).configuration;
+const projectionFileOf = (request: {
+  readonly engine: Engine;
+  readonly projectionKind: ProjectionKind;
+}): string =>
+  projectionOutputsOf({ engineName: request.engine.name, kind: request.projectionKind })
+    .configuration;
 
 const refreshStep = (request: ProjectCommand): string =>
   `run ${request.projectCommand} and commit every file it writes`;
 
-type EngineRequest = ProjectCommand & { readonly problems: readonly RunProjectionProblem[] };
+type EngineRequest = ProjectionRefresh & { readonly problems: readonly RunProjectionProblem[] };
 
 const sliceNote = (request: EngineRequest & { readonly engine: Engine }): string =>
   request.problems.some(
@@ -83,10 +92,10 @@ const measuredNothingNextStep = (request: EngineRequest & { readonly engine: Eng
     : `check that the ${request.engine.name} configuration lints the files under check`;
 
 export const projectionMissingLine = (
-  request: ProjectCommand & { readonly unmeasured: MissingProjection },
+  request: ProjectionRefresh & { readonly unmeasured: MissingProjection },
 ): string => {
   const { engine } = request.unmeasured;
-  return `${request.unmeasured.kind} ${engine.name} missing: ${projectionFileOf({ engine })} is not written; ${refreshStep(request)}`;
+  return `${request.unmeasured.kind} ${engine.name} missing: ${projectionFileOf({ ...request, engine })} is not written; ${refreshStep(request)}`;
 };
 
 const engineNotRunLine = (
@@ -94,7 +103,7 @@ const engineNotRunLine = (
 ): string => {
   const { unmeasured } = request;
   const { engine } = unmeasured;
-  const file = projectionFileOf({ engine });
+  const file = projectionFileOf({ ...request, engine });
   switch (unmeasured.projection) {
     case "missing":
       return projectionMissingLine({ ...request, unmeasured });
@@ -139,12 +148,12 @@ const sliceProblemReason = (
 };
 
 export const projectionProblemLine = (
-  request: ProjectCommand & { readonly problem: RunProjectionProblem },
+  request: ProjectionRefresh & { readonly problem: RunProjectionProblem },
 ): string => {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
-      return `${problem.engine.name} ${problem.state}: ${projectionFileOf(problem)} differs from what hone project writes now; ${refreshStep(request)}`;
+      return `${problem.engine.name} ${problem.state}: ${projectionFileOf({ ...request, engine: problem.engine })} differs from what hone project writes now; ${refreshStep(request)}`;
     case "slice":
       return `${problem.engine.name} ${problem.state} ${problem.slice}: ${sliceProblemReason({ ...request, problem })}`;
   }

@@ -1,5 +1,6 @@
 import type { Engine, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { ProjectionKind } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
@@ -44,6 +45,7 @@ export type NamedEngineRunRequest = {
   readonly answered: readonly AnsweredFile[];
   readonly declaredConfigRoots: readonly RepoPath[];
   readonly declaredConfigLookup: EslintConfigLookup | undefined;
+  readonly projectionKind: ProjectionKind;
   readonly testFiles: TestFiles;
   readonly bindings: readonly CheckBinding[];
   readonly checks?: readonly EngineCheck[];

@@ -35,6 +35,7 @@ export const proofRunsOf = (request: ProofRunSources): ProofRuns => ({
               report: run.value.report,
               catalogue: run.value.catalogue,
               content: run.value.content,
+              projectionKind: "mjs",
             }),
           },
         };

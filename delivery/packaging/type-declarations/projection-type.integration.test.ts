@@ -2,14 +2,18 @@ import { assert, describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../src/domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
-import { checksProjectionText } from "../../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
+import {
+  checksProjectionText,
+  createChecksDeclarationText,
+} from "../../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { eslintBoundaryFor } from "../../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
+  typeScriptPeersNamed,
 } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import type { ConsumerResolution } from "./consumer-types-port.ts";
-import { createDefaultConsumerTypesPort } from "./consumer-types.ts";
+import { createConsumerTypesPort, createDefaultConsumerTypesPort } from "./consumer-types.ts";
 import { createDefaultTypeScriptDeclarationPort } from "./typescript-declaration-port.ts";
 
 const INSTALL_ROOT = `${import.meta.dirname}/../../..`;
@@ -47,6 +51,7 @@ const CHECKS = [
 ];
 
 const ROOT_PROJECTION = checksProjectionText({
+  form: { kind: "mjs" },
   pluginImport: PLUGIN_SPECIFIER,
   checks: CHECKS,
   answered: [
@@ -55,6 +60,7 @@ const ROOT_PROJECTION = checksProjectionText({
 });
 
 const PACKAGE_PROJECTION = checksProjectionText({
+  form: { kind: "mjs" },
   pluginImport: PLUGIN_SPECIFIER,
   checks: CHECKS,
   answered: [],
@@ -125,7 +131,14 @@ describe.each(ESLINT_LINES)(
           entry: "hone.eslint.d.mts",
           resolution,
           form: "typescript",
-          texts: [{ path: "hone.eslint.d.mts", text: boundary.value.declarationText }],
+          texts: [
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+          ],
           packages: [],
         });
 
@@ -156,8 +169,18 @@ describe.each(ESLINT_LINES)(
             { path: "eslint.config.ts", text: ROOT_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
-            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -189,8 +212,18 @@ describe.each(ESLINT_LINES)(
             { path: "packages/a/eslint.config.ts", text: PACKAGE_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
-            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -222,8 +255,18 @@ describe.each(ESLINT_LINES)(
             { path: "eslint.config.mjs", text: ROOT_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
-            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -255,8 +298,18 @@ describe.each(ESLINT_LINES)(
             { path: "packages/a/eslint.config.mjs", text: PACKAGE_CONFIG },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
-            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -288,8 +341,18 @@ describe.each(ESLINT_LINES)(
             { path: "misuse.ts", text: MISUSE },
             { path: "hone.eslint.mjs", text: ROOT_PROJECTION },
             { path: "packages/a/hone.eslint.mjs", text: PACKAGE_PROJECTION },
-            { path: "hone.eslint.d.mts", text: boundary.value.declarationText },
-            { path: "packages/a/hone.eslint.d.mts", text: boundary.value.declarationText },
+            {
+              path: "hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.d.mts",
+              text: createChecksDeclarationText({
+                projectionTypeText: boundary.value.projectionTypeText,
+              }),
+            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -458,3 +521,164 @@ describe.each(ESLINT_LINES)(
     });
   },
 );
+
+const TS_ROOT_CONFIG = `import { defineConfig } from "${CONFIG_API}";
+import hone from "./hone.eslint.js";
+
+export default defineConfig([...hone, { files: ["**/*.ts"], rules: {} }]);
+`;
+
+const TS_PACKAGE_CONFIG = `import { defineConfig } from "${CONFIG_API}";
+import root from "../../hone.eslint.js";
+import slice from "./hone.eslint.js";
+
+export default defineConfig([...root, ...slice, { files: ["**/*.ts"], rules: {} }]);
+`;
+
+describe.each(ESLINT_LINES)(
+  "a typed ESLint config importing a ts kind projection as ./hone.eslint.js, compiled in memory against the consumer's own node_modules/eslint on $folder, under strict with skipLibCheck off",
+  ({ folder, version }) => {
+    describe.each(RESOLUTIONS)("under %s resolution", (resolution) => {
+      it("compiles a .ts config for the root projection", async () => {
+        const boundary = await eslintBoundaryFor({ version });
+        assert(boundary.outcome === "ok", "the ESLint line has a boundary");
+        const plugin = await EMITTED_PLUGIN;
+        assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
+        const form = { kind: "ts", projectionTypeText: boundary.value.projectionTypeText } as const;
+
+        const diagnostics = await createDefaultConsumerTypesPort({
+          installRoot: INSTALL_ROOT,
+        }).read({
+          entry: "eslint.config.ts",
+          resolution,
+          form: "typescript",
+          texts: [
+            { path: "package.json", text: CONSUMER_PACKAGE },
+            { path: "eslint.config.ts", text: TS_ROOT_CONFIG },
+            {
+              path: "hone.eslint.ts",
+              text: checksProjectionText({
+                form,
+                pluginImport: PLUGIN_SPECIFIER,
+                checks: CHECKS,
+                answered: [
+                  {
+                    ruleSet: TOOL_RULE_SET,
+                    symptom: "S-1",
+                    check: "C-1",
+                    file: repoPathOf("src/old.ts"),
+                  },
+                ],
+              }),
+            },
+          ],
+          packages: [
+            { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
+            {
+              kind: "written",
+              name: "@hailstails/hone",
+              texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
+            },
+          ],
+        });
+
+        expect(diagnostics).toEqual({ outcome: "ok", value: [] });
+      });
+
+      it("compiles a .ts config for a package slice over the root projection", async () => {
+        const boundary = await eslintBoundaryFor({ version });
+        assert(boundary.outcome === "ok", "the ESLint line has a boundary");
+        const plugin = await EMITTED_PLUGIN;
+        assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
+        const form = { kind: "ts", projectionTypeText: boundary.value.projectionTypeText } as const;
+
+        const diagnostics = await createDefaultConsumerTypesPort({
+          installRoot: INSTALL_ROOT,
+        }).read({
+          entry: "packages/a/eslint.config.ts",
+          resolution,
+          form: "typescript",
+          texts: [
+            { path: "package.json", text: CONSUMER_PACKAGE },
+            { path: "packages/a/eslint.config.ts", text: TS_PACKAGE_CONFIG },
+            {
+              path: "hone.eslint.ts",
+              text: checksProjectionText({
+                form,
+                pluginImport: PLUGIN_SPECIFIER,
+                checks: CHECKS,
+                answered: [],
+              }),
+            },
+            {
+              path: "packages/a/hone.eslint.ts",
+              text: checksProjectionText({
+                form,
+                pluginImport: PLUGIN_SPECIFIER,
+                checks: CHECKS,
+                answered: [],
+              }),
+            },
+          ],
+          packages: [
+            { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
+            {
+              kind: "written",
+              name: "@hailstails/hone",
+              texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
+            },
+          ],
+        });
+
+        expect(diagnostics).toEqual({ outcome: "ok", value: [] });
+      });
+    });
+  },
+);
+
+describe("a ts kind projection imported as ./hone.eslint.js on the TypeScript floor", () => {
+  it("compiles a .ts config for the root projection under nodenext resolution with TypeScript 4.8.4", async () => {
+    const boundary = await eslintBoundaryFor({ version: "10.15.0" });
+    assert(boundary.outcome === "ok", "the ESLint line has a boundary");
+    const plugin = await EMITTED_PLUGIN;
+    assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
+    const floor = typeScriptPeersNamed({
+      installRoot: INSTALL_ROOT,
+      installForm: "source",
+      packageName: "typescript-floor",
+    });
+
+    const diagnostics = await createConsumerTypesPort({
+      load: () => loadParsePort({ peers: floor }),
+    }).read({
+      entry: "eslint.config.ts",
+      resolution: "nodenext",
+      form: "typescript",
+      texts: [
+        { path: "package.json", text: CONSUMER_PACKAGE },
+        {
+          path: "eslint.config.ts",
+          text: 'import hone from "./hone.eslint.js";\n\nexport default [...hone];\n',
+        },
+        {
+          path: "hone.eslint.ts",
+          text: checksProjectionText({
+            form: { kind: "ts", projectionTypeText: boundary.value.projectionTypeText },
+            pluginImport: PLUGIN_SPECIFIER,
+            checks: CHECKS,
+            answered: [],
+          }),
+        },
+      ],
+      packages: [
+        {
+          kind: "written",
+          name: "@hailstails/hone",
+          texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
+        },
+      ],
+    });
+
+    expect(diagnostics).toEqual({ outcome: "ok", value: [] });
+  });
+});

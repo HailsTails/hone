@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import {
   type EslintMajorBoundary,
-  PROJECTION_DECLARATION_TEXT,
+  PROJECTION_TYPE_TEXT,
   type ReportData,
   type ReportDataValue,
 } from "../eslint-major-boundary.ts";
@@ -35,7 +35,7 @@ const reportDataFrom = (request: {
 
 export const eslintBoundary: EslintMajorBoundary = {
   nearestLookup: { flags: [NEAREST_LOOKUP_FLAG] },
-  declarationText: PROJECTION_DECLARATION_TEXT,
+  projectionTypeText: PROJECTION_TYPE_TEXT,
   reportDataOf: (request) =>
     request.descriptor.data === undefined
       ? undefined

@@ -116,6 +116,7 @@ export type NamedSettingsReading = {
   readonly externalCatalogues?: readonly RuleSetCatalogue[];
   readonly runSettings: RunSettings<VersionTwoReportOutput>;
   readonly eslintConfigLookup: EslintConfigLookupChoice;
+  readonly eslintProjectionKind: SettingsFile["eslintProjectionKind"];
   readonly conventions: Conventions;
   readonly notes: readonly SettingsNote[];
   readonly available: readonly Check[];
@@ -308,6 +309,7 @@ export const readNamedSettingsFile = (
       },
       runSettings: { reportOutput: file.reportOutput, assessment: { forfeiture: file.forfeiture } },
       eslintConfigLookup: file.eslintConfigLookup,
+      eslintProjectionKind: file.eslintProjectionKind,
       conventions: file.conventions.conventions,
       notes: file.conventions.declared.flatMap((key): readonly SettingsNote[] =>
         key === "testFiles" ? [] : [{ kind: "declared-not-read", key }],

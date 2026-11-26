@@ -97,6 +97,7 @@ const settingsBinding = (request: {
   },
   runSettings: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: request.lookup,
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 });
@@ -201,6 +202,7 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 

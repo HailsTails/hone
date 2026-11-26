@@ -56,6 +56,7 @@ const RUN: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
   bindings: [FIRST_CLAUSE, SECOND_CLAUSE],
 };
@@ -339,6 +340,7 @@ describe("createWalkerRunner run", () => {
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
       bindings: [FIRST_CLAUSE],
     });

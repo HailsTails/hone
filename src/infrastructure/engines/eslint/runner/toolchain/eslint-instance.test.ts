@@ -95,7 +95,7 @@ const portWith = (request: { readonly createEslint: CreateEslint }): EslintPort 
       boundary: {
         nearestLookup: { flags: [] },
         reportDataOf: () => undefined,
-        declarationText: "export default [];",
+        projectionTypeText: "unknown[]",
       },
       typescriptParser: PARSER,
       createEslint: request.createEslint,

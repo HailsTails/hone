@@ -104,6 +104,7 @@ describe("queriedFilesOf", () => {
         files: [A, B],
         ruleIds: [EXPLICIT_ANY.ruleId],
         location: NOTHING_IGNORED,
+        projectionFile: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       outcome: "ok",
@@ -126,6 +127,7 @@ describe("queriedFilesOf", () => {
         files: [A],
         ruleIds: [EXPLICIT_ANY.ruleId],
         location: NOTHING_IGNORED,
+        projectionFile: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       outcome: "failed",
@@ -154,6 +156,7 @@ describe("queriedFilesOf", () => {
         files: [BROKEN_FIXTURE_FILE],
         ruleIds: [EXPLICIT_ANY.ruleId],
         location,
+        projectionFile: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       outcome: "ok",
@@ -173,6 +176,7 @@ describe("queriedFilesOf", () => {
         files: [BROKEN_FIXTURE_FILE],
         ruleIds: [EXPLICIT_ANY.ruleId],
         location: NOTHING_IGNORED,
+        projectionFile: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       outcome: "failed",
@@ -180,6 +184,31 @@ describe("queriedFilesOf", () => {
         kind: "team-config-unloadable",
         detail:
           "fixtures/bad/eslint.config.mjs, the ESLint config for fixtures/bad/b.ts, failed to load: Unexpected token ';'. Fix that config. Only if fixtures/bad holds nothing Hone should check, add it to exclude in hone.config.json instead.",
+      },
+    });
+  });
+
+  it("names the configured projection file to spread when no ESLint config applies to a file", async () => {
+    const query: QueryInstance = {
+      ignoredState: vi.fn<QueryInstance["ignoredState"]>().mockResolvedValueOnce(CONFIG_UNLOADABLE),
+      ruleState: vi.fn<QueryInstance["ruleState"]>(),
+      configFileOf: vi.fn<QueryInstance["configFileOf"]>().mockResolvedValue({ kind: "none" }),
+    };
+
+    const queried = await queriedFilesOf({
+      query,
+      files: [A],
+      ruleIds: [EXPLICIT_ANY.ruleId],
+      location: NOTHING_IGNORED,
+      projectionFile: repoPathOf("hone.eslint.ts"),
+    });
+
+    expect(queried).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "team-config-unloadable",
+        detail:
+          "no eslint.config.* applies to src/a.ts. Create one at the repository root that spreads hone.eslint.ts last, as ADOPTING.md step 4a shows.",
       },
     });
   });

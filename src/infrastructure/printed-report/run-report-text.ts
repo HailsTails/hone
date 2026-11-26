@@ -6,6 +6,7 @@ import {
   runVerdictOf,
 } from "../../domain/report/report-sections.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
+import type { ProjectionKind } from "../../domain/repository/projection-outputs.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
   answeredLine,
@@ -34,6 +35,7 @@ export type RunReportRequest = PruneCommand & {
   readonly content: NotedContent;
   readonly symptomPage: string;
   readonly projectCommand: string;
+  readonly projectionKind: ProjectionKind;
   readonly output: VersionTwoReportOutput;
 };
 
@@ -78,13 +80,18 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     request.report.unmeasured.map((unmeasured) =>
       unmeasuredLine({
         projectCommand: request.projectCommand,
+        projectionKind: request.projectionKind,
         unmeasured,
         problems: request.report["projection-problems"],
       }),
     ),
   "projection-problems": (request) =>
     request.report["projection-problems"].map((problem) =>
-      projectionProblemLine({ projectCommand: request.projectCommand, problem }),
+      projectionProblemLine({
+        projectCommand: request.projectCommand,
+        projectionKind: request.projectionKind,
+        problem,
+      }),
     ),
   assessment: (request) => request.report.assessment.map((partial) => assessmentLine({ partial })),
   "settings-notes": (request) =>

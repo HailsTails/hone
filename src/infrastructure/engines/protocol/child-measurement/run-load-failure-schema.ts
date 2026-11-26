@@ -11,6 +11,7 @@ import {
   ruleSetIdentitySchema,
   ruleSetNameSchema,
 } from "../../../hone-config-file/identifiers.ts";
+import { projectionKindSchema } from "../../../hone-config-file/projection-kind.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
 import type { DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
@@ -155,6 +156,7 @@ export const runLoadFailureSchema = z.discriminatedUnion("kind", [
     kind: z.literal("projection-stale"),
     problem: projectionProblemSchema,
     projectCommand: z.string(),
+    projectionKind: projectionKindSchema,
   }),
   z.strictObject({
     kind: z.literal("records-folder-unreadable"),

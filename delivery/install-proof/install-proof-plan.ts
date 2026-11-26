@@ -26,7 +26,7 @@ export type ProofAction =
   | { readonly kind: "lint"; readonly directory: string; readonly expectation: StepExpectation }
   | { readonly kind: "run"; readonly script: string; readonly expectation: StepExpectation };
 
-export type ProofToolchain = "typescript-floor" | "current" | "eslint-9";
+export type ProofToolchain = "typescript-floor" | "current" | "eslint-9" | "typescript-config";
 
 export type TypeStripping = "disabled" | "enabled";
 
@@ -55,6 +55,7 @@ const namedSettings = (request: {
   readonly checks: Readonly<Record<string, "walker" | "eslint">>;
   readonly forfeiture?: "elsewhere";
   readonly eslintConfigLookup?: "nearest-to-file";
+  readonly eslintProjectionKind?: "ts";
 }): string => `${JSON.stringify({ version: 2, ruleSets: {}, ...request }, null, 2)}\n`;
 
 const CONFIG_WITH_HONE =
@@ -140,6 +141,19 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
 
+const ESLINT_CHECK: ProofAction = {
+  kind: "check",
+  expectation: {
+    exitCode: 1,
+    output: `findings (1)
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+symptoms (1)
+${CLASS_SYMPTOM}
+verdict: fail
+`,
+  },
+};
+
 const ESLINT_CONSUMER_ACTIONS: readonly ProofAction[] = [
   {
     kind: "project",
@@ -147,16 +161,71 @@ const ESLINT_CONSUMER_ACTIONS: readonly ProofAction[] = [
   },
   { kind: "read", path: V2_PROJECTION, text: ESLINT_PROJECTION },
   { kind: "commit", message: "project" },
+  ESLINT_CHECK,
+];
+
+const TYPESCRIPT_PROJECTION = "hone.eslint.ts";
+
+const TYPESCRIPT_CONFIG_SETUP: ConsumerSetup = {
+  replace: ["disciplines.json", "disciplines.eslint.mjs", "eslint.config.mjs"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: namedSettings({
+        checks: {
+          "authored-class-or-this#class-keyword": "eslint",
+          "authored-class-or-this#static-members-only": "eslint",
+        },
+        eslintProjectionKind: "ts",
+      }),
+    },
+    {
+      name: "eslint.config.ts",
+      text: 'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.js";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n',
+    },
+    {
+      name: "lint.mjs",
+      text: `import { ESLint } from "eslint";
+
+const eslint = new ESLint({ cwd: import.meta.dirname });
+const results = await eslint.lintFiles(["."]);
+const lines = results.flatMap((result) =>
+  result.messages.map(
+    (message) => \`\${result.filePath.slice(import.meta.dirname.length + 1).replaceAll("\\\\", "/")}:\${message.line}:\${message.column} \${message.ruleId}\`,
+  ),
+);
+process.stdout.write(lines.map((line) => \`\${line}\\n\`).join(""));
+process.exitCode = lines.length === 0 ? 0 : 1;
+`,
+    },
+  ],
+};
+
+const TYPESCRIPT_CONFIG_PROJECTION = `import hone from "${TOOL_IDENTITY.packageName}/eslint-plugin";
+const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["${TYPESCRIPT_PROJECTION}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default projection;
+`;
+
+const TYPESCRIPT_CONFIG_ACTIONS: readonly ProofAction[] = [
   {
-    kind: "check",
+    kind: "project",
+    expectation: { exitCode: 0, output: `${TYPESCRIPT_PROJECTION} written\n` },
+  },
+  { kind: "read", path: TYPESCRIPT_PROJECTION, text: TYPESCRIPT_CONFIG_PROJECTION },
+  { kind: "commit", message: "project" },
+  ESLINT_CHECK,
+  {
+    kind: "run",
+    script: "lint.mjs",
     expectation: {
       exitCode: 1,
-      output: `findings (1)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-symptoms (1)
-${CLASS_SYMPTOM}
-verdict: fail
-`,
+      output: "src/kept.ts:1:8 hone/authored-class-or-this#class-keyword\n",
     },
   },
 ];
@@ -413,6 +482,14 @@ export const PROOF_CASES: readonly ProofCase[] = [
     actions: ESLINT_CONSUMER_ACTIONS,
   },
   {
+    consumer: "eslint-typescript-config",
+    fixture: "eslint",
+    toolchain: "typescript-config",
+    typeStripping: "disabled",
+    setup: TYPESCRIPT_CONFIG_SETUP,
+    actions: TYPESCRIPT_CONFIG_ACTIONS,
+  },
+  {
     consumer: "eslint-missing",
     fixture: "eslint",
     toolchain: "typescript-floor",
@@ -531,10 +608,16 @@ const CURRENT: FloorPins = {
   "@typescript-eslint/eslint-plugin": "@typescript-eslint/eslint-plugin",
 };
 
-const FLOOR_PINS: Readonly<Record<ProofToolchain, FloorPins>> = {
-  "typescript-floor": TYPESCRIPT_FLOOR,
-  current: CURRENT,
-  "eslint-9": { ...CURRENT, ...TYPESCRIPT_FLOOR, eslint: "eslint-9" },
+type ToolchainPins = { readonly peers: FloorPins; readonly configLoaders: readonly string[] };
+
+const TOOLCHAIN_PINS: Readonly<Record<ProofToolchain, ToolchainPins>> = {
+  "typescript-floor": { peers: TYPESCRIPT_FLOOR, configLoaders: [] },
+  current: { peers: CURRENT, configLoaders: [] },
+  "eslint-9": {
+    peers: { ...CURRENT, ...TYPESCRIPT_FLOOR, eslint: "eslint-9" },
+    configLoaders: [],
+  },
+  "typescript-config": { peers: CURRENT, configLoaders: ["jiti"] },
 };
 
 const manifestInvalid = (request: { readonly detail: string }): Result<never, ManifestFailure> => ({
@@ -569,7 +652,9 @@ const floorVersions = (request: {
   readonly manifest: ToolchainManifest;
   readonly toolchain: ProofToolchain;
 }): Result<FloorPins, ManifestFailure> =>
-  Object.entries(FLOOR_PINS[request.toolchain]).reduce<Result<FloorPins, ManifestFailure>>(
+  Object.entries(TOOLCHAIN_PINS[request.toolchain].peers).reduce<
+    Result<FloorPins, ManifestFailure>
+  >(
     (sofar, [peer, pinName]) => {
       if (sofar.outcome === "failed") {
         return sofar;
@@ -582,6 +667,34 @@ const floorVersions = (request: {
     { outcome: "ok", value: {} },
   );
 
+const configLoaderVersions = (request: {
+  readonly manifest: ToolchainManifest;
+  readonly toolchain: ProofToolchain;
+  readonly peers: FloorPins;
+}): Result<FloorPins, ManifestFailure> =>
+  TOOLCHAIN_PINS[request.toolchain].configLoaders.reduce<Result<FloorPins, ManifestFailure>>(
+    (sofar, loader) => {
+      if (sofar.outcome === "failed") {
+        return sofar;
+      }
+      const pin = request.manifest.devDependencies[loader];
+      return pin === undefined
+        ? manifestInvalid({ detail: `no development pin for the config loader ${loader}` })
+        : { outcome: "ok", value: { ...sofar.value, [loader]: pin } };
+    },
+    { outcome: "ok", value: request.peers },
+  );
+
+const toolchainVersions = (request: {
+  readonly manifest: ToolchainManifest;
+  readonly toolchain: ProofToolchain;
+}): Result<FloorPins, ManifestFailure> => {
+  const peers = floorVersions(request);
+  return peers.outcome === "failed"
+    ? peers
+    : configLoaderVersions({ ...request, peers: peers.value });
+};
+
 export const toolchainPinsOf = (request: {
   readonly developmentManifest: string;
   readonly toolchain: ProofToolchain;
@@ -592,7 +705,7 @@ export const toolchainPinsOf = (request: {
   }
   const manifest = toolchainManifestSchema.safeParse(parsed.value);
   return manifest.success
-    ? floorVersions({ manifest: manifest.data, toolchain: request.toolchain })
+    ? toolchainVersions({ manifest: manifest.data, toolchain: request.toolchain })
     : manifestInvalid({ detail: manifest.error.message });
 };
 

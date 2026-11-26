@@ -178,6 +178,7 @@ describe("a run whose adopter has not installed a toolchain peer the selected me
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     expect({ ran, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
@@ -225,6 +226,7 @@ describe("a run whose adopter's install is missing the required peer typescript"
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     assert(

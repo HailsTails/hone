@@ -168,6 +168,7 @@ const RUN: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  projectionKind: "mjs",
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
