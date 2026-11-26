@@ -456,7 +456,7 @@ const AVAILABLE_CHECKS = [
       discipline: disciplineIdOf("CD-44"),
       clause: clauseIdOf("parameter-reassignment"),
     },
-    engines: [{ name: "eslint" }],
+    engines: [{ name: "eslint" }, { name: "oxlint" }],
   },
   {
     position: 3,

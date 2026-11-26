@@ -7,6 +7,7 @@
     "disciplines",
     "eslint",
     "lint",
+    "oxlint",
     "typescript"
   ],
   "license": "MIT-0",
@@ -41,6 +42,7 @@
     "eslint": "10.15.0",
     "eslint-9": "npm:eslint@9.39.5",
     "oxfmt": "0.79.0",
+    "oxlint": "1.95.0",
     "typescript": "6.0.3",
     "typescript-floor": "npm:typescript@4.8.4",
     "vitest": "4.1.11"
@@ -49,6 +51,7 @@
     "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@typescript-eslint/parser": "^8.73.0",
     "eslint": "^9.39.5 || ^10.15.0",
+    "oxlint": "^1.95.0",
     "typescript": ">=4.8.4 <7.0.0"
   },
   "peerDependenciesMeta": {
@@ -56,6 +59,9 @@
       "optional": true
     },
     "@typescript-eslint/parser": {
+      "optional": true
+    },
+    "oxlint": {
       "optional": true
     },
     "eslint": {

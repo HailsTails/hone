@@ -23,7 +23,8 @@ describe("readListedPieces", () => {
       .mockReturnValueOnce({ outcome: "ok", value: [{ name: "test-body", kind: "directory" }] })
       .mockReturnValueOnce({ outcome: "ok", value: [{ name: "pieces", kind: "directory" }] })
       .mockReturnValueOnce({ outcome: "ok", value: [{ name: "untyped-value", kind: "directory" }] })
-      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "explicit-any", kind: "directory" }] });
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "explicit-any", kind: "directory" }] })
+      .mockReturnValueOnce({ outcome: "ok", value: [] });
     const exists = vi
       .fn<FileTextPort["exists"]>()
       .mockReturnValueOnce("present")
@@ -62,6 +63,7 @@ describe("readListedPieces", () => {
       [{ path: "/repo/src/infrastructure/engines/walker/runner" }],
       [{ path: "/repo/src/infrastructure/engines/eslint" }],
       [{ path: "/repo/src/infrastructure/engines/eslint/untyped-value" }],
+      [{ path: "/repo/src/infrastructure/engines/oxlint" }],
     ]);
   });
 

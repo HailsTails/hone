@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type {
+  DirectoryEntry,
+  DirectoryPort,
+} from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
@@ -33,6 +36,27 @@ const REBINDING_TEXT =
 
 const PARAMETER_REASSIGNMENT_TEXT = "# parameter-reassignment\n\n```json\n{}\n```\n";
 
+const CATALOGUE_LISTINGS: readonly DirectoryEntry[][] = [
+  [
+    { name: "cases", kind: "directory" },
+    { name: "principles", kind: "directory" },
+    { name: "record-kinds", kind: "directory" },
+    { name: "typescript", kind: "directory" },
+  ],
+  [{ name: "makes-a-new-value-from-what-it-has.md", kind: "file" }],
+  [{ name: "no-hidden-effects.md", kind: "file" }],
+  [
+    { name: "authorised-location.md", kind: "file" },
+    { name: "debt.md", kind: "file" },
+  ],
+  [{ name: "symptoms", kind: "directory" }],
+  [
+    { name: "rebinding", kind: "directory" },
+    { name: "rebinding.md", kind: "file" },
+  ],
+  [{ name: "parameter-reassignment.md", kind: "file" }],
+];
+
 describe("readBoundCatalogue", () => {
   it("fails as a malformed catalogue, naming its rules folder, when no piece runs the clause of a check", () => {
     const fileText: FileTextPort = {
@@ -41,7 +65,7 @@ describe("readBoundCatalogue", () => {
         .mockReturnValueOnce("present")
         .mockReturnValueOnce("present")
         .mockReturnValueOnce("absent")
-        .mockReturnValueOnce("absent"),
+        .mockReturnValue("absent"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -56,42 +80,13 @@ describe("readBoundCatalogue", () => {
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [
-            { name: "cases", kind: "directory" },
-            { name: "principles", kind: "directory" },
-            { name: "record-kinds", kind: "directory" },
-            { name: "typescript", kind: "directory" },
-          ],
-        })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [{ name: "makes-a-new-value-from-what-it-has.md", kind: "file" }],
-        })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [{ name: "no-hidden-effects.md", kind: "file" }],
-        })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [
-            { name: "authorised-location.md", kind: "file" },
-            { name: "debt.md", kind: "file" },
-          ],
-        })
-        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "symptoms", kind: "directory" }] })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [
-            { name: "rebinding", kind: "directory" },
-            { name: "rebinding.md", kind: "file" },
-          ],
-        })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [{ name: "parameter-reassignment.md", kind: "file" }],
-        }),
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[0] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[1] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[2] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[3] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[4] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[5] })
+        .mockReturnValueOnce({ outcome: "ok", value: CATALOGUE_LISTINGS[6] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
 
@@ -171,17 +166,17 @@ describe("readBoundCatalogue", () => {
       create: vi.fn<DirectoryPort["create"]>(),
     };
 
-    expect(
-      readBoundCatalogue({
-        fileText,
-        directory,
-        path: PATH,
-        ruleSetRoot: TEAM_ROOT,
-        ruleSet: TEAM,
-        installRoot: INSTALL_ROOT,
-        inheritedRecordKinds: [],
-      }),
-    ).toEqual({ outcome: "ok", value: { held: "none" } });
+    const catalogue = readBoundCatalogue({
+      fileText,
+      directory,
+      path: PATH,
+      ruleSetRoot: TEAM_ROOT,
+      ruleSet: TEAM,
+      installRoot: INSTALL_ROOT,
+      inheritedRecordKinds: [],
+    });
+
+    expect(catalogue).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
     expect(directory.list).not.toHaveBeenCalled();
   });
@@ -199,16 +194,18 @@ describe("createBoundCatalogueOf", () => {
       create: vi.fn<DirectoryPort["create"]>(),
     };
 
-    expect(
-      createBoundCatalogueOf({ directory })({
-        fileText,
-        path: PATH,
-        ruleSetRoot: TEAM_ROOT,
-        ruleSet: TEAM,
-        installRoot: INSTALL_ROOT,
-        inheritedRecordKinds: [],
-      }),
-    ).toEqual({ outcome: "ok", value: { held: "none" } });
+    const readCatalogue = createBoundCatalogueOf({ directory });
+
+    const catalogue = readCatalogue({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM_ROOT,
+      ruleSet: TEAM,
+      installRoot: INSTALL_ROOT,
+      inheritedRecordKinds: [],
+    });
+
+    expect(catalogue).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(directory.list).toHaveBeenCalledWith({ path: "/repo/team-rules/rules" });
   });
 });

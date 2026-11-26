@@ -202,7 +202,7 @@ const folderFilesOf = (
   return files.outcome === "failed" ? files : { outcome: "ok", value: files.value.flat() };
 };
 
-const PIECE_MODULE_SETTINGS: Readonly<Record<EngineId, z.ZodType<string>>> = {
+const PIECE_MODULE_SETTINGS: Readonly<Partial<Record<EngineId, z.ZodType<string>>>> = {
   walker: z.looseObject({ module: z.string() }).transform(({ module }) => module),
   eslint: z.looseObject({ pluginModule: z.string() }).transform(({ pluginModule }) => pluginModule),
 };
@@ -211,7 +211,7 @@ const moduleOf = (request: {
   readonly mechanism: EngineId;
   readonly settings: unknown;
 }): RepoPath | undefined => {
-  const module = PIECE_MODULE_SETTINGS[request.mechanism].safeParse(request.settings).data;
+  const module = PIECE_MODULE_SETTINGS[request.mechanism]?.safeParse(request.settings).data;
   return module !== undefined && isRepoPath(module) ? module : undefined;
 };
 

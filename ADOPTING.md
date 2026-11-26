@@ -181,6 +181,12 @@ Use `"nearest-to-file"` when ESLint runs per package, with ESLint 10, or with ES
 
 Commit the projection, every slice and the configs. Hone's check reads this configuration and fails if the projection or a slice is missing, not in effect, or out of date, so re-run `hone:project` whenever `hone.config.json` or `hone-records` changes or Hone is updated. The repository's ESLint must resolve `@hailstails/hone` from the repository root. [README.md](README.md#adopting-the-eslint-mechanism) has the details.
 
+### 4b. Set up Oxlint for `oxlint` checks
+
+Install Oxlint in the repository root with `pnpm add -D oxlint@^1.95.0`. Set the mechanism to `"oxlint"` under `checks` in `hone.config.json` for `untyped-value#explicit-any`, `positional-parameters#parameter-count` or `rebinding#parameter-reassignment`.
+
+Hone runs these checks on its selected TypeScript files using native Oxlint rules. Hone applies its own records and runs independently of your Oxlint configuration, ignore files and inline disables. Hone removes its temporary lint workspace from the repository root after each run. The Oxlint mechanism requires no projection. Checks listed as ESLint-only still require ESLint.
+
 ## 5. Run the check
 
 ```bash

@@ -74,6 +74,7 @@ const MAKES_A_NEW_VALUE: Case = {
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT: Engine = { name: "eslint" };
+const OXLINT: Engine = { name: "oxlint" };
 
 const PARAMETER_REASSIGNMENT = {
   ruleSet: TOOL_RULE_SET,
@@ -173,7 +174,7 @@ describe("createSymptomCatalogueRepository", () => {
           cases: [MAKES_A_NEW_VALUE],
           recipes: [],
           recordKinds: [AUTHORISED_LOCATION, DEBT],
-          engines: [WALKER, ESLINT],
+          engines: [WALKER, ESLINT, OXLINT],
           symptoms: [REBINDING],
           clauses: [
             {
@@ -213,7 +214,7 @@ const CONTENT_NAMED_BY_THE_TEAM: CatalogueContent = {
   cases: [MAKES_A_NEW_VALUE],
   recipes: [],
   recordKinds: [AUTHORISED_LOCATION, DEBT],
-  engines: [WALKER, ESLINT],
+  engines: [WALKER, ESLINT, OXLINT],
   symptoms: [{ ...REBINDING, ruleSet: TEAM, sourceFile: "rules/typescript/symptoms/rebinding.md" }],
   clauses: [
     {

@@ -33,10 +33,10 @@ export const clauseIdSchema = brandedTextSchema({
   isBranded: isClauseId,
   refusal: NOT_AN_IDENTIFIER,
 });
-export const engineIdSchema = z.enum(["walker", "eslint"]);
+export const engineIdSchema = z.enum(["walker", "eslint", "oxlint"]);
 
 export const versionOneEngineIdSchema = z.union([
-  engineIdSchema,
+  engineIdSchema.exclude(["oxlint"]),
   z.literal("audit").transform((): EngineId => "walker"),
 ]);
 

@@ -27,7 +27,9 @@ type InstallSource = {
 
 type MechanicalClause = Extract<ClauseDefinition, { readonly kind: "mechanical" }>;
 
-const MECHANISMS: readonly EngineId[] = ENGINE_REGISTRY.map((engine) => engine.name);
+const MECHANISMS: readonly EngineId[] = ENGINE_REGISTRY.map((engine) => engine.name).filter(
+  (name) => name !== "oxlint",
+);
 
 const ruleSetInvalid = (request: {
   readonly path: string;
