@@ -395,11 +395,24 @@ const SETTINGS: NamedSettingsReading = {
 };
 
 describe("mapEngineStageToEnginesRequest", () => {
-  it("hands the engines the stage's checks, with their symptoms' titles, alongside the ports and locations", () => {
+  it("hands the engines the stage's checks, with their symptoms' titles, and the files its records answer, alongside the ports and locations", () => {
     const stage = {
       catalogue: REPORT_CATALOGUE,
       settings: SETTINGS,
-      records: { records: [] },
+      records: {
+        records: [
+          {
+            place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: repoPathOf("src/clock.ts"),
+              holding: { held: "stated" },
+            },
+          },
+        ],
+      },
       tree: { tracked: [], declaredConfigRoots: [] },
       checks: [
         {
@@ -433,7 +446,9 @@ describe("mapEngineStageToEnginesRequest", () => {
       path: ports.path,
       modules: ports.modules,
       engine: ports.namedEngine,
-      answered: [],
+      answered: [
+        { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: repoPathOf("src/clock.ts") },
+      ],
     });
   });
 });
@@ -495,12 +510,17 @@ describe("versionTwoStagesOver", () => {
         conventions: DEFAULT_CONVENTIONS,
       },
       records: { records: [] },
-      tree: { tracked: [], declaredConfigRoots: [] },
-      checks: [],
+      tree: { tracked: [repoPathOf("src/clock.ts")], declaredConfigRoots: [] },
+      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
     });
 
     expect(run.mock.calls).toMatchObject([
-      [{ mechanism: "walker", request: { checks: [], files: [] } }],
+      [
+        {
+          mechanism: "walker",
+          request: { checks: [{ name: "clock-sources" }], files: [repoPathOf("src/clock.ts")] },
+        },
+      ],
     ]);
   });
 
