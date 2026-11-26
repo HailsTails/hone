@@ -521,77 +521,54 @@ describe("readNamedSettings", () => {
     });
   });
 
-  it("places a folder team's symptom, recipe and check files under the team's folder", () => {
+  describe("a catalogue loaded from the team's folder", () => {
     const acme = { name: ruleSetNameOf("acme") };
-    const teamLoop: Symptom = {
-      ...LOOP_KEYWORD,
-      ruleSet: acme,
-      name: "team-loop",
-      sourceFile: "rules/typescript/symptoms/team-loop.md",
-    };
-    const sources = {
-      ...sourcesHolding({ document: DOCUMENT }),
-      catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
-        outcome: "ok",
-        value: {
-          held: "catalogue",
-          catalogue: {
-            ...SETTINGS_CATALOGUE,
-            symptoms: [teamLoop],
-            recipes: [
-              {
-                ruleSet: acme,
-                name: "team-iteration",
-                sourceFile: "rules/typescript/recipes/team-iteration.md",
-                title: "Team iteration",
-                standing: "accepted",
-                reason: { text: "It reads flat.", standing: "accepted" },
-              },
-            ],
-            clauses: [],
-            checks: [
-              {
-                ...LOOP_KEYWORD_LOOPS,
-                symptom: { ruleSet: acme, name: "team-loop" },
-                page: "rules/typescript/symptoms/team-loop/loops.md",
-              },
-            ],
-          },
+    const teamCatalogue: SymptomCatalogue = {
+      ...SETTINGS_CATALOGUE,
+      symptoms: [
+        {
+          ...LOOP_KEYWORD,
+          ruleSet: acme,
+          name: "team-loop",
+          sourceFile: "rules/typescript/symptoms/team-loop.md",
         },
-      }),
+      ],
+      recipes: [
+        {
+          ruleSet: acme,
+          name: "team-iteration",
+          sourceFile: "rules/typescript/recipes/team-iteration.md",
+          title: "Team iteration",
+          standing: "accepted",
+          reason: { text: "It reads flat.", standing: "accepted" },
+        },
+      ],
+      clauses: [],
+      checks: [
+        {
+          ...LOOP_KEYWORD_LOOPS,
+          symptom: { ruleSet: acme, name: "team-loop" },
+          page: "rules/typescript/symptoms/team-loop/loops.md",
+        },
+      ],
     };
-    const settingsFormat = formatGiving({
-      outcome: "ok",
-      value: {
-        ...SETTINGS_FILE,
-        ruleSets: [
-          { name: acme.name, location: { location: "folder", path: repoPathOf("team-rules") } },
-        ],
-        checks: [
-          {
-            address: { ruleSet: acme, check: "team-loop#loops" },
-            state: { state: "run", engine: "walker" },
-          },
-        ],
-        checkSettings: [],
-      },
-    });
 
-    const read = readNamedSettings({
-      sources,
-      settingsFormat,
-      readPiece: vi
-        .fn<CheckPieceSource>()
-        .mockReturnValue({ outcome: "ok", value: { ...LOOPS_PIECE, forms: {} } }),
-    });
-
-    assert(read.outcome === "ok");
-    expect(read.value.externalCatalogues).toMatchObject([
+    it.each([
       {
-        ruleSet: acme,
+        entry: "recipe",
         catalogue: {
           recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
+        },
+      },
+      {
+        entry: "symptom",
+        catalogue: {
           symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
+        },
+      },
+      {
+        entry: "check",
+        catalogue: {
           checks: [
             {
               symptom: { ruleSet: acme, name: "team-loop" },
@@ -600,7 +577,42 @@ describe("readNamedSettings", () => {
           ],
         },
       },
-    ]);
+    ])("places the $entry under the team's folder", ({ catalogue }) => {
+      const sources = {
+        ...sourcesHolding({ document: DOCUMENT }),
+        catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: teamCatalogue },
+        }),
+      };
+      const settingsFormat = formatGiving({
+        outcome: "ok",
+        value: {
+          ...SETTINGS_FILE,
+          ruleSets: [
+            { name: acme.name, location: { location: "folder", path: repoPathOf("team-rules") } },
+          ],
+          checks: [
+            {
+              address: { ruleSet: acme, check: "team-loop#loops" },
+              state: { state: "run", engine: "walker" },
+            },
+          ],
+          checkSettings: [],
+        },
+      });
+
+      const read = readNamedSettings({
+        sources,
+        settingsFormat,
+        readPiece: vi
+          .fn<CheckPieceSource>()
+          .mockReturnValue({ outcome: "ok", value: { ...LOOPS_PIECE, forms: {} } }),
+      });
+
+      assert(read.outcome === "ok");
+      expect(read.value.externalCatalogues).toMatchObject([{ ruleSet: acme, catalogue }]);
+    });
   });
 
   it("binds a team's check under a symptom that shares its name with one of Hone's, beside Hone's own", () => {

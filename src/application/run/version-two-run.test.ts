@@ -497,10 +497,7 @@ describe("versionTwoRunOver", () => {
     const onDisk: RecordsReading = {
       ...RECORDS,
       records: [debtAtBase],
-      base: {
-        measured: "yes",
-        held: [debtAtBase.record],
-      },
+      base: { measured: "yes", held: [debtAtBase.record] },
     };
     const stages = stagesGiving({
       records: vi
@@ -525,30 +522,20 @@ describe("versionTwoRunOver", () => {
       forfeited: [
         {
           place: debtAtBase.place,
-          record: {
-            kind: "debt",
-            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-            reach: { reaches: "whole-symptom" },
-            file: FILE_A,
-            holding: { held: "stated" },
-          },
+          record: { ...debtAtBase.record, file: FILE_A },
         },
       ],
       refused: [
         { place: debtAtBase.place, refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }] },
       ],
     });
-    expect(vi.mocked(stages.engines).mock.calls).toEqual([
-      [
-        {
-          catalogue: REPORT_CATALOGUE,
-          settings: SETTINGS,
-          records: onDisk,
-          tree: { tracked: [FILE_A], declaredConfigRoots: [] },
-          checks: STAGE_CHECKS,
-        },
-      ],
-    ]);
+    expect(stages.engines).toHaveBeenCalledExactlyOnceWith({
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: onDisk,
+      tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+      checks: STAGE_CHECKS,
+    });
   });
 
   it("asks the settings and the records with the catalogue, and the engines with everything read", async () => {
