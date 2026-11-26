@@ -7,6 +7,9 @@ export type ProjectionKind = (typeof PROJECTION_KINDS)[number];
 
 export const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
+export const listOtherProjectionKinds = (selected: ProjectionKind): readonly ProjectionKind[] =>
+  PROJECTION_KINDS.filter((kind) => kind !== selected);
+
 export type VersionTwoSettingsFile = SettingsFile & {
   readonly eslintProjectionKind: ProjectionKind;
 };

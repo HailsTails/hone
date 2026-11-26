@@ -9,6 +9,7 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../../domain/report/run-report.ts";
+import { excludeProjectionOutputs } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
@@ -73,9 +74,10 @@ const measuredNothingOf = (request: {
   readonly tracked: readonly RepoPath[];
   readonly comparedOutputs: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
-  const inReach = typescriptFilesOf({ tracked: request.tracked }).filter(
-    (file) => !request.comparedOutputs.includes(file),
-  );
+  const inReach = excludeProjectionOutputs({
+    files: typescriptFilesOf({ tracked: request.tracked }),
+    outputs: new Set(request.comparedOutputs),
+  });
   return engineMeasurementOf({ run: request.measurement, inReach }) === "measured-nothing"
     ? [{ kind: "engine-not-run", engine: request.engine, projection: "measured-nothing" }]
     : [];

@@ -347,11 +347,7 @@ const mapSmoothingFailureToLines = (request: {
         `the upgrade's ${step} step could not judge which carried records answer nothing, because version 2 left this unmeasured:`,
         ...failure.unmeasured.map(
           (unmeasured) =>
-            `  ${unmeasuredLine({
-              unmeasured,
-              problems: [],
-              projectCommand: PROJECT_COMMAND,
-            })}`,
+            `  ${unmeasuredLine({ unmeasured, problems: [], projectCommand: PROJECT_COMMAND })}`,
         ),
         "Fix what it names, then run the upgrade again.",
       ];

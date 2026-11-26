@@ -245,7 +245,7 @@ describe("the layer directions of every source and test file under src, read as 
     expect(sourceFiles).toEqual(
       expect.objectContaining({
         "./src/hone.ts": expect.any(String),
-        "./src/domain/repository/repo-path-of.ts": expect.any(String),
+        "./src/domain/repository/projection-outputs.ts": expect.any(String),
         "./src/application/ports/host/path-port.ts": expect.any(String),
         "./src/application/run/run-report-of.ts": expect.any(String),
         "./src/infrastructure/node/path-port.ts": expect.any(String),

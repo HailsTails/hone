@@ -1,7 +1,7 @@
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import {
-  PROJECTION_KINDS,
+  listOtherProjectionKinds,
   type ProjectionKind,
 } from "../../../../../application/ports/settings/settings-file-format.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
@@ -16,7 +16,7 @@ export const findLeftOverProjectionFiles = (request: {
   readonly path: Pick<PathPort, "join">;
   readonly slices: ChecksSlices;
 }): readonly RepoPath[] => {
-  const otherNames = PROJECTION_KINDS.filter((kind) => kind !== request.projectionKind).flatMap(
+  const otherNames = listOtherProjectionKinds(request.projectionKind).flatMap(
     listChecksProjectionOutputs,
   );
   const { fileText, path, repoRoot } = request;
