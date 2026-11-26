@@ -69,7 +69,7 @@ const CHECKS: readonly ProjectedCheck[] = [
       {
         selector: "[definite=true]",
         message:
-          "CD-2: a definite assignment assertion claims a value the compiler cannot see; initialise the binding instead.",
+          "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead.",
       },
     ],
   },

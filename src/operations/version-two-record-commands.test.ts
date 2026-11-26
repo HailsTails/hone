@@ -335,9 +335,13 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
       outcome: "failed",
       error: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+        problem: {
+          scope: "slice",
+          engine: { name: "eslint" },
+          slice: repoPathOf("hone.eslint.ts"),
+          state: "out-of-date",
+        },
         projectCommand: PROJECT_COMMAND,
-        projectionKind: "ts",
       },
     });
     expect(input.recordsStoreOf).not.toHaveBeenCalled();
