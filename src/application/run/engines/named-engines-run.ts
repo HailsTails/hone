@@ -18,6 +18,7 @@ import type {
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
+import { mapRequestToJudgedRequest } from "./judged-request.ts";
 
 export type EngineSettings = {
   readonly selection: { readonly selected: readonly { readonly binding: CheckBinding }[] };
@@ -55,16 +56,17 @@ export const mapEnginesRequestToRunRequest = (
   testFiles: request.settings.conventions.testFiles,
 });
 
-export const namedEngineCallsOf = async <Value>(
-  request: NamedEnginesRequest & {
-    readonly call: (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
-  },
-): Promise<Result<readonly Value[], NamedEngineFailure>> => {
-  const engineRequest = mapEnginesRequestToRunRequest(request);
-  const mechanisms = new Set(engineRequest.bindings.map(({ engine }) => engine));
+type EngineCall<Value> = (call: NamedEngineCall) => Promise<Result<Value, NamedEngineFailure>>;
+
+type LoadedEngine = Pick<NamedEngineCall, "mechanism" | "runner">;
+
+const loadEngines = async (
+  request: NamedEnginesRequest & { readonly engineRequest: NamedEngineRunRequest },
+): Promise<Result<readonly LoadedEngine[], NamedEngineFailure>> => {
+  const mechanisms = new Set(request.engineRequest.bindings.map(({ engine }) => engine));
+  const { installRoot, moduleExtension, modules, path } = request;
   const outcomes = await Promise.all(
     [...mechanisms].map(async (mechanism) => {
-      const { installRoot, moduleExtension, modules, path } = request;
       const runner = await request.engine.load({
         installRoot,
         moduleExtension,
@@ -72,20 +74,66 @@ export const namedEngineCallsOf = async <Value>(
         path,
         mechanism,
       });
-      const outcome =
-        runner.outcome === "failed"
-          ? runner
-          : await request.call({ mechanism, runner: runner.value, request: engineRequest });
-      return listedOutcome({ outcome });
+      return listedOutcome({
+        outcome:
+          runner.outcome === "failed"
+            ? runner
+            : { outcome: "ok", value: { mechanism, runner: runner.value } },
+      });
     }),
   );
   return gatheredOutcomes({ outcomes });
 };
 
-export const namedEngineRunsOf = (
+const callEngines = async <Value>(request: {
+  readonly engines: readonly LoadedEngine[];
+  readonly engineRequest: NamedEngineRunRequest;
+  readonly call: EngineCall<Value>;
+}): Promise<Result<readonly Value[], NamedEngineFailure>> =>
+  gatheredOutcomes({
+    outcomes: await Promise.all(
+      request.engines.map(async (engine) =>
+        listedOutcome({
+          outcome: await request.call({ ...engine, request: request.engineRequest }),
+        }),
+      ),
+    ),
+  });
+
+export const namedEngineCallsOf = async <Value>(
+  request: NamedEnginesRequest & { readonly call: EngineCall<Value> },
+): Promise<Result<readonly Value[], NamedEngineFailure>> => {
+  const engineRequest = mapEnginesRequestToRunRequest(request);
+  const engines = await loadEngines({ ...request, engineRequest });
+  return engines.outcome === "failed"
+    ? engines
+    : callEngines({ engines: engines.value, engineRequest, call: request.call });
+};
+
+export const namedEngineRunsOf = async (
   request: NamedEnginesRequest,
-): Promise<Result<readonly NamedEngineRun[], NamedEngineFailure>> =>
-  namedEngineCallsOf({ ...request, call: request.engine.run });
+): Promise<Result<readonly NamedEngineRun[], NamedEngineFailure>> => {
+  const engineRequest = mapEnginesRequestToRunRequest(request);
+  const engines = await loadEngines({ ...request, engineRequest });
+  if (engines.outcome === "failed") {
+    return engines;
+  }
+  const projected = await callEngines({
+    engines: engines.value,
+    engineRequest,
+    call: request.engine.project,
+  });
+  return projected.outcome === "failed"
+    ? projected
+    : callEngines({
+        engines: engines.value,
+        engineRequest: mapRequestToJudgedRequest({
+          engineRequest,
+          outputs: projected.value.flat().map(({ file }) => file),
+        }),
+        call: request.engine.run,
+      });
+};
 
 export const namedEngineProjectionsOf = async (
   request: NamedEnginesRequest,

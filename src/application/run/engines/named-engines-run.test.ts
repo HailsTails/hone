@@ -151,7 +151,7 @@ describe("namedEngineRunsOf", () => {
           failure: { kind: "tool-failed", detail: "stopped" },
         },
       }),
-      project: vi.fn<NamedEnginePort["project"]>(),
+      project: vi.fn<NamedEnginePort["project"]>().mockResolvedValue({ outcome: "ok", value: [] }),
     };
 
     await namedEngineRunsOf({
@@ -176,6 +176,60 @@ describe("namedEngineRunsOf", () => {
     );
     expect(vi.mocked(engine.run).mock.calls).toMatchObject([
       [{ mechanism: "walker", runner, request: { files: [TYPESCRIPT] } }],
+    ]);
+  });
+
+  it("runs every engine over the files no engine projects", async () => {
+    const engine: NamedEnginePort = {
+      load: vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+        outcome: "ok",
+        value: {
+          fileScope: "tracked",
+          run: vi.fn(),
+          conform: vi.fn(),
+          project: vi.fn(),
+          projectedKinds: [],
+        },
+      }),
+      run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+        outcome: "failed",
+        error: {
+          kind: "runner-failed",
+          mechanism: "walker",
+          failure: { kind: "tool-failed", detail: "stopped" },
+        },
+      }),
+      project: vi
+        .fn<NamedEnginePort["project"]>()
+        .mockResolvedValueOnce({ outcome: "ok", value: [] })
+        .mockResolvedValueOnce({
+          outcome: "ok",
+          value: [{ file: repoPathOf("hone.eslint.mjs"), text: "export default [];" }],
+        }),
+    };
+
+    await namedEngineRunsOf({
+      settings: {
+        selection: {
+          selected: [{ binding: BINDING }, { binding: { ...BINDING, engine: "eslint" } }],
+        },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["spec"], folders: [] } },
+      },
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: { join: vi.fn<PathPort["join"]>() },
+      modules: { load: vi.fn() },
+      engine,
+      checks: [CHECK],
+      answered: [],
+      tree: { tracked: [TYPESCRIPT, repoPathOf("hone.eslint.mjs")], declaredConfigRoots: [] },
+    });
+
+    expect(vi.mocked(engine.run).mock.calls).toMatchObject([
+      [{ mechanism: "walker", request: { trackedPaths: [TYPESCRIPT] } }],
+      [{ mechanism: "eslint", request: { trackedPaths: [TYPESCRIPT] } }],
     ]);
   });
 
@@ -204,7 +258,7 @@ describe("namedEngineRunsOf", () => {
         },
       }),
       run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue({ outcome: "ok", value: measured }),
-      project: vi.fn<NamedEnginePort["project"]>(),
+      project: vi.fn<NamedEnginePort["project"]>().mockResolvedValue({ outcome: "ok", value: [] }),
     };
 
     const report = await namedEngineRunsOf({

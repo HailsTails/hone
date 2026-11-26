@@ -379,7 +379,6 @@ type ExpectedFiles = {
 type ProjectionStatus = {
   readonly projection: GeneratedState;
   readonly slices: readonly ChecksSliceProblem[];
-  readonly compared: readonly RepoPath[];
 };
 
 const importingDirectoryOf = (request: {
@@ -521,8 +520,9 @@ const currentProjectionStatus = (
   }
   const { root, packages, declarations } = expected.value;
   const repository = request.ports.repositoryAt({ repoRoot: request.run.repoRoot });
-  const compared = [root, ...packages, ...declarations].map(({ file }) => file);
-  const states = repository.projectionFiles.currentOf({ files: compared });
+  const states = repository.projectionFiles.currentOf({
+    files: [root, ...packages, ...declarations].map(({ file }) => file),
+  });
   if (states.outcome === "failed") {
     return states;
   }
@@ -537,7 +537,7 @@ const currentProjectionStatus = (
   });
   return problems.outcome === "failed"
     ? problems
-    : { outcome: "ok", value: { projection: rootState.value, slices: problems.value, compared } };
+    : { outcome: "ok", value: { projection: rootState.value, slices: problems.value } };
 };
 
 const unconfiguredSlicesOf = (request: {
@@ -896,7 +896,7 @@ const projectedRun = async (request: ProjectedRunRequest): Promise<MeasuredRun> 
   if (plugins.outcome === "failed") return plugins;
   return queriedRun({
     ...request,
-    run: { ...run, files: run.files.filter((file) => !status.compared.includes(file)) },
+    run,
     selected: selected.value,
     checkRuleIds,
     plugins: plugins.value,
@@ -961,7 +961,7 @@ export const checksRunnerOver = (request: {
       versionOneProjection: projection,
       projectionStatusOf: () => ({
         outcome: "ok",
-        value: { projection: "current", slices: [], compared: [] },
+        value: { projection: "current", slices: [] },
       }),
     }),
   project: (run) => Promise.resolve(projectedFilesOf({ ...request, run })),

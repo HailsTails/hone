@@ -437,7 +437,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     expect(outcome).toEqual({ outcome: "ok", value: report });
   });
 
-  it("measures nothing, and lints no untracked file, when the declaration it compares is the only TypeScript file tracked", async () => {
+  it("measures nothing, and lints no untracked file, when it is given no file to check", async () => {
     const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-declaration-only`);
     const toolchain = await loadEslintToolchain({
       peers: { location: PEER_LOCATION, modules: row.toolchainModules },
@@ -467,8 +467,8 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
     const outcome = await runner.run({
       repoRoot: repo,
       installRoot: INSTALL_ROOT,
-      files: [repoPathOf("hone.eslint.d.mts")],
-      trackedPaths: [repoPathOf("hone.eslint.d.mts"), repoPathOf("hone.eslint.mjs")],
+      files: [],
+      trackedPaths: [],
       checks: CHECKS,
       bindings: BINDINGS,
       answered: [],

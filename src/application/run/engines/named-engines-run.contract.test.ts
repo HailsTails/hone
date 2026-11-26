@@ -153,7 +153,9 @@ const ESLINT_RUN: NamedEngineRun = { ...AUDIT_RUN, mechanism: ESLINT };
 const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
   const runChecks = vi.fn<NamedEnginePort["run"]>();
-  const projectChecks = vi.fn<NamedEnginePort["project"]>();
+  const projectChecks = vi
+    .fn<NamedEnginePort["project"]>()
+    .mockResolvedValue({ outcome: "ok", value: [] });
   return {
     load,
     runChecks,
@@ -392,7 +394,10 @@ describe("namedEngineProjectionsOf", () => {
       projected: engine.projectChecks.mock.calls,
       run: engine.runChecks.mock.calls,
     }).toEqual({
-      projected: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
+      projected: [
+        [{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }],
+        [{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }],
+      ],
       run: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
     });
   });
