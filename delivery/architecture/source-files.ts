@@ -4,13 +4,11 @@ import type {
 } from "../../src/application/ports/file-system/directory-port.ts";
 import type { DirectoryTreePort } from "../../src/application/ports/file-system/directory-tree-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
+import { PROJECTION_KINDS } from "../../src/application/ports/settings/settings-file-format.ts";
 import { gatheredOutcomes } from "../../src/domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
-import {
-  listChecksProjectionOutputs,
-  PROJECTION_KINDS,
-} from "../../src/infrastructure/engines/eslint/runner/projection/projection-kinds.ts";
+import { listChecksProjectionOutputs } from "../../src/infrastructure/engines/eslint/runner/projection/projection-kinds.ts";
 
 export type SourceTree = {
   readonly repoRoot: AbsolutePath;

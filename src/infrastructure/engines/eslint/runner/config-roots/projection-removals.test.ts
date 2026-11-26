@@ -7,13 +7,14 @@ import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { findLeftOverProjectionFiles } from "./projection-removals.ts";
 
 describe("findLeftOverProjectionFiles", () => {
-  it("returns only existing outputs of the other kind at the selected roots", () => {
-    const exists = vi.fn<FileTextPort["exists"]>(({ path }) =>
-      path === "/repo/hone.eslint.mjs" || path === "/repo/web/hone.eslint.d.mts"
-        ? "present"
-        : "absent",
-    );
-    const join: PathPort["join"] = ({ segments }) => segments.join("/");
+  it("probes only outputs of the other kind at the selected roots", () => {
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/hone.eslint.d.mts")
+      .mockReturnValueOnce("/repo/web/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/web/hone.eslint.d.mts");
 
     const files = findLeftOverProjectionFiles({
       repoRoot: absoluteRootOf("/repo"),
@@ -27,7 +28,12 @@ describe("findLeftOverProjectionFiles", () => {
     });
 
     expect({ files, probed: exists.mock.calls }).toEqual({
-      files: ["hone.eslint.mjs", "web/hone.eslint.d.mts"],
+      files: [
+        "hone.eslint.mjs",
+        "hone.eslint.d.mts",
+        "web/hone.eslint.mjs",
+        "web/hone.eslint.d.mts",
+      ],
       probed: [
         [{ path: "/repo/hone.eslint.mjs" }],
         [{ path: "/repo/hone.eslint.d.mts" }],

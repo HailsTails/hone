@@ -29,7 +29,10 @@ import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
-import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
+import type {
+  EslintConfigLookupChoice,
+  SettingsFile,
+} from "../../../domain/settings/settings-file.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
 import type {
   CheckPieceSource,
@@ -43,10 +46,10 @@ import type {
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
-type SourcesRequest = { readonly sources: SettingsSources; readonly file: VersionTwoSettingsFile };
+type SourcesRequest = { readonly sources: SettingsSources; readonly file: SettingsFile };
 
 const ruleSetsListed = (request: {
-  readonly file: VersionTwoSettingsFile;
+  readonly file: SettingsFile;
 }): readonly ClauseAddress["ruleSet"][] => {
   const ruleSets = [
     ...request.file.checks.map((listed) => listed.address),
@@ -271,12 +274,12 @@ const checkSharedAcrossRuleSetsOf = (request: {
   return shared;
 };
 
-export const readNamedSettingsFile = (
+export const bindNamedSettings = (
   request: SourcesRequest & {
     readonly readPiece: CheckPieceSource;
     readonly path: string;
   },
-): Result<NamedSettingsReading, SettingsFailure> => {
+): Result<Omit<NamedSettingsReading, "eslintProjectionKind">, SettingsFailure> => {
   const { file, path } = request;
   const catalogues = cataloguesHeld({ sources: request.sources, file });
   if (catalogues.outcome === "failed") return catalogues;
@@ -309,7 +312,6 @@ export const readNamedSettingsFile = (
       },
       runSettings: { reportOutput: file.reportOutput, assessment: { forfeiture: file.forfeiture } },
       eslintConfigLookup: file.eslintConfigLookup,
-      eslintProjectionKind: file.eslintProjectionKind,
       conventions: file.conventions.conventions,
       notes: file.conventions.declared.flatMap((key): readonly SettingsNote[] =>
         key === "testFiles" ? [] : [{ kind: "declared-not-read", key }],
@@ -318,6 +320,21 @@ export const readNamedSettingsFile = (
       ...(externalCatalogues.length === 0 ? {} : { externalCatalogues }),
     },
   };
+};
+
+export const readNamedSettingsFile = (request: {
+  readonly sources: SettingsSources;
+  readonly file: VersionTwoSettingsFile;
+  readonly readPiece: CheckPieceSource;
+  readonly path: string;
+}): Result<NamedSettingsReading, SettingsFailure> => {
+  const bound = bindNamedSettings(request);
+  return bound.outcome === "failed"
+    ? bound
+    : {
+        outcome: "ok",
+        value: { ...bound.value, eslintProjectionKind: request.file.eslintProjectionKind },
+      };
 };
 
 export const readNamedSettings = (

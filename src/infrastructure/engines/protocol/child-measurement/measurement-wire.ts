@@ -73,25 +73,8 @@ export const createMeasurementInput = (request: { readonly tree: CheckedTree }):
 const mapRunToEngineReply = (request: {
   readonly run: NamedEngineRun;
 }): z.input<typeof engineReplySchema> => {
-  const { run } = request;
-  const shared = {
-    slices: run.slices,
-    nestedConfigurations: run.nestedConfigurations,
-    unprojectedFolders: run.unprojectedFolders,
-    misnamedRuleIds: run.misnamedRuleIds,
-    hits: run.hits,
-    nativeExceptions: run.nativeExceptions,
-    measured: run.measured,
-  };
-  return {
-    mechanism: run.mechanism,
-    coverableKinds: run.coverableKinds,
-    report:
-      run.projection === "none" || run.projection === "current"
-        ? { ...shared, projection: run.projection, projectionFile: run.projectionFile }
-        : { ...shared, projection: run.projection, projectionFile: run.projectionFile },
-    comparedOutputs: run.comparedOutputs,
-  };
+  const { mechanism, coverableKinds, comparedOutputs, ...report } = request.run;
+  return { mechanism, coverableKinds, report, comparedOutputs };
 };
 
 const mapMeasuredToReply = (request: {

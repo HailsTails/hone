@@ -24,7 +24,6 @@ import { mapRequestToJudgedRequest } from "./judged-request.ts";
 export type EngineSettings = {
   readonly selection: { readonly selected: readonly { readonly binding: CheckBinding }[] };
   readonly eslintConfigLookup: EslintConfigLookupChoice;
-  readonly eslintProjectionKind: ProjectionKind;
   readonly conventions: Pick<Conventions, "testFiles">;
 };
 
@@ -36,7 +35,10 @@ type EnginesRequest = Omit<RunnerLocation, "mechanism"> & {
   readonly answered: readonly AnsweredFile[];
 };
 
-export type NamedEnginesRequest = EnginesRequest & { readonly engine: NamedEnginePort };
+export type NamedEnginesRequest = EnginesRequest & {
+  readonly engine: NamedEnginePort;
+  readonly settings: EngineSettings & { readonly eslintProjectionKind: ProjectionKind };
+};
 
 export const mapEnginesRequestToRunRequest = (
   request: Pick<

@@ -1,7 +1,11 @@
 import type { Result } from "../../../domain/result.ts";
 import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
 
-export type ProjectionKind = "mjs" | "ts";
+export const PROJECTION_KINDS = ["mjs", "ts"] as const;
+
+export type ProjectionKind = (typeof PROJECTION_KINDS)[number];
+
+export const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
 export type VersionTwoSettingsFile = SettingsFile & {
   readonly eslintProjectionKind: ProjectionKind;

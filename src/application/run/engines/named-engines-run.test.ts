@@ -41,7 +41,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [] },
         eslintConfigLookup: { lookup: "detected" },
-        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["test"], folders: [] } },
       },
       checks: [CHECK],
@@ -70,7 +69,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [] },
         eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
-        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["test"], folders: [] } },
       },
       checks: [],
@@ -99,7 +97,6 @@ describe("mapEnginesRequestToRunRequest", () => {
       settings: {
         selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
-        eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
       },
       checks: [],

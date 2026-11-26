@@ -2,10 +2,6 @@ import type { ProjectionKind } from "../../../../../application/ports/settings/s
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 
-export const PROJECTION_KINDS: readonly [ProjectionKind, ...ProjectionKind[]] = ["mjs", "ts"];
-
-export const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
-
 export type ChecksProjectionOutputs =
   | { readonly kind: "mjs"; readonly configuration: RepoPath; readonly declaration: RepoPath }
   | { readonly kind: "ts"; readonly configuration: RepoPath };

@@ -1409,19 +1409,27 @@ describe("checksRunnerOver, giving the ts projection kind as project", () => {
   });
 });
 
-const filesPresent = (files: readonly RepoPath[]): FileTextPort => {
+const fileTextWithPresence = (paths: ReadonlyMap<string, "present" | "absent">): FileTextPort => {
   const fileText = createDefaultFileTextPort({});
-  const paths = new Set(files.map((file) => path.join({ segments: [SCRATCH_REPO_ROOT, file] })));
-  return {
-    ...fileText,
-    exists: (location) => (paths.has(location.path) ? "present" : fileText.exists(location)),
+  const exists: FileTextPort["exists"] = (entry) => {
+    const { selected = fileText.exists(entry) } = { selected: paths.get(entry.path) };
+    return selected;
   };
+  return { ...fileText, exists };
 };
 
 describe("checksRunnerOver, removing alternate projection files", () => {
   it("returns removal entries only for existing alternate files in the selected config roots", async () => {
     const { runnerOver } = projectingRunner(
-      filesPresent([repoPathOf("hone.eslint.mjs"), repoPathOf("packages/web/hone.eslint.d.mts")]),
+      fileTextWithPresence(
+        new Map([
+          [path.join({ segments: [SCRATCH_REPO_ROOT, "hone.eslint.mjs"] }), "present"],
+          [
+            path.join({ segments: [SCRATCH_REPO_ROOT, "packages/web/hone.eslint.d.mts"] }),
+            "present",
+          ],
+        ]),
+      ),
     );
 
     const outcome = await runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, projectionKind: "ts" });
@@ -1442,7 +1450,9 @@ describe("checksRunnerOver, removing alternate projection files", () => {
       currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
       ruleState: CONFIGURED_ON,
       governance: lintingNothing(),
-      fileText: filesPresent([repoPathOf("hone.eslint.ts")]),
+      fileText: fileTextWithPresence(
+        new Map([[path.join({ segments: [SCRATCH_REPO_ROOT, "hone.eslint.ts"] }), "present"]]),
+      ),
     });
 
     const outcome = await runner.run(SELECTING_THE_CLASS_CHECK);

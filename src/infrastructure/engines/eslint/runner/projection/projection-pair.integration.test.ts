@@ -1,9 +1,11 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { assert, describe, expect, it, onTestFinished } from "vitest";
 
+import type { PieceClause } from "../../../../../application/ports/settings-sources.ts";
 import {
   type CheckAddressText,
   checkNamesOf,
 } from "../../../../../domain/language-layer/check-address-text.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
@@ -64,8 +66,8 @@ const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
   { ruleSet: "hone", symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
 ];
 
-const catalogue = () => {
-  const reading = readBoundCatalogue({
+const catalogue = () =>
+  readBoundCatalogue({
     ruleSet: "hone",
     inheritedRecordKinds: [],
     directory: createDefaultDirectoryPort({}),
@@ -74,180 +76,193 @@ const catalogue = () => {
     ruleSetRoot: INSTALL_ROOT,
     installRoot: INSTALL_ROOT,
   });
-  return reading.outcome === "ok" && reading.value.held === "catalogue"
-    ? reading.value.catalogue
-    : undefined;
-};
 
-const bindingOf = (request: { readonly address: CheckAddressText }): CheckBinding | undefined => {
-  const names = checkNamesOf({ text: request.address });
-  if (names === undefined) return undefined;
-  const readPiece = createCheckPieceSource({
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    fileText,
-    path,
-  });
-  const piece = readPiece({ ruleSetRoot: INSTALL_ROOT, names, mechanism: ESLINT });
-  if (piece.outcome === "failed") return undefined;
-  return {
-    address: request.address,
-    ruleSet: "hone",
-    engine: ESLINT,
-    anchor: piece.value.anchor,
-    pieceRoot: piece.value.pieceRoot,
-    settings: piece.value.settings,
-    checkSettings: {},
-    edition: piece.value.editions.default,
-  };
-};
+const readPiece = createCheckPieceSource({
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  fileText,
+  path,
+});
 
-const versionTwoText = (): string | undefined => {
-  const checks = catalogue()?.checks;
-  const bindings = [
-    bindingOf({ address: "claimed-type#non-null-assertions" }),
-    bindingOf({ address: "name-off-its-casing#naming-convention" }),
-    bindingOf({ address: "authored-class-or-this#class-keyword" }),
-    bindingOf({ address: "authored-class-or-this#static-members-only" }),
-    bindingOf({ address: "test-switched-off#focused-tests" }),
-    bindingOf({ address: "test-switched-off#skipped-tests" }),
-    bindingOf({ address: "positional-parameters#parameter-count" }),
-    bindingOf({ address: "rebinding#parameter-reassignment" }),
-  ];
-  if (checks === undefined || !bindings.every((binding) => binding !== undefined)) return undefined;
-  const projected = projectedNamedChecksOf({ checks, bindings });
-  if (projected.outcome === "failed") return undefined;
-  return checksProjectionText({
-    kind: "mjs",
-    pluginImport: import.meta.resolve("../../../../../eslint-plugin.ts"),
-    checks: projected.value,
-    answered: VERSION_TWO_ANSWERED,
-  });
-};
+const bindPiece = (request: {
+  readonly address: CheckAddressText;
+  readonly piece: PieceClause;
+}): CheckBinding => ({
+  address: request.address,
+  ruleSet: "hone",
+  engine: ESLINT,
+  anchor: request.piece.anchor,
+  pieceRoot: request.piece.pieceRoot,
+  settings: request.piece.settings,
+  checkSettings: {},
+  edition: request.piece.editions.default,
+});
 
 const directory = createDefaultDirectoryPort({});
 
 const directoryTree = createDefaultDirectoryTreePort({});
 
-const SCRATCH = absolutePathSchema.parse(
-  path.join({ segments: [INSTALL_ROOT, "artefacts", `projection-pair-${crypto.randomUUID()}`] }),
-);
+const createScratchPath = () =>
+  absolutePathSchema.parse(
+    path.join({ segments: [INSTALL_ROOT, "artefacts", `projection-pair-${crypto.randomUUID()}`] }),
+  );
 
-const VERSION_TWO_CONFIG = path.join({ segments: [SCRATCH, "version-two.eslint.mjs"] });
-
-const ADOPTER_CONFIG = path.join({ segments: [SCRATCH, "adopter.eslint.mjs"] });
-
-const writeConfigurations = () => {
-  const text = versionTwoText();
-  const made = directory.create({ path: SCRATCH });
-  if (made.outcome === "failed" || text === undefined) return undefined;
-  return [
-    fileText.write({ path: VERSION_TWO_CONFIG, text }),
-    fileText.write({
-      path: ADOPTER_CONFIG,
-      text: `import parser from "${import.meta.resolve("@typescript-eslint/parser")}";\nimport projection from "./version-two.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n`,
-    }),
-  ];
-};
-
-const CONFIGURATIONS = writeConfigurations();
+const writeConfigurations = (request: {
+  readonly scratch: AbsolutePath;
+  readonly text: string;
+}) => [
+  directory.create({ path: request.scratch }),
+  fileText.write({
+    path: path.join({ segments: [request.scratch, "version-two.eslint.mjs"] }),
+    text: request.text,
+  }),
+  fileText.write({
+    path: path.join({ segments: [request.scratch, "adopter.eslint.mjs"] }),
+    text: `import parser from "${import.meta.resolve("@typescript-eslint/parser")}";\nimport projection from "./version-two.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n`,
+  }),
+];
 
 const LINTED_SOURCE =
   'it.skip("a", () => {});\nexport const a = (b: string | undefined): string => b!;\nexport const c = (d: string, e: string, f: string): string => d + e + f;\n';
 
-const resolvedRules = async (request: {
+const resolveRules = async (request: {
   readonly line: (typeof ESLINT_LINES)[number];
-  readonly config: string;
+  readonly scratch: AbsolutePath;
   readonly file: string;
 }) => {
   const Eslint = await eslintClassOn({ line: request.line });
   const resolved = await new Eslint({
-    cwd: SCRATCH,
-    overrideConfigFile: request.config,
-  }).calculateConfigForFile(path.join({ segments: [SCRATCH, request.file] }));
-  return resolvedConfigSchema.parse(resolved)?.rules;
+    cwd: request.scratch,
+    overrideConfigFile: path.join({ segments: [request.scratch, "version-two.eslint.mjs"] }),
+  }).calculateConfigForFile(path.join({ segments: [request.scratch, request.file] }));
+  return resolvedConfigSchema.parse(resolved);
 };
 
-const lintedMessages = async (request: { readonly line: (typeof ESLINT_LINES)[number] }) => {
+const lintSource = async (request: {
+  readonly line: (typeof ESLINT_LINES)[number];
+  readonly scratch: AbsolutePath;
+  readonly file: string;
+}) => {
   const Eslint = await eslintClassOn({ line: request.line });
-  const [linted] = await new Eslint({ cwd: SCRATCH, overrideConfigFile: ADOPTER_CONFIG }).lintText(
-    LINTED_SOURCE,
-    {
-      filePath: path.join({ segments: [SCRATCH, "src", "kept.ts"] }),
-    },
-  );
-  return linted?.messages;
+  return new Eslint({
+    cwd: request.scratch,
+    overrideConfigFile: path.join({ segments: [request.scratch, "adopter.eslint.mjs"] }),
+  }).lintText(LINTED_SOURCE, {
+    filePath: path.join({ segments: [request.scratch, request.file] }),
+  });
 };
-
-afterAll(async () => {
-  const removed = directoryTree.remove({ path: SCRATCH });
-  if (removed.outcome === "failed") return Promise.reject(new Error(removed.error.detail));
-});
 
 describe.each(ESLINT_LINES)("the version 2 projection on %s", (line) => {
-  it("switches off, on a file its records answer, only the rules of the symptoms they answer", async () => {
-    expect(CONFIGURATIONS).toEqual([
-      { outcome: "ok", value: undefined },
-      { outcome: "ok", value: undefined },
-    ]);
-    expect(
-      await resolvedRules({ line, config: VERSION_TWO_CONFIG, file: "src/legacy.ts" }),
-    ).toMatchObject({
-      "hone/claimed-type#non-null-assertions": [
-        0,
-        {
-          selector: "TSNonNullExpression",
-          message:
-            "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
+  it.each([
+    {
+      name: "switches off only the rules of symptoms answered on a file",
+      file: "src/legacy.ts",
+      act: resolveRules,
+      expected: {
+        rules: {
+          "hone/claimed-type#non-null-assertions": [
+            0,
+            {
+              selector: "TSNonNullExpression",
+              message:
+                "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
+            },
+            {
+              selector: "[definite=true]",
+              message:
+                "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead.",
+            },
+          ],
+          "hone/rebinding#parameter-reassignment": [0, { props: false }],
+          "hone/positional-parameters#parameter-count": [2, { max: 2, countVoidThis: true }],
+          "hone/test-switched-off#skipped-tests": [2],
         },
+      },
+    },
+    {
+      name: "switches off only the answered check when its symptom has two checks",
+      file: "src/skipping.test.ts",
+      act: resolveRules,
+      expected: {
+        rules: {
+          "hone/test-switched-off#skipped-tests": [0],
+          "hone/test-switched-off#focused-tests": [2],
+        },
+      },
+    },
+    {
+      name: "reports through the adopter config with the symptom titles",
+      file: "src/kept.ts",
+      act: lintSource,
+      expected: [
         {
-          selector: "[definite=true]",
-          message:
-            "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead.",
+          messages: [
+            {
+              ruleId: "hone/test-switched-off#skipped-tests",
+              line: 1,
+              message: "Test switched off: remove the skip so the test runs, or delete the test.",
+            },
+            {
+              ruleId: "hone/claimed-type#non-null-assertions",
+              line: 2,
+              message:
+                "Claimed type: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
+            },
+            {
+              ruleId: "hone/positional-parameters#parameter-count",
+              line: 3,
+              message:
+                "Positional parameters: Arrow function has too many parameters (3). Maximum allowed is 2.",
+            },
+          ],
         },
       ],
-      "hone/rebinding#parameter-reassignment": [0, { props: false }],
-      "hone/positional-parameters#parameter-count": [2, { max: 2, countVoidThis: true }],
-      "hone/test-switched-off#skipped-tests": [2],
+    },
+  ])("$name", async ({ file, act, expected }) => {
+    const scratch = createScratchPath();
+    onTestFinished(() => {
+      expect(directoryTree.remove({ path: scratch })).toEqual({ outcome: "ok", value: undefined });
     });
-  });
-
-  it("switches off, on a file a record answers for one check of a symptom with two, only that check's rule", async () => {
-    expect(CONFIGURATIONS).toEqual([
-      { outcome: "ok", value: undefined },
-      { outcome: "ok", value: undefined },
-    ]);
+    const reading = catalogue();
+    assert(reading.outcome === "ok");
+    assert(reading.value.held === "catalogue");
+    const bind = (address: CheckAddressText): CheckBinding => {
+      const names = checkNamesOf({ text: address });
+      assert.isDefined(names);
+      const piece = readPiece({ ruleSetRoot: INSTALL_ROOT, names, mechanism: ESLINT });
+      assert(piece.outcome === "ok");
+      return bindPiece({ address, piece: piece.value });
+    };
+    const projected = projectedNamedChecksOf({
+      checks: reading.value.catalogue.checks,
+      bindings: [
+        bind("claimed-type#non-null-assertions"),
+        bind("name-off-its-casing#naming-convention"),
+        bind("authored-class-or-this#class-keyword"),
+        bind("authored-class-or-this#static-members-only"),
+        bind("test-switched-off#focused-tests"),
+        bind("test-switched-off#skipped-tests"),
+        bind("positional-parameters#parameter-count"),
+        bind("rebinding#parameter-reassignment"),
+      ],
+    });
+    assert(projected.outcome === "ok");
     expect(
-      await resolvedRules({ line, config: VERSION_TWO_CONFIG, file: "src/skipping.test.ts" }),
-    ).toMatchObject({
-      "hone/test-switched-off#skipped-tests": [0],
-      "hone/test-switched-off#focused-tests": [2],
-    });
-  });
+      writeConfigurations({
+        scratch,
+        text: checksProjectionText({
+          kind: "mjs",
+          pluginImport: import.meta.resolve("../../../../../eslint-plugin.ts"),
+          checks: projected.value,
+          answered: VERSION_TWO_ANSWERED,
+        }),
+      }),
+    ).toEqual([
+      { outcome: "ok", value: undefined },
+      { outcome: "ok", value: undefined },
+      { outcome: "ok", value: undefined },
+    ]);
 
-  it("reports through the adopter's own config, each message under its symptom's title", async () => {
-    expect(CONFIGURATIONS).toEqual([
-      { outcome: "ok", value: undefined },
-      { outcome: "ok", value: undefined },
-    ]);
-    expect(await lintedMessages({ line })).toMatchObject([
-      {
-        ruleId: "hone/test-switched-off#skipped-tests",
-        line: 1,
-        message: "Test switched off: remove the skip so the test runs, or delete the test.",
-      },
-      {
-        ruleId: "hone/claimed-type#non-null-assertions",
-        line: 2,
-        message:
-          "Claimed type: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
-      },
-      {
-        ruleId: "hone/positional-parameters#parameter-count",
-        line: 3,
-        message:
-          "Positional parameters: Arrow function has too many parameters (3). Maximum allowed is 2.",
-      },
-    ]);
+    expect(await act({ line, scratch, file })).toMatchObject(expected);
   });
 });

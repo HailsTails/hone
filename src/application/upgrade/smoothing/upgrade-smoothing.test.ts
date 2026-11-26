@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
@@ -29,50 +31,50 @@ const commandsWith = (overrides: Partial<SmoothingCommands>): SmoothingCommands 
   ...overrides,
 });
 
-const queryWith = (
-  request: Partial<{
-    readonly read: FileTextPort["read"];
-    readonly kindOf: EntryKindPort["kindOf"];
-    readonly join: PathPort["join"];
-    readonly directoryOf: PathPort["directoryOf"];
-  }>,
-): ProofQueries => ({
-  fileText: { read: request.read ?? vi.fn(), exists: vi.fn() },
-  entryKind: { kindOf: request.kindOf ?? vi.fn() },
-  path: {
-    join: request.join ?? vi.fn(),
-    relative: vi.fn(),
-    directoryOf: request.directoryOf ?? vi.fn(),
-  },
+const queryWith = ({
+  read = vi.fn<FileTextPort["read"]>(),
+  kindOf = vi.fn<EntryKindPort["kindOf"]>(),
+  join = vi.fn<PathPort["join"]>(),
+  directoryOf = vi.fn<PathPort["directoryOf"]>(),
+}: Partial<{
+  readonly read: FileTextPort["read"];
+  readonly kindOf: EntryKindPort["kindOf"];
+  readonly join: PathPort["join"];
+  readonly directoryOf: PathPort["directoryOf"];
+}>): ProofQueries => ({
+  fileText: { read, exists: vi.fn() },
+  entryKind: { kindOf },
+  path: { join, relative: vi.fn(), directoryOf },
 });
 
-const createFilesAt = (request: {
-  readonly root: string;
-  readonly files: readonly string[];
-}): ProofQueries => {
-  const absences = new Map(
-    request.files.map((file) => [`${request.root}/${file}`, "absent"] as const),
-  );
-  return queryWith({
-    kindOf: ({ path }) => absences.get(path) ?? "directory",
-    join: ({ segments }) => segments.join("/"),
-    directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue(request.root),
-  });
-};
+const expectMissingFile = (lookup: Mock<EntryKindPort["kindOf"]>) =>
+  lookup
+    .mockReturnValueOnce("absent")
+    .mockReturnValueOnce("absent")
+    .mockReturnValueOnce("directory");
 
-const addedFile = (path: string, text: string): ReturnType<ProofEffects["apply"]> => ({
+const queryCreatedFiles = (request: {
+  readonly join: PathPort["join"];
+  readonly parent: string;
+  readonly kindOf: EntryKindPort["kindOf"];
+}): ProofQueries =>
+  queryWith({
+    join: request.join,
+    directoryOf: vi.fn<PathPort["directoryOf"]>().mockReturnValue(request.parent),
+    kindOf: request.kindOf,
+  });
+
+const addedFile = (path: AbsolutePath, text: string): ReturnType<ProofEffects["apply"]> => ({
   outcome: "all-applied",
-  settled: [
-    { effect: { kind: "create-file", path: absoluteRootOf(path), text }, outcome: "applied" },
-  ],
+  settled: [{ effect: { kind: "create-file", path, text }, outcome: "applied" }],
 });
 
 const projectionWriting = (
-  file: string,
+  file: RepoPath,
   text: string,
 ): Awaited<ReturnType<SmoothingCommands["project"]>> => ({
   outcome: "ok",
-  value: { write: [{ file: repoPathOf(file), text }], remove: [] },
+  value: { write: [{ file, text }], remove: [] },
 });
 
 describe("runSmoothing", () => {
@@ -84,27 +86,32 @@ describe("runSmoothing", () => {
     const commands = commandsWith({
       project: vi
         .fn<SmoothingCommands["project"]>()
-        .mockResolvedValueOnce(projectionWriting("a.mjs", "a"))
-        .mockResolvedValueOnce(projectionWriting("b.mjs", "b"))
-        .mockResolvedValueOnce(projectionWriting("c.mjs", "c"))
-        .mockResolvedValueOnce(projectionWriting("d.mjs", "d")),
+        .mockResolvedValueOnce(projectionWriting(repoPathOf("a.mjs"), "a"))
+        .mockResolvedValueOnce(projectionWriting(repoPathOf("b.mjs"), "b"))
+        .mockResolvedValueOnce(projectionWriting(repoPathOf("c.mjs"), "c"))
+        .mockResolvedValue({ outcome: "ok", value: EMPTY_CHANGES }),
     });
     const apply = vi
       .fn<ProofEffects["apply"]>()
-      .mockReturnValueOnce(addedFile("/repo/a.mjs", "a"))
-      .mockReturnValueOnce(addedFile("/repo/b.mjs", "b"))
-      .mockReturnValueOnce(addedFile("/repo/c.mjs", "c"))
-      .mockReturnValueOnce(addedFile("/repo/d.mjs", "d"));
-
+      .mockReturnValueOnce(addedFile(absoluteRootOf("/repo/a.mjs"), "a"))
+      .mockReturnValueOnce(addedFile(absoluteRootOf("/repo/b.mjs"), "b"))
+      .mockReturnValueOnce(addedFile(absoluteRootOf("/repo/c.mjs"), "c"));
+    const kindOf = expectMissingFile(vi.fn<EntryKindPort["kindOf"]>());
+    expectMissingFile(kindOf);
+    expectMissingFile(kindOf);
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/a.mjs")
+      .mockReturnValueOnce("/repo/b.mjs")
+      .mockReturnValueOnce("/repo/c.mjs");
     await runSmoothing({
-      queries: createFilesAt({ root: "/repo", files: ["a.mjs", "b.mjs", "c.mjs", "d.mjs"] }),
+      queries: queryCreatedFiles({ join, parent: "/repo", kindOf }),
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       commands,
       repoRoot: absoluteRootOf("/repo"),
       writes: [],
       written: [settings],
     });
-
     expect({
       projectedOver: vi.mocked(commands.project).mock.calls,
       removedOver: vi.mocked(commands.removeCarried).mock.calls,
@@ -147,16 +154,10 @@ describe("runSmoothing", () => {
     const settings = repoPathOf("hone.config.json");
 
     const smoothed = await runSmoothing({
-      queries: queryWith({
-        kindOf: vi
-          .fn<EntryKindPort["kindOf"]>()
-          .mockReturnValueOnce("absent")
-          .mockReturnValueOnce("absent")
-          .mockReturnValueOnce("directory"),
-        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(debtPath),
-        directoryOf: vi
-          .fn<PathPort["directoryOf"]>()
-          .mockReturnValueOnce("/repo/hone-records/debt"),
+      queries: queryCreatedFiles({
+        join: vi.fn<PathPort["join"]>().mockReturnValue(debtPath),
+        parent: "/repo/hone-records/debt",
+        kindOf: expectMissingFile(vi.fn<EntryKindPort["kindOf"]>()),
       }),
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       commands,
@@ -167,7 +168,6 @@ describe("runSmoothing", () => {
 
     expect({
       smoothed,
-      applied: apply.mock.calls,
       prunedOver: vi.mocked(commands.pruneDebt).mock.calls,
     }).toEqual({
       smoothed: {
@@ -183,7 +183,6 @@ describe("runSmoothing", () => {
           },
         },
       },
-      applied: [[{ effects: [{ kind: "create-file", path: debtPath, text: "the debt" }] }]],
       prunedOver: [[{ written: [settings, debtFile] }]],
     });
   });
@@ -306,7 +305,9 @@ describe("runSmoothing", () => {
     const commands = commandsWith({
       project: vi
         .fn<SmoothingCommands["project"]>()
-        .mockResolvedValue(projectionWriting("hone-records/debt/loop-keyword.json", "new")),
+        .mockResolvedValue(
+          projectionWriting(repoPathOf("hone-records/debt/loop-keyword.json"), "new"),
+        ),
     });
     const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([]);
 

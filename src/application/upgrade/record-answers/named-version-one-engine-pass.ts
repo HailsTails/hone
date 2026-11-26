@@ -17,10 +17,7 @@ import type {
 import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
 import { callNamedEngines } from "../../run/engines/named-engines-run.ts";
-import {
-  type NamedSettingsReading,
-  readNamedSettingsFile,
-} from "../../run/settings/read-settings.ts";
+import { type NamedSettingsReading, bindNamedSettings } from "../../run/settings/read-settings.ts";
 import {
   versionOneAnsweredFilesOf,
   versionOneNamesOf,
@@ -31,7 +28,7 @@ export type NamedVersionOnePassRequest = Omit<
   NamedEnginesRequest,
   "settings" | "checks" | "answered" | "engine"
 > &
-  Pick<Parameters<typeof readNamedSettingsFile>[0], "sources" | "readPiece"> & {
+  Pick<Parameters<typeof bindNamedSettings>[0], "sources" | "readPiece"> & {
     readonly selected: Parameters<typeof versionOneNamesOf>[0]["selected"];
     readonly selection: Parameters<typeof mappedSettings>[0]["selection"];
     readonly catalogues: readonly RuleSetCatalogue[];
@@ -50,7 +47,7 @@ const refused = (detail: string): Result<never, EnginePassFailure> => ({
 
 const settingsFor = (
   request: NamedVersionOnePassRequest,
-): Result<NamedSettingsReading, EnginePassFailure> => {
+): Result<Omit<NamedSettingsReading, "eslintProjectionKind">, EnginePassFailure> => {
   const mapped = mappedSettings({
     selection: request.selection,
     clauseChecks: createClauseChecks({ catalogues: request.catalogues }),
@@ -60,7 +57,7 @@ const settingsFor = (
       `version one selection could not be bound to checks: ${mapped.error.map(({ kind }) => kind).join(", ")}`,
     );
   }
-  const settings = readNamedSettingsFile({
+  const settings = bindNamedSettings({
     ...request,
     path: request.settingsPath,
     file: mapped.value.settings,

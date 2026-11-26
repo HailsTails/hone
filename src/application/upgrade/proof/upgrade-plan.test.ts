@@ -248,8 +248,8 @@ const PROJECTION_PLAN: PlannedProjection = {
   projections: [PLANNED_PROJECTION],
 };
 
-const projecting = (value: PlannedProjection) =>
-  vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value });
+const projecting = (planned: PlannedProjection) =>
+  vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: planned });
 
 const requestOver = (overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest => ({
   reading: READING,

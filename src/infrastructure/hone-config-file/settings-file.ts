@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-import type {
-  ProjectionKind,
-  SettingsFileFormat,
-  VersionTwoSettingsFile,
+import {
+  DEFAULT_PROJECTION_KIND,
+  type ProjectionKind,
+  type SettingsFileFormat,
+  type VersionTwoSettingsFile,
 } from "../../application/ports/settings/settings-file-format.ts";
 import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../domain/result.ts";
@@ -25,7 +26,6 @@ import {
   type SettingsFileFault,
 } from "../../domain/settings/settings-file.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
-import { DEFAULT_PROJECTION_KIND } from "../engines/eslint/runner/projection/projection-kinds.ts";
 import {
   brandedRepoPathSchema,
   repoPathSchema,

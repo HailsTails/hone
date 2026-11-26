@@ -20,7 +20,7 @@ import {
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
-import type { EngineSettings } from "./engines/named-engines-run.ts";
+import type { NamedEnginesRequest } from "./engines/named-engines-run.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {
   catalogueWithExternalChecks,
@@ -40,7 +40,7 @@ export type VersionTwoRun = {
 
 export type EngineStageRequest = {
   readonly catalogue: SymptomCatalogue;
-  readonly settings: EngineSettings;
+  readonly settings: NamedEnginesRequest["settings"];
   readonly records: Pick<RecordsReading, "records">;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];

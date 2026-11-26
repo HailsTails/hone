@@ -407,7 +407,10 @@ const commandWith = (request: {
   moduleUrl: request.moduleUrl,
 });
 
-const ranWith = async (request: {
+const ranWith = async ({
+  fileRemoval = { remove: vi.fn<FileRemovalPort["remove"]>() },
+  ...request
+}: {
   readonly arguments: readonly string[];
   readonly stagesOver: StagesOver;
   readonly moduleUrl: string;
@@ -418,7 +421,7 @@ const ranWith = async (request: {
   const { fileText } = request;
   await ranVersionTwoProject({
     ports: {
-      fileRemoval: request.fileRemoval ?? { remove: vi.fn<FileRemovalPort["remove"]>() },
+      fileRemoval,
       namedEngine: { load: vi.fn() },
       gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
       directory: {

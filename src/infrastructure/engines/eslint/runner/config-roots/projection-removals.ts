@@ -1,9 +1,12 @@
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import type { ProjectionKind } from "../../../../../application/ports/settings/settings-file-format.ts";
+import {
+  PROJECTION_KINDS,
+  type ProjectionKind,
+} from "../../../../../application/ports/settings/settings-file-format.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import { listChecksProjectionOutputs, PROJECTION_KINDS } from "../projection/projection-kinds.ts";
+import { listChecksProjectionOutputs } from "../projection/projection-kinds.ts";
 import { type ChecksSlices, joinSlicePath } from "./checks-slices.ts";
 
 export const findLeftOverProjectionFiles = (request: {
