@@ -194,21 +194,14 @@ describe("settingsFileOf", () => {
       },
     },
     {
+      name: "the explicit mjs projection kind",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "mjs" },
+      file: SMALLEST_FILE,
+    },
+    {
       name: "the ts projection kind",
       document: { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "ts" },
-      file: {
-        exclude: [],
-        ruleSets: [],
-        checks: [],
-        checkSettings: [],
-        forfeiture: "this-run",
-        reportOutput: "full",
-        checkEditions: "pinned",
-        eslintConfigLookup: { lookup: "detected" },
-        eslintConfigRoots: [],
-        eslintProjectionKind: "ts",
-        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
-      },
+      file: { ...SMALLEST_FILE, eslintProjectionKind: "ts" },
     },
     {
       name: "an ESLint config root",

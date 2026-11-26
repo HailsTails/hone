@@ -4,7 +4,6 @@ import type {
 } from "../../src/application/ports/file-system/directory-port.ts";
 import type { DirectoryTreePort } from "../../src/application/ports/file-system/directory-tree-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
-import { PROJECTION_KINDS } from "../../src/application/ports/settings/settings-file-format.ts";
 import { gatheredOutcomes } from "../../src/domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -21,7 +20,10 @@ const SOURCE_FILE = /\.(?:[cm]?[jt]s|tsx)$/;
 
 const UNREAD_PATH = /(?:^|\/)(?:\.[^/]*|node_modules)(?:\/|$)|^artefacts(?:\/|$)/;
 
-const PROJECTED_FILES: readonly string[] = PROJECTION_KINDS.flatMap(listChecksProjectionOutputs);
+const PROJECTED_FILES: readonly string[] = [
+  ...listChecksProjectionOutputs("mjs"),
+  ...listChecksProjectionOutputs("ts"),
+];
 
 const listFolderFiles = (
   request: SourceTree & { readonly folder: string },

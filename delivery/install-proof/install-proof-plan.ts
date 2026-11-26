@@ -585,16 +585,11 @@ const CURRENT: FloorPins = {
   "@typescript-eslint/eslint-plugin": "@typescript-eslint/eslint-plugin",
 };
 
-type ToolchainPins = { readonly peers: FloorPins; readonly configLoaders: readonly string[] };
-
-const TOOLCHAIN_PINS: Readonly<Record<ProofToolchain, ToolchainPins>> = {
-  "typescript-floor": { peers: TYPESCRIPT_FLOOR, configLoaders: [] },
-  current: { peers: CURRENT, configLoaders: [] },
-  "eslint-9": {
-    peers: { ...CURRENT, ...TYPESCRIPT_FLOOR, eslint: "eslint-9" },
-    configLoaders: [],
-  },
-  "typescript-config": { peers: CURRENT, configLoaders: ["jiti"] },
+const FLOOR_PINS: Readonly<Record<ProofToolchain, FloorPins>> = {
+  "typescript-floor": TYPESCRIPT_FLOOR,
+  current: CURRENT,
+  "eslint-9": { ...CURRENT, ...TYPESCRIPT_FLOOR, eslint: "eslint-9" },
+  "typescript-config": { ...CURRENT, jiti: "jiti" },
 };
 
 const manifestInvalid = (request: { readonly detail: string }): Result<never, ManifestFailure> => ({
@@ -608,6 +603,11 @@ const floorVersion = (request: {
   readonly pinName: string;
 }): Result<string, ManifestFailure> => {
   const pin = request.manifest.devDependencies[request.pinName];
+  if (request.peer === "jiti") {
+    return pin === undefined
+      ? manifestInvalid({ detail: "no development pin for the config loader jiti" })
+      : { outcome: "ok", value: pin };
+  }
   if (pin === undefined) {
     return manifestInvalid({
       detail: `no development pin ${request.pinName} for the peer ${request.peer}`,
@@ -629,9 +629,7 @@ const floorVersions = (request: {
   readonly manifest: ToolchainManifest;
   readonly toolchain: ProofToolchain;
 }): Result<FloorPins, ManifestFailure> =>
-  Object.entries(TOOLCHAIN_PINS[request.toolchain].peers).reduce<
-    Result<FloorPins, ManifestFailure>
-  >(
+  Object.entries(FLOOR_PINS[request.toolchain]).reduce<Result<FloorPins, ManifestFailure>>(
     (sofar, [peer, pinName]) => {
       if (sofar.outcome === "failed") {
         return sofar;
@@ -644,34 +642,6 @@ const floorVersions = (request: {
     { outcome: "ok", value: {} },
   );
 
-const readConfigLoaderVersions = (request: {
-  readonly manifest: ToolchainManifest;
-  readonly toolchain: ProofToolchain;
-  readonly peers: FloorPins;
-}): Result<FloorPins, ManifestFailure> =>
-  TOOLCHAIN_PINS[request.toolchain].configLoaders.reduce<Result<FloorPins, ManifestFailure>>(
-    (sofar, loader) => {
-      if (sofar.outcome === "failed") {
-        return sofar;
-      }
-      const pin = request.manifest.devDependencies[loader];
-      return pin === undefined
-        ? manifestInvalid({ detail: `no development pin for the config loader ${loader}` })
-        : { outcome: "ok", value: { ...sofar.value, [loader]: pin } };
-    },
-    { outcome: "ok", value: request.peers },
-  );
-
-const readToolchainVersions = (request: {
-  readonly manifest: ToolchainManifest;
-  readonly toolchain: ProofToolchain;
-}): Result<FloorPins, ManifestFailure> => {
-  const peers = floorVersions(request);
-  return peers.outcome === "failed"
-    ? peers
-    : readConfigLoaderVersions({ ...request, peers: peers.value });
-};
-
 export const toolchainPinsOf = (request: {
   readonly developmentManifest: string;
   readonly toolchain: ProofToolchain;
@@ -682,7 +652,7 @@ export const toolchainPinsOf = (request: {
   }
   const manifest = toolchainManifestSchema.safeParse(parsed.value);
   return manifest.success
-    ? readToolchainVersions({ manifest: manifest.data, toolchain: request.toolchain })
+    ? floorVersions({ manifest: manifest.data, toolchain: request.toolchain })
     : manifestInvalid({ detail: manifest.error.message });
 };
 

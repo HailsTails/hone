@@ -42,4 +42,22 @@ describe("findLeftOverProjectionFiles", () => {
       ],
     });
   });
+
+  it("selects the TypeScript file when projecting mjs", () => {
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
+    const join = vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.ts");
+
+    const files = findLeftOverProjectionFiles({
+      repoRoot: absoluteRootOf("/repo"),
+      projectionKind: "mjs",
+      fileText: { exists },
+      path: { join },
+      slices: { root: { directory: undefined, file: repoPathOf("hone.eslint.mjs") }, packages: [] },
+    });
+
+    expect({ files, joined: join.mock.calls }).toEqual({
+      files: ["hone.eslint.ts"],
+      joined: [[{ segments: ["/repo", "hone.eslint.ts"] }]],
+    });
+  });
 });

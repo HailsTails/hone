@@ -24,10 +24,9 @@ import type { ProjectionEntry } from "../../../domain/runner/checks-run-report.t
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
-import {
-  DEFAULT_PROJECTION_KIND,
-  type SettingsFileFormat,
-  type VersionTwoSettingsFile,
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
 } from "../../ports/settings/settings-file-format.ts";
 import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
@@ -100,7 +99,7 @@ const mapInputsToVersionTwo = (request: {
     ? {
         outcome: "ok",
         value: {
-          settings: { ...selection.value, eslintProjectionKind: DEFAULT_PROJECTION_KIND },
+          settings: { ...selection.value, eslintProjectionKind: "mjs" },
           records: records.value,
         },
       }

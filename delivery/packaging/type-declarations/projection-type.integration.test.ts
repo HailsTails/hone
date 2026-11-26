@@ -468,20 +468,20 @@ import hone from "./hone.eslint.js";
 export default defineConfig([...hone, { files: ["**/*.ts"], rules: {} }]);
 `;
 
-const TS_PACKAGE_CONFIG = `import { defineConfig } from "${CONFIG_API}";
-import root from "../../hone.eslint.js";
-import slice from "./hone.eslint.js";
-
-export default defineConfig([...root, ...slice, { files: ["**/*.ts"], rules: {} }]);
-`;
+const TS_ROOT_PROJECTION = checksProjectionText({
+  kind: "ts",
+  pluginImport: PLUGIN_SPECIFIER,
+  checks: CHECKS,
+  answered: [
+    { ruleSet: TOOL_RULE_SET, symptom: "S-1", check: "C-1", file: repoPathOf("src/old.ts") },
+  ],
+});
 
 describe.each(ESLINT_LINES)(
   "a typed ESLint config importing a ts kind projection as ./hone.eslint.js, compiled in memory against the consumer's own node_modules/eslint on $folder, under strict with skipLibCheck off",
-  ({ folder, version }) => {
+  ({ folder }) => {
     describe.each(RESOLUTIONS)("under %s resolution", (resolution) => {
-      it("compiles a .ts config for the root projection", async () => {
-        const boundary = await eslintBoundaryFor({ version });
-        assert(boundary.outcome === "ok", "the ESLint line has a boundary");
+      it("compiles eslint.config.ts", async () => {
         const plugin = await EMITTED_PLUGIN;
         assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
 
@@ -493,70 +493,8 @@ describe.each(ESLINT_LINES)(
           form: "typescript",
           texts: [
             { path: "package.json", text: CONSUMER_PACKAGE },
+            { path: "hone.eslint.ts", text: TS_ROOT_PROJECTION },
             { path: "eslint.config.ts", text: TS_ROOT_CONFIG },
-            {
-              path: "hone.eslint.ts",
-              text: checksProjectionText({
-                kind: "ts",
-                pluginImport: PLUGIN_SPECIFIER,
-                checks: CHECKS,
-                answered: [
-                  {
-                    ruleSet: TOOL_RULE_SET,
-                    symptom: "S-1",
-                    check: "C-1",
-                    file: repoPathOf("src/old.ts"),
-                  },
-                ],
-              }),
-            },
-          ],
-          packages: [
-            { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
-            {
-              kind: "written",
-              name: "@hailstails/hone",
-              texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
-            },
-          ],
-        });
-
-        expect(diagnostics).toEqual({ outcome: "ok", value: [] });
-      });
-
-      it("compiles a .ts config for a package slice over the root projection", async () => {
-        const boundary = await eslintBoundaryFor({ version });
-        assert(boundary.outcome === "ok", "the ESLint line has a boundary");
-        const plugin = await EMITTED_PLUGIN;
-        assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
-
-        const diagnostics = await createDefaultConsumerTypesPort({
-          installRoot: INSTALL_ROOT,
-        }).read({
-          entry: "packages/a/eslint.config.ts",
-          resolution,
-          form: "typescript",
-          texts: [
-            { path: "package.json", text: CONSUMER_PACKAGE },
-            { path: "packages/a/eslint.config.ts", text: TS_PACKAGE_CONFIG },
-            {
-              path: "hone.eslint.ts",
-              text: checksProjectionText({
-                kind: "ts",
-                pluginImport: PLUGIN_SPECIFIER,
-                checks: CHECKS,
-                answered: [],
-              }),
-            },
-            {
-              path: "packages/a/hone.eslint.ts",
-              text: checksProjectionText({
-                kind: "ts",
-                pluginImport: PLUGIN_SPECIFIER,
-                checks: CHECKS,
-                answered: [],
-              }),
-            },
           ],
           packages: [
             { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
@@ -576,8 +514,6 @@ describe.each(ESLINT_LINES)(
 
 describe("a ts kind projection imported as ./hone.eslint.js on the TypeScript floor", () => {
   it("compiles a .ts config for the root projection under nodenext resolution with TypeScript 4.8.4", async () => {
-    const boundary = await eslintBoundaryFor({ version: "10.15.0" });
-    assert(boundary.outcome === "ok", "the ESLint line has a boundary");
     const plugin = await EMITTED_PLUGIN;
     assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
     const floor = typeScriptPeersNamed({
@@ -598,15 +534,7 @@ describe("a ts kind projection imported as ./hone.eslint.js on the TypeScript fl
           path: "eslint.config.ts",
           text: 'import hone from "./hone.eslint.js";\n\nexport default [...hone];\n',
         },
-        {
-          path: "hone.eslint.ts",
-          text: checksProjectionText({
-            kind: "ts",
-            pluginImport: PLUGIN_SPECIFIER,
-            checks: CHECKS,
-            answered: [],
-          }),
-        },
+        { path: "hone.eslint.ts", text: TS_ROOT_PROJECTION },
       ],
       packages: [
         {

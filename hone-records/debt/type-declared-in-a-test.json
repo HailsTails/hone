@@ -99,10 +99,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/checks-queried-files.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/package-script-scanner.test.ts"
     },
     {
@@ -111,19 +107,11 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

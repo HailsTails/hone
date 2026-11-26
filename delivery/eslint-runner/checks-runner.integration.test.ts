@@ -14,6 +14,7 @@ import type { AnsweredFile } from "../../src/domain/runner/checks-run-report.ts"
 import type { EslintConfigLookup } from "../../src/domain/settings/eslint-config-lookup.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
@@ -458,16 +459,20 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
       }),
       fileText.write({
         path: `${repo}/hone.eslint.ts`,
-        text: `import hone from "./plugin.mjs";
-const projection: {
-  name: string;
-  files: string[];
-  ignores?: string[];
-  plugins?: Record<string, object>;
-  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
-}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];
-export default projection;
-`,
+        text: checksProjectionText({
+          kind: "ts",
+          pluginImport: "./plugin.mjs",
+          checks: [
+            {
+              ruleSet: TOOL_RULE_SET,
+              symptom: "authored-class-or-this",
+              check: "class-keyword",
+              ruleId: "hone/authored-class-or-this#class-keyword",
+              options: [],
+            },
+          ],
+          answered: [],
+        }),
       }),
       fileText.write({ path: `${repo}/kept.ts`, text: ONE_CLASS }),
     ];

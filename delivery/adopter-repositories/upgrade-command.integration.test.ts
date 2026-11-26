@@ -131,9 +131,6 @@ const PACKAGE_PROJECTION =
 const UPGRADED_ROOT =
   "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
 
-const UPGRADED_DRIFTED_ROOT =
-  "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved hone.eslint.ts\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: records written 1, carried records removed 0, debt recorded 0, debt pruned 0; version 2's check passes\n";
-
 const CHECKED_ROOT =
   "answered (1)\nauthored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nverdict: pass (partial assessment)\n";
 
@@ -370,7 +367,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
     ]);
   });
 
-  it("upgrades a version 1 repository with projection drift, removing the obsolete TypeScript output", async () => {
+  it("upgrades a version 1 repository whose projection has drifted, and leaves a repository that passes the check", async () => {
     const repo = DRIFTED;
     const engines = INSTALLED_PORTS;
     const made = [
@@ -380,7 +377,6 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       fileText.write({ path: `${repo}/discipline-exceptions.json`, text: SRC_CARVE_OUT }),
       fileText.write({ path: `${repo}/eslint.config.mjs`, text: TEAM_CONFIG }),
       fileText.write({ path: `${repo}/disciplines.eslint.mjs`, text: ROOT_PROJECTION }),
-      fileText.write({ path: `${repo}/hone.eslint.ts`, text: "export default [];" }),
       fileText.write({ path: `${repo}/src/kept.ts`, text: KEPT_CLASS }),
       commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
       commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
@@ -395,18 +391,11 @@ describe("hone upgrade over a real repository, through the real ports", () => {
       engines,
     });
 
-    expect([
-      made,
-      upgraded,
-      added,
-      checked,
-      fileText.exists({ path: `${repo}/hone.eslint.ts` }),
-    ]).toEqual([
-      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED],
-      { writes: [[{ text: UPGRADED_DRIFTED_ROOT }]], exits: [[{ code: 0 }]] },
+    expect([made, upgraded, added, checked]).toEqual([
+      [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED, SUCCEEDED],
+      { writes: [[{ text: UPGRADED_ROOT }]], exits: [[{ code: 0 }]] },
       SUCCEEDED,
       { writes: [[{ text: CHECKED_ROOT }]], exits: [[{ code: 0 }]] },
-      "absent",
     ]);
   });
 

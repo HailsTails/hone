@@ -1,10 +1,9 @@
 import { z } from "zod";
 
-import {
-  DEFAULT_PROJECTION_KIND,
-  type ProjectionKind,
-  type SettingsFileFormat,
-  type VersionTwoSettingsFile,
+import type {
+  ProjectionKind,
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
 } from "../../application/ports/settings/settings-file-format.ts";
 import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../domain/result.ts";
@@ -36,7 +35,6 @@ import { checkEditionsSchema } from "./check-editions.ts";
 import { type ConventionsWire, conventionsOf, conventionsWireOf } from "./conventions.ts";
 import { ruleSetNameSchema } from "./identifiers.ts";
 import { listedAddressSchema } from "./listed-address.ts";
-import { projectionKindSchema } from "./projection-kind.ts";
 import { versionTwoReportOutputSchema } from "./report-output.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
@@ -46,6 +44,8 @@ const LEADING_CURRENT_DIRECTORY = "./";
 const ENGINE_NAME_TEXT = /^[a-z][a-z0-9-]*$/;
 
 const SETTINGS_FILE_VERSION = 2;
+
+const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
 const REPOSITORY_ROOT_TEXT = ".";
 
@@ -133,7 +133,7 @@ const settingsFileWireSchema = z.strictObject({
   eslintConfigRoots: folderListSchema({
     refusal: "an eslintConfigRoots entry is a repository folder, not a glob",
   }),
-  eslintProjectionKind: projectionKindSchema.default(DEFAULT_PROJECTION_KIND),
+  eslintProjectionKind: z.enum(["mjs", "ts"]).default(DEFAULT_PROJECTION_KIND),
   generated: z.unknown().optional(),
   layers: z.unknown().optional(),
   testFiles: z.unknown().optional(),

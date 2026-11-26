@@ -1373,42 +1373,6 @@ const projectingRunner = (fileText: FileTextPort = createDefaultFileTextPort({})
   return { runnerOver, repositoryAt };
 };
 
-describe("checksRunnerOver, giving the ts projection kind as project", () => {
-  it("gives hone.eslint.ts typed by the boundary, and no declaration", async () => {
-    const { runnerOver } = projectingRunner();
-
-    const outcome = await runnerOver.project({
-      ...SELECTING_THE_CLASS_CHECK,
-      projectionKind: "ts",
-    });
-
-    expect(outcome).toEqual({
-      outcome: "ok",
-      value: [
-        {
-          kind: "write",
-          file: "hone.eslint.ts",
-          text: 'import hone from "../../src/eslint-plugin.ts";\nconst projection: {\n  name: string;\n  files: string[];\n  ignores?: string[];\n  plugins?: Record<string, object>;\n  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;\n}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } }];\nexport default projection;\n',
-        },
-      ],
-    });
-  });
-
-  it("gives one hone.eslint.ts for each package slice beside the root's, and no declarations", async () => {
-    const { runnerOver } = projectingRunner();
-
-    const outcome = await runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, projectionKind: "ts" });
-
-    expect(outcome).toEqual({
-      outcome: "ok",
-      value: [
-        { kind: "write", file: "hone.eslint.ts", text: expect.any(String) },
-        { kind: "write", file: "packages/web/hone.eslint.ts", text: expect.any(String) },
-      ],
-    });
-  });
-});
-
 const fileTextWithPresence = (paths: ReadonlyMap<string, "present" | "absent">): FileTextPort => {
   const fileText = createDefaultFileTextPort({});
   const exists: FileTextPort["exists"] = (entry) => {

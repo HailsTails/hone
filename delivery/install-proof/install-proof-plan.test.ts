@@ -187,12 +187,12 @@ describe("toolchainPinsOf, over this package's own package.json read as a build-
   });
 
   it("pins every peer and the jiti config loader at the development versions for a TypeScript config consumer", () => {
-    expect(
-      toolchainPinsOf({
-        developmentManifest: packageFiles["../../package.json"],
-        toolchain: "typescript-config",
-      }),
-    ).toEqual({
+    const pins = toolchainPinsOf({
+      developmentManifest: packageFiles["../../package.json"],
+      toolchain: "typescript-config",
+    });
+
+    expect(pins).toEqual({
       outcome: "ok",
       value: {
         typescript: "6.0.3",
@@ -205,13 +205,13 @@ describe("toolchainPinsOf, over this package's own package.json read as a build-
   });
 
   it("fails naming a config loader with no development pin", () => {
-    expect(
-      toolchainPinsOf({
-        developmentManifest:
-          '{ "peerDependencies": { "typescript": ">=4.8.4 <7.0.0", "eslint": "^10.15.0", "@typescript-eslint/parser": "^8.73.0", "@typescript-eslint/eslint-plugin": "^8.73.0" }, "devDependencies": { "typescript": "6.0.3", "eslint": "10.15.0", "@typescript-eslint/parser": "8.73.0", "@typescript-eslint/eslint-plugin": "8.73.0" } }',
-        toolchain: "typescript-config",
-      }),
-    ).toEqual({
+    const pins = toolchainPinsOf({
+      developmentManifest:
+        '{ "peerDependencies": { "typescript": ">=4.8.4 <7.0.0", "eslint": "^10.15.0", "@typescript-eslint/parser": "^8.73.0", "@typescript-eslint/eslint-plugin": "^8.73.0" }, "devDependencies": { "typescript": "6.0.3", "eslint": "10.15.0", "@typescript-eslint/parser": "8.73.0", "@typescript-eslint/eslint-plugin": "8.73.0" } }',
+      toolchain: "typescript-config",
+    });
+
+    expect(pins).toEqual({
       outcome: "failed",
       error: {
         kind: "manifest-invalid",
