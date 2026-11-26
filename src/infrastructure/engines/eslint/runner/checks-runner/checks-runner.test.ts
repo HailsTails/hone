@@ -882,7 +882,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     expect(query.ignoredState).toHaveBeenCalledTimes(4);
   });
 
-  it("names a declaration it compares out of date when it was altered, linting the files it is given", async () => {
+  it("names a declaration it compares out of date when it was altered, and lints it when it is given as an input", async () => {
     const governance = lintingNothing();
     const currents = new Map(
       slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PACKAGE_PROJECTION_PRESENT }),
@@ -891,7 +891,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
 
     const outcome = await projecting.run({
       ...WITH_A_PACKAGE_CONFIG,
-      files: [repoPathOf("kept.ts")],
+      files: [CHECKS_DECLARATION_PATH],
     });
 
     expect({ outcome, linted: vi.mocked(governance.lintFiles).mock.calls }).toEqual({
@@ -908,7 +908,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           slices: [{ slice: CHECKS_DECLARATION_PATH, state: "out-of-date" }],
         },
       },
-      linted: [[{ files: [repoPathOf("kept.ts")] }]],
+      linted: [[{ files: [CHECKS_DECLARATION_PATH] }]],
     });
   });
 
