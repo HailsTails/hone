@@ -454,7 +454,69 @@ describe("mapEngineStageToEnginesRequest", () => {
 });
 
 describe("versionTwoStagesOver", () => {
-  it("runs each selected engine over the stage's request", async () => {
+  it("runs the engine over the stage's checks", async () => {
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "tool-failed", detail: "stopped" },
+      },
+    });
+    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+      outcome: "ok",
+      value: {
+        fileScope: "tracked",
+        projectedKinds: [],
+        run: vi.fn(),
+        conform: vi.fn(),
+        project: vi.fn(),
+      },
+    });
+    const stages = versionTwoStagesOver({
+      ports: { ...ports, namedEngine: { load, run, project: vi.fn() } },
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
+    });
+
+    await stages.engines({
+      catalogue: REPORT_CATALOGUE,
+      settings: {
+        selection: {
+          selected: [
+            {
+              binding: {
+                engine: "walker",
+                address: "date-used-directly#clock-sources",
+                ruleSet: TOOL_RULE_SET,
+                anchor: { kind: "file" },
+                pieceRoot: "/install/pieces",
+                checkSettings: {},
+                edition: editionOf("1"),
+                settings: {},
+              },
+            },
+          ],
+        },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: DEFAULT_CONVENTIONS,
+      },
+      records: { records: [] },
+      tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
+    });
+
+    expect(run.mock.calls).toMatchObject([
+      [{ mechanism: "walker", request: { checks: [{ name: "clock-sources" }] } }],
+    ]);
+  });
+
+  it("runs the engine over the stage's files", async () => {
     const ports = portsOver({ git: GIT_LISTING_NOTHING });
     const run = vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
       outcome: "failed",
@@ -511,16 +573,11 @@ describe("versionTwoStagesOver", () => {
       },
       records: { records: [] },
       tree: { tracked: [repoPathOf("src/clock.ts")], declaredConfigRoots: [] },
-      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
+      checks: [],
     });
 
     expect(run.mock.calls).toMatchObject([
-      [
-        {
-          mechanism: "walker",
-          request: { checks: [{ name: "clock-sources" }], files: [repoPathOf("src/clock.ts")] },
-        },
-      ],
+      [{ mechanism: "walker", request: { files: [repoPathOf("src/clock.ts")] } }],
     ]);
   });
 
