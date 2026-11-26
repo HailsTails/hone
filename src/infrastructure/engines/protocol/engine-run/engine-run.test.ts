@@ -1,9 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
-import type {
-  NamedEngineRunRequest,
-  ParsedNamedRunner,
-} from "../../../../application/ports/engine/engine-run.ts";
+import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   RunnerLocation,
   RunnerModuleOf,
@@ -15,10 +12,12 @@ import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import {
-  loadedNamedRunnerOver,
+  createNamedEnginePort,
+  createRunnerLoader,
+  type ParsedNamedRunner,
   measureVersionOneProjectionOver,
-  namedEngineProjectionOf,
-  namedEngineRunOf,
+  projectNamedEngine,
+  runNamedEngine,
 } from "./engine-run.ts";
 
 const REPO = absoluteRootOf("/repo");
@@ -43,12 +42,12 @@ const LOCATION: RunnerLocation = {
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
 };
 
-describe("loadedNamedRunnerOver", () => {
+describe("createRunnerLoader", () => {
   it("loads a named runner through the runner module it is given, at the selected engine’s location", async () => {
     const runnerModuleOf = vi
       .fn<RunnerModuleOf>()
       .mockResolvedValue({ outcome: "ok", value: { namedChecksRunner: namedRunner() } });
-    const loadedNamedRunnerOf = loadedNamedRunnerOver({ runnerModuleOf });
+    const loadedNamedRunnerOf = createRunnerLoader({ runnerModuleOf });
     await expect(loadedNamedRunnerOf(LOCATION)).resolves.toMatchObject({
       outcome: "ok",
       value: { fileScope: "tracked", projectedKinds: [] },
@@ -68,7 +67,7 @@ describe("loadedNamedRunnerOver", () => {
     const runnerModuleOf = vi
       .fn<RunnerModuleOf>()
       .mockResolvedValue({ outcome: "ok", value: exported });
-    const loadedNamedRunnerOf = loadedNamedRunnerOver({ runnerModuleOf });
+    const loadedNamedRunnerOf = createRunnerLoader({ runnerModuleOf });
     await expect(loadedNamedRunnerOf(LOCATION)).resolves.toMatchObject({
       outcome: "failed",
       error: {
@@ -84,7 +83,7 @@ describe("loadedNamedRunnerOver", () => {
       outcome: "failed",
       error: { kind: "module-unloadable", path: "/install/runner.ts", detail: "install missing" },
     });
-    const loadedNamedRunnerOf = loadedNamedRunnerOver({ runnerModuleOf });
+    const loadedNamedRunnerOf = createRunnerLoader({ runnerModuleOf });
     await expect(loadedNamedRunnerOf(LOCATION)).resolves.toEqual({
       outcome: "failed",
       error: { kind: "runner-invalid", mechanism: "walker", detail: "install missing" },
@@ -92,7 +91,7 @@ describe("loadedNamedRunnerOver", () => {
   });
 });
 
-describe("namedEngineRunOf", () => {
+describe("runNamedEngine", () => {
   const BINDING: CheckBinding = {
     address: "leftover-debugging#debug-call",
     ruleSet: "hone",
@@ -143,12 +142,19 @@ describe("namedEngineRunOf", () => {
       project: vi.fn(),
     };
 
-    await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
-    ).resolves.toEqual({
+    const runnerModuleOf = vi
+      .fn<RunnerModuleOf>()
+      .mockResolvedValue({ outcome: "ok", value: { namedChecksRunner: runner } });
+    const engine = await createNamedEnginePort({ runnerModuleOf }).load(LOCATION);
+    assert(engine.outcome === "ok");
+
+    const measuredRun = await engine.value.run(REQUEST);
+
+    expect(measuredRun).toEqual({
       outcome: "ok",
       value: { ...report, mechanism: "walker", coverableKinds: [] },
     });
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
 
@@ -173,7 +179,7 @@ describe("namedEngineRunOf", () => {
       project: vi.fn(),
     };
     await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "walker", runner, request: REQUEST }),
     ).resolves.toMatchObject({
       outcome: "failed",
       error: {
@@ -206,7 +212,7 @@ describe("namedEngineRunOf", () => {
     };
 
     await expect(
-      namedEngineRunOf({ mechanism: "eslint", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "eslint", runner, request: REQUEST }),
     ).resolves.toEqual({
       outcome: "failed",
       error: {
@@ -251,14 +257,15 @@ describe("namedEngineRunOf", () => {
       project: vi.fn(),
     };
     const measureVersionOneProjection = measureVersionOneProjectionOver({
-      runnerModuleOf: vi
-        .fn<RunnerModuleOf>()
-        .mockResolvedValue({ outcome: "ok", value: { measureVersionOne: upgradeExport } }),
+      runnerModuleOf: vi.fn<RunnerModuleOf>().mockResolvedValue({
+        outcome: "ok",
+        value: { namedChecksRunner: runner, measureVersionOne: upgradeExport },
+      }),
     });
 
     await expect(
       measureVersionOneProjection({
-        call: { mechanism: "walker", runner, request: REQUEST },
+        request: REQUEST,
         location: LOCATION,
         projection,
       }),
@@ -312,12 +319,14 @@ describe("namedEngineRunOf", () => {
       project: vi.fn(),
     };
     const measureVersionOneProjection = measureVersionOneProjectionOver({
-      runnerModuleOf: vi.fn<RunnerModuleOf>().mockResolvedValue({ outcome: "ok", value: {} }),
+      runnerModuleOf: vi
+        .fn<RunnerModuleOf>()
+        .mockResolvedValue({ outcome: "ok", value: { namedChecksRunner: runner } }),
     });
 
     await expect(
       measureVersionOneProjection({
-        call: { mechanism: "walker", runner, request: REQUEST },
+        request: REQUEST,
         location: LOCATION,
         projection,
       }),
@@ -351,7 +360,7 @@ describe("namedEngineRunOf", () => {
     };
 
     await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "walker", runner, request: REQUEST }),
     ).resolves.toEqual({
       outcome: "failed",
       error: {
@@ -391,7 +400,7 @@ describe("namedEngineRunOf", () => {
       }),
     };
     await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "walker", runner, request: REQUEST }),
     ).resolves.toMatchObject({
       outcome: "failed",
       error: {
@@ -412,7 +421,7 @@ describe("namedEngineRunOf", () => {
     };
     const runner = { ...namedRunner(), run: vi.fn().mockResolvedValue(notReady) };
     await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "walker", runner, request: REQUEST }),
     ).resolves.toMatchObject({
       outcome: "failed",
       error: {
@@ -429,7 +438,7 @@ describe("namedEngineRunOf", () => {
       run: vi.fn().mockRejectedValue(new Error("engine crashed")),
     };
     await expect(
-      namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
+      runNamedEngine({ mechanism: "walker", runner, request: REQUEST }),
     ).resolves.toMatchObject({
       outcome: "failed",
       error: {
@@ -447,16 +456,23 @@ describe("namedEngineRunOf", () => {
     const response = { outcome: "ok", value: [{ file: CONFIG, text: "export default [];\n" }] };
     const project = vi.fn().mockResolvedValue(response);
     const runner = { ...namedRunner(), project };
-    await expect(
-      namedEngineProjectionOf({ mechanism: "walker", runner, request: REQUEST }),
-    ).resolves.toEqual(response);
+    const runnerModuleOf = vi
+      .fn<RunnerModuleOf>()
+      .mockResolvedValue({ outcome: "ok", value: { namedChecksRunner: runner } });
+    const engine = await createNamedEnginePort({ runnerModuleOf }).load(LOCATION);
+    assert(engine.outcome === "ok");
+
+    const projectedFiles = await engine.value.project(REQUEST);
+
+    expect(projectedFiles).toEqual(response);
+    expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
 
   it("refuses a projection result that contains no file path", async () => {
     const project = vi.fn().mockResolvedValue({ outcome: "ok", value: [{ text: "no file" }] });
     await expect(
-      namedEngineProjectionOf({
+      projectNamedEngine({
         mechanism: "walker",
         runner: { ...namedRunner(), project },
         request: REQUEST,

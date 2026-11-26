@@ -17,7 +17,7 @@ import type {
 } from "../../ports/upgrade/version-one-measurement.ts";
 import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
-import { namedEngineCallsOf } from "../../run/engines/named-engines-run.ts";
+import { callNamedEngines } from "../../run/engines/named-engines-run.ts";
 import {
   type NamedSettingsReading,
   readNamedSettingsFile,
@@ -30,7 +30,7 @@ import {
 
 export type NamedVersionOnePassRequest = Omit<
   NamedEnginesRequest,
-  "settings" | "checks" | "answered"
+  "settings" | "checks" | "answered" | "engine"
 > &
   Pick<Parameters<typeof readNamedSettingsFile>[0], "sources" | "readPiece"> & {
     readonly selected: Parameters<typeof versionOneNamesOf>[0]["selected"];
@@ -105,19 +105,17 @@ const findingsFor = async (
   if (checks.outcome === "failed") {
     return refused(request.loadFailureDetail({ failure: checks.error }));
   }
-  const ran = await namedEngineCallsOf({
+  const ran = await callNamedEngines({
     ...request,
     checks: checks.value,
     settings: settings.value,
     answered: versionOneAnsweredFilesOf({ names: names.value, records: request.records }),
-    call: (call) => {
-      const { installRoot, moduleExtension, modules, path } = request;
-      return request.measureVersionOne({
-        call,
+    call: (location, engineRequest) =>
+      request.measureVersionOne({
+        request: engineRequest,
         projection: checkedProjection.value,
-        location: { installRoot, moduleExtension, modules, path, mechanism: call.mechanism },
-      });
-    },
+        location,
+      }),
   });
   if (ran.outcome === "failed") {
     return refused(request.loadFailureDetail({ failure: ran.error }));

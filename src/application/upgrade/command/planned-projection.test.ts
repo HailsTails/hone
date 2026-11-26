@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
@@ -91,7 +91,7 @@ describe("plannedProjectionOf", () => {
       },
       settingsSourcesOf: vi.fn(),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      namedEngine: { load: vi.fn() },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
@@ -110,8 +110,8 @@ describe("plannedProjectionOf", () => {
     expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
   });
 
-  it("fails naming the symptom a check names and no catalogue holds, and projects nothing", async () => {
-    const project = vi.fn();
+  it("fails naming the symptom a check names and no catalogue holds, and loads no engine", async () => {
+    const load = vi.fn();
     const plan = plannedProjectionOf({
       command: EMPTY_REPOSITORY_COMMAND,
       repoRoot: absoluteRootOf("/repo"),
@@ -156,23 +156,16 @@ describe("plannedProjectionOf", () => {
         catalogue: vi.fn(),
       }),
       checkPieceSourceOf: vi.fn(),
-      namedEngine: { load: vi.fn(), run: vi.fn(), project },
+      namedEngine: { load },
     });
 
     const projected = await plan({ settings: SETTINGS, documents: [] });
 
-    expect({ projected, project: project.mock.calls }).toEqual({
-      projected: {
-        outcome: "failed",
-        error: {
-          kind: "projection-failed",
-          failure: {
-            kind: "symptom-unheld",
-            symptom: { ruleSet: "hone", name: "loop-keyword" },
-          },
-        },
-      },
-      project: [],
+    assert(projected.outcome === "failed");
+    expect(projected.error.failure).toEqual({
+      kind: "symptom-unheld",
+      symptom: { ruleSet: "hone", name: "loop-keyword" },
     });
+    expect(load).not.toHaveBeenCalled();
   });
 });

@@ -25,7 +25,7 @@ import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.
 import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import { checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
-import { namedEngineProjectionsOf } from "../../run/engines/named-engines-run.ts";
+import { projectNamedEngines } from "../../run/engines/named-engines-run.ts";
 import {
   catalogueWithExternalChecks,
   type NamedSettingsReading,
@@ -173,7 +173,7 @@ export const plannedProjectionOf =
     if (tree.outcome === "failed") {
       return tree;
     }
-    const projected = await namedEngineProjectionsOf({
+    const projected = await projectNamedEngines({
       checks: checks.value,
       settings: planned.value,
       answered: answeredFilesOf({ records: records.value.records }),

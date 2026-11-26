@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ParsedNamedRunner } from "../../../application/ports/engine/engine-run.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { namedCheckConformance } from "./conformance.ts";
+import type { ParsedNamedRunner } from "./engine-run/engine-run.ts";
 
 const CLASS_BINDING: CheckBinding = {
   address: "authored-class-or-this#class-keyword",

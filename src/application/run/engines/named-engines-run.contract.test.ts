@@ -13,22 +13,20 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadedEngine, NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type {
   EngineCheck,
   NamedEngineRun,
   NamedEngineRunRequest,
-  ParsedNamedRunner,
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerInvalid } from "../../ports/engine/runner-location.ts";
-import type { RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { NamedSettingsReading } from "../settings/read-settings.ts";
 import {
   type NamedEnginesRequest,
-  namedEngineProjectionsOf,
-  namedEngineRunsOf,
+  projectNamedEngines,
+  runNamedEngines,
 } from "./named-engines-run.ts";
 
 const REPO = absoluteRootOf("/repo");
@@ -123,18 +121,6 @@ const UNUSED_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>() };
 
 const MODULES: ModuleLoaderPort = { load: vi.fn<ModuleLoaderPort["load"]>() };
 
-const UNCALLED_RUNNER: RunnerCall = vi.fn<RunnerCall>();
-
-const AUDIT_LOADED: ParsedNamedRunner = {
-  fileScope: "tracked",
-  projectedKinds: [],
-  run: UNCALLED_RUNNER,
-  conform: UNCALLED_RUNNER,
-  project: UNCALLED_RUNNER,
-};
-
-const ESLINT_LOADED: ParsedNamedRunner = { ...AUDIT_LOADED, fileScope: "typescript" };
-
 const AUDIT_RUN: NamedEngineRun = {
   mechanism: AUDIT,
   hits: [],
@@ -152,17 +138,14 @@ const ESLINT_RUN: NamedEngineRun = { ...AUDIT_RUN, mechanism: ESLINT };
 
 const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
-  const runChecks = vi.fn<NamedEnginePort["run"]>();
-  const projectChecks = vi.fn<NamedEnginePort["project"]>();
+  const runChecks = vi.fn<LoadedEngine["run"]>();
+  const projectChecks = vi.fn<LoadedEngine["project"]>();
   return {
     load,
     runChecks,
     projectChecks,
-    port: {
-      load,
-      run: runChecks,
-      project: projectChecks,
-    },
+    port: { load },
+    loaded: { run: runChecks, project: projectChecks },
   };
 };
 
@@ -198,21 +181,21 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
-const RUNNER_INVALID: Result<ParsedNamedRunner, RunnerInvalid> = {
+const RUNNER_INVALID: Result<LoadedEngine, RunnerInvalid> = {
   outcome: "failed",
   error: { kind: "runner-invalid", mechanism: ESLINT, detail: "Cannot find module" },
 };
 
-describe("namedEngineRunsOf", () => {
+describe("runNamedEngines", () => {
   it("runs each mechanism the selection binds once, loading its engine from the install", async () => {
     const engine = engineFake();
     engine.load
-      .mockResolvedValueOnce({ outcome: "ok", value: AUDIT_LOADED })
-      .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+      .mockResolvedValueOnce({ outcome: "ok", value: engine.loaded })
+      .mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks
       .mockResolvedValueOnce({ outcome: "ok", value: AUDIT_RUN })
       .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    const run = await namedEngineRunsOf(
+    const run = await runNamedEngines(
       enginesRequestOf({
         selected: [
           selectedOn({ mechanism: AUDIT }),
@@ -250,25 +233,23 @@ describe("namedEngineRunsOf", () => {
 
   it("asks the engine to run its checks with the TypeScript files, the tracked paths, the catalogue's checks, the bindings and the files records answer", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineRunsOf(
+    await runNamedEngines(
       enginesRequestOf({
         selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
         engine: engine.port,
       }),
     );
-    expect(engine.runChecks.mock.calls).toEqual([
-      [{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }],
-    ]);
+    expect(engine.runChecks.mock.calls).toEqual([[ESLINT_RUN_REQUEST]]);
   });
 
   it("passes the ESLint config lookup the settings declare, and none when the settings leave it to be detected", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineRunsOf(
+    await runNamedEngines(
       enginesRequestOf({
         selected: [selectedOn({ mechanism: ESLINT })],
         lookup: { lookup: "declared", value: "repository-root" },
@@ -276,13 +257,7 @@ describe("namedEngineRunsOf", () => {
       }),
     );
     expect(engine.runChecks.mock.calls).toEqual([
-      [
-        {
-          mechanism: ESLINT,
-          runner: ESLINT_LOADED,
-          request: { ...ESLINT_RUN_REQUEST, declaredConfigLookup: "repository-root" },
-        },
-      ],
+      [{ ...ESLINT_RUN_REQUEST, declaredConfigLookup: "repository-root" }],
     ]);
   });
 
@@ -290,7 +265,7 @@ describe("namedEngineRunsOf", () => {
     const engine = engineFake();
     engine.load.mockResolvedValueOnce(RUNNER_INVALID);
     expect(
-      await namedEngineRunsOf(
+      await runNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
@@ -309,7 +284,7 @@ describe("namedEngineRunsOf", () => {
 
   it("fails as an engine that failed, naming the engine, when its runner fails", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({
       outcome: "failed",
       error: {
@@ -319,7 +294,7 @@ describe("namedEngineRunsOf", () => {
       },
     });
     expect(
-      await namedEngineRunsOf(
+      await runNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
@@ -339,7 +314,7 @@ describe("namedEngineRunsOf", () => {
   it("runs nothing when the selection binds no mechanism", async () => {
     const engine = engineFake();
     expect({
-      run: await namedEngineRunsOf(
+      run: await runNamedEngines(
         enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
@@ -349,13 +324,13 @@ describe("namedEngineRunsOf", () => {
 
 const WRITTEN_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
-describe("namedEngineProjectionsOf", () => {
+describe("projectNamedEngines", () => {
   it("gives the files the checks runner wrote", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [WRITTEN_PROJECTION] });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
@@ -370,18 +345,18 @@ describe("namedEngineProjectionsOf", () => {
 
   it("asks the engine to project the very request it would run, so a run and a projection cannot see different inputs", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [] });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineProjectionsOf(
+    await projectNamedEngines(
       enginesRequestOf({
         selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
         engine: engine.port,
       }),
     );
-    await namedEngineRunsOf(
+    await runNamedEngines(
       enginesRequestOf({
         selected: [selectedOn({ mechanism: ESLINT })],
         lookup: DETECTED,
@@ -392,17 +367,17 @@ describe("namedEngineProjectionsOf", () => {
       projected: engine.projectChecks.mock.calls,
       run: engine.runChecks.mock.calls,
     }).toEqual({
-      projected: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
-      run: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
+      projected: [[ESLINT_RUN_REQUEST]],
+      run: [[ESLINT_RUN_REQUEST]],
     });
   });
 
   it("writes nothing for an engine that projects no file", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: AUDIT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [] });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: AUDIT })],
           lookup: DETECTED,
@@ -418,7 +393,7 @@ describe("namedEngineProjectionsOf", () => {
   it("writes nothing when the selection binds no mechanism", async () => {
     const engine = engineFake();
     expect({
-      projected: await namedEngineProjectionsOf(
+      projected: await projectNamedEngines(
         enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
@@ -429,7 +404,7 @@ describe("namedEngineProjectionsOf", () => {
     const engine = engineFake();
     engine.load.mockResolvedValueOnce(RUNNER_INVALID);
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,
@@ -448,7 +423,7 @@ describe("namedEngineProjectionsOf", () => {
 
   it("fails as an engine that failed, naming the engine, when the checks runner fails", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({
       outcome: "failed",
       error: {
@@ -458,7 +433,7 @@ describe("namedEngineProjectionsOf", () => {
       },
     });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
           selected: [selectedOn({ mechanism: ESLINT })],
           lookup: DETECTED,

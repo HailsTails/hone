@@ -256,7 +256,7 @@ const versionTwoRunFor = (request: {
     },
   });
 
-const createReachOverLayout =
+export const createReachOverLayout =
   (
     request: Pick<UpgradeInput, "foundTreeReach"> & {
       readonly layout: Pick<TeamLayoutPlan, "files" | "removed">;
@@ -304,7 +304,6 @@ const createVersionOneBefore = (
     check: prepared.check,
     selection: prepared.read.reading.selection,
     catalogues: prepared.catalogues,
-    engine: ports.namedEngine,
     sources: ports.settingsSourcesOf(at),
     readPiece: ports.checkPieceSourceOf(at),
     projection: ports.versionOneProjectionOf({

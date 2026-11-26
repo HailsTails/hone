@@ -1,13 +1,12 @@
 import { z } from "zod";
 
 import type {
-  NamedEngineCall,
+  NamedEnginePort,
   NamedEngineFailure,
 } from "../../../../application/ports/engine/engine-port.ts";
 import type {
   NamedEngineRun,
   NamedEngineRunRequest,
-  ParsedNamedRunner,
 } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   RunnerInvalid,
@@ -71,7 +70,15 @@ const invalidChecksOutput = (request: {
 
 const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
 
-export const loadedNamedRunnerOver =
+export type ParsedNamedRunner = z.output<typeof namedChecksRunnerModuleSchema>;
+
+type NamedEngineCall = {
+  readonly mechanism: EngineId;
+  readonly runner: ParsedNamedRunner;
+  readonly request: NamedEngineRunRequest;
+};
+
+export const createRunnerLoader =
   (ports: RunnerModulePorts) =>
   async (request: RunnerLocation): Promise<Result<ParsedNamedRunner, RunnerInvalid>> => {
     const loaded = await ports.runnerModuleOf(request);
@@ -83,7 +90,7 @@ export const loadedNamedRunnerOver =
       : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
   };
 
-const namedRequestOf = (call: NamedEngineCall): NamedEngineRunRequest => ({
+const mapCallToRunnerRequest = (call: NamedEngineCall): NamedEngineRunRequest => ({
   ...call.request,
   bindings: call.request.bindings.filter(({ engine }) => engine === call.mechanism),
 });
@@ -108,10 +115,10 @@ const verifiedNamedRun = (request: {
       };
 };
 
-export const namedEngineRunOf = async (
+export const runNamedEngine = async (
   call: NamedEngineCall,
 ): Promise<NamedOutcome<NamedEngineRun>> => {
-  const requested = namedRequestOf(call);
+  const requested = mapCallToRunnerRequest(call);
   const parsed = namedChecksRunResultSchema.safeParse(
     await returnedBy({ call: () => call.runner.run(requested) }),
   );
@@ -129,7 +136,7 @@ const versionOneMeasurementModuleSchema = z.object({
 });
 
 const measureNamedRun = async (call: NamedEngineCall): ReturnType<MeasureVersionOneProjection> => {
-  const report = await namedEngineRunOf(call);
+  const report = await runNamedEngine(call);
   return report.outcome === "failed"
     ? report
     : { outcome: "ok", value: { report: report.value, unappliedSlices: [] } };
@@ -152,7 +159,7 @@ const measuredVersionOne = async (
     return invalid({ mechanism: call.mechanism, detail: z.prettifyError(module.error) });
   const measureVersionOne = module.data.measureVersionOne;
   if (measureVersionOne === undefined) return measureNamedRun(call);
-  const requested = namedRequestOf(call);
+  const requested = mapCallToRunnerRequest(call);
   const parsed = measurementResultSchema.safeParse(
     await returnedBy({ call: () => measureVersionOne({ run: requested, projection }) }),
   );
@@ -180,11 +187,11 @@ const measuredVersionOne = async (
       };
 };
 
-export const namedEngineProjectionOf = async (
+export const projectNamedEngine = async (
   call: NamedEngineCall,
 ): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
   const parsed = checksProjectResultSchema.safeParse(
-    await returnedBy({ call: () => call.runner.project(namedRequestOf(call)) }),
+    await returnedBy({ call: () => call.runner.project(mapCallToRunnerRequest(call)) }),
   );
   if (!parsed.success) {
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
@@ -194,7 +201,36 @@ export const namedEngineProjectionOf = async (
     : parsed.data;
 };
 
-export const measureVersionOneProjectionOver =
-  (ports: RunnerModulePorts): MeasureVersionOneProjection =>
-  (measurement) =>
-    measuredVersionOne({ ...ports, ...measurement });
+export const measureVersionOneProjectionOver = (
+  ports: RunnerModulePorts,
+): MeasureVersionOneProjection => {
+  const load = createRunnerLoader(ports);
+  return async ({ request, location, projection }) => {
+    const runner = await load(location);
+    if (runner.outcome === "failed") return runner;
+    return measuredVersionOne({
+      ...ports,
+      call: { mechanism: location.mechanism, runner: runner.value, request },
+      location,
+      projection,
+    });
+  };
+};
+
+export const createNamedEnginePort = (ports: RunnerModulePorts): NamedEnginePort => {
+  const load = createRunnerLoader(ports);
+  return {
+    load: async (location) => {
+      const runner = await load(location);
+      if (runner.outcome === "failed") return runner;
+      const { mechanism } = location;
+      return {
+        outcome: "ok",
+        value: {
+          run: (request) => runNamedEngine({ mechanism, runner: runner.value, request }),
+          project: (request) => projectNamedEngine({ mechanism, runner: runner.value, request }),
+        },
+      };
+    },
+  };
+};
