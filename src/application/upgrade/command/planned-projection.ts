@@ -1,4 +1,4 @@
-import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import type {
   RecordsAtBase,
@@ -9,10 +9,8 @@ import { runFailureOf } from "../../../domain/report/run-failure.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
-import { projectionOutputsOf } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import type { ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { CommandRequest } from "../../ports/command-request.ts";
 import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
@@ -20,7 +18,10 @@ import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import { moduleExtensionOf } from "../../ports/host/module-extension.ts";
 import type { RecordsReader } from "../../ports/records/records-reader.ts";
 import type { CheckPieceSourceOf, SettingsSourcesOf } from "../../ports/settings-sources.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import { checkedTreeOf } from "../../run/checked-tree-of.ts";
@@ -32,7 +33,7 @@ import {
   readNamedSettingsFile,
 } from "../../run/settings/read-settings.ts";
 import { toolCatalogueOf } from "../../run/tool-catalogue.ts";
-import type { ProjectionFilesOf } from "../proof/upgrade-plan.ts";
+import type { PlannedProjection, ProjectionFilesOf } from "../proof/upgrade-plan.ts";
 
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
@@ -60,7 +61,10 @@ const refusedBy = (request: {
 });
 
 const settingsReadingOf = (
-  request: Context & { readonly settings: SettingsFile; readonly catalogue: SymptomCatalogue },
+  request: Context & {
+    readonly settings: VersionTwoSettingsFile;
+    readonly catalogue: SymptomCatalogue;
+  },
 ): Result<NamedSettingsReading, ProjectionFailure> => {
   const { command, repoRoot, installRoot, settings, catalogue } = request;
   const at = {
@@ -123,18 +127,13 @@ const treeOf = (
     : tree;
 };
 
-const fileNameOf = (request: { readonly file: string }): string =>
-  request.file.slice(request.file.lastIndexOf("/") + 1);
-
-const projectionsAmong = (request: {
-  readonly files: readonly ProjectedFile[];
-  readonly engines: readonly Engine[];
-}): readonly ProjectedFile[] => {
-  const names = request.engines.map(
-    (engine) => projectionOutputsOf({ engineName: engine.name }).configuration,
-  );
-  return request.files.filter(({ file }) => names.includes(fileNameOf({ file })));
-};
+export const planProjectionEntries = (entries: readonly ProjectionEntry[]): PlannedProjection => ({
+  entries,
+  projections: entries
+    .filter((entry) => entry.kind === "write")
+    .filter(({ file }) => file.endsWith(".mjs"))
+    .map(({ file, text }) => ({ file, text })),
+});
 
 export const plannedProjectionOf =
   (context: Context): ProjectionFilesOf =>
@@ -185,18 +184,13 @@ export const plannedProjectionOf =
       modules: command.modules,
       engine: context.namedEngine,
     });
-    return projected.outcome === "failed"
-      ? refusedBy({
-          failure: runFailureOf({ engines: catalogue.value.engines, source: projected.error }),
-        })
-      : {
-          outcome: "ok",
-          value: {
-            files: projected.value,
-            projections: projectionsAmong({
-              files: projected.value,
-              engines: catalogue.value.engines,
-            }),
-          },
-        };
+    if (projected.outcome === "failed") {
+      return refusedBy({
+        failure: runFailureOf({ engines: catalogue.value.engines, source: projected.error }),
+      });
+    }
+    return {
+      outcome: "ok",
+      value: planProjectionEntries(projected.value),
+    };
   };

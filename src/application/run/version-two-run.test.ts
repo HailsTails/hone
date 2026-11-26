@@ -22,7 +22,7 @@ import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
   measureEngines,
@@ -320,6 +320,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -337,6 +338,32 @@ const HIT: CheckHit = {
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
 };
+
+const STAGE_CHECKS: readonly EngineCheck[] = [
+  {
+    name: "clock-sources",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "date-used-directly",
+      title: "Date used directly",
+    },
+    engines: [WALKER],
+  },
+  {
+    name: "test-body",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "branch-in-a-test",
+      title: "Branch in a test",
+    },
+    engines: [WALKER],
+  },
+  {
+    name: "cast-expressions",
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
+    engines: [ESLINT_ENGINE],
+  },
+];
 
 const RUN: NamedEngineRun = {
   mechanism: ESLINT,
@@ -457,10 +484,7 @@ describe("versionTwoRunOver", () => {
     const onDisk: RecordsReading = {
       ...RECORDS,
       records: [debtAtBase],
-      base: {
-        measured: "yes",
-        held: [debtAtBase.record],
-      },
+      base: { measured: "yes", held: [debtAtBase.record] },
     };
     const stages = stagesGiving({
       records: vi
@@ -485,54 +509,20 @@ describe("versionTwoRunOver", () => {
       forfeited: [
         {
           place: debtAtBase.place,
-          record: {
-            kind: "debt",
-            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
-            reach: { reaches: "whole-symptom" },
-            file: FILE_A,
-            holding: { held: "stated" },
-          },
+          record: { ...debtAtBase.record, file: FILE_A },
         },
       ],
       refused: [
         { place: debtAtBase.place, refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }] },
       ],
     });
-    expect(vi.mocked(stages.engines).mock.calls).toEqual([
-      [
-        {
-          catalogue: REPORT_CATALOGUE,
-          settings: SETTINGS,
-          records: onDisk,
-          tree: { tracked: [FILE_A], declaredConfigRoots: [] },
-          checks: [
-            {
-              name: "clock-sources",
-              symptom: {
-                ruleSet: TOOL_RULE_SET,
-                name: "date-used-directly",
-                title: "Date used directly",
-              },
-              engines: [WALKER],
-            },
-            {
-              name: "test-body",
-              symptom: {
-                ruleSet: TOOL_RULE_SET,
-                name: "branch-in-a-test",
-                title: "Branch in a test",
-              },
-              engines: [WALKER],
-            },
-            {
-              name: "cast-expressions",
-              symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
-              engines: [ESLINT_ENGINE],
-            },
-          ],
-        },
-      ],
-    ]);
+    expect(stages.engines).toHaveBeenCalledExactlyOnceWith({
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: onDisk,
+      tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+      checks: STAGE_CHECKS,
+    });
   });
 
   it("asks the settings and the records with the catalogue, and the engines with everything read", async () => {
@@ -552,31 +542,7 @@ describe("versionTwoRunOver", () => {
             settings: SETTINGS,
             records: RECORDS,
             tree: { tracked: [FILE_A], declaredConfigRoots: [] },
-            checks: [
-              {
-                name: "clock-sources",
-                symptom: {
-                  ruleSet: TOOL_RULE_SET,
-                  name: "date-used-directly",
-                  title: "Date used directly",
-                },
-                engines: [WALKER],
-              },
-              {
-                name: "test-body",
-                symptom: {
-                  ruleSet: TOOL_RULE_SET,
-                  name: "branch-in-a-test",
-                  title: "Branch in a test",
-                },
-                engines: [WALKER],
-              },
-              {
-                name: "cast-expressions",
-                symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
-                engines: [ESLINT_ENGINE],
-              },
-            ],
+            checks: STAGE_CHECKS,
           },
         ],
       ],
@@ -715,31 +681,7 @@ describe("measureEngines", () => {
         settings: SETTINGS,
         records: RECORDS,
         tree: { tracked: [FILE_A], declaredConfigRoots: [] },
-        checks: [
-          {
-            name: "clock-sources",
-            symptom: {
-              ruleSet: TOOL_RULE_SET,
-              name: "date-used-directly",
-              title: "Date used directly",
-            },
-            engines: [WALKER],
-          },
-          {
-            name: "test-body",
-            symptom: {
-              ruleSet: TOOL_RULE_SET,
-              name: "branch-in-a-test",
-              title: "Branch in a test",
-            },
-            engines: [WALKER],
-          },
-          {
-            name: "cast-expressions",
-            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
-            engines: [ESLINT_ENGINE],
-          },
-        ],
+        checks: STAGE_CHECKS,
         content: {
           symptoms: new Map([
             ["date-used-directly", DATE_USED_DIRECTLY],

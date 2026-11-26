@@ -111,10 +111,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/runner/pieces/node-built-in-import.test.ts"
     }
   ]

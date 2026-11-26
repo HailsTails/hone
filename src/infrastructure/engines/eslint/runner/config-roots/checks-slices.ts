@@ -2,10 +2,6 @@ import type { RepoPath } from "../../../../../domain/repository/repo-path-types.
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import {
-  CHECKS_DECLARATION_PATH,
-  CHECKS_PROJECTION_PATH,
-} from "../projection/checks-projection.ts";
 import { outsideNestedRepositories, packageConfigFilesOf } from "./checks-config-roots.ts";
 import { directoryOf } from "./checks-paths.ts";
 
@@ -16,25 +12,35 @@ export type ChecksSlices = {
   readonly packages: readonly ChecksSlice[];
 };
 
-const ROOT_SLICE: ChecksSlice = { directory: undefined, file: CHECKS_PROJECTION_PATH };
+export const joinSlicePath = (request: {
+  readonly directory: RepoPath | undefined;
+  readonly name: RepoPath;
+}): RepoPath =>
+  request.directory === undefined
+    ? request.name
+    : repoPathSchema.parse(`${request.directory}/${request.name}`);
 
-const packageSliceOf = (request: { readonly directory: string }): ChecksSlice => ({
-  directory: repoPathSchema.parse(request.directory),
-  file: repoPathSchema.parse(`${request.directory}/${CHECKS_PROJECTION_PATH}`),
-});
+const packageSliceOf = (request: {
+  readonly directory: string;
+  readonly configuration: RepoPath;
+}): ChecksSlice => {
+  const directory = repoPathSchema.parse(request.directory);
+  return { directory, file: joinSlicePath({ directory, name: request.configuration }) };
+};
 
-export const declarationPathOf = (request: { readonly slice: ChecksSlice }): RepoPath =>
-  request.slice.directory === undefined
-    ? CHECKS_DECLARATION_PATH
-    : repoPathSchema.parse(`${request.slice.directory}/${CHECKS_DECLARATION_PATH}`);
+export const declarationPathOf = (request: {
+  readonly slice: ChecksSlice;
+  readonly declaration: RepoPath;
+}): RepoPath => joinSlicePath({ directory: request.slice.directory, name: request.declaration });
 
 export const slicesOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
   readonly declared: readonly RepoPath[];
   readonly lookup: EslintConfigLookup;
   readonly nestedRepositories: readonly string[];
+  readonly configuration: RepoPath;
 }): ChecksSlices => ({
-  root: ROOT_SLICE,
+  root: { directory: undefined, file: request.configuration },
   packages: [
     ...new Set([
       ...packageConfigFilesOf(request).map((path) => directoryOf({ path })),
@@ -45,7 +51,7 @@ export const slicesOf = (request: {
     ]),
   ]
     .toSorted()
-    .map((directory) => packageSliceOf({ directory })),
+    .map((directory) => packageSliceOf({ directory, configuration: request.configuration })),
 });
 
 export const answeredWithin = (request: {

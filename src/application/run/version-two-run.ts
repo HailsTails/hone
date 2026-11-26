@@ -10,7 +10,7 @@ import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
 import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
 import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
 import {
@@ -20,7 +20,7 @@ import {
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
-import type { EngineSettings } from "./engines/named-engines-run.ts";
+import type { NamedEnginesRequest } from "./engines/named-engines-run.ts";
 import { namedRunReportOf } from "./run-report-of.ts";
 import {
   catalogueWithExternalChecks,
@@ -40,7 +40,7 @@ export type VersionTwoRun = {
 
 export type EngineStageRequest = {
   readonly catalogue: SymptomCatalogue;
-  readonly settings: EngineSettings;
+  readonly settings: NamedEnginesRequest["settings"];
   readonly records: Pick<RecordsReading, "records">;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
@@ -62,7 +62,7 @@ export type VersionTwoStages = {
   ) => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>;
   readonly projections: (
     request: EngineStageRequest,
-  ) => Promise<Result<readonly ProjectedFile[], RunLoadFailure>>;
+  ) => Promise<Result<readonly ProjectionEntry[], RunLoadFailure>>;
   readonly renamed: () => RenamedSinceBase;
   readonly touched: (request: {
     readonly assessment: Assessment;

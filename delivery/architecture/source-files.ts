@@ -6,8 +6,8 @@ import type { DirectoryTreePort } from "../../src/application/ports/file-system/
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import { gatheredOutcomes } from "../../src/domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { projectionOutputNamesOf } from "../../src/domain/repository/projection-outputs.ts";
 import type { Result } from "../../src/domain/result.ts";
+import { listChecksProjectionOutputs } from "../../src/infrastructure/engines/eslint/runner/projection/projection-kinds.ts";
 
 export type SourceTree = {
   readonly repoRoot: AbsolutePath;
@@ -20,7 +20,10 @@ const SOURCE_FILE = /\.(?:[cm]?[jt]s|tsx)$/;
 
 const UNREAD_PATH = /(?:^|\/)(?:\.[^/]*|node_modules)(?:\/|$)|^artefacts(?:\/|$)/;
 
-const PROJECTED_FILES: readonly string[] = projectionOutputNamesOf({ engineNames: ["eslint"] });
+const PROJECTED_FILES: readonly string[] = [
+  ...listChecksProjectionOutputs("mjs"),
+  ...listChecksProjectionOutputs("ts"),
+];
 
 const listFolderFiles = (
   request: SourceTree & { readonly folder: string },

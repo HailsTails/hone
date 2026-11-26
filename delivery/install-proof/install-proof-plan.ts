@@ -26,7 +26,7 @@ export type ProofAction =
   | { readonly kind: "lint"; readonly directory: string; readonly expectation: StepExpectation }
   | { readonly kind: "run"; readonly script: string; readonly expectation: StepExpectation };
 
-export type ProofToolchain = "typescript-floor" | "current" | "eslint-9";
+export type ProofToolchain = "typescript-floor" | "current" | "eslint-9" | "typescript-config";
 
 export type TypeStripping = "disabled" | "enabled";
 
@@ -55,6 +55,7 @@ const namedSettings = (request: {
   readonly checks: Readonly<Record<string, "walker" | "eslint">>;
   readonly forfeiture?: "elsewhere";
   readonly eslintConfigLookup?: "nearest-to-file";
+  readonly eslintProjectionKind?: "ts";
 }): string => `${JSON.stringify({ version: 2, ruleSets: {}, ...request }, null, 2)}\n`;
 
 const CONFIG_WITH_HONE =
@@ -140,6 +141,19 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
 
+const ESLINT_CHECK: ProofAction = {
+  kind: "check",
+  expectation: {
+    exitCode: 1,
+    output: `findings (1)
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+symptoms (1)
+${CLASS_SYMPTOM}
+verdict: fail
+`,
+  },
+};
+
 const ESLINT_CONSUMER_ACTIONS: readonly ProofAction[] = [
   {
     kind: "project",
@@ -147,18 +161,50 @@ const ESLINT_CONSUMER_ACTIONS: readonly ProofAction[] = [
   },
   { kind: "read", path: V2_PROJECTION, text: ESLINT_PROJECTION },
   { kind: "commit", message: "project" },
-  {
-    kind: "check",
-    expectation: {
-      exitCode: 1,
-      output: `findings (1)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-symptoms (1)
-${CLASS_SYMPTOM}
-verdict: fail
-`,
+  ESLINT_CHECK,
+];
+
+const TYPESCRIPT_PROJECTION = "hone.eslint.ts";
+
+const TYPESCRIPT_CONFIG_SETUP: ConsumerSetup = {
+  replace: ["disciplines.json", "disciplines.eslint.mjs", "eslint.config.mjs"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: namedSettings({
+        checks: {
+          "authored-class-or-this#class-keyword": "eslint",
+          "authored-class-or-this#static-members-only": "eslint",
+        },
+        eslintProjectionKind: "ts",
+      }),
     },
+    {
+      name: "eslint.config.ts",
+      text: 'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.js";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n',
+    },
+  ],
+};
+
+const TYPESCRIPT_CONFIG_PROJECTION = `import hone from "${TOOL_IDENTITY.packageName}/eslint-plugin";
+const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["${TYPESCRIPT_PROJECTION}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default projection;
+`;
+
+const TYPESCRIPT_CONFIG_ACTIONS: readonly ProofAction[] = [
+  {
+    kind: "project",
+    expectation: { exitCode: 0, output: `${TYPESCRIPT_PROJECTION} written\n` },
   },
+  { kind: "read", path: TYPESCRIPT_PROJECTION, text: TYPESCRIPT_CONFIG_PROJECTION },
+  { kind: "commit", message: "project" },
+  ESLINT_CHECK,
 ];
 
 const AUDIT_CONSUMER_ACTIONS: readonly ProofAction[] = [
@@ -413,6 +459,14 @@ export const PROOF_CASES: readonly ProofCase[] = [
     actions: ESLINT_CONSUMER_ACTIONS,
   },
   {
+    consumer: "eslint-typescript-config",
+    fixture: "eslint",
+    toolchain: "typescript-config",
+    typeStripping: "disabled",
+    setup: TYPESCRIPT_CONFIG_SETUP,
+    actions: TYPESCRIPT_CONFIG_ACTIONS,
+  },
+  {
     consumer: "eslint-missing",
     fixture: "eslint",
     toolchain: "typescript-floor",
@@ -535,6 +589,7 @@ const FLOOR_PINS: Readonly<Record<ProofToolchain, FloorPins>> = {
   "typescript-floor": TYPESCRIPT_FLOOR,
   current: CURRENT,
   "eslint-9": { ...CURRENT, ...TYPESCRIPT_FLOOR, eslint: "eslint-9" },
+  "typescript-config": { ...CURRENT, jiti: "jiti" },
 };
 
 const manifestInvalid = (request: { readonly detail: string }): Result<never, ManifestFailure> => ({
@@ -548,6 +603,11 @@ const floorVersion = (request: {
   readonly pinName: string;
 }): Result<string, ManifestFailure> => {
   const pin = request.manifest.devDependencies[request.pinName];
+  if (request.peer === "jiti") {
+    return pin === undefined
+      ? manifestInvalid({ detail: "no development pin for the config loader jiti" })
+      : { outcome: "ok", value: pin };
+  }
   if (pin === undefined) {
     return manifestInvalid({
       detail: `no development pin ${request.pinName} for the peer ${request.peer}`,

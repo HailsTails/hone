@@ -124,6 +124,7 @@ const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "out-of-date",
+  projectionFile: repoPathOf("hone.eslint.ts"),
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -151,6 +152,7 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
         },
         runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "ts",
         conventions: DEFAULT_CONVENTIONS,
         notes: [],
       },
@@ -334,7 +336,12 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
       outcome: "failed",
       error: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+        problem: {
+          scope: "projection",
+          engine: { name: "eslint" },
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.ts"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
     });
@@ -379,7 +386,12 @@ describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
         outcome: "failed",
         error: {
           kind: "projection-stale",
-          problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+          problem: {
+            scope: "projection",
+            engine: { name: "eslint" },
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.ts"),
+          },
           projectCommand: PROJECT_COMMAND,
         },
       },

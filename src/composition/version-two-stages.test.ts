@@ -390,6 +390,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -497,6 +498,7 @@ describe("versionTwoStagesOver", () => {
           ],
         },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
         conventions: DEFAULT_CONVENTIONS,
       },
       records: { records: [] },

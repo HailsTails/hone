@@ -19,10 +19,6 @@
     },
     {
       "answers": "process-global-used-in-place#direct-global-use",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
       "file": "src/infrastructure/node/file-system/directory-tree-port.test.ts"
     },
     {

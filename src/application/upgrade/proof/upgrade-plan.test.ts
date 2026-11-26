@@ -22,7 +22,12 @@ import type { ConsumerSelectionFile } from "../../../domain/settings/selection/s
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
-import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
+import {
+  type PlannedProjection,
+  type ProjectionFilesOf,
+  type UpgradePlanRequest,
+  upgradePlanOf,
+} from "./upgrade-plan.ts";
 
 const AUDIT = "walker" as const;
 
@@ -225,6 +230,7 @@ const LOOPS_SETTINGS = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: {
     conventions: {
       generated: [],
@@ -237,17 +243,19 @@ const LOOPS_SETTINGS = {
 
 const PLANNED_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "projection text" };
 
-const projecting = (request: { readonly files: readonly (typeof PLANNED_PROJECTION)[] }) =>
-  vi.fn<ProjectionFilesOf>().mockResolvedValue({
-    outcome: "ok",
-    value: { files: request.files, projections: request.files },
-  });
+const PROJECTION_PLAN: PlannedProjection = {
+  entries: [{ ...PLANNED_PROJECTION, kind: "write" }],
+  projections: [PLANNED_PROJECTION],
+};
+
+const projecting = (planned: PlannedProjection) =>
+  vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: planned });
 
 const requestOver = (overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest => ({
   reading: READING,
   answered: [FINDINGS_ON_LOOPS],
   catalogues: CATALOGUES,
-  projectionFilesOf: projecting({ files: [PLANNED_PROJECTION] }),
+  projectionFilesOf: projecting(PROJECTION_PLAN),
   settingsFormat: settingsFormatWriting(),
   ...overrides,
 });
@@ -360,8 +368,9 @@ describe("upgradePlanOf", () => {
             },
             DEBT_LINE,
           ],
-          files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
+          files: [PLANNED_SETTINGS, PLANNED_DEBT],
           projected: [PLANNED_PROJECTION],
+          projectionEntries: [{ ...PLANNED_PROJECTION, kind: "write" }],
         },
       },
       written: [
@@ -393,8 +402,9 @@ describe("upgradePlanOf", () => {
         value: {
           inputs: [CARVE_OUT_INPUT],
           lines: [DEBT_LINE],
-          files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
+          files: [PLANNED_SETTINGS, PLANNED_DEBT],
           projected: [PLANNED_PROJECTION],
+          projectionEntries: [{ ...PLANNED_PROJECTION, kind: "write" }],
         },
       },
       written: [[{ settings: LOOPS_SETTINGS }]],
@@ -415,8 +425,9 @@ describe("upgradePlanOf", () => {
         value: {
           inputs: [CARVE_OUT_INPUT],
           lines: [DEBT_LINE],
-          files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
+          files: [PLANNED_SETTINGS, PLANNED_DEBT],
           projected: [PLANNED_PROJECTION],
+          projectionEntries: [{ ...PLANNED_PROJECTION, kind: "write" }],
         },
       },
       written: [
@@ -438,7 +449,7 @@ describe("upgradePlanOf", () => {
   });
 
   it("carries the declared eslintConfigRoots into the settings it plans, and into the settings the projection is asked over", async () => {
-    const projectionFilesOf = projecting({ files: [PLANNED_PROJECTION] });
+    const projectionFilesOf = projecting(PROJECTION_PLAN);
     const settingsFormat = settingsFormatWriting();
     const planned = await upgradePlanOf(
       requestOver({
@@ -456,8 +467,9 @@ describe("upgradePlanOf", () => {
         value: {
           inputs: [CARVE_OUT_INPUT],
           lines: [DEBT_LINE],
-          files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
+          files: [PLANNED_SETTINGS, PLANNED_DEBT],
           projected: [PLANNED_PROJECTION],
+          projectionEntries: [{ ...PLANNED_PROJECTION, kind: "write" }],
         },
       },
       written: [[{ settings: { ...LOOPS_SETTINGS, eslintConfigRoots: ["packages/a"] } }]],
@@ -470,7 +482,7 @@ describe("upgradePlanOf", () => {
   });
 
   it("asks for the projection files over the settings and the record documents it planned", async () => {
-    const projectionFilesOf = projecting({ files: [PLANNED_PROJECTION] });
+    const projectionFilesOf = projecting(PROJECTION_PLAN);
     await upgradePlanOf(requestOver({ projectionFilesOf }));
     expect(projectionFilesOf).toHaveBeenCalledExactlyOnceWith({
       settings: LOOPS_SETTINGS,
@@ -490,7 +502,7 @@ describe("upgradePlanOf", () => {
       file: "src/adapters/ids.ts",
       carried: IDS_ENTRY,
     };
-    const projectionFilesOf = projecting({ files: [] });
+    const projectionFilesOf = projecting({ entries: [], projections: [] });
     await upgradePlanOf(
       requestOver({
         projectionFilesOf,
@@ -527,7 +539,7 @@ describe("upgradePlanOf", () => {
 
   it("refuses to plan when the packages CD-19 confines are not package names", async () => {
     const request = requestOver({
-      projectionFilesOf: projecting({ files: [] }),
+      projectionFilesOf: projecting({ entries: [], projections: [] }),
       catalogues: IMPORT_CATALOGUES,
       reading: {
         selection: {
@@ -555,7 +567,9 @@ describe("upgradePlanOf", () => {
 
   it("plans no projection file when the engines project none", async () => {
     await expect(
-      upgradePlanOf(requestOver({ projectionFilesOf: projecting({ files: [] }) })),
+      upgradePlanOf(
+        requestOver({ projectionFilesOf: projecting({ entries: [], projections: [] }) }),
+      ),
     ).resolves.toEqual({
       outcome: "ok",
       value: {
@@ -563,6 +577,7 @@ describe("upgradePlanOf", () => {
         lines: [DEBT_LINE],
         files: [PLANNED_SETTINGS, PLANNED_DEBT],
         projected: [],
+        projectionEntries: [],
       },
     });
   });

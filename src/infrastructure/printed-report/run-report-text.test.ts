@@ -494,7 +494,14 @@ const EVERY_SECTION: RunReport = {
     },
   ],
   unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
-  "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
+  "projection-problems": [
+    {
+      scope: "projection",
+      engine: ESLINT_ENGINE,
+      state: "out-of-date",
+      file: repoPathOf("hone.eslint.mjs"),
+    },
+  ],
   assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }],
   "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
   "record-notes": [

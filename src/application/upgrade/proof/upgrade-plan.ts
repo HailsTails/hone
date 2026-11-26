@@ -20,11 +20,14 @@ import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-ref
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import type { ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
@@ -35,12 +38,12 @@ import type { PlannedRepoFile } from "./planned-repo-file.ts";
 const SETTINGS_FILE = repoPathOf(SETTINGS_FILE_NAME);
 
 export type PlannedProjection = {
-  readonly files: readonly PlannedRepoFile[];
+  readonly entries: readonly ProjectionEntry[];
   readonly projections: readonly PlannedRepoFile[];
 };
 
 export type ProjectionFilesOf = (request: {
-  readonly settings: SettingsFile;
+  readonly settings: VersionTwoSettingsFile;
   readonly documents: readonly MappedRecordsDocument[];
 }) => Promise<Result<PlannedProjection, ProjectionFailure>>;
 
@@ -49,6 +52,7 @@ export type UpgradePlan = {
   readonly lines: readonly RecordLine[];
   readonly files: readonly PlannedRepoFile[];
   readonly projected: readonly PlannedRepoFile[];
+  readonly projectionEntries: readonly ProjectionEntry[];
 };
 
 export type UpgradePlanRequest = {
@@ -59,7 +63,10 @@ export type UpgradePlanRequest = {
   readonly settingsFormat: Pick<SettingsFileFormat, "textOf">;
 };
 
-type MappedVersionTwo = { readonly settings: SettingsFile; readonly records: MappedRecords };
+type MappedVersionTwo = {
+  readonly settings: VersionTwoSettingsFile;
+  readonly records: MappedRecords;
+};
 
 const mapInputsToVersionTwo = (request: {
   readonly selection: ConsumerSelectionFile;
@@ -89,7 +96,13 @@ const mapInputsToVersionTwo = (request: {
     ...(records.outcome === "failed" ? records.error : []),
   ];
   return selection.outcome === "ok" && records.outcome === "ok" && refusals.length === 0
-    ? { outcome: "ok", value: { settings: selection.value, records: records.value } }
+    ? {
+        outcome: "ok",
+        value: {
+          settings: { ...selection.value, eslintProjectionKind: "mjs" },
+          records: records.value,
+        },
+      }
     : { outcome: "failed", error: { kind: "mapping-refused", refusals } };
 };
 
@@ -144,9 +157,9 @@ export const upgradePlanOf = async (
           text: request.settingsFormat.textOf({ settings }),
         },
         ...recordFilesOf({ documents }),
-        ...projected.value.files,
       ],
       projected: projected.value.projections,
+      projectionEntries: projected.value.entries,
     },
   };
 };

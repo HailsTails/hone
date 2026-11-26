@@ -1,3 +1,4 @@
+import type { NamedEslintRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
@@ -16,7 +17,7 @@ import {
 import { createEslintPort, type EslintToolchain } from "./toolchain/eslint-instance.ts";
 
 export type EslintRunnerModule = {
-  readonly namedChecksRunner: NamedChecksRunner & {
+  readonly namedChecksRunner: NamedChecksRunner<NamedEslintRunRequest> & {
     readonly fileScope: RunnerFileScope;
     readonly projectedKinds: readonly NativeException["kind"][];
   };

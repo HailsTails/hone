@@ -1,13 +1,14 @@
+import type { ProjectionKind } from "../../../../../application/ports/settings/settings-file-format.ts";
 import { CHECK_ADDRESS_SEPARATOR } from "../../../../../domain/language-layer/check-address-text.ts";
-import { projectionOutputsOf } from "../../../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { ownedNameText } from "../../../../../domain/rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CHECKS_PLUGIN_NAMESPACE } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
+import { PROJECTION_TYPE_TEXT } from "../toolchain/eslint-major-boundary.ts";
+import { type ChecksProjectionOutputs, createChecksProjectionOutputs } from "./projection-kinds.ts";
 import { escapedGlobPath } from "./projection.ts";
 
 export type ProjectedCheck = {
@@ -29,11 +30,16 @@ type AnsweredGroup = { readonly reaches: readonly string[]; readonly files: read
 
 type RuleEntry = { readonly ruleId: string; readonly entry: string };
 
-const ESLINT_OUTPUTS = projectionOutputsOf({ engineName: "eslint" });
-
-export const CHECKS_PROJECTION_PATH: RepoPath = repoPathSchema.parse(ESLINT_OUTPUTS.configuration);
-
-export const CHECKS_DECLARATION_PATH: RepoPath = repoPathSchema.parse(ESLINT_OUTPUTS.declaration);
+export const mapChecksProjectionOutputsToTypedFile = (request: {
+  readonly outputs: ChecksProjectionOutputs;
+}): RepoPath => {
+  switch (request.outputs.kind) {
+    case "mjs":
+      return request.outputs.declaration;
+    case "ts":
+      return request.outputs.configuration;
+  }
+};
 
 const SOURCE_FILES = "**/*.{ts,tsx,mts,cts}";
 
@@ -68,13 +74,17 @@ const codeUnitOrder = (request: { readonly left: string; readonly right: string 
 };
 
 const checksBlock = (request: {
+  readonly kind: ProjectionKind;
   readonly checks: readonly ProjectedCheck[];
   readonly plugins: readonly ProjectedPlugin[];
 }): string => {
   const entries = request.plugins.map(
     ({ namespace }, index) => `${quoted({ text: namespace })}: plugin${index}`,
   );
-  return `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], ignores: [${quoted({ text: CHECKS_DECLARATION_PATH })}], plugins: { ${[CHECKS_PLUGIN_NAMESPACE, ...entries].join(LIST_SEPARATOR)} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
+  const typedFile = mapChecksProjectionOutputsToTypedFile({
+    outputs: createChecksProjectionOutputs({ kind: request.kind }),
+  });
+  return `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], ignores: [${quoted({ text: typedFile })}], plugins: { ${[CHECKS_PLUGIN_NAMESPACE, ...entries].join(LIST_SEPARATOR)} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
 };
 
 const reachOfAnswer = (request: { readonly answer: AnsweredFile }): string =>
@@ -135,7 +145,21 @@ const answeredBlock = (request: {
   return `{ name: ${quoted({ text: `${ANSWERED_BLOCK}/${request.group.reaches.join(LIST_SEPARATOR)}` })}, files: [${files}], rules: ${rulesText({ rules: offRules })} }`;
 };
 
+const exportedProjectionText = (request: {
+  readonly kind: ProjectionKind;
+  readonly blocks: readonly string[];
+}): string => {
+  const list = `[${request.blocks.join(",\n")}]`;
+  switch (request.kind) {
+    case "mjs":
+      return `export default ${list};\n`;
+    case "ts":
+      return `const projection: ${PROJECTION_TYPE_TEXT} = ${list};\nexport default projection;\n`;
+  }
+};
+
 export const checksProjectionText = (request: {
+  readonly kind: ProjectionKind;
   readonly pluginImport: string;
   readonly plugins?: readonly ProjectedPlugin[];
   readonly checks: readonly ProjectedCheck[];
@@ -146,8 +170,8 @@ export const checksProjectionText = (request: {
     ({ specifier }, index) => `import plugin${index} from ${quoted({ text: specifier })};\n`,
   );
   const blocks = [
-    checksBlock({ checks: request.checks, plugins }),
+    checksBlock({ kind: request.kind, checks: request.checks, plugins }),
     ...answeredGroupsOf(request).map((group) => answeredBlock({ group, checks: request.checks })),
   ];
-  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\n${imports.join("")}export default [${blocks.join(",\n")}];\n`;
+  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\n${imports.join("")}${exportedProjectionText({ kind: request.kind, blocks })}`;
 };

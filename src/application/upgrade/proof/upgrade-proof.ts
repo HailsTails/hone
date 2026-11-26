@@ -40,6 +40,7 @@ import {
   removedVersionOneFiles,
   type VersionOneRemoval,
 } from "../proof-writes/version-one-removal.ts";
+import { mapChangesToEffects } from "../smoothing/smoothing-effects.ts";
 import { runSmoothing, type SmoothingState } from "../smoothing/upgrade-smoothing.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 import { replacementsOf } from "./projection-replacements.ts";
@@ -212,7 +213,8 @@ type ToPlace = UpgradeProofRequest & {
 
 const placedOf = (request: ToPlace): Result<Placed, ProofRefusal> => {
   const { queries, repoRoot, plan } = request;
-  const files = placedFilesOf({ queries, repoRoot, files: plan.files });
+  const writes = plan.projectionEntries.filter((entry) => entry.kind === "write");
+  const files = placedFilesOf({ queries, repoRoot, files: [...plan.files, ...writes] });
   const replacements = placedFilesOf({ queries, repoRoot, files: request.replacements });
   const removal = removalOf(request);
   if (files.outcome === "failed") return files;
@@ -378,7 +380,16 @@ const removedAfterPassing = (
         outcome: "ok",
         value: {
           ...carried,
-          removed: { ...removed.value, files: [...request.removed, ...removed.value.files] },
+          removed: {
+            ...removed.value,
+            files: [
+              ...request.removed,
+              ...request.writes
+                .filter((write) => write.kind === "file-removed")
+                .map(({ path }) => path),
+              ...removed.value.files,
+            ],
+          },
           records: request.plan.lines,
           smoothed: request.passing.smoothed,
         },
@@ -388,11 +399,23 @@ const removedAfterPassing = (
 const writtenAndChecked = async (
   request: UpgradeProofRequest & Omit<Written, "writes">,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
+  const removals = mapChangesToEffects({
+    queries: request.queries,
+    repoRoot: request.repoRoot,
+    changes: {
+      write: [],
+      remove: request.plan.projectionEntries
+        .filter((entry) => entry.kind === "remove")
+        .map(({ file }) => file),
+    },
+  });
+  if (removals.outcome === "failed") return removals;
   const writes = writtenProofFiles({
     queries: request.queries,
     effects: request.effects,
     files: request.placed.files,
     replacements: request.placed.replacements,
+    following: removals.value.effects,
   });
   if (writes.outcome === "failed") {
     return {

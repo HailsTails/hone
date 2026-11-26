@@ -56,6 +56,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -70,6 +71,7 @@ const RECORDS: RecordsReading = {
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 
 const WRITTEN: ProjectedFile = {
+  kind: "write",
   file: repoPathOf("hone.eslint.mjs"),
   text: "export default [];\n",
 };

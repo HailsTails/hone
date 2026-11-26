@@ -1,6 +1,5 @@
 import { createClauseChecks } from "../../../domain/language-layer/clause-checks.ts";
 import { mappedSettings } from "../../../domain/records/upgrade/settings-mapping.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
@@ -18,10 +17,7 @@ import type {
 import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
 import { callNamedEngines } from "../../run/engines/named-engines-run.ts";
-import {
-  type NamedSettingsReading,
-  readNamedSettingsFile,
-} from "../../run/settings/read-settings.ts";
+import { type NamedSettingsReading, bindNamedSettings } from "../../run/settings/read-settings.ts";
 import {
   versionOneAnsweredFilesOf,
   versionOneNamesOf,
@@ -32,7 +28,7 @@ export type NamedVersionOnePassRequest = Omit<
   NamedEnginesRequest,
   "settings" | "checks" | "answered" | "engine"
 > &
-  Pick<Parameters<typeof readNamedSettingsFile>[0], "sources" | "readPiece"> & {
+  Pick<Parameters<typeof bindNamedSettings>[0], "sources" | "readPiece"> & {
     readonly selected: Parameters<typeof versionOneNamesOf>[0]["selected"];
     readonly selection: Parameters<typeof mappedSettings>[0]["selection"];
     readonly catalogues: readonly RuleSetCatalogue[];
@@ -51,7 +47,7 @@ const refused = (detail: string): Result<never, EnginePassFailure> => ({
 
 const settingsFor = (
   request: NamedVersionOnePassRequest,
-): Result<NamedSettingsReading, EnginePassFailure> => {
+): Result<Omit<NamedSettingsReading, "eslintProjectionKind">, EnginePassFailure> => {
   const mapped = mappedSettings({
     selection: request.selection,
     clauseChecks: createClauseChecks({ catalogues: request.catalogues }),
@@ -61,7 +57,7 @@ const settingsFor = (
       `version one selection could not be bound to checks: ${mapped.error.map(({ kind }) => kind).join(", ")}`,
     );
   }
-  const settings = readNamedSettingsFile({
+  const settings = bindNamedSettings({
     ...request,
     path: request.settingsPath,
     file: mapped.value.settings,
@@ -73,21 +69,27 @@ const settingsFor = (
 
 const projectionProblemOf = (request: {
   readonly measurements: readonly ProjectionMeasurement<NamedEngineRun>[];
-  readonly projection: CheckedVersionOneProjection | undefined;
 }): EnginePassFailure | undefined => {
   const unapplied = request.measurements.flatMap(({ unappliedSlices }) => unappliedSlices)[0];
   if (unapplied !== undefined) {
     return { kind: "projection-not-current", file: unapplied, state: "not-applied" };
   }
-  const state = request.measurements
-    .map(({ report }) => report.projection)
-    .find((candidate) => candidate !== "none" && candidate !== "current");
-  return state === undefined
+  const problem = request.measurements
+    .map(({ report }) => report)
+    .find(
+      (
+        report,
+      ): report is Extract<
+        NamedEngineRun,
+        { readonly projection: Exclude<NamedEngineRun["projection"], "none" | "current"> }
+      > => report.projection !== "none" && report.projection !== "current",
+    );
+  return problem === undefined
     ? undefined
     : {
         kind: "projection-not-current",
-        file: request.projection?.projectionFile ?? repoPathOf("disciplines.eslint.mjs"),
-        state,
+        file: problem.projectionFile,
+        state: problem.projection,
       };
 };
 
@@ -122,7 +124,6 @@ const findingsFor = async (
   }
   const problem = projectionProblemOf({
     measurements: ran.value,
-    projection: checkedProjection.value,
   });
   return problem === undefined
     ? versionOneObservationsOf({ names: names.value, runs: ran.value.map(({ report }) => report) })

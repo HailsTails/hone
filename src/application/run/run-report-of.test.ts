@@ -336,6 +336,7 @@ const eslintRunOf = (request: {
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
   projection: request.projection,
+  projectionFile: repoPathOf("hone.eslint.mjs"),
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -474,6 +475,7 @@ describe("namedRunReportOf, findings and records", () => {
               kind: "engine-not-run",
               engine: { name: ESLINT },
               projection: "not-included",
+              file: repoPathOf("hone.eslint.mjs"),
               nestedConfigurations: [nested],
             },
           ],
@@ -675,6 +677,7 @@ describe("namedRunReportOf, findings and records", () => {
             kind: "engine-not-run",
             engine: ESLINT_ENGINE,
             projection: "not-included",
+            file: repoPathOf("hone.eslint.mjs"),
             nestedConfigurations: [],
           },
         ],
@@ -685,7 +688,7 @@ describe("namedRunReportOf, findings and records", () => {
   it("does not call a record stale when a package slice is missing and the engine measured no file under a current root projection, and says the engine measured nothing", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     const missingSlice: ChecksSliceProblem = {
-      slice: repoPathOf("packages/a/hone.eslint.mjs"),
+      file: repoPathOf("packages/a/hone.eslint.mjs"),
       state: "missing",
     };
     expect(
@@ -703,7 +706,7 @@ describe("namedRunReportOf, findings and records", () => {
           { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
         ],
         "projection-problems": [
-          { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: missingSlice.slice },
+          { scope: "slice", engine: ESLINT_ENGINE, state: "missing", file: missingSlice.file },
         ],
       },
     });
@@ -726,7 +729,12 @@ describe("namedRunReportOf, findings and records", () => {
           { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
         ],
         "projection-problems": [
-          { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+          {
+            scope: "projection",
+            engine: ESLINT_ENGINE,
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
         ],
       },
     });
@@ -885,7 +893,12 @@ describe("namedRunReportOf, what the run could not measure", () => {
       value: {
         unmeasured: [
           { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
-          { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+          {
+            kind: "engine-not-run",
+            engine: ESLINT_ENGINE,
+            projection: "missing",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
         ],
       },
     });
@@ -901,7 +914,12 @@ describe("namedRunReportOf, what the run could not measure", () => {
       outcome: "ok",
       value: {
         "projection-problems": [
-          { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+          {
+            scope: "projection",
+            engine: ESLINT_ENGINE,
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
         ],
       },
     });

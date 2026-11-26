@@ -2,7 +2,7 @@ import { afterAll, assert, describe, expect, it } from "vitest";
 
 import type {
   EngineCheck,
-  NamedEngineRunRequest,
+  NamedEslintRunRequest,
 } from "../../src/application/ports/engine/engine-run.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
@@ -14,6 +14,7 @@ import type { AnsweredFile } from "../../src/domain/runner/checks-run-report.ts"
 import type { EslintConfigLookup } from "../../src/domain/settings/eslint-config-lookup.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
@@ -106,7 +107,7 @@ const CHECKS: readonly EngineCheck[] = [
   },
 ];
 
-const BINDINGS: NamedEngineRunRequest["bindings"] = [
+const BINDINGS: NamedEslintRunRequest["bindings"] = [
   {
     address: "authored-class-or-this#class-keyword",
     ruleSet: TOOL_RULE_SET,
@@ -431,10 +432,60 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
       answered,
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
 
     expect(outcome).toEqual({ outcome: "ok", value: report });
+  });
+
+  it("loads a TypeScript eslint.config.ts that imports a ts kind projection as ./hone.eslint.js through jiti and configures the projected rule", async () => {
+    const repo = absolutePathSchema.parse(`${SCRATCH}/${row.line}-ts-kind`);
+    const toolchain = await loadEslintToolchain({
+      peers: { location: PEER_LOCATION, modules: row.toolchainModules },
+    });
+    assert(toolchain.outcome === "ok", `the ${row.line} toolchain loads`);
+    const eslint = createEslintPort({ toolchain: toolchain.value });
+    const written = [
+      scratch.removeTree({ path: repo }),
+      scratch.makeDirectory({ path: repo }),
+      fileText.write({
+        path: `${repo}/eslint.config.ts`,
+        text: 'import hone from "./hone.eslint.js";\nexport default [...hone];\n',
+      }),
+      fileText.write({
+        path: `${repo}/plugin.mjs`,
+        text: 'export default { rules: { "authored-class-or-this#class-keyword": { meta: { schema: [] }, create: () => ({}) } } };\n',
+      }),
+      fileText.write({
+        path: `${repo}/hone.eslint.ts`,
+        text: checksProjectionText({
+          kind: "ts",
+          pluginImport: "./plugin.mjs",
+          checks: [
+            {
+              ruleSet: TOOL_RULE_SET,
+              symptom: "authored-class-or-this",
+              check: "class-keyword",
+              ruleId: "hone/authored-class-or-this#class-keyword",
+              options: [],
+            },
+          ],
+          answered: [],
+        }),
+      }),
+      fileText.write({ path: `${repo}/kept.ts`, text: ONE_CLASS }),
+    ];
+    const state = await eslint.createQueryInstance({ repoRoot: repo }).ruleState({
+      file: repoPathOf("kept.ts"),
+      ruleId: "hone/authored-class-or-this#class-keyword",
+    });
+
+    expect(written).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
+    expect(state).toEqual({
+      outcome: "ok",
+      value: { state: "configured", severity: 2, options: [] },
+    });
   });
 
   it("measures nothing, and lints no untracked file, when it is given no file to check", async () => {
@@ -474,6 +525,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
 
@@ -620,6 +672,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores
       answered: subfolder.answered,
       declaredConfigRoots: [],
       declaredConfigLookup: subfolder.lookup,
+      projectionKind: "mjs",
       testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
 
