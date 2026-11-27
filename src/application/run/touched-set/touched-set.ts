@@ -23,7 +23,9 @@ export type ChangeMeasurement = Omit<GitChangeQuery, "baseRevision"> & {
   readonly git: Pick<GitPort, "changedSince">;
 };
 
-export const computeTouchedSet = (request: ChangeMeasurement): TouchedSet => {
+export const computeTouchedSet = (
+  request: ChangeMeasurement,
+): Exclude<TouchedSet, { readonly measured: "elsewhere" }> => {
   if (request.baseRevision === undefined) {
     return { measured: "no", base: { state: "not-given" } };
   }
@@ -38,9 +40,8 @@ export const computeTouchedSet = (request: ChangeMeasurement): TouchedSet => {
       base: baseRevisionAvailabilityOf({ revision: request.baseRevision, failure: changed.error }),
     };
   }
-  return {
-    measured: "yes",
-    paths: new Set(changed.value),
-    ...(request.baseScope === "pinned-ancestor" ? { landingRevision: request.baseRevision } : {}),
-  };
+  const paths = new Set(changed.value);
+  return request.baseScope === "pinned-ancestor"
+    ? { measured: "pinned-ancestor", paths, landingRevision: request.baseRevision }
+    : { measured: "yes", paths };
 };

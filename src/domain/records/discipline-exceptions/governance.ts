@@ -79,7 +79,8 @@ const forfeitedRecords = (request: {
     case "no":
     case "elsewhere":
       return [];
-    case "yes": {
+    case "yes":
+    case "pinned-ancestor": {
       const touchedPaths = request.touched.paths;
       return request.records.filter(
         (record) => record.kind === "file-carve-out" && touchedPaths.has(record.file),

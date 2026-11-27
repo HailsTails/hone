@@ -39,13 +39,21 @@ describe("withoutPureMoves", () => {
   it("keeps the landing evidence and edits while dropping unchanged moves", () => {
     expect(
       withoutPureMoves({
-        touched: { measured: "yes", paths: new Set([A, MOVED, EDITED]), landingRevision: "pinned" },
+        touched: {
+          measured: "pinned-ancestor",
+          paths: new Set([A, MOVED, EDITED]),
+          landingRevision: "pinned",
+        },
         renamed: new Map([
           [MOVED, { basePath: repoPathOf("src/b.ts"), content: "unchanged" }],
           [EDITED, { basePath: repoPathOf("src/c.ts"), content: "edited" }],
         ]),
       }),
-    ).toEqual({ measured: "yes", paths: new Set([A, EDITED]), landingRevision: "pinned" });
+    ).toEqual({
+      measured: "pinned-ancestor",
+      paths: new Set([A, EDITED]),
+      landingRevision: "pinned",
+    });
   });
 
   it("keeps a touched set that was not measured as it is", () => {

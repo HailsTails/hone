@@ -177,7 +177,7 @@ const compareMeasuredDebt = (
 
 export const compareDebt = (request: Comparing): DebtComparison => {
   const { base, touched } = request;
-  if (touched.measured !== "yes" || touched.landingRevision === undefined) {
+  if (touched.measured !== "pinned-ancestor") {
     const revision =
       touched.measured === "no" && touched.base.state === "git-failed"
         ? touched.base.revision

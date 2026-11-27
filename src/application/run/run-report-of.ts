@@ -42,6 +42,7 @@ import {
   engineProblemsOf,
   engineUnmeasuredOf,
   runMeasurementsOf,
+  type SelectedEngineCheck,
 } from "./engines/engine-states.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 
@@ -183,7 +184,7 @@ export type RunReportRequest = ReportInputs & {
 
 const createComparisonCoverage = (request: {
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+  readonly selected: readonly SelectedEngineCheck[];
 }): DebtComparisonEvidence["coverage"] => {
   const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs));
   const scoped = request.runs.flatMap(({ mechanism, coverage }) =>
@@ -213,7 +214,7 @@ const createComparisonEvidence = (
   request: RunReportRequest & {
     readonly status: ReportStatus;
     readonly unmeasured: RunReport["unmeasured"];
-    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+    readonly selected: readonly SelectedEngineCheck[];
     readonly measurements: RunMeasurements;
   },
 ): DebtComparisonEvidence => ({

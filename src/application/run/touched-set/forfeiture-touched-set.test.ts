@@ -122,7 +122,7 @@ it("keeps the verified landing after dropping an unchanged move", () => {
   });
 
   expect(touched).toEqual({
-    measured: "yes",
+    measured: "pinned-ancestor",
     paths: new Set([ORDER_FILE]),
     landingRevision: "pinned",
   });

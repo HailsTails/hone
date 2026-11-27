@@ -783,30 +783,9 @@ describe("settledCatalogueOf", () => {
   });
 });
 
-it("reports the verified landing for no-new-findings", async () => {
-  const touched = vi
-    .fn<VersionTwoStages["touched"]>()
-    .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
-  const stages = stagesGiving({ touched });
-
-  const inputs = versionTwoInputsOf({ stages });
-  assert(inputs.outcome === "ok", "inputs are available");
-
-  const run = await versionTwoRunOver({
-    stages,
-    inputs: inputs.value,
-    plan: PLAN_COMPARING_COUNTS,
-  });
-
-  expect(run).toMatchObject({
-    outcome: "ok",
-    value: { report: { debtComparison: { revision: "pinned" } } },
-  });
-});
-
 it("refuses to compare against settings changed by the proposal", async () => {
   const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
-    measured: "yes",
+    measured: "pinned-ancestor",
     paths: new Set([repoPathOf("hone.config.json")]),
     landingRevision: "pinned",
   });
@@ -824,7 +803,12 @@ it("refuses to compare against settings changed by the proposal", async () => {
   expect(run).toMatchObject({
     outcome: "ok",
     value: {
-      report: { debtComparison: { issues: [{ kind: "settings-changed" }, { kind: "no-checks" }] } },
+      report: {
+        debtComparison: {
+          revision: "pinned",
+          issues: [{ kind: "settings-changed" }, { kind: "no-checks" }],
+        },
+      },
     },
   });
 });
@@ -866,7 +850,7 @@ it("refuses comparison for an externally supplied selected check", async () => {
 
   const touched = vi
     .fn<VersionTwoStages["touched"]>()
-    .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
+    .mockReturnValue({ measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" });
   const stages = stagesGiving({ settings, engines, touched });
   const inputs = versionTwoInputsOf({ stages });
   assert(inputs.outcome === "ok", "inputs are available");

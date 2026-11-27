@@ -36,7 +36,7 @@ const SCOPE = {
 const MEASURED_INPUT: Parameters<typeof compareWithoutAllowances>[0] = {
   base: { measured: "yes", placements: [DEBT_PLACEMENT] },
   records: [DEBT_PLACEMENT],
-  touched: { measured: "yes", paths: new Set([ORDER]), landingRevision: "pinned" },
+  touched: { measured: "pinned-ancestor", paths: new Set([ORDER]), landingRevision: "pinned" },
   ruleSets: ["hone"],
   coverage: SCOPE,
   findings: [ORDER_LOOP, ORDER_LOOP],
@@ -172,7 +172,7 @@ it("refuses an external rule set or changed settings", () => {
   const compared = compareWithoutAllowances({
     ...MEASURED_INPUT,
     touched: {
-      measured: "yes",
+      measured: "pinned-ancestor",
       paths: new Set([repoPathOf("hone.config.json")]),
       landingRevision: "pinned",
     },

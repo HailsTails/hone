@@ -183,7 +183,7 @@ it("requires a pinned ancestor for the landing comparison even with an empty led
     baseScope: "pinned-ancestor",
   });
   expect(touched).toEqual({
-    measured: "yes",
+    measured: "pinned-ancestor",
     paths: new Set([FILE_A]),
     landingRevision: "pinned",
   });

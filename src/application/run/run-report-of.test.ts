@@ -1132,7 +1132,7 @@ it("reports unavailable landing records in the no-new-findings assessment", () =
   const request: RunReportRequest = {
     ...REQUEST,
     answer: answerCountedFindings,
-    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
     records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
   };
 
@@ -1167,7 +1167,7 @@ it("counts a finding held only by the proposal and accepts one answered by landi
   const request: RunReportRequest = {
     ...REQUEST,
     answer: answerCountedFindings,
-    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A],
     selection: SELECTS_CAST,
     runs: [run],
@@ -1219,7 +1219,7 @@ it("refuses unmeasured files in the engine's verified scope and stale projection
   const request: RunReportRequest = {
     ...REQUEST,
     answer: answerCountedFindings,
-    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A, FILE_B, config, output],
     selection: SELECTS_CAST,
   };
@@ -1244,7 +1244,7 @@ it("refuses a counted report when a child run did not report candidate scope", (
   const report = namedRunReportOf({
     ...REQUEST,
     answer: answerCountedFindings,
-    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A],
     selection: SELECTS_CAST,
     runs: [

@@ -6,7 +6,7 @@ type TouchedRequest = ChangeMeasurement & { readonly renamed: RenamedSinceBase }
 
 const touchedBeyondPureMoves = (request: TouchedRequest): TouchedSet => {
   const touched = computeTouchedSet(request);
-  if (touched.measured !== "yes") {
+  if (touched.measured === "no") {
     return touched;
   }
   return request.renamed.measured === "no"

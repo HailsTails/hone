@@ -17,7 +17,7 @@ import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
-type Selected = Pick<CheckBinding, "address" | "engine">;
+export type SelectedEngineCheck = Pick<CheckBinding, "address" | "engine">;
 
 const engineOf = (request: {
   readonly catalogue: CatalogueEngines;
@@ -48,7 +48,7 @@ export const engineMeasurementOf = (request: {
 
 const runMeasurementOf = (request: {
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
 }): RunMeasurement => ({
   mechanism: request.run.mechanism,
   selected: request.selected
@@ -59,7 +59,7 @@ const runMeasurementOf = (request: {
 
 export const runMeasurementsOf = (request: {
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
 }): RunMeasurements => ({
@@ -86,7 +86,7 @@ const measuredNothingOf = (request: {
 const notRunOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
@@ -171,7 +171,7 @@ const problemOf = (request: {
 export const engineUnmeasuredOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] =>
   request.runs.flatMap((run) =>
