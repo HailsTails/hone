@@ -293,7 +293,14 @@ const findingsOver = (request: { readonly typePackageTexts: Readonly<Record<stri
 
 describe("pieceImportFindings", () => {
   it("lists every piece in the sources and each refused import with its file", () => {
-    expect(findingsOver({ typePackageTexts: { [TYPE_PACKAGES_KEY]: '["typescript"]' } })).toEqual({
+    expect(
+      findingsOver({
+        typePackageTexts: {
+          "../../src/infrastructure/engines/oxlint/runner/piece-type-packages.json": "invalid JSON",
+          [TYPE_PACKAGES_KEY]: '["typescript"]',
+        },
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
         pieces: [

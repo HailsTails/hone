@@ -119,41 +119,44 @@ describe("mapEnginesRequestToRunRequest", () => {
 });
 
 describe("runNamedEngines", () => {
-  it("loads each selected engine once and runs it over the mapped request", async () => {
-    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
-      outcome: "failed",
-      error: {
-        kind: "runner-failed",
-        mechanism: "walker",
-        failure: { kind: "tool-failed", detail: "stopped" },
-      },
-    });
-    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
-      outcome: "ok",
-      value: { run, project: async () => ({ outcome: "ok", value: [] }) },
-    });
+  it.each(["walker", "oxlint"] as const)(
+    "loads %s and runs it over the mapped request",
+    async (mechanism) => {
+      const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
+        outcome: "failed",
+        error: {
+          kind: "runner-failed",
+          mechanism,
+          failure: { kind: "tool-failed", detail: "stopped" },
+        },
+      });
+      const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+        outcome: "ok",
+        value: { run, project: async () => ({ outcome: "ok", value: [] }) },
+      });
 
-    await runNamedEngines({
-      settings: {
-        selection: { selected: [{ binding: BINDING }] },
-        eslintConfigLookup: { lookup: "detected" },
-        eslintProjectionKind: "mjs",
-        conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
-      },
-      repoRoot: REPO,
-      installRoot: INSTALL,
-      moduleExtension: ".ts",
-      path: { join: vi.fn<PathPort["join"]>() },
-      modules: { load: vi.fn() },
-      engine: { load },
-      checks: [CHECK],
-      answered: [],
-      tree: { tracked: [TYPESCRIPT, MANIFEST], declaredConfigRoots: [] },
-    });
+      await runNamedEngines({
+        settings: {
+          selection: { selected: [{ binding: { ...BINDING, engine: mechanism } }] },
+          eslintConfigLookup: { lookup: "detected" },
+          eslintProjectionKind: "mjs",
+          conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
+        },
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        path: { join: vi.fn<PathPort["join"]>() },
+        modules: { load: vi.fn() },
+        engine: { load },
+        checks: [CHECK],
+        answered: [],
+        tree: { tracked: [TYPESCRIPT, MANIFEST], declaredConfigRoots: [] },
+      });
 
-    expect(load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ mechanism: "walker" }));
-    expect(run.mock.calls).toMatchObject([[{ files: [TYPESCRIPT] }]]);
-  });
+      expect(load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ mechanism }));
+      expect(run.mock.calls).toMatchObject([[{ files: [TYPESCRIPT] }]]);
+    },
+  );
 
   it("omits the paths every engine writes or removes from all runs", async () => {
     const written = repoPathOf("hone.eslint.ts");

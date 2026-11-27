@@ -37,7 +37,7 @@ export type LoadedEngine = {
 
 export type NamedEngineLocation = Omit<RunnerLocation, "mechanism"> &
   (
-    | { readonly mechanism: "walker" }
+    | { readonly mechanism: Exclude<RunnerLocation["mechanism"], "eslint"> }
     | { readonly mechanism: "eslint"; readonly projectionKind: ProjectionKind }
   );
 
