@@ -66,7 +66,7 @@ export const runOxlintCommand = (request: {
   });
   if (executed.outcome === "failed") throw new Error(executed.error.detail);
   const { status, stdout, stderr } = executed.value;
-  if (status !== 0 && status !== 1) {
+  if (status !== 0 && (status !== 1 || stdout.trim() === "")) {
     throw new Error(stderr.trim() || stdout.trim() || `Oxlint exited with status ${status}`);
   }
   return stdout;

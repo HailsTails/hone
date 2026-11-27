@@ -109,6 +109,8 @@ const createGovernanceConfiguration = (request: {
   readonly loader: string;
   readonly input: EffectiveConfig;
 }): LintConfiguration => {
+  // Oxlint resolves globs and plugins from the config path. The loader supplies
+  // that scoped module from stdin so checking requires no checkout writes.
   const config = `.hone-oxlint-governance-${crypto.randomUUID()}.mjs`;
   const loader = new URL(request.loader);
   loader.searchParams.set("configuration", config);
