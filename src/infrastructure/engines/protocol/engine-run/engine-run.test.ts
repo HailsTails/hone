@@ -447,9 +447,9 @@ describe("createNamedEnginePort", () => {
     });
     assert(engine.outcome === "ok");
 
-    const result = await engine.value.run(REQUEST);
+    const scopedRun = await engine.value.run(REQUEST);
 
-    expect(result).toMatchObject({
+    expect(scopedRun).toMatchObject({
       outcome: "ok",
       value: { coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] } },
     });
