@@ -91,6 +91,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -148,6 +149,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -187,7 +189,7 @@ describe("raw reads", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address] },
+      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address], inapplicable: [] },
     });
   });
 
@@ -283,6 +285,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -346,6 +349,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -403,6 +407,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -443,7 +448,7 @@ describe("raw reads", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address] },
+      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address], inapplicable: [] },
     });
   });
 
@@ -506,6 +511,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -569,6 +575,7 @@ describe("raw reads", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });

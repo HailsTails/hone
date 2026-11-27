@@ -170,7 +170,7 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        inapplicable: (observed.value.inapplicable ?? []).map((check) => ({
+        inapplicable: observed.value.inapplicable.map((check) => ({
           check,
           file: request.file.file,
         })),
@@ -336,24 +336,23 @@ const conformCases = (request: {
     Promise.resolve({ outcome: "ok", value: [] }),
   );
 
-export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
-  run: async (request) => {
-    const walked = await runOverRepository({ ports, run: request });
-    if (walked.outcome === "failed") return walked;
-    const { inapplicable, ...observations } = walked.value;
-    const report: NamedChecksRunReport = {
-      ...observations,
-      projection: "none",
-      slices: [],
-      misnamedRuleIds: [],
-      nestedConfigurations: [],
-      unprojectedFolders: [],
-    };
-    return {
-      outcome: "ok",
-      value: inapplicable.length === 0 ? report : { ...report, inapplicable },
-    };
-  },
-  conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
-  project: () => Promise.resolve({ outcome: "ok", value: [] }),
-});
+export const createWalkerRunner = (ports: WalkerPorts) =>
+  ({
+    run: async (request) => {
+      const walked = await runOverRepository({ ports, run: request });
+      if (walked.outcome === "failed") return walked;
+      return {
+        outcome: "ok",
+        value: {
+          ...walked.value,
+          projection: "none",
+          slices: [],
+          misnamedRuleIds: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+        },
+      };
+    },
+    conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
+    project: () => Promise.resolve({ outcome: "ok", value: [] }),
+  }) satisfies NamedChecksRunner;

@@ -788,6 +788,7 @@ describe("the walker inside a function the test passes on", () => {
           ],
           nativeExceptions: [],
           applicable: [ADDRESS],
+          inapplicable: [],
         },
       });
     },
@@ -838,6 +839,7 @@ describe("the walker inside a function the test passes on", () => {
           ],
           nativeExceptions: [],
           applicable: [ADDRESS],
+          inapplicable: [],
         },
       });
     },
@@ -876,7 +878,7 @@ describe("the walker inside a function the test passes on", () => {
 
       expect(observed).toEqual({
         outcome: "ok",
-        value: { hits: [], nativeExceptions: [], applicable: [ADDRESS] },
+        value: { hits: [], nativeExceptions: [], applicable: [ADDRESS], inapplicable: [] },
       });
     },
   );
@@ -918,6 +920,7 @@ describe("the walker inside a function the test passes on", () => {
           hits: [{ file: FILE, check: ADDRESS, anchor: { line, column }, snippet, remedy }],
           nativeExceptions: [],
           applicable: [ADDRESS],
+          inapplicable: [],
         },
       });
     },
@@ -1272,7 +1275,7 @@ describe("the walker on a listed method name that is the adopter's own API", () 
 
       expect(observed).toEqual({
         outcome: "ok",
-        value: { hits: [], nativeExceptions: [], applicable: [ADDRESS] },
+        value: { hits: [], nativeExceptions: [], applicable: [ADDRESS], inapplicable: [] },
       });
     },
   );
@@ -1314,6 +1317,7 @@ describe("the walker on a listed method name that is the adopter's own API", () 
           hits: [{ file: FILE, check: ADDRESS, anchor: { line, column }, snippet, remedy }],
           nativeExceptions: [],
           applicable: [ADDRESS],
+          inapplicable: [],
         },
       });
     },

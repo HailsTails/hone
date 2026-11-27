@@ -85,6 +85,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -125,7 +126,7 @@ describe("assertion sites", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address] },
+      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address], inapplicable: [] },
     });
   });
 
@@ -176,6 +177,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -223,6 +225,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -286,6 +289,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -355,6 +359,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -406,6 +411,7 @@ describe("assertion sites", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });

@@ -15,7 +15,7 @@ import { check } from "./test-type-declaration.ts";
 const TEST_FILE = repoPathSchema.parse("src/orders.test.ts");
 const TSX_TEST_FILE = repoPathSchema.parse("src/orders.test.tsx");
 const ADDRESS = "type-declared-in-a-test#test-type-declaration";
-const APPLICABLE = { applicable: [ADDRESS] };
+const APPLICABLE = { applicable: [ADDRESS], inapplicable: [] };
 const INAPPLICABLE = { applicable: [], inapplicable: [ADDRESS] };
 const BINDING: CheckBinding = {
   address: ADDRESS,
