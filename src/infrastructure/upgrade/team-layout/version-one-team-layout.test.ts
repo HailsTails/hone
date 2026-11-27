@@ -47,9 +47,7 @@ const NAMES = NAMES_WITH(
 
 const HELPER = "export const scratch = /\\.scratch\\./;\n";
 
-type FileReads = Readonly<Record<string, ReturnType<FileTextPort["read"]>>>;
-
-const FILES: FileReads = {
+const FILES: Readonly<Record<string, ReturnType<FileTextPort["read"]>>> = {
   "/repo/acme/rules/ACME-1/discipline.json": { outcome: "ok", value: DISCIPLINE },
   "/repo/acme/mechanisms/audit/ACME-1/piece.json": { outcome: "ok", value: PIECE },
   "/repo/acme/mechanisms/audit/ACME-1/scratch.ts": { outcome: "ok", value: MODULE },
@@ -82,7 +80,7 @@ const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
 };
 
 const sourcesListing = (request: {
-  readonly files: FileReads;
+  readonly files: Readonly<Record<string, ReturnType<FileTextPort["read"]>>>;
   readonly extraPresent?: Readonly<Record<string, "present">>;
   readonly listings: Readonly<Record<string, readonly DirectoryEntry[]>>;
 }) => {
@@ -128,8 +126,10 @@ const sourcesListing = (request: {
   };
 };
 
-const sourcesHolding = (files: FileReads, extraPresent?: Readonly<Record<string, "present">>) =>
-  sourcesListing({ files, listings: {}, extraPresent });
+const sourcesHolding = (
+  files: Readonly<Record<string, ReturnType<FileTextPort["read"]>>>,
+  extraPresent?: Readonly<Record<string, "present">>,
+) => sourcesListing({ files, listings: {}, extraPresent });
 
 const SCRATCH_CLAUSE = {
   ruleSet: { name: "acme" },
