@@ -62,10 +62,6 @@
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
       "answers": "double-with-a-body#stub-implementation",
       "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
     },

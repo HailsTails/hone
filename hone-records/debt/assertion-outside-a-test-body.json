@@ -39,10 +39,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/command-line/installation/install-root.test.ts"
     },
     {

@@ -35,10 +35,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/packaging/version-two-plugin-modules.test.ts"
     },
     {

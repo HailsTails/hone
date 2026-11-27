@@ -79,10 +79,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-floor-syntax.test.ts"
     },
     {
