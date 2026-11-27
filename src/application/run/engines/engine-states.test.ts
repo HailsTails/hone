@@ -10,7 +10,7 @@ import type {
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import type { NamedEngineProjection, NamedEngineRun } from "../../ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import {
   engineMeasurementOf,
   engineProblemsOf,
@@ -57,26 +57,12 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const PROJECTION_FILE = repoPathOf("hone.eslint.mjs");
 
-const PROJECTIONS = {
-  none: { projection: "none" },
-  current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
-  "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
-  missing: { projection: "missing", projectionFile: PROJECTION_FILE },
-  "not-included": { projection: "not-included", projectionFile: PROJECTION_FILE },
-} satisfies Record<
-  "none" | "current" | "out-of-date" | "missing" | "not-included",
-  NamedEngineProjection
->;
-
-const runWith = (request: {
-  readonly mechanism: NamedEngineRun["mechanism"];
-  readonly projection: keyof typeof PROJECTIONS;
-}): NamedEngineRun => ({
-  mechanism: request.mechanism,
+const ESLINT_RUN: NamedEngineRun = {
+  mechanism: ESLINT,
+  projection: "current",
   hits: [],
   nativeExceptions: [],
   coverableKinds: [],
-  ...PROJECTIONS[request.projection],
   coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
   comparedOutputs: [],
   slices: [],
@@ -84,7 +70,27 @@ const runWith = (request: {
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
-});
+};
+
+const WALKER_RUN: NamedEngineRun = { ...ESLINT_RUN, mechanism: AUDIT, projection: "none" };
+
+const MISSING_PROJECTION: NamedEngineRun = {
+  ...ESLINT_RUN,
+  projection: "missing",
+  projectionFile: PROJECTION_FILE,
+};
+
+const OUT_OF_DATE_PROJECTION: NamedEngineRun = {
+  ...ESLINT_RUN,
+  projection: "out-of-date",
+  projectionFile: PROJECTION_FILE,
+};
+
+const NOT_INCLUDED_PROJECTION: NamedEngineRun = {
+  ...ESLINT_RUN,
+  projection: "not-included",
+  projectionFile: PROJECTION_FILE,
+};
 
 const TRACKED = [repoPathOf("src/a.ts")];
 
@@ -93,7 +99,7 @@ describe("engineUnmeasuredOf", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "missing" })],
+        runs: [MISSING_PROJECTION],
         tracked: TRACKED,
         selected: [],
       }),
@@ -111,7 +117,7 @@ describe("engineUnmeasuredOf", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "not-included" })],
+        runs: [NOT_INCLUDED_PROJECTION],
         tracked: TRACKED,
         selected: [],
       }),
@@ -126,39 +132,40 @@ describe("engineUnmeasuredOf", () => {
     ]);
   });
 
-  it.each(["not-included", "current", "out-of-date"] as const)(
-    "names a nested folder beyond all measured coverage when projection is %s",
-    (projection) => {
-      const folder = repoPathOf("pkg");
-      expect(
-        engineUnmeasuredOf({
-          catalogue: REPORT_CATALOGUE,
-          runs: [
-            {
-              ...runWith({ mechanism: ESLINT, projection }),
-              nestedConfigurations: [folder],
-            },
-          ],
-          tracked: TRACKED,
-          selected: [],
-        }),
-      ).toEqual([
-        {
-          kind: "engine-not-run",
-          engine: ESLINT_ENGINE,
-          projection: "not-included",
-          file: repoPathOf("hone.eslint.mjs"),
-          nestedConfigurations: [folder],
-        },
-      ]);
-    },
-  );
+  it.each<NamedEngineRun>([
+    NOT_INCLUDED_PROJECTION,
+    { ...ESLINT_RUN, projection: "current-with-file", projectionFile: PROJECTION_FILE },
+    OUT_OF_DATE_PROJECTION,
+  ])("names a nested folder beyond all measured coverage when projection is $projection", (run) => {
+    const folder = repoPathOf("pkg");
+    expect(
+      engineUnmeasuredOf({
+        catalogue: REPORT_CATALOGUE,
+        runs: [
+          {
+            ...run,
+            nestedConfigurations: [folder],
+          },
+        ],
+        tracked: TRACKED,
+        selected: [],
+      }),
+    ).toEqual([
+      {
+        kind: "engine-not-run",
+        engine: ESLINT_ENGINE,
+        projection: "not-included",
+        file: repoPathOf("hone.eslint.mjs"),
+        nestedConfigurations: [folder],
+      },
+    ]);
+  });
 
   it("names the mechanism when the catalogue gives it no engine", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: { ...REPORT_CATALOGUE, engines: [WALKER] },
-        runs: [runWith({ mechanism: ESLINT, projection: "missing" })],
+        runs: [MISSING_PROJECTION],
         tracked: TRACKED,
         selected: [],
       }),
@@ -176,11 +183,7 @@ describe("engineUnmeasuredOf", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [
-          runWith({ mechanism: ESLINT, projection: "current" }),
-          runWith({ mechanism: ESLINT, projection: "out-of-date" }),
-          runWith({ mechanism: AUDIT, projection: "none" }),
-        ],
+        runs: [ESLINT_RUN, OUT_OF_DATE_PROJECTION, WALKER_RUN],
         tracked: TRACKED,
         selected: [],
       }),
@@ -203,10 +206,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [
-          runWith({ mechanism: ESLINT, projection: "current" }),
-          runWith({ mechanism: ESLINT, projection: "out-of-date" }),
-        ],
+        runs: [ESLINT_RUN, OUT_OF_DATE_PROJECTION],
         tracked: TRACKED,
         selected: SELECTED,
       }),
@@ -217,7 +217,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+        runs: [ESLINT_RUN],
         tracked: [repoPathOf("README.md")],
         selected: SELECTED,
       }),
@@ -229,7 +229,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
       catalogue: REPORT_CATALOGUE,
       runs: [
         {
-          ...runWith({ mechanism: ESLINT, projection: "current" }),
+          ...ESLINT_RUN,
           comparedOutputs: [
             repoPathOf("hone.eslint.d.mts"),
             repoPathOf("packages/a/hone.eslint.d.mts"),
@@ -248,7 +248,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
       catalogue: REPORT_CATALOGUE,
       runs: [
         {
-          ...runWith({ mechanism: ESLINT, projection: "current" }),
+          ...ESLINT_RUN,
           comparedOutputs: [repoPathOf("hone.eslint.ts"), repoPathOf("packages/a/hone.eslint.ts")],
         },
       ],
@@ -266,7 +266,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
         catalogue: REPORT_CATALOGUE,
         runs: [
           {
-            ...runWith({ mechanism: ESLINT, projection: "current" }),
+            ...ESLINT_RUN,
             comparedOutputs: [repoPathOf("hone.eslint.d.mts")],
           },
         ],
@@ -282,7 +282,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "missing" })],
+        runs: [MISSING_PROJECTION],
         tracked: TRACKED,
         selected: SELECTED,
       }),
@@ -302,10 +302,10 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
         catalogue: REPORT_CATALOGUE,
         runs: [
           {
-            ...runWith({ mechanism: ESLINT, projection: "current" }),
+            ...ESLINT_RUN,
             measured: [{ check: CAST, file: repoPathOf("src/a.ts") }],
           },
-          runWith({ mechanism: AUDIT, projection: "none" }),
+          WALKER_RUN,
         ],
         tracked: TRACKED,
         selected: [...SELECTED, { address: CAST, engine: AUDIT }],
@@ -314,7 +314,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "current" })],
+        runs: [ESLINT_RUN],
         tracked: TRACKED,
         selected: [],
       }),
@@ -374,7 +374,7 @@ describe("engineProblemsOf", () => {
         catalogue: REPORT_CATALOGUE,
         runs: [
           {
-            ...runWith({ mechanism: ESLINT, projection: "current" }),
+            ...ESLINT_RUN,
             slices: [{ state: "left-over", file }],
           },
         ],
@@ -385,7 +385,7 @@ describe("engineProblemsOf", () => {
     expect(
       engineProblemsOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "out-of-date" })],
+        runs: [OUT_OF_DATE_PROJECTION],
       }),
     ).toEqual([
       {
@@ -399,7 +399,7 @@ describe("engineProblemsOf", () => {
 
   it("names each package file a run found missing, out of date or not loaded, beside a current root projection", () => {
     const run: NamedEngineRun = {
-      ...runWith({ mechanism: ESLINT, projection: "current" }),
+      ...ESLINT_RUN,
       slices: [
         { file: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
         { file: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
@@ -430,7 +430,7 @@ describe("engineProblemsOf", () => {
 
   it("names the root projection first, then the package files, when both differ", () => {
     const run: NamedEngineRun = {
-      ...runWith({ mechanism: ESLINT, projection: "out-of-date" }),
+      ...OUT_OF_DATE_PROJECTION,
       slices: [{ file: repoPathOf("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
@@ -453,12 +453,7 @@ describe("engineProblemsOf", () => {
     expect(
       engineProblemsOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [
-          runWith({ mechanism: ESLINT, projection: "current" }),
-          runWith({ mechanism: ESLINT, projection: "missing" }),
-          runWith({ mechanism: ESLINT, projection: "not-included" }),
-          runWith({ mechanism: AUDIT, projection: "none" }),
-        ],
+        runs: [ESLINT_RUN, MISSING_PROJECTION, NOT_INCLUDED_PROJECTION, WALKER_RUN],
       }),
     ).toEqual([]);
   });

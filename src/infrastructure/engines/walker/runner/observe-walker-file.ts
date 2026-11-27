@@ -27,7 +27,7 @@ export type WalkerFileObservations = {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
   readonly applicable: readonly CheckAddressText[];
-  readonly inapplicable: readonly CheckAddressText[];
+  readonly inapplicable?: readonly CheckAddressText[];
 };
 
 export type ObserveWalkerFileRequest = {
@@ -328,7 +328,7 @@ const completedFile = (request: {
         hits.map((hit) => ({ ...hit, file: request.file.file })),
       ),
       nativeExceptions: request.nativeExceptions,
-      inapplicable: request.inapplicable,
+      ...(request.inapplicable.length === 0 ? {} : { inapplicable: request.inapplicable }),
       applicable: request.active.flatMap((active) =>
         active.piece.bindings.map((binding) => binding.address),
       ),
