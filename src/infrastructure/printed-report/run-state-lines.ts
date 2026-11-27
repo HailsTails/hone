@@ -97,7 +97,7 @@ const engineNotRunLine = (
       return `${unmeasured.kind} ${engine.name} measured-nothing: the ${engine.name} engine measured no file in this run, so the records its checks answer were not judged, neither kept as answering nor removed as stale; ${measuredNothingNextStep({ ...request, engine })}`;
     case "not-included":
       if (engine.name === "oxlint") {
-        return `${unmeasured.kind} ${engine.name} not-included: extend ${unmeasured.file} from the Oxlint configuration for the files under check, after any configuration that changes the selected rules`;
+        return `${unmeasured.kind} ${engine.name} not-included: extend ./${unmeasured.file} from the Oxlint configuration for the files under check, after any configuration that changes the selected rules`;
       }
       return `${unmeasured.kind} ${engine.name} not-included: the ${engine.name} configuration leaves the projection out of effect for a file under check; spread the default export of ${unmeasured.file}, or of a package's own ${unmeasured.file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, engine })}${nestedNote({ ...request, folders: unmeasured.nestedConfigurations })}`;
   }
@@ -131,8 +131,8 @@ const sliceProblemReason = (
       return `that slice differs from what hone project writes now; ${refreshStep(request)}`;
     case "missing":
       return `that slice is not written; ${refreshStep(request)}`;
-    case "not-applied":
-      return `extend ${file} from the ${engine.name} configuration in ${folder}, after any configuration that changes the selected rules`;
+    case "not-included":
+      return `extend ./${file.slice(file.lastIndexOf("/") + 1)} from the ${engine.name} configuration in ${folder}, after any configuration that changes the selected rules`;
     case "unconfigured":
       return `${folder} has no ${engine.name} configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check`;
   }

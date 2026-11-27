@@ -52,7 +52,7 @@ export const misnamedRuleIdSchema = z.discriminatedUnion("kind", [
 export const checksSliceProblemSchema = z
   .object({
     file: repoPathSchema,
-    state: z.enum(["missing", "out-of-date", "not-applied", "unconfigured"]),
+    state: z.enum(["missing", "out-of-date", "not-included", "unconfigured"]),
   })
   .readonly();
 

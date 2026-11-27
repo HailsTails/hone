@@ -201,6 +201,16 @@ describe("projectionProblemLine", () => {
         problem: { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE },
         line: "eslint unconfigured packages/web/hone.eslint.mjs: packages/web has no eslint configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check",
       },
+      {
+        name: "an Oxlint package config that omits its projection",
+        problem: {
+          scope: "slice",
+          engine: { name: "oxlint" },
+          state: "not-included",
+          file: repoPathOf("packages/web/hone.oxlint.json"),
+        },
+        line: "oxlint not-included packages/web/hone.oxlint.json: extend ./hone.oxlint.json from the oxlint configuration in packages/web, after any configuration that changes the selected rules",
+      },
     ],
   )("prints $name", ({ problem, line }) => {
     expect(projectionProblemLine({ projectCommand: PROJECT_COMMAND, problem })).toBe(line);

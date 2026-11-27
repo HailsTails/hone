@@ -41,5 +41,5 @@ export type ChecksProjectionProblem =
 
 export type ChecksSliceProblem = {
   readonly file: RepoPath;
-  readonly state: "missing" | "out-of-date" | "not-applied" | "unconfigured";
+  readonly state: "missing" | "out-of-date" | "not-included" | "unconfigured";
 };

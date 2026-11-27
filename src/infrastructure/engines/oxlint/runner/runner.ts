@@ -40,9 +40,7 @@ const reportOf = (request: {
     projection: root?.state ?? "current",
     projectionFile: createProjectionPath(""),
     slices: packages.flatMap(({ file, state }): NamedChecksRunReport["slices"] =>
-      state === "current"
-        ? []
-        : [{ file, state: state === "not-included" ? "not-applied" : state }],
+      state === "current" ? [] : [{ file, state }],
     ),
     nestedConfigurations: [],
     unprojectedFolders: [],

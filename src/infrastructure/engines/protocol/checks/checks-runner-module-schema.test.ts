@@ -352,6 +352,7 @@ describe("namedChecksRunResultSchema", () => {
         { file: "packages/a/hone.eslint.mjs", state: "missing" },
         { file: "packages/b/hone.eslint.mjs", state: "out-of-date" },
         { file: "packages/c/hone.eslint.mjs", state: "unconfigured" },
+        { file: "packages/d/hone.oxlint.json", state: "not-included" },
       ],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
