@@ -45,6 +45,7 @@ export type EngineStageRequest = {
   readonly records: Pick<RecordsReading, "records">;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
+  readonly includeApplicability?: true;
 };
 
 export type VersionTwoStages = {
@@ -139,6 +140,7 @@ export type MeasuredEngines = Omit<EngineStageRequest, keyof ReadStageInputs> &
 
 export const measureEngines = async (request: {
   readonly stages: VersionTwoStages;
+  readonly includeApplicability?: true;
 }): Promise<Result<MeasuredEngines, RunLoadFailure>> => {
   const inputs = versionTwoInputsOf(request);
   if (inputs.outcome === "failed") {
@@ -149,11 +151,15 @@ export const measureEngines = async (request: {
     return tree;
   }
   const { content, ...stageInputs } = inputs.value;
-  const measuring = { ...stageInputs, tree: tree.value };
+  const measuring: EngineStageRequest = {
+    ...stageInputs,
+    tree: tree.value,
+    ...(request.includeApplicability === true ? { includeApplicability: true } : {}),
+  };
   const runs = await request.stages.engines(measuring);
   return runs.outcome === "failed"
     ? runs
-    : { outcome: "ok", value: { ...measuring, content, runs: runs.value } };
+    : { outcome: "ok", value: { ...stageInputs, tree: tree.value, content, runs: runs.value } };
 };
 
 type RecordsAfterRenames = {
@@ -195,7 +201,10 @@ export const versionTwoRunOver = async (request: {
   readonly stages: VersionTwoStages;
   readonly arguments: VersionTwoRequest;
 }): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
-  const measured = await measureEngines(request);
+  const measured = await measureEngines({
+    ...request,
+    ...(request.arguments.compareDebtAt === undefined ? {} : { includeApplicability: true }),
+  });
   if (measured.outcome === "failed") {
     return measured;
   }

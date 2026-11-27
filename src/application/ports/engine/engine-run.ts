@@ -36,6 +36,7 @@ export type NamedEngineRunRequest = {
   readonly testFiles: TestFiles;
   readonly bindings: readonly CheckBinding[];
   readonly checks?: readonly EngineCheck[];
+  readonly includeApplicability?: true;
 };
 
 export type NamedEslintRunRequest = NamedEngineRunRequest & {

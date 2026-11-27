@@ -101,6 +101,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       },
       checks: [],
       answered: [],
+      includeApplicability: true,
     });
 
     expect(mapped).toEqual({
@@ -113,6 +114,7 @@ describe("mapEnginesRequestToRunRequest", () => {
       answered: [],
       declaredConfigRoots: [repoPathOf("packages/app")],
       declaredConfigLookup: undefined,
+      includeApplicability: true,
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     });
   });

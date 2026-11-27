@@ -189,6 +189,7 @@ describe("observeWalkerFile", () => {
     const observed = observeWalkerFile({
       file: { file: FILE, readText },
       pieces: [first, skipped],
+      includeApplicability: true,
       parse,
       escapes: [],
     });
@@ -275,6 +276,7 @@ describe("observeWalkerFile", () => {
     const observed = observeWalkerFile({
       file: { file: FILE, readText },
       pieces: [first, skipped, third],
+      includeApplicability: true,
       parse,
       escapes: [],
     });

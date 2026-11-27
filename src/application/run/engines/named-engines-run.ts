@@ -33,6 +33,7 @@ type EnginesRequest = Omit<RunnerLocation, "mechanism"> & {
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
   readonly answered: readonly AnsweredFile[];
+  readonly includeApplicability?: true;
 };
 
 export type NamedEnginesRequest = EnginesRequest & {
@@ -43,7 +44,13 @@ export type NamedEnginesRequest = EnginesRequest & {
 export const mapEnginesRequestToRunRequest = (
   request: Pick<
     EnginesRequest,
-    "repoRoot" | "installRoot" | "tree" | "settings" | "checks" | "answered"
+    | "repoRoot"
+    | "installRoot"
+    | "tree"
+    | "settings"
+    | "checks"
+    | "answered"
+    | "includeApplicability"
   >,
 ): NamedEngineRunRequest => ({
   repoRoot: request.repoRoot,
@@ -59,6 +66,7 @@ export const mapEnginesRequestToRunRequest = (
       ? request.settings.eslintConfigLookup.value
       : undefined,
   testFiles: request.settings.conventions.testFiles,
+  ...(request.includeApplicability === true ? { includeApplicability: true } : {}),
 });
 
 type CallEngine<Value> = {

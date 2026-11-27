@@ -157,12 +157,14 @@ const observedReport = (request: {
   readonly prepared: PreparedPieces;
   readonly bindings: readonly CheckBinding[];
   readonly file: WalkerFile;
+  readonly includeApplicability?: true;
 }): Outcome<readonly WalkerRunReport[]> => {
   const observed = observeWalkerFile({
     file: request.file,
     pieces: request.prepared.pieces,
     parse: request.ports.parse,
     escapes: request.prepared.escapes,
+    ...(request.includeApplicability === true ? { includeApplicability: true } : {}),
   });
   if (observed.outcome === "failed") return observed;
   return {
@@ -202,6 +204,7 @@ const walkedReport = (request: {
   readonly prepared: PreparedPieces;
   readonly bindings: readonly CheckBinding[];
   readonly files: readonly WalkerFile[];
+  readonly includeApplicability?: true;
 }): Outcome<WalkerRunReport> => {
   const observed: Outcome<readonly WalkerRunReport[]>[] = [];
   request.files.some((file) => {
@@ -221,7 +224,9 @@ const walkedReport = (request: {
       hits: [...fromFiles.value.flatMap((report) => report.hits), ...finished.value],
       nativeExceptions: fromFiles.value.flatMap((report) => report.nativeExceptions),
       measured: fromFiles.value.flatMap((report) => report.measured),
-      inapplicable: fromFiles.value.flatMap((report) => report.inapplicable ?? []),
+      ...(request.includeApplicability === true
+        ? { inapplicable: fromFiles.value.flatMap((report) => report.inapplicable ?? []) }
+        : {}),
     },
   };
 };
@@ -270,6 +275,7 @@ const runOverRepository = (request: {
         ports: request.ports,
         prepared: prepared.value,
         bindings: request.run.bindings,
+        ...(request.run.includeApplicability === true ? { includeApplicability: true } : {}),
         files: request.run.trackedPaths.map((file) =>
           repositoryFile({ ports: request.ports, repoRoot: request.run.repoRoot, file }),
         ),

@@ -35,6 +35,7 @@ export type ObserveWalkerFileRequest = {
   readonly pieces: readonly PreparedWalkerPiece[];
   readonly parse: TypeScriptParsePort;
   readonly escapes: readonly DirectiveEscape[];
+  readonly includeApplicability?: true;
 };
 
 export type ObserveWalkerFileResult = Result<WalkerFileObservations, RunnerFailure>;
@@ -348,9 +349,12 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
   const applicable = prepared.value.filter((selected) => selected.check.kind !== "skipped");
-  const inapplicable = prepared.value.flatMap(({ check, piece }) =>
-    check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
-  );
+  const inapplicable =
+    request.includeApplicability === true
+      ? prepared.value.flatMap(({ check, piece }) =>
+          check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
+        )
+      : [];
   if (!applicable.some((selected) => selected.check.kind === "syntax")) {
     return completedFile({
       file,

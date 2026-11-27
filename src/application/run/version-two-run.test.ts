@@ -739,9 +739,10 @@ describe("settledCatalogueOf", () => {
 
 it("carries the requested landing comparison revision into the finished report", async () => {
   const argumentsForComparison = { ...NO_ARGUMENTS, compareDebtAt: "pinned" };
+  const stages = stagesGiving({});
 
   const run = await versionTwoRunOver({
-    stages: stagesGiving({}),
+    stages,
     arguments: argumentsForComparison,
   });
 
@@ -749,6 +750,9 @@ it("carries the requested landing comparison revision into the finished report",
     outcome: "ok",
     value: { report: { debtComparison: { revision: "pinned" } } },
   });
+  expect(stages.engines).toHaveBeenCalledWith(
+    expect.objectContaining({ includeApplicability: true }),
+  );
 });
 
 it("refuses to compare against settings changed by the proposal", async () => {
