@@ -183,8 +183,7 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
     }),
   touched: (stage) =>
     touchedSetOf({
-      assessment: stage.assessment,
-      measuring: stage.measuring,
+      scope: stage.scope,
       records: stage.records.records,
       repoRoot: request.locations.repoRoot,
       baseRevision: request.locations.baseRevision,

@@ -12,7 +12,8 @@ import {
 import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
 import {
   settledCatalogueOf,
-  type VersionTwoRequest,
+  createVersionTwoPlan,
+  versionTwoInputsOf,
   type VersionTwoRun,
   type VersionTwoStages,
   versionTwoRunOver,
@@ -25,7 +26,7 @@ import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
-import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
+import { assessmentInEffect, type ForfeitureAssessment } from "../domain/settings/assessment.ts";
 
 export type RecordsSourceFor = (request: { readonly catalogue: SymptomCatalogue }) => RecordsSource;
 
@@ -56,10 +57,7 @@ const recordFailureOf = <Value>(request: {
 type ProjectCommand = { readonly projectCommand: string };
 
 const runOverCurrentProjection = async (
-  request: ProjectCommand & {
-    readonly stages: VersionTwoStages;
-    readonly arguments: VersionTwoRequest;
-  },
+  request: ProjectCommand & Parameters<typeof versionTwoRunOver>[0],
 ): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
   const run = await versionTwoRunOver(request);
   if (run.outcome === "failed") {
@@ -88,10 +86,13 @@ export const versionTwoRecordDebtOf = async (
       readonly leave: readonly RepoPath[];
     },
 ): Promise<Result<RecordedDebt, RunLoadFailure>> => {
+  const inputs = versionTwoInputsOf(request);
+  if (inputs.outcome === "failed") return inputs;
   const run = await runOverCurrentProjection({
     stages: request.stages,
     projectCommand: request.projectCommand,
-    arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
+    inputs: inputs.value,
+    plan: createVersionTwoPlan({ ...inputs.value.settings.runSettings, measuring: "always" }),
   });
   if (run.outcome === "failed") {
     return run;
@@ -125,14 +126,18 @@ export const versionTwoPruneDebtOf = async (
   request: VersionTwoRecordInput &
     ProjectCommand & { readonly forfeiture: ForfeitureAssessment | undefined },
 ): Promise<Result<readonly PrunableDebt[], RunLoadFailure>> => {
+  const inputs = versionTwoInputsOf(request);
+  if (inputs.outcome === "failed") return inputs;
+  const configured = inputs.value.settings.runSettings;
   const run = await runOverCurrentProjection({
     stages: request.stages,
     projectCommand: request.projectCommand,
-    arguments: {
-      forfeiture: request.forfeiture,
-      reportOutput: undefined,
+    inputs: inputs.value,
+    plan: createVersionTwoPlan({
+      ...configured,
+      assessment: assessmentInEffect({ requested: request, configured: configured.assessment }),
       measuring: "when-debt-held",
-    },
+    }),
   });
   if (run.outcome === "failed") {
     return run;

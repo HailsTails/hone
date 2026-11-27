@@ -635,8 +635,7 @@ describe("versionTwoStagesOver", () => {
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records,
         renamed: { measured: "yes", renamed: new Map() },
       }),
@@ -666,8 +665,7 @@ describe("versionTwoStagesOver", () => {
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records,
         renamed: { measured: "yes", renamed: new Map() },
       }),

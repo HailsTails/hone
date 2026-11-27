@@ -55,7 +55,7 @@ const createEmptyLedgerStages = (request: {
       namedBans: [],
     },
   }),
-  settings: () => ({
+  settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
     outcome: "ok",
     value: {
       available: [],
@@ -93,15 +93,16 @@ it("measures change for an explicitly requested comparison even when no debt is 
     .mockReturnValue({ measured: "yes", paths: new Set() });
   const stages = createEmptyLedgerStages({ touched });
 
-  await versionTwoCheckOf({
+  const run = await versionTwoCheckOf({
     stages,
-    arguments: { forfeiture: "no-new-findings", reportOutput: undefined },
+    arguments: { forfeiture: "no-new-findings", reportOutput: "counts" },
   });
 
+  expect(run).toMatchObject({ outcome: "ok", value: { output: "counts" } });
+  expect(stages.settings).toHaveBeenCalledTimes(1);
   expect(touched).toHaveBeenCalledWith(
     expect.objectContaining({
-      assessment: { forfeiture: "no-new-findings" },
-      measuring: "when-debt-held",
+      scope: { baseScope: "pinned-ancestor" },
     }),
   );
 });

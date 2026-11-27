@@ -12,7 +12,6 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { Result } from "../../result.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { CheckNativeException } from "../../runner/check-observations.ts";
-import type { ForfeitureAssessment } from "../../settings/assessment.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
   type MeasurementIndex,
@@ -74,10 +73,13 @@ export type AnsweringRequest = Catalogued & {
   readonly touched: TouchedSet;
   readonly runs: readonly NamedGovernedRun[];
   readonly measurements: RunMeasurements;
-} & (
-    | { readonly forfeiture?: ForfeitureAssessment }
-    | { readonly forfeiture: "no-new-findings"; readonly comparison: DebtComparisonEvidence }
-  );
+};
+
+type ComparisonRequest = AnsweringRequest & {
+  readonly readComparison: () => DebtComparisonEvidence;
+};
+
+export type FindingAssessment = (request: ComparisonRequest) => Result<Answering, SymptomUnheld>;
 
 export type Answering = {
   readonly findings: readonly CheckFinding[];
@@ -390,33 +392,10 @@ const heldExceptions = (request: {
       : [],
   );
 
-const assessFindingCounts = (
-  request: AnsweringRequest & { readonly answered: readonly AnsweredFinding[] },
-): Result<Pick<Answering, "debtComparison">, SymptomUnheld> => {
-  if (request.forfeiture !== "no-new-findings") return { outcome: "ok", value: {} };
-  const { base } = request.comparison;
-  const debtFindings = filterFindingsForDebtComparison({
-    ...request,
-    landing: base.measured === "yes" ? base.placements : [],
-  });
-  if (debtFindings.outcome === "failed") return debtFindings;
-  return {
-    outcome: "ok",
-    value: {
-      debtComparison: compareDebt({
-        ...request.comparison,
-        records: request.records,
-        touched: request.touched,
-        findings: request.findings.map(({ finding }) => finding),
-        debtFindings: debtFindings.value,
-      }),
-    },
-  };
-};
-
-export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> => {
-  const { catalogue, content } = request;
-  const forfeited = request.forfeiture === "no-new-findings" ? [] : forfeitedRecords(request);
+const judgeFindings = (
+  request: AnsweringRequest & { readonly forfeited: readonly PlacedRecord[] },
+): Result<Answering, SymptomUnheld> => {
+  const { catalogue, content, forfeited } = request;
   const forfeit = new Set(forfeited);
   const inForce = request.records.filter((placed) => !forfeit.has(placed));
   const byPlace = recordsByPlaceOf({ records: inForce });
@@ -448,8 +427,6 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
   });
   if (stale.outcome === "failed") return stale;
   const answered = judged.filter((entry) => entry.by.length > 0);
-  const comparison = assessFindingCounts({ ...request, answered });
-  if (comparison.outcome === "failed") return comparison;
   return {
     outcome: "ok",
     value: {
@@ -462,7 +439,35 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
       unrecorded: natives.value.flatMap((native) =>
         native.holders.length === 0 ? [native.exception] : [],
       ),
-      ...comparison.value,
+    },
+  };
+};
+
+export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> =>
+  judgeFindings({ ...request, forfeited: forfeitedRecords(request) });
+
+export const answerCountedFindings: FindingAssessment = (request) => {
+  const judged = judgeFindings({ ...request, forfeited: [] });
+  if (judged.outcome === "failed") return judged;
+  const comparison = request.readComparison();
+  const { base } = comparison;
+  const debtFindings = filterFindingsForDebtComparison({
+    ...request,
+    answered: judged.value.answered,
+    landing: base.measured === "yes" ? base.placements : [],
+  });
+  if (debtFindings.outcome === "failed") return debtFindings;
+  return {
+    outcome: "ok",
+    value: {
+      ...judged.value,
+      debtComparison: compareDebt({
+        ...comparison,
+        records: request.records,
+        touched: request.touched,
+        findings: request.findings.map(({ finding }) => finding),
+        debtFindings: debtFindings.value,
+      }),
     },
   };
 };

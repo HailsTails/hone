@@ -21,7 +21,6 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     expect(
       touchedSetUnder({
         baseScope: "merge-base",
-        forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: { changedSince },
@@ -39,8 +38,7 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     const changedSince = vi.fn<GitPort["changedSince"]>();
     expect(
       touchedSetUnder({
-        baseScope: "merge-base",
-        forfeiture: "elsewhere",
+        baseScope: "elsewhere",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: { changedSince },
@@ -54,7 +52,6 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     expect(
       touchedSetUnder({
         baseScope: "merge-base",
-        forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: {
@@ -77,7 +74,6 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     expect(
       touchedSetUnder({
         baseScope: "merge-base",
-        forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: {
@@ -100,7 +96,6 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     expect(
       touchedSetUnder({
         baseScope: "merge-base",
-        forfeiture: "this-run",
         repoRoot: REPO_ROOT,
         baseRevision: undefined,
         git: { changedSince: vi.fn<GitPort["changedSince"]>() },
@@ -112,7 +107,6 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
 
 it("keeps the verified landing after dropping an unchanged move", () => {
   const touched = touchedSetUnder({
-    forfeiture: "no-new-findings",
     repoRoot: REPO_ROOT,
     baseRevision: "pinned",
     baseScope: "pinned-ancestor",

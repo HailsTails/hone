@@ -30,6 +30,7 @@ import type { RunMeasurement } from "../measurement/measured-at.ts";
 import type { WhyChain } from "../why-chain.ts";
 import {
   type Answering,
+  answerCountedFindings,
   answerFindings,
   filterFindingsForDebtComparison,
   type RaisedFinding,
@@ -2198,8 +2199,7 @@ it("retains touched debt when a finding comparison judges it", () => {
     touched: FILE_A_TOUCHED,
     runs: [],
     measurements: { runs: [], tracked: [], excluded: [] },
-    forfeiture: "no-new-findings",
-    comparison: {
+    readComparison: () => ({
       base: {
         measured: "yes",
         held: [DEBT_ON_CLASS_IN_A.record],
@@ -2211,10 +2211,10 @@ it("retains touched debt when a finding comparison judges it", () => {
       measured: [],
       exceptions: [],
       projection: "current",
-    },
-  } satisfies Parameters<typeof answerFindings>[0];
+    }),
+  } satisfies Parameters<typeof answerCountedFindings>[0];
 
-  const answered = answerFindings(request);
+  const answered = answerCountedFindings(request);
 
   expect(answered).toMatchObject({
     outcome: "ok",

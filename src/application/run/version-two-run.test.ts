@@ -26,9 +26,10 @@ import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
+  createVersionTwoPlan,
   measureEngines,
   settledCatalogueOf,
-  type VersionTwoRequest,
+  versionTwoInputsOf,
   type VersionTwoStages,
   versionTwoRunOver,
 } from "./version-two-run.ts";
@@ -409,15 +410,24 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
   ...request,
 });
 
-const NO_ARGUMENTS: VersionTwoRequest = {
-  forfeiture: undefined,
-  reportOutput: undefined,
+const CONFIGURED_PLAN = createVersionTwoPlan({
+  ...SETTINGS.runSettings,
   measuring: "when-debt-held",
-};
+});
+
+const PLAN_COMPARING_COUNTS = createVersionTwoPlan({
+  assessment: { forfeiture: "no-new-findings" },
+  reportOutput: "actionable",
+  measuring: "when-debt-held",
+});
 
 describe("versionTwoRunOver", () => {
-  it("reports the findings the engines raised, with the catalogue and the output the settings name", async () => {
-    const run = await versionTwoRunOver({ stages: stagesGiving({}), arguments: NO_ARGUMENTS });
+  it("reports the findings the engines raised, with the catalogue and the planned output", async () => {
+    const stages = stagesGiving({});
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     expect(run).toMatchObject({
       outcome: "ok",
       value: {
@@ -432,18 +442,26 @@ describe("versionTwoRunOver", () => {
     });
   });
 
-  it("takes the report output and the forfeiture assessment the command line gave over the settings", async () => {
+  it("passes the planned forfeiture to the touched stage and returns the planned output", async () => {
     const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({ measured: "elsewhere" });
+    const stages = stagesGiving({ touched });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
     const run = await versionTwoRunOver({
-      stages: stagesGiving({ touched }),
-      arguments: { forfeiture: "elsewhere", reportOutput: "counts", measuring: "when-debt-held" },
+      stages,
+      inputs: inputs.value,
+      plan: createVersionTwoPlan({
+        assessment: { forfeiture: "elsewhere" },
+        reportOutput: "counts",
+        measuring: "when-debt-held",
+      }),
     });
     expect(run).toMatchObject({ outcome: "ok", value: { output: "counts" } });
     expect(touched.mock.calls).toEqual([
       [
         {
-          assessment: { forfeiture: "elsewhere" },
-          measuring: "when-debt-held",
+          scope: { baseScope: "elsewhere" },
           records: RECORDS,
           renamed: { measured: "yes", renamed: new Map() },
         },
@@ -454,16 +472,20 @@ describe("versionTwoRunOver", () => {
   it("hands back the touched set it measured once, and the measuring it was asked for reaches the stage", async () => {
     const measured = { measured: "yes", paths: new Set([FILE_A]) } as const;
     const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue(measured);
+    const stages = stagesGiving({ touched });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
     const run = await versionTwoRunOver({
-      stages: stagesGiving({ touched }),
-      arguments: { ...NO_ARGUMENTS, measuring: "always" },
+      stages,
+      inputs: inputs.value,
+      plan: createVersionTwoPlan({ ...SETTINGS.runSettings, measuring: "always" }),
     });
     expect(run).toMatchObject({ outcome: "ok", value: { touched: measured } });
     expect(touched.mock.calls).toEqual([
       [
         {
-          assessment: { forfeiture: "this-run" },
-          measuring: "always",
+          scope: { baseScope: "merge-base", measuring: "always" },
           records: RECORDS,
           renamed: { measured: "yes", renamed: new Map() },
         },
@@ -499,7 +521,10 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["touched"]>()
         .mockReturnValue({ measured: "yes", paths: new Set([FILE_A]) }),
     });
-    const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     assert(run.outcome === "ok", "the run completes");
     expect({
       moved: run.value.moved,
@@ -528,7 +553,10 @@ describe("versionTwoRunOver", () => {
 
   it("asks the settings and the records with the catalogue, and the engines with everything read", async () => {
     const stages = stagesGiving({});
-    await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     expect({
       settings: vi.mocked(stages.settings).mock.calls,
       records: vi.mocked(stages.records).mock.calls,
@@ -550,7 +578,7 @@ describe("versionTwoRunOver", () => {
     });
   });
 
-  it("fails naming the symptom a check names and no catalogue holds, and runs no engine", async () => {
+  it("fails naming the symptom a check names and no catalogue holds, and runs no engine", () => {
     const stages = stagesGiving({
       catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
         outcome: "ok",
@@ -578,7 +606,7 @@ describe("versionTwoRunOver", () => {
       }),
     });
 
-    const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    const run = versionTwoInputsOf({ stages });
 
     expect({ run, engines: vi.mocked(stages.engines).mock.calls }).toEqual({
       run: {
@@ -592,33 +620,33 @@ describe("versionTwoRunOver", () => {
     });
   });
 
-  it("fails with the catalogue's failure and reads nothing more when the catalogue cannot be read", async () => {
+  it("fails with the catalogue's failure and reads nothing more when the catalogue cannot be read", () => {
     const stages = stagesGiving({
       catalogue: vi
         .fn<VersionTwoStages["catalogue"]>()
         .mockReturnValue({ outcome: "failed", error: CATALOGUE_UNREAD }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: CATALOGUE_UNREAD,
     });
     expect(vi.mocked(stages.settings).mock.calls).toEqual([]);
   });
 
-  it("fails with the settings' failure and runs no engine when the settings cannot be read", async () => {
+  it("fails with the settings' failure and runs no engine when the settings cannot be read", () => {
     const stages = stagesGiving({
       settings: vi
         .fn<VersionTwoStages["settings"]>()
         .mockReturnValue({ outcome: "failed", error: SETTINGS_ABSENT }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
     });
     expect(vi.mocked(stages.engines).mock.calls).toEqual([]);
   });
 
-  it("fails with the records' failure when the records cannot be read", async () => {
+  it("fails with the records' failure when the records cannot be read", () => {
     const refused: RunLoadFailure = {
       kind: "records-refused",
       refusals: [{ kind: "not-a-records-file", file: repoPathOf("hone-records/notes.txt") }],
@@ -628,7 +656,7 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["records"]>()
         .mockReturnValue({ outcome: "failed", error: refused }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: refused,
     });
@@ -644,7 +672,12 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["tree"]>()
         .mockReturnValue({ outcome: "failed", error: untracked }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
+
+    expect(run).toEqual({
       outcome: "failed",
       error: untracked,
     });
@@ -662,7 +695,12 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["engines"]>()
         .mockResolvedValue({ outcome: "failed", error: failure }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
+
+    expect(run).toEqual({
       outcome: "failed",
       error: failure,
     });
@@ -673,7 +711,10 @@ describe("measureEngines", () => {
   it("hands back the engines' runs with everything it read to run them, and asks no touched set", async () => {
     const stages = stagesGiving({});
 
-    const measured = await measureEngines({ stages });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const measured = await measureEngines({ stages, inputs: inputs.value });
 
     expect(measured).toEqual({
       outcome: "ok",
@@ -681,7 +722,6 @@ describe("measureEngines", () => {
         catalogue: REPORT_CATALOGUE,
         settings: SETTINGS,
         records: RECORDS,
-        assessment: SETTINGS.runSettings.assessment,
         tree: { tracked: [FILE_A], declaredConfigRoots: [] },
         checks: STAGE_CHECKS,
         content: {
@@ -709,7 +749,10 @@ describe("measureEngines", () => {
         .mockResolvedValue({ outcome: "failed", error: failure }),
     });
 
-    const measured = await measureEngines({ stages });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const measured = await measureEngines({ stages, inputs: inputs.value });
 
     expect(measured).toEqual({ outcome: "failed", error: failure });
   });
@@ -744,9 +787,13 @@ it("reports the verified landing for no-new-findings", async () => {
     .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
   const stages = stagesGiving({ touched });
 
+  const inputs = versionTwoInputsOf({ stages });
+  assert(inputs.outcome === "ok", "inputs are available");
+
   const run = await versionTwoRunOver({
     stages,
-    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
+    inputs: inputs.value,
+    plan: PLAN_COMPARING_COUNTS,
   });
 
   expect(run).toMatchObject({
@@ -763,9 +810,13 @@ it("refuses to compare against settings changed by the proposal", async () => {
   });
   const stages = stagesGiving({ touched });
 
+  const inputs = versionTwoInputsOf({ stages });
+  assert(inputs.outcome === "ok", "inputs are available");
+
   const run = await versionTwoRunOver({
     stages,
-    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
+    inputs: inputs.value,
+    plan: PLAN_COMPARING_COUNTS,
   });
 
   expect(run).toMatchObject({
@@ -813,9 +864,14 @@ it("refuses comparison for an externally supplied selected check", async () => {
   const touched = vi
     .fn<VersionTwoStages["touched"]>()
     .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
+  const stages = stagesGiving({ settings, engines, touched });
+  const inputs = versionTwoInputsOf({ stages });
+  assert(inputs.outcome === "ok", "inputs are available");
+
   const run = await versionTwoRunOver({
-    stages: stagesGiving({ settings, engines, touched }),
-    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
+    stages,
+    inputs: inputs.value,
+    plan: PLAN_COMPARING_COUNTS,
   });
 
   expect(run).toMatchObject({

@@ -8,7 +8,12 @@ import type {
   SmoothingWritten,
 } from "../../application/ports/upgrade/smoothing-commands.ts";
 import { versionTwoProjectionOver } from "../../application/projection/version-two-projection.ts";
-import { type VersionTwoStages, versionTwoRunOver } from "../../application/run/version-two-run.ts";
+import {
+  createVersionTwoPlan,
+  versionTwoInputsOf,
+  type VersionTwoStages,
+  versionTwoRunOver,
+} from "../../application/run/version-two-run.ts";
 import { type RecordsEdit, recordsTextOf } from "../../domain/records/hone-records/records-edit.ts";
 import { mapStaleRecordsToWrittenCarried } from "../../domain/records/upgrade/written-carried-stale.ts";
 import { runLoadFailureOf, type RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -110,9 +115,12 @@ const runRemoveCarried = async (
   request: SmoothingCommandsRequest & { readonly proofWritten: SmoothingWritten },
 ): ReturnType<SmoothingCommands["removeCarried"]> => {
   const reach = request.reach(request.proofWritten);
+  const inputs = versionTwoInputsOf(reach);
+  if (inputs.outcome === "failed") return runFailed({ failure: inputs.error });
   const run = await versionTwoRunOver({
     stages: reach.stages,
-    arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
+    inputs: inputs.value,
+    plan: createVersionTwoPlan({ ...inputs.value.settings.runSettings, measuring: "always" }),
   });
   if (run.outcome === "failed") return runFailed({ failure: run.error });
   const { report, catalogue } = run.value;

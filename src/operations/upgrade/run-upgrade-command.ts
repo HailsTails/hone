@@ -38,7 +38,12 @@ import type {
   VersionOneTeamLayoutsOf,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
-import { type VersionTwoRun, versionTwoRunOver } from "../../application/run/version-two-run.ts";
+import {
+  createVersionTwoPlan,
+  versionTwoInputsOf,
+  type VersionTwoRun,
+  versionTwoRunOver,
+} from "../../application/run/version-two-run.ts";
 import {
   type PlannedProjectionPorts,
   plannedProjectionOf,
@@ -243,18 +248,22 @@ const projectionFilesFor = (request: UpgradeInput): ProjectionFilesOf =>
     namedEngine: request.ports.namedEngine,
   });
 
-const versionTwoRunFor = (request: {
+const versionTwoRunFor = async (request: {
   readonly reach: SmoothingCommandsRequest["reach"];
   readonly proofWritten: ProofWritten;
-}): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
-  versionTwoRunOver({
-    stages: request.reach(request.proofWritten).stages,
-    arguments: {
-      forfeiture: undefined,
-      reportOutput: undefined,
+}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const { stages } = request.reach(request.proofWritten);
+  const inputs = versionTwoInputsOf({ stages });
+  if (inputs.outcome === "failed") return inputs;
+  return versionTwoRunOver({
+    stages,
+    inputs: inputs.value,
+    plan: createVersionTwoPlan({
+      ...inputs.value.settings.runSettings,
       measuring: "when-debt-held",
-    },
+    }),
   });
+};
 
 const createReachOverLayout =
   (

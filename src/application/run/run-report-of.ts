@@ -14,7 +14,7 @@ import type {
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import {
   type Answering,
-  answerFindings,
+  type FindingAssessment,
   type RaisedFinding,
 } from "../../domain/records/answering/answering.ts";
 import type { DebtComparisonEvidence } from "../../domain/records/answering/debt-comparison.ts";
@@ -36,7 +36,6 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
-import type { Assessment, CheckForfeiture } from "../../domain/settings/assessment.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { typescriptFilesOf } from "./checked-tree-of.ts";
@@ -175,7 +174,7 @@ const reportAfterAnswering = (
 
 export type RunReportRequest = ReportInputs & {
   readonly selection: NamedSettingsReading["selection"];
-  readonly assessment: Assessment<CheckForfeiture>;
+  readonly answer: FindingAssessment;
   readonly runs: readonly NamedEngineRun[];
 };
 
@@ -244,33 +243,34 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
     }),
   );
   const measurements = runMeasurementsOf({ ...request, selected });
-  const { forfeiture } = request.assessment;
   const unmeasured = [
     ...recordsUnmeasuredOf({
       records: records.records,
       base: records.base,
       touched: request.touched,
-    }).filter(({ kind }) => forfeiture !== "no-new-findings" || kind !== "forfeiture-unmeasured"),
+    }),
     ...engineUnmeasuredOf({ ...request, selected }),
   ];
-  const answering = answerFindings({
+  const comparisonUnmeasured = unmeasured.filter(({ kind }) => kind !== "forfeiture-unmeasured");
+  const answering = request.answer({
     ...request,
     records: records.records,
     findings,
     measurements,
-    ...(forfeiture === "no-new-findings"
-      ? {
-          forfeiture,
-          comparison: createComparisonEvidence({
-            ...request,
-            status,
-            unmeasured,
-            selected,
-            measurements,
-          }),
-        }
-      : { forfeiture }),
+    readComparison: () =>
+      createComparisonEvidence({
+        ...request,
+        status,
+        unmeasured: comparisonUnmeasured,
+        selected,
+        measurements,
+      }),
   });
   if (answering.outcome === "failed") return answering;
-  return reportAfterAnswering({ ...request, answering: answering.value, status, unmeasured });
+  return reportAfterAnswering({
+    ...request,
+    answering: answering.value,
+    status,
+    unmeasured: answering.value.debtComparison === undefined ? unmeasured : comparisonUnmeasured,
+  });
 };

@@ -1,6 +1,5 @@
 import type { RenamedSinceBase } from "../../../domain/repository/renamed-path.ts";
 import { type TouchedSet, withoutPureMoves } from "../../../domain/repository/touched-set.ts";
-import type { CheckForfeiture } from "../../../domain/settings/assessment.ts";
 import { type ChangeMeasurement, computeTouchedSet } from "./touched-set.ts";
 
 type TouchedRequest = ChangeMeasurement & { readonly renamed: RenamedSinceBase };
@@ -16,6 +15,12 @@ const touchedBeyondPureMoves = (request: TouchedRequest): TouchedSet => {
 };
 
 export const touchedSetUnder = (
-  request: TouchedRequest & { readonly forfeiture: CheckForfeiture },
-): TouchedSet =>
-  request.forfeiture === "elsewhere" ? { measured: "elsewhere" } : touchedBeyondPureMoves(request);
+  request: Omit<TouchedRequest, "baseScope"> & {
+    readonly baseScope: TouchedRequest["baseScope"] | "elsewhere";
+  },
+): TouchedSet => {
+  const { baseScope } = request;
+  return baseScope === "elsewhere"
+    ? { measured: "elsewhere" }
+    : touchedBeyondPureMoves({ ...request, baseScope });
+};

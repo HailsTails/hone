@@ -7,7 +7,6 @@ import type { FileRemovalPort } from "../application/ports/file-system/file-remo
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import { versionTwoRunOver } from "../application/run/version-two-run.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { createChecksRunner } from "../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
@@ -30,6 +29,7 @@ import { installFormOf } from "../infrastructure/node/modules/install-layout.ts"
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { versionTwoCheckOf } from "../operations/check/version-two-check-command.ts";
 import { installedPortsOver } from "./installed-ports.ts";
 import { versionTwoStagesOver } from "./version-two-stages.ts";
 
@@ -216,7 +216,7 @@ const checkOf = (request: {
   readonly modules: ModuleLoaderPort;
   readonly fileText: FileTextPort;
 }) =>
-  versionTwoRunOver({
+  versionTwoCheckOf({
     stages: versionTwoStagesOver({
       ports: installedPortsOver({
         path,
@@ -239,7 +239,7 @@ const checkOf = (request: {
         baseRevision: undefined,
       },
     }),
-    arguments: { reportOutput: undefined, forfeiture: undefined, measuring: "when-debt-held" },
+    arguments: { reportOutput: undefined, forfeiture: undefined },
   });
 
 const WHOLE_WALKER_ONLY_REPORT = {

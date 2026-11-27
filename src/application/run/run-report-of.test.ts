@@ -13,6 +13,7 @@ import type {
   AuthorisedLocationKind,
   UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
+import { answerCountedFindings, answerFindings } from "../../domain/records/answering/answering.ts";
 import type {
   Debt,
   PlacedRecord,
@@ -415,7 +416,7 @@ const NO_RECORDS: RecordsReading = {
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const REQUEST: RunReportRequest = {
-  assessment: { forfeiture: "this-run" },
+  answer: answerFindings,
   available: [],
   catalogue: REPORT_CATALOGUE,
   selection: { selected: [], notAdopted: [], notRun: [], excluded: [], eslintConfigRoots: [] },
@@ -1094,7 +1095,7 @@ describe("namedRunReportOf, the selection and the settings", () => {
 it("reports unavailable landing records in the no-new-findings assessment", () => {
   const request: RunReportRequest = {
     ...REQUEST,
-    assessment: { forfeiture: "no-new-findings" },
+    answer: answerCountedFindings,
     touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
   };
@@ -1129,7 +1130,7 @@ it("counts a finding held only by the proposal and accepts one answered by landi
   const run = { ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }), measured: [CAST_HIT] };
   const request: RunReportRequest = {
     ...REQUEST,
-    assessment: { forfeiture: "no-new-findings" },
+    answer: answerCountedFindings,
     touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A],
     selection: SELECTS_CAST,
@@ -1175,7 +1176,7 @@ it("refuses unmeasured files in the engine's verified scope and stale projection
   };
   const request: RunReportRequest = {
     ...REQUEST,
-    assessment: { forfeiture: "no-new-findings" },
+    answer: answerCountedFindings,
     touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A, FILE_B, config, output],
     selection: SELECTS_CAST,

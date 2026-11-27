@@ -714,7 +714,9 @@ describe("versionTwoRecordDebtCommandOf", () => {
         },
       }),
     );
-    expect(stages.touched).toHaveBeenCalledWith(expect.objectContaining({ measuring: "always" }));
+    expect(stages.touched).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "always" } }),
+    );
   });
 
   it("writes the debt the run found and prints it recorded, exit 0", async () => {
@@ -791,8 +793,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "this-run" },
-      measuring: "always",
+      scope: { baseScope: "merge-base", measuring: "always" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -819,8 +820,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "elsewhere" },
-      measuring: "always",
+      scope: { baseScope: "elsewhere" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -1276,7 +1276,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
       exits: [[{ code: 0 }]],
     });
     expect(stages.touched).toHaveBeenCalledWith(
-      expect.objectContaining({ measuring: "when-debt-held" }),
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "when-debt-held" } }),
     );
   });
 
