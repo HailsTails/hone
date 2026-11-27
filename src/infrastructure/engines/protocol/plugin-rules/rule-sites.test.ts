@@ -1,6 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type RuleContext, siteRule } from "./rule-sites.ts";
+import { isFunctionSite, readNode, type RuleContext, siteRule } from "./rule-sites.ts";
+
+describe("readNode", () => {
+  it("refuses a node whose range contains a non-number", () => {
+    const syntax = { type: "Identifier", range: [0, "1"] };
+
+    const node = readNode(syntax);
+
+    expect(node).toBeUndefined();
+  });
+
+  it("keeps the parser's original node for reporting", () => {
+    const syntax = { type: "Identifier", range: [0, 1] };
+
+    const node = readNode(syntax);
+
+    expect(node).toBe(syntax);
+  });
+});
+
+describe("isFunctionSite", () => {
+  it("requires a function body", () => {
+    const syntax = { type: "ArrowFunctionExpression" };
+
+    const isFunction = isFunctionSite(syntax);
+
+    expect(isFunction).toBe(false);
+  });
+});
 
 describe("siteRule", () => {
   it("registers the observed call event on the JavaScript rule", () => {

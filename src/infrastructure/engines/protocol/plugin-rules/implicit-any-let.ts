@@ -1,4 +1,4 @@
-import { siteRule, type SyntaxNode } from "./rule-sites.ts";
+import { readNode, siteRule, type SyntaxNode } from "./rule-sites.ts";
 
 type DeclaredBinding = {
   readonly init?: unknown;
@@ -26,10 +26,10 @@ const governedFile = (request: { readonly filename: string }): "governed" | "not
     ? "governed"
     : "not-governed";
 
-const loopHeadDisposition = (request: { readonly node: SyntaxNode }): "loop-head" | "statement" =>
-  request.node.parent != null && LOOP_HEADS.has(request.node.parent.type)
-    ? "loop-head"
-    : "statement";
+const loopHeadDisposition = (request: { readonly node: SyntaxNode }): "loop-head" | "statement" => {
+  const parent = readNode(request.node.parent);
+  return parent !== undefined && LOOP_HEADS.has(parent.type) ? "loop-head" : "statement";
+};
 
 const implicitAnyLet = siteRule({
   meta: {

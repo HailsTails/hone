@@ -94,7 +94,7 @@ const valueUse = (request: {
   if (
     (parent.type === "UpdateExpression" ||
       (parent.type === "AssignmentExpression" && parent.left === identifier)) &&
-    parent.parent?.type === "ExpressionStatement"
+    readNode(parent.parent)?.type === "ExpressionStatement"
   )
     return "unread";
   return sourceCode
@@ -117,9 +117,9 @@ const restDisposition = (identifier: Identifier): "excluded" | "included" => {
   const parent = identifier.parent;
   const entry =
     parent.type === "AssignmentPattern" && parent.left === identifier ? parent : identifier;
-  const containing = entry.parent;
+  const containing = readNode(entry.parent);
   if (containing?.type === "Property" && containing.value === entry) {
-    const pattern = containing.parent;
+    const pattern = readNode(containing.parent);
     return pattern?.type === "ObjectPattern" &&
       readNodes(pattern.properties).some((property) => property.type === "RestElement")
       ? "excluded"

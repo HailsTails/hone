@@ -1,10 +1,11 @@
+import { z } from "zod";
+
 type Position = { readonly line: number; readonly column: number };
 
 export type SourceLocation = { readonly start: Position; readonly end: Position };
 
 export type SyntaxNode = Readonly<Record<string, unknown>> & {
   readonly type: string;
-  readonly parent?: SyntaxNode | null;
   readonly loc?: SourceLocation | null;
   readonly range?: readonly [number, number];
 };
@@ -71,11 +72,16 @@ export type VariableDeclarationSite = SyntaxNode & {
   readonly declarations: readonly { readonly init?: unknown; readonly id: SyntaxNode }[];
 };
 
+const positionSchema = z.object({ line: z.number(), column: z.number() });
+
+const syntaxNodeSchema = z.object({
+  type: z.string(),
+  loc: z.object({ start: positionSchema, end: positionSchema }).nullish(),
+  range: z.tuple([z.number(), z.number()]).optional(),
+});
+
 export const isSyntaxNode = (candidate: unknown): candidate is SyntaxNode =>
-  typeof candidate === "object" &&
-  candidate !== null &&
-  "type" in candidate &&
-  typeof candidate.type === "string";
+  syntaxNodeSchema.safeParse(candidate).success;
 
 export const readNode = (candidate: unknown): SyntaxNode | undefined =>
   isSyntaxNode(candidate) ? candidate : undefined;
@@ -118,9 +124,10 @@ const listenerOf = (observers: SiteObservers) =>
 
 export const isFunctionSite = (node: SyntaxNode): node is FunctionSite => {
   return (
-    node.type === "FunctionDeclaration" ||
-    node.type === "FunctionExpression" ||
-    node.type === "ArrowFunctionExpression"
+    (node.type === "FunctionDeclaration" ||
+      node.type === "FunctionExpression" ||
+      node.type === "ArrowFunctionExpression") &&
+    isSyntaxNode(node.body)
   );
 };
 

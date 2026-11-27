@@ -14,15 +14,14 @@ import type { AuthoredPieceDeclaration } from "../../domain/rule-set/authored-ru
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
-import checkRuleOptions from "../content-files/rule-sets/check-rule-options.json" with { type: "json" };
-import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
+import {
+  anchorKindSchema,
+  pieceFileSchema,
+  readInstalledCheckSettings,
+} from "../content-files/rule-sets/rule-set-reader.ts";
 import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
-
-const sharedRuleOptions = z
-  .record(z.string(), z.record(z.string(), z.json()))
-  .parse(checkRuleOptions);
 
 const catalogueNameSchema = z.string().refine(isCatalogueName);
 
@@ -220,10 +219,10 @@ export const readNamedPiece = (
   const owner = shared.value;
   const exampleOwner =
     "examples" in piece && piece.examples === "with-implementation" ? implementation : localCheck;
-  const sharedOptions =
-    request.ruleSetRoot === request.installRoot && request.mechanism !== "walker"
-      ? sharedRuleOptions[checkAddressOfNames(localCheck)]
-      : undefined;
+  const sharedOptions = readInstalledCheckSettings({
+    ...request,
+    check: checkAddressOfNames(localCheck),
+  });
   return {
     outcome: "ok",
     value: {

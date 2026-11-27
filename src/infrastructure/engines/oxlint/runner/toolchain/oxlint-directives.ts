@@ -46,43 +46,44 @@ export const findDisableMarker = (source: string): RegExpExecArray | null =>
 
 type DisableInspection = OxlintInvocation & {
   readonly sources: ReadonlyMap<string, Buffer>;
-  readonly config?: string;
-  readonly targets?: readonly string[];
-  readonly run?: typeof runOxlintProcess;
 };
 
-const inspectDisableDirectives = (request: DisableInspection) => {
-  const diagnostics = (request.run ?? runOxlintProcess)({
-    ...request,
-    options: ["--report-unused-disable-directives"],
-    rules: 0,
-  });
-  const directives = new Map(
-    diagnostics.map((diagnostic) => [
-      `${diagnostic.filename}:${diagnostic.labels[0]?.span.offset}`,
-      diagnostic,
-    ]),
-  );
-  return [...directives.values()].map((diagnostic) =>
-    mapDiagnosticToDirective({ ...request, diagnostic }),
-  );
+export const createDisableInspection = (run: typeof runOxlintProcess) => {
+  const inspect = (request: DisableInspection) => {
+    const diagnostics = run({
+      ...request,
+      options: ["--report-unused-disable-directives"],
+      rules: 0,
+    });
+    const directives = new Map(
+      diagnostics.map((diagnostic) => [
+        `${diagnostic.filename}:${diagnostic.labels[0]?.span.offset}`,
+        diagnostic,
+      ]),
+    );
+    return [...directives.values()].map((diagnostic) =>
+      mapDiagnosticToDirective({ ...request, diagnostic }),
+    );
+  };
+  return {
+    read: (request: DisableInspection): readonly DisableDirective[] =>
+      inspect(request).map(({ fileName, line, text }) => ({ fileName, line, text })),
+    createSourcesWithoutDisables: (request: DisableInspection): ReadonlyMap<string, Buffer> => {
+      const updated = new Map<string, Buffer>();
+      if (
+        ![...request.sources.values()].some(
+          (source) => findDisableMarker(source.toString()) !== null,
+        )
+      )
+        return updated;
+      inspect(request).forEach(({ fileName, source, start, end }) => {
+        const copy = updated.get(fileName) ?? Buffer.from(source);
+        copy.fill(32, start, end);
+        updated.set(fileName, copy);
+      });
+      return updated;
+    },
+  };
 };
 
-export const readDisableDirectives = (request: DisableInspection): readonly DisableDirective[] =>
-  inspectDisableDirectives(request).map(({ fileName, line, text }) => ({ fileName, line, text }));
-
-export const createSourcesWithoutDisables = (
-  request: DisableInspection,
-): ReadonlyMap<string, Buffer> => {
-  const updated = new Map<string, Buffer>();
-  if (
-    ![...request.sources.values()].some((source) => findDisableMarker(source.toString()) !== null)
-  )
-    return updated;
-  inspectDisableDirectives(request).forEach(({ fileName, source, start, end }) => {
-    const copy = updated.get(fileName) ?? Buffer.from(source);
-    copy.fill(32, start, end);
-    updated.set(fileName, copy);
-  });
-  return updated;
-};
+export const disableInspection = createDisableInspection(runOxlintProcess);

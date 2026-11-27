@@ -45,6 +45,8 @@ export type OxlintSite = {
 export type OxlintInvocation = {
   readonly cli: string;
   readonly folder: AbsolutePath;
+  readonly config: string;
+  readonly targets: readonly string[];
   readonly files: readonly string[];
 };
 
@@ -81,8 +83,6 @@ export const runOxlintProcess = (
   request: OxlintInvocation & {
     readonly options: readonly string[];
     readonly rules: number;
-    readonly config?: string;
-    readonly targets?: readonly string[];
   },
 ): readonly Diagnostic[] => {
   const output = readOxlintDiagnostics(
@@ -91,13 +91,13 @@ export const runOxlintProcess = (
       arguments: [
         "--format=json",
         "--config",
-        request.config ?? ".oxlintrc.json",
+        request.config,
         "--no-ignore",
         "--disable-nested-config",
         "--threads=1",
         ...request.options,
         "--",
-        ...(request.targets ?? ["sources"]),
+        ...request.targets,
       ],
     }),
   );

@@ -17,15 +17,16 @@ import {
   type OxlintSite,
 } from "./oxlint-diagnostics.ts";
 import {
+  disableInspection,
   findDisableMarker,
-  readDisableDirectives,
   type DisableDirective,
 } from "./oxlint-directives.ts";
 
 const configSchema = z.object({
   jsPlugins: z
     .array(z.union([z.string(), z.object({ name: z.string(), specifier: z.string() })]))
-    .nullish(),
+    .nullish()
+    .transform((plugins) => plugins ?? []),
   overrides: z
     .array(
       z.object({
@@ -36,7 +37,8 @@ const configSchema = z.object({
           .transform((rules) => rules ?? {}),
       }),
     )
-    .nullish(),
+    .nullish()
+    .transform((overrides) => overrides ?? []),
 });
 
 type EffectiveConfig = z.output<typeof configSchema>;
@@ -72,11 +74,11 @@ export const readEffectiveChecks = (request: {
   readonly ids: ReadonlySet<string>;
   readonly namespaces: ReadonlySet<string>;
 }) => ({
-  plugins: (request.config.jsPlugins ?? [])
+  plugins: request.config.jsPlugins
     .filter((plugin) => typeof plugin !== "string")
     .filter(({ name }) => request.namespaces.has(name))
     .toSorted((left, right) => left.name.localeCompare(right.name, "en")),
-  overrides: (request.config.overrides ?? []).flatMap(({ files, rules }) => {
+  overrides: request.config.overrides.flatMap(({ files, rules }) => {
     const selected = selectRules({ rules, ids: request.ids });
     return Object.keys(selected).length === 0 ? [] : [{ files, rules: selected }];
   }),
@@ -121,7 +123,11 @@ type ConfiguredRequest = {
   readonly disableConfiguration: string;
 };
 
-type BatchRequest = ConfiguredRequest & { readonly measurementConfig?: string };
+type MeasurementPlan =
+  | { readonly kind: "adopted" }
+  | { readonly kind: "raw"; readonly config: string };
+
+type BatchRequest = ConfiguredRequest & { readonly measurement: MeasurementPlan };
 
 type BatchObservation = {
   readonly linted: readonly string[];
@@ -139,7 +145,7 @@ const readBatchDisables = (request: BatchRequest): readonly DisableDirective[] =
   const targets = [...sources.keys()];
   return targets.length === 0
     ? []
-    : readDisableDirectives({
+    : disableInspection.read({
         ...request,
         config: disableConfiguration,
         targets,
@@ -150,6 +156,7 @@ const readBatchDisables = (request: BatchRequest): readonly DisableDirective[] =
 
 const runBatch = (request: BatchRequest): BatchObservation => {
   const files = request.sources.map(({ fileName }) => fileName);
+  const { measurement } = request;
   const disables = readBatchDisables(request);
   const scopeArguments = ["--disable-nested-config", "--no-error-on-unmatched-pattern"];
   const listing = runOxlintCommand({
@@ -167,9 +174,9 @@ const runBatch = (request: BatchRequest): BatchObservation => {
       ...request,
       arguments: [
         "--config",
-        request.measurementConfig ?? request.config,
+        measurement.kind === "raw" ? measurement.config : request.config,
         ...scopeArguments,
-        ...(request.measurementConfig === undefined ? [] : ["--no-ignore"]),
+        ...(measurement.kind === "raw" ? ["--no-ignore"] : []),
         "--format=json",
         "--threads=1",
         "--",
@@ -179,7 +186,7 @@ const runBatch = (request: BatchRequest): BatchObservation => {
   );
   if (output.number_of_files !== linted.length)
     throw new Error("Oxlint did not lint the files listed by its configuration");
-  if (request.measurementConfig !== undefined && output.number_of_rules !== request.rules.length)
+  if (measurement.kind === "raw" && output.number_of_rules !== request.rules.length)
     throw new Error("Oxlint did not measure the selected Hone rules");
   const codes = new Set(request.rules.map((rule) => rule.replace("/", "(") + ")"));
   const diagnostics = output.diagnostics.filter(
@@ -236,7 +243,7 @@ export const runConfiguredOxlint = (
     if (state === "not-included") return { outcome: "ok", value: { state } };
     const observed =
       state === "included"
-        ? runBatches(batch)
+        ? runBatches({ ...batch, measurement: { kind: "adopted" } })
         : withTemporaryDirectory({
             outside: request.repoRoot,
             use: (folder) => {
@@ -246,7 +253,10 @@ export const runConfiguredOxlint = (
                 text: JSON.stringify(createMeasurementConfiguration(request.rules)),
               });
               if (written.outcome === "failed") throw new Error(written.error.detail);
-              return runBatches({ ...batch, measurementConfig });
+              return runBatches({
+                ...batch,
+                measurement: { kind: "raw", config: measurementConfig },
+              });
             },
           });
     return { outcome: "ok", value: { state: "included", ...observed } };

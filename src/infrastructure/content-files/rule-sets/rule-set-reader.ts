@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { CheckAddressText } from "../../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -32,8 +33,20 @@ import {
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { clauseEditionsSchema, editionSchema } from "../edition.ts";
 import { parsedJson } from "../parsed-json.ts";
+import checkRuleOptions from "./check-rule-options.json" with { type: "json" };
 
 const SUPPORTED_VERSION = 1;
+
+const installedCheckSettings = z
+  .record(z.string(), z.record(z.string(), z.json()))
+  .parse(checkRuleOptions);
+
+export const readInstalledCheckSettings = (request: {
+  readonly installRoot: string;
+  readonly ruleSetRoot: string;
+  readonly check: CheckAddressText;
+}) =>
+  request.ruleSetRoot === request.installRoot ? (installedCheckSettings[request.check] ?? {}) : {};
 
 export { parsedJson } from "../parsed-json.ts";
 

@@ -1,4 +1,10 @@
-import { type ClassSite, type RuleContext, siteRule, type SyntaxNode } from "./rule-sites.ts";
+import {
+  type ClassSite,
+  readNode,
+  type RuleContext,
+  siteRule,
+  type SyntaxNode,
+} from "./rule-sites.ts";
 
 export type ClassSyntax = {
   readonly filename: string;
@@ -10,7 +16,7 @@ export type ClassDisposition = "allow" | "report";
 export type ClassAncestor = {
   readonly type: string;
   readonly declare?: unknown;
-  readonly parent?: ClassAncestor | null | undefined;
+  readonly parent?: unknown;
 };
 
 export const classDisposition = (syntax: ClassSyntax): ClassDisposition => {
@@ -30,7 +36,7 @@ export const containerMode = ({
   if (node === undefined || node === null) return "runtime";
   if (node.type === "TSModuleDeclaration" && declarationMode({ node }) === "ambient")
     return "ambient";
-  return containerMode({ node: node.parent });
+  return containerMode({ node: readNode(node.parent) });
 };
 const classKeywordToken = ({
   context,
@@ -90,7 +96,7 @@ const noClassAuthoring = siteRule({
         filename: context.filename,
         kind,
         declaration: declarationMode({ node }),
-        container: containerMode({ node: node.parent }),
+        container: containerMode({ node: readNode(node.parent) }),
       });
       if (disposition === "allow") return;
       reportAtClassKeyword({ context, node });

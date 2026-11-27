@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
@@ -55,18 +55,18 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
-  it("uses the installed rule set's shared examples while keeping the engine's implementation", () => {
+  it("binds the installed rule set's examples and defaults to the engine's declaration", () => {
     const piecePath = "/install/oxlint/piece.json";
-    const sharedPath = "/install/content-files/direct-call.examples.json";
+    const sharedPath = "/install/content-files/parameter-count.examples.json";
     const join = vi
       .fn<PathPort["join"]>()
       .mockReturnValueOnce(piecePath)
-      .mockReturnValueOnce("/install/oxlint/direct-call.examples.json")
+      .mockReturnValueOnce("/install/oxlint/parameter-count.examples.json")
       .mockReturnValueOnce(sharedPath)
       .mockReturnValueOnce("/install/oxlint");
     const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
       outcome: "ok",
-      value: '{"version":2,"anchor":{"kind":"file"},"settings":{}}',
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"rule":"eslint/max-params"}}',
     });
     const exists = vi
       .fn<FileTextPort["exists"]>()
@@ -76,6 +76,8 @@ describe("readNamedPiece", () => {
 
     const piece = readNamedPiece({
       ...SUBJECT,
+      symptom: catalogueNameOf("positional-parameters"),
+      check: catalogueNameOf("parameter-count"),
       mechanism: "oxlint",
       path: { join },
       fileText: { exists, read },
@@ -86,6 +88,7 @@ describe("readNamedPiece", () => {
       value: {
         examplesPath: sharedPath,
         pieceRoot: "/install/oxlint",
+        settings: { rule: "eslint/max-params", options: [{ max: 2, countVoidThis: true }] },
       },
     });
     expect(join).toHaveBeenNthCalledWith(3, {
@@ -96,10 +99,40 @@ describe("readNamedPiece", () => {
         "content-files",
         "rule-sets",
         "check-examples",
-        "ambient-randomness",
-        "direct-call.examples.json",
+        "positional-parameters",
+        "parameter-count.examples.json",
       ],
     });
+  });
+
+  it("does not apply installed defaults to a team's check with the same name", () => {
+    const pieceRoot = "/team/engines/eslint/positional-parameters/parameter-count";
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/team/engines/eslint/positional-parameters/parameter-count/piece.json")
+      .mockReturnValueOnce(
+        "/team/engines/eslint/positional-parameters/parameter-count/parameter-count.examples.json",
+      )
+      .mockReturnValueOnce(pieceRoot);
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
+      outcome: "ok",
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"rule":"team-parameter-count"}}',
+    });
+
+    const piece = readNamedPiece({
+      installRoot: "/install",
+      ruleSetRoot: "/team",
+      mechanism: "eslint",
+      symptom: catalogueNameOf("positional-parameters"),
+      check: catalogueNameOf("parameter-count"),
+      path: { join },
+      fileText: { exists, read },
+    });
+
+    assert(piece.outcome === "ok");
+    expect(piece.value.pieceRoot).toBe(pieceRoot);
+    expect(piece.value.settings).toEqual({ rule: "team-parameter-count" });
   });
 
   it.each([

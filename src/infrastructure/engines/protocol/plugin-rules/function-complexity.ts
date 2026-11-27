@@ -296,10 +296,10 @@ const scoredFunction = (request: {
   readonly node: SyntaxNode;
   readonly nesting: number;
   readonly sourceCode: SourceCode;
-}): WalkedScore => walkedChildren({ ...request, parent: request.node.parent ?? undefined });
+}): WalkedScore => walkedChildren({ ...request, parent: readNode(request.node.parent) });
 
 const memberKeyOf = (request: { readonly node: SyntaxNode }): SyntaxNode | undefined => {
-  const parent = request.node.parent;
+  const parent = readNode(request.node.parent);
   if (
     parent == null ||
     !MEMBER_TYPES.has(parent.type) ||
@@ -330,7 +330,7 @@ const functionNameLoc = (request: {
 };
 
 const accessorDisposition = (request: { readonly node: SyntaxNode }): "accessor" | "callable" => {
-  const parent = request.node.parent;
+  const parent = readNode(request.node.parent);
   return parent != null &&
     MEMBER_TYPES.has(parent.type) &&
     "kind" in parent &&
@@ -397,11 +397,12 @@ const chainRole = (request: { readonly chain: CalleeChain | undefined }): Callba
 };
 
 const callbackRole = (request: { readonly node: SyntaxNode }): CallbackRole => {
-  const call = request.node.parent;
+  const call = readNode(request.node.parent);
   if (call?.type !== "CallExpression" || call.callee === request.node) {
     return "callable";
   }
-  const curried = call.parent?.type === "CallExpression" && call.parent.callee === call;
+  const parent = readNode(call.parent);
+  const curried = parent?.type === "CallExpression" && parent.callee === call;
   return curried
     ? "callable"
     : chainRole({ chain: calleeChainOf({ callee: readNode(call.callee), members: [] }) });
@@ -424,7 +425,7 @@ const functionLineCount = (request: {
     }, 0);
 
 const enclosure = (request: { readonly node: SyntaxNode }): "enclosed" | "outermost" => {
-  const parent = request.node.parent;
+  const parent = readNode(request.node.parent);
   if (parent == null) {
     return "outermost";
   }

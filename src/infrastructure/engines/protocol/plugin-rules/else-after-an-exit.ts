@@ -73,10 +73,12 @@ const exitDisposition = (request: {
     : "continues";
 };
 
-const chainPosition = (request: { readonly node: IfSite }): "chain-head" | "else-if" =>
-  request.node.parent?.type === "IfStatement" && request.node.parent.alternate === request.node
+const chainPosition = (request: { readonly node: IfSite }): "chain-head" | "else-if" => {
+  const parent = readNode(request.node.parent);
+  return parent?.type === "IfStatement" && parent.alternate === request.node
     ? "else-if"
     : "chain-head";
+};
 
 const reportedElses = (request: {
   readonly consequent: StatementNode | undefined;

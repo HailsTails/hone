@@ -12,7 +12,7 @@ import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { SelectedOxlintRule } from "../selected-rule.ts";
 import { createMeasurementConfiguration } from "./measurement-configuration.ts";
 import { runOxlintProcess, mapDiagnosticsToSites, type OxlintSite } from "./oxlint-diagnostics.ts";
-import { createSourcesWithoutDisables } from "./oxlint-directives.ts";
+import { disableInspection } from "./oxlint-directives.ts";
 
 const path = createDefaultPathPort({});
 const directories = createDefaultDirectoryPort({});
@@ -72,7 +72,13 @@ const runInWorkspace = (
     files.map((file, index) => [file, Buffer.from(request.sources[index].source)]),
   );
   const configuration = { folder: request.folder, file: CONFIGURATION };
-  const invocation = { cli: request.cli, folder: request.folder, files };
+  const invocation = {
+    cli: request.cli,
+    folder: request.folder,
+    files,
+    config: CONFIGURATION,
+    targets: ["sources"],
+  };
   files.forEach((file) =>
     createDirectory(
       path.directoryOf({
@@ -83,7 +89,10 @@ const runInWorkspace = (
   sources.forEach((source, file) =>
     write({ folder: request.folder, file, contents: source.toString() }),
   );
-  const withDisablesRemoved = createSourcesWithoutDisables({ ...invocation, sources });
+  const withDisablesRemoved = disableInspection.createSourcesWithoutDisables({
+    ...invocation,
+    sources,
+  });
   withDisablesRemoved.forEach((source, file) =>
     write({ folder: request.folder, file, contents: source.toString() }),
   );

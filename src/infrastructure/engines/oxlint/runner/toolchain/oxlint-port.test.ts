@@ -72,7 +72,7 @@ describe("runOxlint", () => {
           kind: "plugin",
           namespace: "hone-filename",
           id: "hone-filename/filename-case",
-          module: `${import.meta.dirname}/../../../eslint/name-off-its-casing/filename-case/eslint-plugin.ts`,
+          module: `${import.meta.dirname}/../../name-off-its-casing/filename-case/oxlint-plugin.ts`,
           options: [],
         },
       ],
@@ -89,7 +89,7 @@ describe("runOxlint", () => {
   });
 
   it("registers a shared plugin once when two selected checks use it", async () => {
-    const module = `${import.meta.dirname}/../../../eslint/test-switched-off/focused-tests/eslint-plugin.ts`;
+    const module = `${import.meta.dirname}/../../test-switched-off/focused-tests/oxlint-plugin.ts`;
     const namespace = "hone-test-modifiers";
     const sites = await runOxlint({
       cli,
