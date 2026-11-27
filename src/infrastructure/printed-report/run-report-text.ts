@@ -143,7 +143,7 @@ export const renderRunSectionsText = (request: RunReportRequest): string =>
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => printedLines({ output: request.output, section }))
     .map((line) => `${line}\n`)
-    .join("");
+    .join("") + renderDebtComparison(request);
 
 export const mapRunReportToFailingLines = (
   request: Omit<RunReportRequest, "output">,
@@ -153,7 +153,7 @@ export const mapRunReportToFailingLines = (
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => [headingOf({ section }), ...section.lines]);
 
-const debtIssueLine = (issue: DebtComparisonIssue): string => {
+const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
   switch (issue.kind) {
     case "base-unavailable":
       return "landing records or changes could not be read";
@@ -190,8 +190,8 @@ const renderDebtComparison = ({ report, output }: RunReportRequest): string => {
   const heading = `debt comparison (${issues.length}) against ${revision}\n`;
   return output === "counts"
     ? heading
-    : `${heading}${issues.map((issue) => `${debtIssueLine(issue)}\n`).join("")}`;
+    : `${heading}${issues.map((issue) => `${mapDebtIssueToLine(issue)}\n`).join("")}`;
 };
 
 export const renderRunReportText = (request: RunReportRequest): string =>
-  `${renderRunSectionsText(request)}${renderDebtComparison(request)}${verdictLine(request)}\n`;
+  `${renderRunSectionsText(request)}${verdictLine(request)}\n`;

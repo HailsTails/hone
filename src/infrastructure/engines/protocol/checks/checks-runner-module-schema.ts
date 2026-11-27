@@ -71,6 +71,7 @@ const checksReportSchema = z.strictObject({
   hits: z.array(checkHitSchema).readonly(),
   nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
   measured: z.array(checkMeasurementSchema).readonly(),
+  inapplicable: z.array(checkMeasurementSchema).readonly().optional(),
 });
 
 export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [

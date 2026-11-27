@@ -113,6 +113,7 @@ const verifiedNamedRun = (request: {
           ...checked.value,
           mechanism: call.mechanism,
           coverableKinds: call.runner.projectedKinds,
+          ...(report.inapplicable === undefined ? {} : { candidateFiles: files }),
         },
       };
 };

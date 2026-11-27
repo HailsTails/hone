@@ -490,3 +490,11 @@ it("takes a full landing commit only for the checked comparison", () => {
   expect(mutable).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
   expect(pruning).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
 });
+
+it("requires an explicit landing revision for no-new-findings", () => {
+  const words = ["--repo", "/work/repo", "--forfeiture", "no-new-findings"];
+
+  const unpinned = parseCheckArguments({ arguments: words, reportOutputs: [] });
+
+  expect(unpinned).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
+});

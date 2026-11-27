@@ -26,10 +26,13 @@ import {
   renderRunSectionsText,
 } from "../../src/infrastructure/printed-report/run-report-text.ts";
 
-const failingSectionsOf = (request: { readonly report: RunReport }): readonly string[] =>
-  RUN_SECTION_NAMES.filter(
-    (section) => runSectionRoleOf({ section }) === "failing" && request.report[section].length > 0,
-  ).map((section) => `${section} (${request.report[section].length})`);
+const failingSectionsOf = ({ report }: { readonly report: RunReport }): readonly string[] => {
+  const failed = RUN_SECTION_NAMES.filter(
+    (section) => runSectionRoleOf({ section }) === "failing" && report[section].length > 0,
+  ).map((section) => `${section} (${report[section].length})`);
+  const comparisons = report.debtComparison?.issues.length ?? 0;
+  return comparisons === 0 ? failed : [...failed, `debt comparison (${comparisons})`];
+};
 
 const gateLineOf = (request: {
   readonly verdict: RunVerdict;

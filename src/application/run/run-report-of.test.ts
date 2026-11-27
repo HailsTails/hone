@@ -1104,3 +1104,101 @@ it("adds landing comparison evidence only when requested", () => {
     value: { debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] } },
   });
 });
+
+it("counts a finding held only by the proposal and accepts one answered by landing", () => {
+  const carried = carriedLocationAt({ file: FILE_A, index: 0 });
+  const location: PlacedRecord = {
+    ...carried,
+    record: {
+      ...carried.record,
+      kind: "authorised-location",
+      symptom: CAST_CHECK.symptom,
+      reach: { reaches: "one-check", check: CAST_CHECK },
+      file: FILE_A,
+      holding: {
+        held: "carried",
+        entry: { reason: "A cast at the handoff" },
+        lacks: [],
+        standing: "established",
+        binding: { binds: "check-and-file" },
+      },
+    },
+  };
+  const run = { ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }), measured: [CAST_HIT] };
+  const compareDebt: RunReportRequest["compareDebt"] = {
+    revision: "pinned",
+    settings: "unchanged",
+    checks: "shipped",
+  };
+  const request = {
+    ...REQUEST,
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [run],
+    compareDebt,
+  };
+
+  const fromHead = namedRunReportOf({
+    ...request,
+    records: { ...NO_RECORDS, records: [location] },
+  });
+  const fromLanding = namedRunReportOf({
+    ...request,
+    records: {
+      ...NO_RECORDS,
+      records: [location],
+      base: {
+        measured: "yes",
+        held: [location.record],
+        placements: [location],
+      },
+    },
+  });
+
+  expect(fromHead).toMatchObject({
+    outcome: "ok",
+    value: {
+      findings: [],
+      debtComparison: { issues: [{ kind: "uncovered", observed: 1 }] },
+    },
+  });
+  expect(fromLanding).toMatchObject({ outcome: "ok", value: { debtComparison: { issues: [] } } });
+});
+
+it("refuses unmeasured files in the engine's verified scope and stale projection", () => {
+  const config = repoPathOf("tsconfig.json");
+  const output = repoPathOf("hone.eslint.d.mts");
+  const run: NamedEngineRun = {
+    ...eslintRunOf({ hits: [], projection: "current" }),
+    candidateFiles: [FILE_A, FILE_B, config, output],
+    measured: [CAST_HIT],
+    inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
+    comparedOutputs: [output],
+  };
+  const compareDebt: RunReportRequest["compareDebt"] = {
+    revision: "pinned",
+    settings: "unchanged",
+    checks: "shipped",
+  };
+  const request = {
+    ...REQUEST,
+    tracked: [FILE_A, FILE_B, config, output],
+    selection: SELECTS_CAST,
+    compareDebt,
+  };
+
+  const unknown = namedRunReportOf({ ...request, runs: [run] });
+  const stale = namedRunReportOf({
+    ...request,
+    runs: [{ ...run, projection: "out-of-date", projectionFile: repoPathOf("hone.eslint.mjs") }],
+  });
+
+  expect(unknown).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "unmeasured", file: config }] } },
+  });
+  expect(stale).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "projection-unmeasured" }] } },
+  });
+});

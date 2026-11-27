@@ -229,6 +229,7 @@ describe("createWalkerRunner run", () => {
           },
         ],
         nativeExceptions: [],
+        inapplicable: [],
         measured: [
           { check: FIRST, file: ALPHA },
           { check: SECOND, file: ALPHA },
@@ -239,7 +240,7 @@ describe("createWalkerRunner run", () => {
     });
   });
 
-  it("names no clause measured on a file every piece skipped, such as a file that is not TypeScript", async () => {
+  it("names skipped pairs separately from completed measurements", async () => {
     expect(
       await runnerWith({
         fileText: fileTextOf({ read: vi.fn() }),
@@ -251,6 +252,12 @@ describe("createWalkerRunner run", () => {
         hits: [],
         nativeExceptions: [],
         measured: [],
+        inapplicable: [
+          { check: FIRST, file: ALPHA },
+          { check: SECOND, file: ALPHA },
+          { check: FIRST, file: CONFIG },
+          { check: SECOND, file: CONFIG },
+        ],
         projection: "none",
         slices: [],
         nestedConfigurations: [],
@@ -490,6 +497,10 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
           inlineDisable({ check: FIRST, file: BETA, line: 2, text: `// ${EXPECTATION} legacy` }),
           inlineDisable({ check: FIRST, file: BETA, line: 4, text: `// ${IGNORE} reason (#42)` }),
         ],
+        inapplicable: [
+          { check: FIRST, file: SKIPPED },
+          { check: FIRST, file: CONFIG },
+        ],
         measured: [
           { check: FIRST, file: ALPHA },
           { check: FIRST, file: BETA },
@@ -518,6 +529,12 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
         nativeExceptions: [
           inlineDisable({ check: FIRST, file: ALPHA, line: 4, text: `// ${IGNORE} reason (#42)` }),
           inlineDisable({ check: FIRST, file: BETA, line: 4, text: `// ${IGNORE} reason (#42)` }),
+        ],
+        inapplicable: [
+          { check: FIRST, file: SKIPPED },
+          { check: SECOND, file: SKIPPED },
+          { check: FIRST, file: CONFIG },
+          { check: SECOND, file: CONFIG },
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
       },
@@ -548,6 +565,12 @@ describe("createWalkerRunner run, type directives several bindings or conform me
           inlineDisable({ check: SECOND, file: ALPHA, line: 2, text: `// ${EXPECTATION} legacy` }),
           inlineDisable({ check: FIRST, file: BETA, line: 2, text: `// ${EXPECTATION} legacy` }),
           inlineDisable({ check: SECOND, file: BETA, line: 2, text: `// ${EXPECTATION} legacy` }),
+        ],
+        inapplicable: [
+          { check: FIRST, file: SKIPPED },
+          { check: SECOND, file: SKIPPED },
+          { check: FIRST, file: CONFIG },
+          { check: SECOND, file: CONFIG },
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
       },

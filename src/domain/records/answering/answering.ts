@@ -343,6 +343,35 @@ const findingHoldings = (
     }),
   });
 
+export const filterFindingsForDebtComparison = (
+  request: Catalogued & {
+    readonly findings: readonly RaisedFinding[];
+    readonly answered: readonly AnsweredFinding[];
+    readonly landing: readonly PlacedRecord[];
+  },
+): Result<readonly CheckFinding[], SymptomUnheld> => {
+  const answered = new Set(
+    request.answered.flatMap(({ finding, by }) =>
+      answersInDebtsPlace({ records: by }).length === 0 ? [] : [finding],
+    ),
+  );
+  const landing = findingHoldings({
+    ...request,
+    findings: request.findings.filter(({ finding }) => answered.has(finding)),
+    byPlace: recordsByPlaceOf({ records: answersInDebtsPlace({ records: request.landing }) }),
+  });
+  if (landing.outcome === "failed") return landing;
+  const covered = new Set(
+    landing.value.flatMap(({ finding, holders }) => (holders.length > 0 ? [finding] : [])),
+  );
+  return {
+    outcome: "ok",
+    value: request.findings
+      .map(({ finding }) => finding)
+      .filter((finding) => !covered.has(finding)),
+  };
+};
+
 const heldExceptions = (request: {
   readonly natives: readonly NativeHolding[];
 }): readonly HeldException[] =>

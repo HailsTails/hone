@@ -35,8 +35,10 @@ type Comparing = Pick<RecordsReading, "base" | "records"> & {
   readonly revision: string;
   readonly touched: TouchedSet;
   readonly selected: readonly CheckAddressText[];
-  readonly files: readonly RepoPath[];
+  readonly scope: readonly CheckMeasurement[];
   readonly findings: readonly CheckMeasurement[];
+  readonly debtFindings?: readonly CheckMeasurement[];
+  readonly inapplicable?: readonly CheckMeasurement[];
   readonly measured: readonly CheckMeasurement[];
   readonly exceptions: readonly CheckNativeException[];
   readonly projection: "current" | "unmeasured";
@@ -69,17 +71,24 @@ const compareMeasuredCount = (request: {
   readonly counted: ReadonlyMap<string, CountedPlace>;
   readonly observed: ReadonlyMap<string, readonly CheckMeasurement[]>;
   readonly measured: ReadonlySet<string>;
+  readonly inapplicable: ReadonlySet<string>;
+  readonly found: ReadonlySet<string>;
   readonly suppressed: ReadonlySet<string>;
   readonly suppressedChecks: ReadonlySet<CheckAddressText>;
 }): readonly DebtComparisonIssue[] => {
   const { pair } = request;
   const address = mapPairToKey(pair);
   const recorded = request.counted.get(address);
-  if (recorded !== undefined && recorded.findings === undefined) {
-    return [{ ...pair, kind: "base-count-missing" }];
-  }
   if (request.suppressed.has(address) || request.suppressedChecks.has(pair.check)) {
     return [{ ...pair, kind: "suppressed" }];
+  }
+  if (request.inapplicable.has(address)) {
+    return request.found.has(address) || request.measured.has(address)
+      ? [{ ...pair, kind: "unmeasured" }]
+      : [];
+  }
+  if (recorded !== undefined && recorded.findings === undefined) {
+    return [{ ...pair, kind: "base-count-missing" }];
   }
   if (!request.measured.has(address)) {
     return [{ ...pair, kind: "unmeasured" }];
@@ -101,20 +110,22 @@ const compareMeasuredDebt = (
   const basePlaces = baseDebts.flatMap(mapDebtToCountedPlace);
   const counted = new Map(basePlaces.map((pair) => [mapPairToKey(pair), pair]));
   if (counted.size !== basePlaces.length) return [{ kind: "base-refused" }];
-  const scope = request.selected.flatMap((check) => request.files.map((file) => ({ check, file })));
-  const compared = new Map(
-    [...basePlaces, ...request.findings, ...scope].map(({ check, file }) => {
-      const pair = { check, file };
-      return [mapPairToKey(pair), pair];
-    }),
+  const exceptionPlaces = request.exceptions.flatMap((exception) =>
+    "file" in exception ? [exception] : [],
   );
-  const measured = new Set(request.measured.map(mapPairToKey));
-  const observed = Map.groupBy(request.findings, mapPairToKey);
-  const suppressed = new Set(
-    request.exceptions.flatMap((exception) =>
-      "file" in exception ? [mapPairToKey(exception)] : [],
+  const compared = new Map(
+    [...basePlaces, ...request.findings, ...request.scope, ...exceptionPlaces].map(
+      ({ check, file }) => {
+        const pair = { check, file };
+        return [mapPairToKey(pair), pair];
+      },
     ),
   );
+  const measured = new Set(request.measured.map(mapPairToKey));
+  const inapplicable = new Set(request.inapplicable?.map(mapPairToKey));
+  const found = new Set(request.findings.map(mapPairToKey));
+  const observed = Map.groupBy(request.debtFindings ?? request.findings, mapPairToKey);
+  const suppressed = new Set(exceptionPlaces.map(mapPairToKey));
   const suppressedChecks = new Set(
     request.exceptions.flatMap((exception) => ("file" in exception ? [] : [exception.check])),
   );
@@ -130,7 +141,16 @@ const compareMeasuredDebt = (
           : [{ check, file, kind: "head-record-changed" }];
       }),
     ...[...compared.values()].flatMap((pair) =>
-      compareMeasuredCount({ pair, counted, observed, measured, suppressed, suppressedChecks }),
+      compareMeasuredCount({
+        pair,
+        counted,
+        observed,
+        measured,
+        inapplicable,
+        found,
+        suppressed,
+        suppressedChecks,
+      }),
     ),
   ];
 };

@@ -199,6 +199,7 @@ describe("observeWalkerFile", () => {
         hits: [{ ...FIRST_HIT, file: FILE }],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address],
+        inapplicable: [SECOND_CLAUSE.address],
       },
     });
     expect(readText).not.toHaveBeenCalled();
@@ -288,6 +289,7 @@ describe("observeWalkerFile", () => {
         ],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address, SECOND_CLAUSE.address, THIRD_CLAUSE.address],
+        inapplicable: [SECOND_CLAUSE.address],
       },
     });
     expect(readText).toHaveBeenCalledTimes(1);

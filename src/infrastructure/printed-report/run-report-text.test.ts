@@ -786,3 +786,16 @@ it("prints the landing ceiling and the observed count before the verdict", () =>
   expect(text).toContain("landing 2, observed 3");
   expect(text).toMatch(/verdict: fail\s*$/);
 });
+
+it("includes the comparison count or just the verdict at the requested detail", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+
+  const counts = rendered({ report, output: "counts" });
+  const verdict = rendered({ report, output: "verdict-only" });
+
+  expect(counts).toBe("debt comparison (1) against pinned\nverdict: fail\n");
+  expect(verdict).toBe("verdict: fail\n");
+});

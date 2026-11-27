@@ -27,7 +27,7 @@ const MEASURED_INPUT: Parameters<typeof compareDebt>[0] = {
   revision: "pinned",
   touched: { measured: "yes", paths: new Set([ORDER]) },
   selected: [ORDER_LOOP.check],
-  files: [ORDER, RECEIPT],
+  scope: [ORDER_LOOP, RECEIPT_LOOP],
   findings: [ORDER_LOOP, ORDER_LOOP],
   measured: [ORDER_LOOP, RECEIPT_LOOP],
   exceptions: [],
@@ -108,4 +108,82 @@ it("refuses stale projection coverage and partially read landing data", () => {
   const compared = compareDebt(request);
 
   expect(compared.issues).toEqual([{ kind: "base-refused" }, { kind: "projection-unmeasured" }]);
+});
+
+it("checks a finding even when the engine also marked its pair inapplicable", () => {
+  const request = { ...MEASURED_INPUT, inapplicable: [ORDER_LOOP, RECEIPT_LOOP], measured: [] };
+
+  const compared = compareDebt(request);
+
+  expect(compared.issues).toEqual([{ ...ORDER_LOOP, kind: "unmeasured" }]);
+});
+
+it("refuses whole-check suppression even when the file check was inapplicable", () => {
+  const request: Parameters<typeof compareDebt>[0] = {
+    ...MEASURED_INPUT,
+    measured: [],
+    findings: [],
+    inapplicable: [ORDER_LOOP, RECEIPT_LOOP],
+    exceptions: [
+      {
+        kind: "command-line-option",
+        check: ORDER_LOOP.check,
+        location: repoPathOf("package.json"),
+        script: "typecheck",
+        option: "--noCheck",
+        cause: { kind: "weakens-run" },
+      },
+    ],
+  };
+
+  const compared = compareDebt(request);
+
+  expect(compared.issues).toEqual([
+    { ...ORDER_LOOP, kind: "suppressed" },
+    { ...RECEIPT_LOOP, kind: "suppressed" },
+  ]);
+});
+
+it("refuses to compare when the rules are unknown or the active settings changed", () => {
+  const request: Parameters<typeof compareDebt>[0] = {
+    ...MEASURED_INPUT,
+    selected: [],
+    settings: "changed",
+    checks: "external",
+  };
+
+  const compared = compareDebt(request);
+
+  expect(compared.issues).toEqual([
+    { kind: "settings-changed" },
+    { kind: "no-checks" },
+    { kind: "external-checks" },
+  ]);
+});
+
+it("requires landing debt to be check-specific", () => {
+  const whole: Debt = { ...DEBT, reach: { reaches: "whole-symptom" } };
+  const request: Parameters<typeof compareDebt>[0] = {
+    ...MEASURED_INPUT,
+    base: { measured: "yes", held: [whole] },
+    records: [],
+    findings: [],
+  };
+
+  const compared = compareDebt(request);
+
+  expect(compared.issues).toEqual([
+    { kind: "whole-symptom", file: ORDER, symptom: "loop-keyword" },
+  ]);
+});
+
+it("refuses ambiguous duplicate landing counts", () => {
+  const request: Parameters<typeof compareDebt>[0] = {
+    ...MEASURED_INPUT,
+    base: { measured: "yes", held: [DEBT, { ...DEBT, findings: 4 }] },
+  };
+
+  const compared = compareDebt(request);
+
+  expect(compared.issues).toEqual([{ kind: "base-refused" }]);
 });

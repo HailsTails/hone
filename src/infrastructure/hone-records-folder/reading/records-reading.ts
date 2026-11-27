@@ -176,9 +176,11 @@ const baseMeasurementOf = (request: {
   const incomplete =
     listed.some((entries) => entries.outcome === "failed") ||
     judged.some((entry) => entry.placed === "refused");
+  const placements = judged.flatMap((entry) => (entry.placed === "record" ? [entry.record] : []));
   return {
     measured: "yes",
-    held: judged.flatMap((entry) => (entry.placed === "record" ? [entry.record.record] : [])),
+    held: placements.map(({ record }) => record),
+    placements,
     ...(incomplete ? { incomplete: true } : {}),
   };
 };

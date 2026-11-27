@@ -321,3 +321,19 @@ describe("runSelfCheck", () => {
     });
   });
 });
+
+it("names the comparison section when it is the only refusal", () => {
+  const report: RunReport = {
+    ...EMPTY_RUN_REPORT,
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+  const produced = producedOf({ report, output: "actionable" });
+
+  const checked = versionTwoSelfCheckOutcomeOf({ ports: SELF_CHECK_PORTS, produced });
+
+  expect(checked.code).toBe(1);
+  expect(checked.text).toContain("debt comparison (1) against pinned");
+  expect(checked.text).toContain(
+    "self-check: fail, failing sections hold entries: debt comparison (1)",
+  );
+});

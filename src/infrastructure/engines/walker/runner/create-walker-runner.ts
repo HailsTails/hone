@@ -44,7 +44,10 @@ type WalkerPorts = {
 
 type BindingOrder = { readonly bindings: readonly CheckBinding[] };
 
-type WalkerRunReport = Pick<NamedChecksRunReport, "hits" | "nativeExceptions" | "measured">;
+type WalkerRunReport = Pick<
+  NamedChecksRunReport,
+  "hits" | "nativeExceptions" | "measured" | "inapplicable"
+>;
 
 type SettledBindings = {
   readonly selected: readonly SelectedWalkerBinding[];
@@ -168,6 +171,10 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
+        inapplicable: (observed.value.inapplicable ?? []).map((check) => ({
+          check,
+          file: request.file.file,
+        })),
         measured: observed.value.applicable.map((check): CheckMeasurement => ({
           check,
           file: request.file.file,
@@ -214,6 +221,7 @@ const walkedReport = (request: {
       hits: [...fromFiles.value.flatMap((report) => report.hits), ...finished.value],
       nativeExceptions: fromFiles.value.flatMap((report) => report.nativeExceptions),
       measured: fromFiles.value.flatMap((report) => report.measured),
+      inapplicable: fromFiles.value.flatMap((report) => report.inapplicable ?? []),
     },
   };
 };

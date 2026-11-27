@@ -150,7 +150,12 @@ export type CarriedListing = {
 };
 
 export type BaseMeasurement =
-  | { readonly measured: "yes"; readonly held: readonly HoneRecord[]; readonly incomplete?: true }
+  | {
+      readonly measured: "yes";
+      readonly held: readonly HoneRecord[];
+      readonly placements?: readonly PlacedRecord[];
+      readonly incomplete?: true;
+    }
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export type RecordNote = { readonly place: RecordPlace; readonly note: CatalogueNote };

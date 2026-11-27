@@ -15,7 +15,11 @@ export type ChecksRunFailure = RunnerFailure;
 export type NamedChecksRunReport = NamedEngineProjection &
   Omit<
     NamedEngineRun,
-    "mechanism" | "coverableKinds" | "comparedOutputs" | keyof NamedEngineProjection
+    | "mechanism"
+    | "coverableKinds"
+    | "comparedOutputs"
+    | "candidateFiles"
+    | keyof NamedEngineProjection
   >;
 
 export type NamedChecksRunner<Request extends NamedEngineRunRequest = NamedEngineRunRequest> = {

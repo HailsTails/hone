@@ -15,12 +15,14 @@ import type {
 import {
   type Answering,
   answerFindings,
+  filterFindingsForDebtComparison,
   type RaisedFinding,
 } from "../../domain/records/answering/answering.ts";
 import { compareDebt } from "../../domain/records/answering/debt-comparison.ts";
 import type { PartyReport } from "../../domain/records/answering/record-reach.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { carriedListingOf } from "../../domain/records/hone-records/record-listings.ts";
+import type { RunMeasurements } from "../../domain/records/measurement/measured-at.ts";
 import {
   carriedJudgementOf,
   recordsUnmeasuredOf,
@@ -194,6 +196,65 @@ export type RunReportRequest = ReportInputs & {
   readonly runs: readonly NamedEngineRun[];
 };
 
+const mapSelectionToComparisonScope = (
+  request: RunReportRequest & {
+    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+  },
+) => {
+  const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs ?? []));
+  const typescript = typescriptFilesOf({ tracked: request.tracked });
+  const candidates = new Map(
+    request.runs.map(({ mechanism, candidateFiles }) => [
+      mechanism,
+      excludeProjectionOutputs({ files: candidateFiles ?? typescript, outputs }),
+    ]),
+  );
+  const fallback = excludeProjectionOutputs({ files: typescript, outputs });
+  return request.selected.flatMap(({ address: check, engine }) =>
+    (candidates.get(engine) ?? fallback).map((file) => ({ check, file })),
+  );
+};
+
+const compareReportedDebt = (
+  request: RunReportRequest & {
+    readonly compareDebt: NonNullable<RunReportRequest["compareDebt"]>;
+    readonly report: RunReport;
+    readonly answering: Answering;
+    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+    readonly findings: readonly RaisedFinding[];
+    readonly measurements: RunMeasurements;
+  },
+): Result<RunReport, SymptomUnheld> => {
+  const { records, selected, findings, answering, runs, measurements, report } = request;
+  const debtFindings = filterFindingsForDebtComparison({
+    ...request,
+    findings,
+    answered: answering.answered,
+    landing: records.base.measured === "yes" ? (records.base.placements ?? []) : [],
+  });
+  if (debtFindings.outcome === "failed") return debtFindings;
+  const debtComparison = compareDebt({
+    ...request.compareDebt,
+    ...records,
+    touched: request.touched,
+    selected: selected.map(({ address }) => address),
+    scope: mapSelectionToComparisonScope({ ...request, selected }),
+    findings: findings.map(({ finding }) => finding),
+    debtFindings: debtFindings.value,
+    inapplicable: runs.flatMap(({ inapplicable }) => inapplicable ?? []),
+    measured: measurements.runs.flatMap(({ measured, selected: addresses }) => {
+      const chosen = new Set(addresses);
+      return measured.filter(({ check }) => chosen.has(check));
+    }),
+    exceptions: runs.flatMap(({ nativeExceptions }) => nativeExceptions),
+    projection:
+      report["projection-problems"].length === 0 && report.unmeasured.length === 0
+        ? "current"
+        : "unmeasured",
+  });
+  return { outcome: "ok", value: { ...report, debtComparison } };
+};
+
 export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, SymptomUnheld> => {
   const { catalogue, records, runs, selection } = request;
   const selected = selection.selected.map(({ binding }) => binding);
@@ -227,25 +288,13 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
   if (answering.outcome === "failed") return answering;
   const report = reportAfterAnswering({ ...request, selected, answering: answering.value, status });
   if (report.outcome === "failed" || request.compareDebt === undefined) return report;
-  const debtComparison = compareDebt({
-    ...request.compareDebt,
-    ...records,
-    touched: request.touched,
-    selected: selected.map(({ address }) => address),
-    files: excludeProjectionOutputs({
-      files: typescriptFilesOf({ tracked: request.tracked }),
-      outputs: new Set(runs.flatMap(({ comparedOutputs }) => comparedOutputs ?? [])),
-    }),
-    findings: findings.map(({ finding }) => finding),
-    measured: measurements.runs.flatMap(({ measured, selected: addresses }) => {
-      const chosen = new Set(addresses);
-      return measured.filter(({ check }) => chosen.has(check));
-    }),
-    exceptions: runs.flatMap(({ nativeExceptions }) => nativeExceptions),
-    projection:
-      report.value["projection-problems"].length === 0 && report.value.unmeasured.length === 0
-        ? "current"
-        : "unmeasured",
+  return compareReportedDebt({
+    ...request,
+    compareDebt: request.compareDebt,
+    report: report.value,
+    answering: answering.value,
+    selected,
+    findings,
+    measurements,
   });
-  return { outcome: "ok", value: { ...report.value, debtComparison } };
 };

@@ -415,6 +415,18 @@ describe("readRecords", () => {
         base: {
           measured: "yes",
           incomplete: true,
+          placements: [
+            {
+              place: { file: DEBT_FILE, index: 0 },
+              record: {
+                kind: "debt",
+                symptom: { ruleSet: "hone", name: "claimed-type" },
+                reach: WHOLE_SYMPTOM,
+                file: "src/basket.ts",
+                holding: { held: "stated" },
+              },
+            },
+          ],
           held: [
             {
               kind: "debt",

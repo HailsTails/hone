@@ -27,6 +27,7 @@ export type WalkerFileObservations = {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
   readonly applicable: readonly CheckAddressText[];
+  readonly inapplicable?: readonly CheckAddressText[];
 };
 
 export type ObserveWalkerFileRequest = {
@@ -308,6 +309,7 @@ const finishFile = (request: {
 const completedFile = (request: {
   readonly file: WalkerFile;
   readonly active: readonly ActiveFilePiece[];
+  readonly inapplicable: readonly CheckAddressText[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
 }): ObserveWalkerFileResult => {
   const finished = collect({ outcomes: request.active.map((active) => finishFile({ active })) });
@@ -319,6 +321,7 @@ const completedFile = (request: {
         hits.map((hit) => ({ ...hit, file: request.file.file })),
       ),
       nativeExceptions: request.nativeExceptions,
+      ...(request.inapplicable.length === 0 ? {} : { inapplicable: request.inapplicable }),
       applicable: request.active.flatMap((active) =>
         active.piece.bindings.map((binding) => binding.address),
       ),
@@ -345,6 +348,9 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
   const applicable = prepared.value.filter((selected) => selected.check.kind !== "skipped");
+  const inapplicable = prepared.value.flatMap(({ check, piece }) =>
+    check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
+  );
   if (!applicable.some((selected) => selected.check.kind === "syntax")) {
     return completedFile({
       file,
@@ -354,6 +360,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
           : [],
       ),
       nativeExceptions: [],
+      inapplicable,
     });
   }
   const parsed = parsedSource({ file, parse: request.parse });
@@ -376,6 +383,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   return completedFile({
     file,
     active: active.value,
+    inapplicable,
     nativeExceptions: directiveEscapesIn({
       sourceFile: parsed.value,
       syntaxApi: request.parse.syntaxApi,

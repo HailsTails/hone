@@ -136,6 +136,7 @@ describe("createNamedEnginePort", () => {
       hits: [],
       nativeExceptions: [],
       measured,
+      inapplicable: [{ check: BINDING.address, file: FILE_A }],
       projection: "none",
       slices: [],
       nestedConfigurations: [],
@@ -161,7 +162,12 @@ describe("createNamedEnginePort", () => {
 
     expect(measuredRun).toEqual({
       outcome: "ok",
-      value: { ...report, mechanism: "walker", coverableKinds: [] },
+      value: {
+        ...report,
+        mechanism: "walker",
+        coverableKinds: [],
+        candidateFiles: [FILE_A, CONFIG],
+      },
     });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });

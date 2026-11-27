@@ -77,3 +77,16 @@ describe("checkedObservations", () => {
     });
   });
 });
+
+it("refuses an applicability claim outside the requested files", () => {
+  const report = {
+    hits: [],
+    nativeExceptions: [],
+    measured: [],
+    inapplicable: [{ check: BINDING.address, file: repoPathOf("outside.ts") }],
+  };
+
+  const checked = checkedObservations({ requested: REQUESTED, report });
+
+  expect(checked).toMatchObject({ outcome: "failed", error: { kind: "runner-invalid-output" } });
+});

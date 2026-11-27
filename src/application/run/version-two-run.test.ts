@@ -19,6 +19,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
@@ -747,5 +748,70 @@ it("carries the requested landing comparison revision into the finished report",
   expect(run).toMatchObject({
     outcome: "ok",
     value: { report: { debtComparison: { revision: "pinned" } } },
+  });
+});
+
+it("refuses to compare against settings changed by the proposal", async () => {
+  const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
+    measured: "yes",
+    paths: new Set([repoPathOf("hone.config.json")]),
+  });
+  const stages = stagesGiving({ touched });
+
+  const run = await versionTwoRunOver({
+    stages,
+    arguments: { ...NO_ARGUMENTS, compareDebtAt: "pinned" },
+  });
+
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: {
+      report: { debtComparison: { issues: [{ kind: "settings-changed" }, { kind: "no-checks" }] } },
+    },
+  });
+});
+
+it("refuses comparison for an externally supplied selected check", async () => {
+  const ruleSet = { name: ruleSetNameOf("acme") };
+  const edition = editionOf("1");
+  const selection: NamedSettingsReading["selection"] = {
+    ...SETTINGS.selection,
+    selected: [
+      {
+        address: { ruleSet, check: HIT.check },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: HIT.check,
+          ruleSet,
+          engine: "eslint",
+          anchor: { kind: "file" },
+          pieceRoot: "/install/pieces",
+          settings: {},
+          checkSettings: {},
+          edition,
+        },
+        editions: { declared: [edition], default: edition, latest: edition },
+      },
+    ],
+  };
+  const settings = vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+    outcome: "ok",
+    value: { ...SETTINGS, selection },
+  });
+
+  const engines = vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+    outcome: "ok",
+    value: [{ ...RUN, measured: [HIT] }],
+  });
+
+  const run = await versionTwoRunOver({
+    stages: stagesGiving({ settings, engines }),
+    arguments: { ...NO_ARGUMENTS, compareDebtAt: "pinned" },
+  });
+
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: { report: { debtComparison: { issues: [{ kind: "external-checks" }] } } },
   });
 });
