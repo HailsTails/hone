@@ -240,6 +240,7 @@ describe("createWalkerRunner run", () => {
           },
         ],
         nativeExceptions: [],
+        inapplicable: [],
         measured: [
           { check: FIRST, file: ALPHA },
           { check: SECOND, file: ALPHA },
@@ -255,7 +256,7 @@ describe("createWalkerRunner run", () => {
       await runnerWith({
         fileText: fileTextOf({ read: vi.fn() }),
         modules: modulesOf({ check: { prepare: skippingPrepare() } }),
-      }).run({ ...RUN, includeApplicability: true }),
+      }).run(RUN),
     ).toEqual({
       outcome: "ok",
       value: {
@@ -482,6 +483,12 @@ const BOTH_CLAUSES_ON_ALPHA_AND_BETA = [
   { check: FIRST, file: BETA },
   { check: SECOND, file: BETA },
 ];
+const BOTH_CLAUSES_ON_SKIPPED_PATHS = [
+  { check: FIRST, file: SKIPPED },
+  { check: SECOND, file: SKIPPED },
+  { check: FIRST, file: CONFIG },
+  { check: SECOND, file: CONFIG },
+];
 
 describe("createWalkerRunner run, type directives a clause declares as its escapes", () => {
   it("reports each declared directive, tracked reference or not, as an inline disable of that clause in every file its piece reads", async () => {
@@ -512,6 +519,10 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
           { check: FIRST, file: ALPHA },
           { check: FIRST, file: BETA },
         ],
+        inapplicable: [
+          { check: FIRST, file: SKIPPED },
+          { check: FIRST, file: CONFIG },
+        ],
       },
     });
   });
@@ -538,6 +549,7 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
           inlineDisable({ check: FIRST, file: BETA, line: 4, text: `// ${IGNORE} reason (#42)` }),
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
+        inapplicable: BOTH_CLAUSES_ON_SKIPPED_PATHS,
       },
     });
   });
@@ -568,6 +580,7 @@ describe("createWalkerRunner run, type directives several bindings or conform me
           inlineDisable({ check: SECOND, file: BETA, line: 2, text: `// ${EXPECTATION} legacy` }),
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
+        inapplicable: BOTH_CLAUSES_ON_SKIPPED_PATHS,
       },
     });
   });

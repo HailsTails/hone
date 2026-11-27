@@ -2203,6 +2203,7 @@ it("retains touched debt when a finding comparison judges it", () => {
       base: { measured: "yes", held: [DEBT_ON_CLASS_IN_A.record] },
       ruleSets: ["hone"],
       scope: [],
+      inapplicable: [],
       measured: [],
       exceptions: [],
       projection: "current",

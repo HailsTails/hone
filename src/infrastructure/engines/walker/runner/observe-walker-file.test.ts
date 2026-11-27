@@ -237,7 +237,6 @@ describe("observeWalkerFile", () => {
     const observed = observeWalkerFile({
       file: { file: FILE, readText },
       pieces: [first, skipped],
-      includeApplicability: true,
       parse,
       escapes: [],
     });
@@ -324,7 +323,6 @@ describe("observeWalkerFile", () => {
     const observed = observeWalkerFile({
       file: { file: FILE, readText },
       pieces: [first, skipped, third],
-      includeApplicability: true,
       parse,
       escapes: [],
     });
@@ -375,6 +373,7 @@ describe("observeWalkerFile", () => {
         ],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address, SECOND_CLAUSE.address, THIRD_CLAUSE.address],
+        inapplicable: [],
       },
     });
     expect(readText).toHaveBeenCalledTimes(1);
@@ -715,7 +714,12 @@ describe("observeWalkerFile", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [FIRST_CLAUSE.address] },
+      value: {
+        hits: [],
+        nativeExceptions: [],
+        applicable: [FIRST_CLAUSE.address],
+        inapplicable: [],
+      },
     });
     expect(recordAnchor.mock.calls).toEqual([[{ line: 2, column: 6 }]]);
     expect(enter.mock.calls).toEqual([

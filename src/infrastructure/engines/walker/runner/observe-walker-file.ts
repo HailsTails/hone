@@ -27,7 +27,7 @@ export type WalkerFileObservations = {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
   readonly applicable: readonly CheckAddressText[];
-  readonly inapplicable?: readonly CheckAddressText[];
+  readonly inapplicable: readonly CheckAddressText[];
 };
 
 export type ObserveWalkerFileRequest = {
@@ -35,7 +35,6 @@ export type ObserveWalkerFileRequest = {
   readonly pieces: readonly PreparedWalkerPiece[];
   readonly parse: TypeScriptParsePort;
   readonly escapes: readonly DirectiveEscape[];
-  readonly includeApplicability?: true;
 };
 
 export type ObserveWalkerFileResult = Result<WalkerFileObservations, RunnerFailure>;
@@ -329,7 +328,7 @@ const completedFile = (request: {
         hits.map((hit) => ({ ...hit, file: request.file.file })),
       ),
       nativeExceptions: request.nativeExceptions,
-      ...(request.inapplicable.length === 0 ? {} : { inapplicable: request.inapplicable }),
+      inapplicable: request.inapplicable,
       applicable: request.active.flatMap((active) =>
         active.piece.bindings.map((binding) => binding.address),
       ),
@@ -346,15 +345,17 @@ const syntaxChecksOf = (request: {
       : [],
   );
 
-const listInapplicableChecks = (request: {
-  readonly includeApplicability?: true;
-  readonly prepared: readonly FilePiece[];
-}): readonly CheckAddressText[] =>
-  request.includeApplicability === true
-    ? request.prepared.flatMap(({ check, piece }) =>
-        check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
-      )
-    : [];
+const classifyPreparedPieces = (pieces: readonly FilePiece[]) => {
+  const grouped = Map.groupBy(pieces, ({ check }) =>
+    check.kind === "skipped" ? "inapplicable" : "applicable",
+  );
+  return {
+    applicable: grouped.get("applicable") ?? [],
+    inapplicable: (grouped.get("inapplicable") ?? []).flatMap(({ piece }) =>
+      piece.bindings.map(({ address }) => address),
+    ),
+  };
+};
 
 export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWalkerFileResult => {
   const cache = cachedFile(request);
@@ -365,8 +366,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   if (prepared.outcome === "failed") return prepared;
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
-  const applicable = prepared.value.filter((selected) => selected.check.kind !== "skipped");
-  const inapplicable = listInapplicableChecks({ ...request, prepared: prepared.value });
+  const { applicable, inapplicable } = classifyPreparedPieces(prepared.value);
   if (!applicable.some((selected) => selected.check.kind === "syntax")) {
     return completedFile({
       file,

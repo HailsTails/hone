@@ -37,7 +37,7 @@ export type DebtComparison = {
 export type DebtComparisonEvidence = Pick<RecordsReading, "base"> & {
   readonly ruleSets: readonly OwnedName["ruleSet"][];
   readonly scope: readonly CheckMeasurement[];
-  readonly inapplicable?: readonly CheckMeasurement[];
+  readonly inapplicable: readonly CheckMeasurement[];
   readonly measured: readonly CheckMeasurement[];
   readonly exceptions: readonly CheckNativeException[];
   readonly projection: "current" | "unmeasured";
@@ -126,7 +126,7 @@ const compareMeasuredDebt = (
     ),
   );
   const measured = new Set(request.measured.map(mapPairToKey));
-  const inapplicable = new Set(request.inapplicable?.map(mapPairToKey));
+  const inapplicable = new Set(request.inapplicable.map(mapPairToKey));
   const found = new Set(request.findings.map(mapPairToKey));
   const observed = Map.groupBy(request.debtFindings ?? request.findings, mapPairToKey);
   const suppressed = new Set(exceptionPlaces.map(mapPairToKey));
@@ -169,14 +169,16 @@ export const compareDebt = (request: Comparing): DebtComparison => {
     return { revision, issues: [{ kind: "base-unavailable" }] };
   }
   const revision = touched.landingRevision;
-  if (base.measured !== "yes") return { revision, issues: [{ kind: "base-unavailable" }] };
+  if (base.measured === "no") return { revision, issues: [{ kind: "base-unavailable" }] };
   const issues: DebtComparisonIssue[] = [];
-  if (base.incomplete === true) issues.push({ kind: "base-refused" });
   if (touched.paths.has(repoPathOf(SETTINGS_FILE_NAME))) issues.push({ kind: "settings-changed" });
   if (request.projection === "unmeasured") issues.push({ kind: "projection-unmeasured" });
   if (request.ruleSets.length === 0) issues.push({ kind: "no-checks" });
   if (request.ruleSets.some((ruleSet) => typeof ruleSet === "object"))
     issues.push({ kind: "external-checks" });
+  if (base.measured === "partial") {
+    return { revision, issues: [{ kind: "base-refused" }, ...issues] };
+  }
   return {
     revision,
     issues: issues.length === 0 ? compareMeasuredDebt({ ...request, base }) : issues,

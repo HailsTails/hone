@@ -738,7 +738,7 @@ describe("settledCatalogueOf", () => {
   });
 });
 
-it("requests applicability and reports the verified landing for no-new-findings", async () => {
+it("reports the verified landing for no-new-findings", async () => {
   const touched = vi
     .fn<VersionTwoStages["touched"]>()
     .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
@@ -753,9 +753,6 @@ it("requests applicability and reports the verified landing for no-new-findings"
     outcome: "ok",
     value: { report: { debtComparison: { revision: "pinned" } } },
   });
-  expect(stages.engines).toHaveBeenCalledWith(
-    expect.objectContaining({ includeApplicability: true }),
-  );
 });
 
 it("refuses to compare against settings changed by the proposal", async () => {

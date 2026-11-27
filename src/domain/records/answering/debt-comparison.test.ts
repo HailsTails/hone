@@ -28,6 +28,7 @@ const MEASURED_INPUT: Parameters<typeof compareDebt>[0] = {
   touched: { measured: "yes", paths: new Set([ORDER]), landingRevision: "pinned" },
   ruleSets: ["hone"],
   scope: [ORDER_LOOP, RECEIPT_LOOP],
+  inapplicable: [],
   findings: [ORDER_LOOP, ORDER_LOOP],
   measured: [ORDER_LOOP, RECEIPT_LOOP],
   exceptions: [],
@@ -99,7 +100,7 @@ it("refuses presence-only debt even with a measured zero", () => {
 it("refuses stale projection coverage and partially read landing data", () => {
   const request: Parameters<typeof compareDebt>[0] = {
     ...MEASURED_INPUT,
-    base: { measured: "yes", held: [], incomplete: true },
+    base: { measured: "partial", held: [] },
     projection: "unmeasured",
   };
 

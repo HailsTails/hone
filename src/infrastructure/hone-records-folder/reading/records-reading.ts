@@ -177,12 +177,8 @@ const baseMeasurementOf = (request: {
     listed.some((entries) => entries.outcome === "failed") ||
     judged.some((entry) => entry.placed === "refused");
   const placements = judged.flatMap((entry) => (entry.placed === "record" ? [entry.record] : []));
-  return {
-    measured: "yes",
-    held: placements.map(({ record }) => record),
-    placements,
-    ...(incomplete ? { incomplete: true } : {}),
-  };
+  const held = placements.map(({ record }) => record);
+  return incomplete ? { measured: "partial", held } : { measured: "yes", held, placements };
 };
 
 const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNote[] => {

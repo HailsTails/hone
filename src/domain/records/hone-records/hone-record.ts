@@ -149,13 +149,11 @@ export type CarriedListing = {
   readonly standing: CarriedStanding;
 };
 
+type HeldBaseRecords = { readonly held: readonly HoneRecord[] };
+
 export type BaseMeasurement =
-  | {
-      readonly measured: "yes";
-      readonly held: readonly HoneRecord[];
-      readonly placements?: readonly PlacedRecord[];
-      readonly incomplete?: true;
-    }
+  | (HeldBaseRecords & { readonly measured: "yes"; readonly placements?: readonly PlacedRecord[] })
+  | (HeldBaseRecords & { readonly measured: "partial" })
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export type RecordNote = { readonly place: RecordPlace; readonly note: CatalogueNote };

@@ -32,7 +32,7 @@ export const carriedJudgementOf = (request: {
   if (carried === 0) {
     return { judgement: "nothing-carried" };
   }
-  if (request.base.measured === "yes") {
+  if (request.base.measured !== "no") {
     return { judgement: "judged" };
   }
   const leftToAnotherRun =

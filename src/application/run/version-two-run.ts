@@ -47,7 +47,6 @@ export type EngineStageRequest = {
   readonly records: Pick<RecordsReading, "records">;
   readonly tree: CheckedTree;
   readonly checks: readonly EngineCheck[];
-  readonly includeApplicability?: true;
 };
 
 export type VersionTwoStages = {
@@ -160,7 +159,6 @@ export const measureEngines = async (request: {
   const measuring: EngineStageRequest = {
     ...stageInputs,
     tree: tree.value,
-    ...(assessment.forfeiture === "no-new-findings" ? { includeApplicability: true } : {}),
   };
   const runs = await request.stages.engines(measuring);
   return runs.outcome === "failed"
@@ -186,7 +184,7 @@ const createRecordsAfterRenames = (request: {
   const { records } = request;
   const renamed = request.stages.renamed();
   const moved =
-    renamed.measured === "yes" && records.base.measured === "yes"
+    renamed.measured === "yes" && records.base.measured !== "no"
       ? recordsAtMovedPathsOf({
           records: records.records,
           renamed: renamed.renamed,

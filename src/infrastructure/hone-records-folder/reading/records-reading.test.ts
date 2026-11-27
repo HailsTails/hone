@@ -413,20 +413,7 @@ describe("readRecords", () => {
         refused: [],
         notes: [],
         base: {
-          measured: "yes",
-          incomplete: true,
-          placements: [
-            {
-              place: { file: DEBT_FILE, index: 0 },
-              record: {
-                kind: "debt",
-                symptom: { ruleSet: "hone", name: "claimed-type" },
-                reach: WHOLE_SYMPTOM,
-                file: "src/basket.ts",
-                holding: { held: "stated" },
-              },
-            },
-          ],
+          measured: "partial",
           held: [
             {
               kind: "debt",
@@ -1233,7 +1220,7 @@ it("keeps readable landing records and marks incomplete evidence when a landing 
   expect(read).toMatchObject({
     outcome: "ok",
     value: {
-      base: { measured: "yes", held: [{ file: "src/cart.ts", findings: 2 }], incomplete: true },
+      base: { measured: "partial", held: [{ file: "src/cart.ts", findings: 2 }] },
     },
   });
 });

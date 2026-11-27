@@ -44,10 +44,9 @@ type WalkerPorts = {
 
 type BindingOrder = { readonly bindings: readonly CheckBinding[] };
 
-type WalkerRunReport = Pick<
-  NamedChecksRunReport,
-  "hits" | "nativeExceptions" | "measured" | "inapplicable"
->;
+type WalkerRunReport = Pick<NamedChecksRunReport, "hits" | "nativeExceptions" | "measured"> & {
+  readonly inapplicable: readonly CheckMeasurement[];
+};
 
 type SettledBindings = {
   readonly selected: readonly SelectedWalkerBinding[];
@@ -157,14 +156,12 @@ const observedReport = (request: {
   readonly prepared: PreparedPieces;
   readonly bindings: readonly CheckBinding[];
   readonly file: WalkerFile;
-  readonly includeApplicability?: true;
 }): Outcome<readonly WalkerRunReport[]> => {
   const observed = observeWalkerFile({
     file: request.file,
     pieces: request.prepared.pieces,
     parse: request.ports.parse,
     escapes: request.prepared.escapes,
-    ...(request.includeApplicability === true ? { includeApplicability: true } : {}),
   });
   if (observed.outcome === "failed") return observed;
   return {
@@ -173,7 +170,7 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        inapplicable: (observed.value.inapplicable ?? []).map((check) => ({
+        inapplicable: observed.value.inapplicable.map((check) => ({
           check,
           file: request.file.file,
         })),
@@ -204,7 +201,6 @@ const walkedReport = (request: {
   readonly prepared: PreparedPieces;
   readonly bindings: readonly CheckBinding[];
   readonly files: readonly WalkerFile[];
-  readonly includeApplicability?: true;
 }): Outcome<WalkerRunReport> => {
   const observed: Outcome<readonly WalkerRunReport[]>[] = [];
   request.files.some((file) => {
@@ -224,9 +220,7 @@ const walkedReport = (request: {
       hits: [...fromFiles.value.flatMap((report) => report.hits), ...finished.value],
       nativeExceptions: fromFiles.value.flatMap((report) => report.nativeExceptions),
       measured: fromFiles.value.flatMap((report) => report.measured),
-      ...(request.includeApplicability === true
-        ? { inapplicable: fromFiles.value.flatMap((report) => report.inapplicable ?? []) }
-        : {}),
+      inapplicable: fromFiles.value.flatMap((report) => report.inapplicable),
     },
   };
 };
@@ -275,7 +269,6 @@ const runOverRepository = (request: {
         ports: request.ports,
         prepared: prepared.value,
         bindings: request.run.bindings,
-        ...(request.run.includeApplicability === true ? { includeApplicability: true } : {}),
         files: request.run.trackedPaths.map((file) =>
           repositoryFile({ ports: request.ports, repoRoot: request.run.repoRoot, file }),
         ),
