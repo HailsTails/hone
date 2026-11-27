@@ -4,7 +4,7 @@ import { catalogueNameOf } from "../../../../../domain/language-layer/catalogue-
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { readNamedPiece } from "../../../named-piece.ts";
-import { eslintPieceSettingsSchema } from "../../runner/pieces/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import classKeyword from "./piece.json" with { type: "json" };
 
 describe("authored class ESLint declarations", () => {
@@ -31,10 +31,8 @@ describe("authored class ESLint declarations", () => {
       symptom: catalogueNameOf("authored-class-or-this"),
       check: catalogueNameOf("static-members-only"),
     });
-    assert(piece.outcome === "ok", JSON.stringify(piece));
-    expect(piece.value.pieceRoot.replaceAll("\\", "/")).toBe(
-      import.meta.dirname.replaceAll("\\", "/"),
-    );
+    assert(piece.outcome === "ok");
+    expect(piece.value.pieceRoot).toBe(import.meta.dirname);
     expect(eslintPieceSettingsSchema.safeParse(piece.value.settings)).toEqual({
       success: true,
       data: {

@@ -63,6 +63,45 @@ const fileTextOf = (request: {
   write: vi.fn<FileTextPort["write"]>(),
 });
 
+const CD_14_DISCIPLINE = {
+  outcome: "ok",
+  value: {
+    held: "present",
+    file: {
+      version: 1,
+      id: "CD-14",
+      clauses: [
+        {
+          kind: "mechanical",
+          id: "class-syntax",
+          mechanisms: ["walker", "eslint"],
+          anchor: { kind: "keyword", keyword: "class" },
+          exceptions: "allowed",
+          cases: {
+            flag: [
+              {
+                name: "a class",
+                fileName: "src/a.ts",
+                source: "class A {}\n",
+                expectedLines: [1],
+              },
+            ],
+            allow: [
+              {
+                name: "no class",
+                fileName: "src/b.ts",
+                source: "const b = 1;\n",
+                expectedLines: [],
+              },
+            ],
+          },
+        },
+        { kind: "judgement", id: "class-intent", enforcedBy: "review" },
+      ],
+    },
+  },
+};
+
 describe("readInstallDiscipline", () => {
   it("holds nothing, probing no piece, when the names map names no clause of the discipline", () => {
     const exists = vi.fn<FileTextPort["exists"]>();
@@ -103,43 +142,9 @@ describe("readInstallDiscipline", () => {
         installRoot: INSTALL_ROOT,
         discipline: CD_14,
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        held: "present",
-        file: {
-          version: 1,
-          id: "CD-14",
-          clauses: [
-            {
-              kind: "mechanical",
-              id: "class-syntax",
-              mechanisms: ["walker", "eslint"],
-              anchor: { kind: "keyword", keyword: "class" },
-              exceptions: "allowed",
-              cases: {
-                flag: [
-                  {
-                    name: "a class",
-                    fileName: "src/a.ts",
-                    source: "class A {}\n",
-                    expectedLines: [1],
-                  },
-                ],
-                allow: [
-                  {
-                    name: "no class",
-                    fileName: "src/b.ts",
-                    source: "const b = 1;\n",
-                    expectedLines: [],
-                  },
-                ],
-              },
-            },
-            { kind: "judgement", id: "class-intent", enforcedBy: "review" },
-          ],
-        },
-      },
+    ).toEqual(CD_14_DISCIPLINE);
+    expect(exists).not.toHaveBeenCalledWith({
+      path: "/install/src/infrastructure/engines/oxlint/authored-class-or-this/class-keyword/piece.json",
     });
     expect(read.mock.calls).toEqual([
       [{ path: NAMES_PATH }],

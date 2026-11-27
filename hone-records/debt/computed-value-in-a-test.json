@@ -103,15 +103,7 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/eslint/runner/runner.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
     },
     {
       "answers": "computed-value-in-a-test#test-body",

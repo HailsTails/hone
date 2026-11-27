@@ -18,7 +18,7 @@ import {
   type EslintPieceSettings,
   eslintPieceSettingsSchema,
   ruleOptionsOf,
-} from "../pieces/eslint-piece-settings-schema.ts";
+} from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import {
   eslintPluginModuleSchema,
   type LoadedEslintPlugin,

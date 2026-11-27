@@ -17,10 +17,6 @@ describe("dataShippingOf", () => {
       path: "src/infrastructure/engines/walker/exported-for-test/export-test-sibling/export-test-sibling.examples.json",
       shipping: "shipped",
     },
-    {
-      path: "src/infrastructure/engines/oxlint/untyped-value/explicit-any/explicit-any.examples.json",
-      shipping: "shipped",
-    },
     { path: "rules/CD-14/nested/discipline.json", shipping: "not-shipped" },
     {
       path: "src/infrastructure/engines/walker/exported-for-test/export-test-sibling/nested/export-test-sibling.examples.json",

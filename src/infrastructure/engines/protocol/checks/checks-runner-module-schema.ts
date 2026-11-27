@@ -51,23 +51,42 @@ export const misnamedRuleIdSchema = z.discriminatedUnion("kind", [
 
 export const checksSliceProblemSchema = z
   .object({
-    slice: repoPathSchema,
+    file: repoPathSchema,
     state: z.enum(["missing", "out-of-date", "unconfigured"]),
   })
   .readonly();
 
-export const namedChecksRunReportSchema = z
-  .strictObject({
-    slices: z.array(checksSliceProblemSchema).readonly(),
-    nestedConfigurations: z.array(repoPathSchema).readonly(),
-    unprojectedFolders: z.array(unprojectedFolderSchema).readonly(),
-    misnamedRuleIds: z.array(misnamedRuleIdSchema).readonly(),
-    hits: z.array(checkHitSchema).readonly(),
-    nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
-    measured: z.array(checkMeasurementSchema).readonly(),
-    projection: z.enum(["none", "current", "out-of-date", "missing", "not-included"]),
-  })
-  .readonly();
+const checksReportSchema = z.strictObject({
+  slices: z
+    .array(
+      z.union([
+        checksSliceProblemSchema,
+        z.strictObject({ state: z.literal("left-over"), file: repoPathSchema }).readonly(),
+      ]),
+    )
+    .readonly(),
+  nestedConfigurations: z.array(repoPathSchema).readonly(),
+  unprojectedFolders: z.array(unprojectedFolderSchema).readonly(),
+  misnamedRuleIds: z.array(misnamedRuleIdSchema).readonly(),
+  hits: z.array(checkHitSchema).readonly(),
+  nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
+  measured: z.array(checkMeasurementSchema).readonly(),
+});
+
+export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
+  checksReportSchema
+    .extend({
+      projection: z.enum(["none", "current"]),
+      projectionFile: repoPathSchema.optional(),
+    })
+    .readonly(),
+  checksReportSchema
+    .extend({
+      projection: z.enum(["out-of-date", "missing", "not-included"]),
+      projectionFile: repoPathSchema,
+    })
+    .readonly(),
+]);
 
 export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [
   z.strictObject({ outcome: z.literal("ok"), value: namedChecksRunReportSchema }).readonly(),
@@ -99,10 +118,23 @@ export const measurementResultSchema = z.discriminatedUnion("outcome", [
     .readonly(),
 ]);
 
-export const projectedFileSchema = z.object({ file: repoPathSchema, text: z.string() }).readonly();
+const projectedFileSchema = z
+  .strictObject({
+    kind: z.literal("write"),
+    file: repoPathSchema,
+    text: z.string(),
+  })
+  .readonly();
+
+const projectionEntrySchema = z.discriminatedUnion("kind", [
+  projectedFileSchema,
+  z.strictObject({ kind: z.literal("remove"), file: repoPathSchema }).readonly(),
+]);
 
 export const checksProjectResultSchema = z.union([
-  z.object({ outcome: z.literal("ok"), value: z.array(projectedFileSchema).readonly() }).readonly(),
+  z
+    .object({ outcome: z.literal("ok"), value: z.array(projectionEntrySchema).readonly() })
+    .readonly(),
   z
     .object({
       outcome: z.literal("failed"),

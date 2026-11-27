@@ -8,7 +8,7 @@ import { checkNamesOf } from "../../../../../domain/language-layer/check-address
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { namedPiecePathOf, readNamedPiece } from "../../../named-piece.ts";
-import { eslintPieceSettingsSchema } from "../pieces/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import {
   checkRuleIdOf,

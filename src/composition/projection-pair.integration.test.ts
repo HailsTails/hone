@@ -599,6 +599,7 @@ describe.each(ESLINT_LINES)(
         });
         assert(checks.outcome === "ok", "the pair's version 2 checks project");
         const text = checksProjectionText({
+          kind: "mjs",
           pluginImport: PLUGIN_IMPORT,
           checks: checks.value,
           answered: VERSION_TWO_ANSWERED,

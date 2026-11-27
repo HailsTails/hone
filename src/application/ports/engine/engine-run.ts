@@ -10,13 +10,14 @@ import type {
 } from "../../../domain/runner/check-observations.ts";
 import type {
   AnsweredFile,
-  ChecksSliceProblem,
+  ChecksProjectionProblem,
   MisnamedRuleId,
 } from "../../../domain/runner/checks-run-report.ts";
 import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-run.ts";
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import type { TestFiles } from "../../../domain/settings/test-files.ts";
+import type { ProjectionKind } from "../settings/settings-file-format.ts";
 
 export type EngineCheck = {
   readonly name: string;
@@ -37,12 +38,23 @@ export type NamedEngineRunRequest = {
   readonly checks?: readonly EngineCheck[];
 };
 
-export type NamedEngineRun = {
+export type NamedEslintRunRequest = NamedEngineRunRequest & {
+  readonly projectionKind: ProjectionKind;
+};
+
+export type NamedEngineProjection =
+  | { readonly projection: "none" | "current"; readonly projectionFile?: RepoPath }
+  | {
+      readonly projection: Exclude<ProjectionState, "current">;
+      readonly projectionFile: RepoPath;
+    };
+
+export type NamedEngineRun = NamedEngineProjection & {
   readonly mechanism: EngineId;
+  readonly comparedOutputs?: readonly RepoPath[];
   readonly coverableKinds: readonly CheckNativeException["kind"][];
-  readonly projection: "none" | ProjectionState;
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
-  readonly slices: readonly ChecksSliceProblem[];
+  readonly slices: readonly ChecksProjectionProblem[];
   readonly nestedConfigurations: readonly RepoPath[];
   readonly unprojectedFolders: readonly UnprojectedFolderReport[];
   readonly hits: readonly CheckHit[];

@@ -15,6 +15,7 @@ import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
+import { engineIdSchema } from "../hone-config-file/identifiers.ts";
 import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
@@ -42,6 +43,7 @@ const checkDeclaration = {
 const implementationSchema = z.strictObject({
   ...checkDeclaration,
   anchor: anchorKindSchema,
+  examplesFrom: engineIdSchema.optional(),
   settings: z.record(z.string(), z.json()),
   forms: z.record(z.string(), namedPieceImplementationSchema).default({}),
   editions: legacyPieceEntry.editions,
@@ -204,7 +206,14 @@ export const readNamedPiece = (
       exampleOwner,
       examplesPath: request.path.join({
         segments: [
-          ...namedPieceFolderSegmentsOf({ ...request, ...exampleOwner }),
+          ...namedPieceFolderSegmentsOf({
+            ...request,
+            ...exampleOwner,
+            mechanism:
+              "examplesFrom" in piece
+                ? (piece.examplesFrom ?? request.mechanism)
+                : request.mechanism,
+          }),
           `${exampleOwner.check}.examples.json`,
         ],
       }),

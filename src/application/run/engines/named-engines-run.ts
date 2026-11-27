@@ -3,7 +3,7 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import type { AnsweredFile, ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
+import type { AnsweredFile, ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
 import type { Conventions } from "../../../domain/settings/conventions.ts";
 import type { EslintConfigLookupChoice } from "../../../domain/settings/settings-file.ts";
 import type {
@@ -17,6 +17,7 @@ import type {
   NamedEngineRunRequest,
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
+import type { ProjectionKind } from "../../ports/settings/settings-file-format.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
 import { mapRequestToJudgedRequest } from "./judged-request.ts";
 
@@ -34,7 +35,10 @@ type EnginesRequest = Omit<RunnerLocation, "mechanism"> & {
   readonly answered: readonly AnsweredFile[];
 };
 
-export type NamedEnginesRequest = EnginesRequest & { readonly engine: NamedEnginePort };
+export type NamedEnginesRequest = EnginesRequest & {
+  readonly engine: NamedEnginePort;
+  readonly settings: EngineSettings & { readonly eslintProjectionKind: ProjectionKind };
+};
 
 export const mapEnginesRequestToRunRequest = (
   request: Pick<
@@ -100,7 +104,16 @@ const loadNamedEngines = async (
   const engines = await callSelectedEngines({
     ...request,
     engineRequest,
-    call: (location) => request.engine.load(location),
+    call: (location) =>
+      request.engine.load(
+        location.mechanism === "eslint"
+          ? {
+              ...location,
+              mechanism: "eslint",
+              projectionKind: request.settings.eslintProjectionKind,
+            }
+          : { ...location, mechanism: "walker" },
+      ),
   });
   return engines.outcome === "failed"
     ? engines
@@ -110,7 +123,7 @@ const loadNamedEngines = async (
 const projectLoadedEngines = async ({
   engines,
   engineRequest,
-}: LoadedEngines): Promise<Result<readonly ProjectedFile[], NamedEngineFailure>> =>
+}: LoadedEngines): Promise<Result<readonly ProjectionEntry[], NamedEngineFailure>> =>
   gatheredOutcomes({
     outcomes: await Promise.all(engines.map((engine) => engine.project(engineRequest))),
   });
@@ -124,20 +137,28 @@ export const runNamedEngines = async (
   if (projected.outcome === "failed") return projected;
 
   const { engines, engineRequest } = loaded.value;
-  const judged = mapRequestToJudgedRequest({
-    engineRequest,
-    outputs: projected.value.map(({ file }) => file),
-  });
+  const outputs = projected.value.map(({ file }) => file);
+  const judged = mapRequestToJudgedRequest({ engineRequest, outputs });
   return gatheredOutcomes({
     outcomes: await Promise.all(
-      engines.map(async (engine) => listedOutcome({ outcome: await engine.run(judged) })),
+      engines.map(async (engine) => {
+        const outcome = await engine.run(judged);
+        return listedOutcome({
+          outcome:
+            outcome.outcome === "failed" ||
+            outcome.value.projection === "none" ||
+            outputs.length === 0
+              ? outcome
+              : { outcome: "ok", value: { ...outcome.value, comparedOutputs: outputs } },
+        });
+      }),
     ),
   });
 };
 
 export const projectNamedEngines = async (
   request: NamedEnginesRequest,
-): Promise<Result<readonly ProjectedFile[], NamedEngineFailure>> => {
+): Promise<Result<readonly ProjectionEntry[], NamedEngineFailure>> => {
   const loaded = await loadNamedEngines(request);
   return loaded.outcome === "failed" ? loaded : projectLoadedEngines(loaded.value);
 };

@@ -26,11 +26,17 @@ export type CheckEdition = {
 };
 
 export type EngineNotRun =
-  | { readonly kind: "engine-not-run"; readonly engine: Engine; readonly projection: "missing" }
+  | {
+      readonly kind: "engine-not-run";
+      readonly engine: Engine;
+      readonly projection: "missing";
+      readonly file: RepoPath;
+    }
   | {
       readonly kind: "engine-not-run";
       readonly engine: Engine;
       readonly projection: "not-included";
+      readonly file: RepoPath;
       readonly nestedConfigurations: readonly RepoPath[];
     }
   | {
@@ -44,12 +50,23 @@ export type MissingProjection = Extract<EngineNotRun, { readonly projection: "mi
 export type RunUnmeasured = RecordsUnmeasured | EngineNotRun;
 
 export type RunProjectionProblem =
-  | { readonly scope: "projection"; readonly engine: Engine; readonly state: "out-of-date" }
+  | {
+      readonly scope: "projection";
+      readonly engine: Engine;
+      readonly state: "out-of-date";
+      readonly file: RepoPath;
+    }
+  | {
+      readonly scope: "file";
+      readonly engine: Engine;
+      readonly state: "left-over";
+      readonly file: RepoPath;
+    }
   | {
       readonly scope: "slice";
       readonly engine: Engine;
       readonly state: "out-of-date" | "missing" | "unconfigured";
-      readonly slice: RepoPath;
+      readonly file: RepoPath;
     };
 
 export type ForfeitureElsewhere = {

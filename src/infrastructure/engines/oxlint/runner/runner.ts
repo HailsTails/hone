@@ -19,10 +19,12 @@ const installRoot = installRootOfRunnerEntry({ entryFile: import.meta.filename }
 
 const createRuleRequest = (
   rules: readonly SelectedOxlintRule[],
-): Pick<Parameters<RunOxlint>[0], "rules" | "pluginRules"> => {
+): Pick<Parameters<RunOxlint>[0], "rules" | "pluginRules" | "nativeOptions"> => {
+  const native = rules.filter((rule) => rule.kind === "native");
   const pluginRules = rules.filter((rule) => rule.kind === "plugin");
   return {
-    rules: rules.filter((rule) => rule.kind === "native").map(({ id }) => id),
+    rules: native.map(({ id }) => id),
+    nativeOptions: new Map(native.map(({ id, options }) => [id, options])),
     ...(pluginRules.length > 0 ? { pluginRules } : {}),
   };
 };
@@ -115,8 +117,15 @@ const createConform =
   async ({ binding, cases }) => {
     const rule = readRule({ installRoot, binding });
     if (rule.outcome === "failed") return rule;
+    const workingDirectory = path.resolve({ path: "." });
+    if (workingDirectory.outcome === "failed") {
+      return {
+        outcome: "failed",
+        error: { kind: "tool-failed", detail: "Hone cannot resolve the working directory" },
+      };
+    }
     const linted = await lint({
-      resolveFrom: binding.pieceRoot,
+      resolveFrom: workingDirectory.value,
       ...createRuleRequest([rule.value]),
       sources: cases,
     });

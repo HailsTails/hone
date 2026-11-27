@@ -1,5 +1,11 @@
 {
   "version": 2,
-  "anchor": { "kind": "keyword", "keyword": "class" },
-  "settings": { "plugin": "eslint" }
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "class"
+  },
+  "settings": {
+    "plugin": "eslint"
+  },
+  "examplesFrom": "eslint"
 }

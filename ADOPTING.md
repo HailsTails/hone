@@ -103,7 +103,7 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 }
 ```
 
-- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker` or `eslint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
+- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker`, `eslint` or `oxlint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
 - Listing a check adopts it. Only a listed check runs. A check of a symptom that a listed check sees, listed nowhere, is offered under `available` and never fails the run. The symptom [Strictness weakened](rules/typescript/symptoms.md#strictness-weakened) has seven checks, one per compiler flag; list the ones you want. Checks that are one rule today run together: listing one of the six test-body checks without the others stops the run with `checks-run-together` naming them.
 - A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker`, `eslint` or `oxlint`. Its `static-members-only` check runs on `eslint` or `oxlint`.
 - A check's value in `checks` is one of three:
@@ -178,6 +178,16 @@ Run the tool's configure step (for sku, any sku command or `sku configure`) befo
 ```
 
 Use `"nearest-to-file"` when ESLint runs per package, with ESLint 10, or with ESLint 9 and `--flag v10_config_lookup_from_file`. Use `"repository-root"` for one ESLint 9 run from the repository root, whose root `eslint.config.*` then applies to every file. To confirm the setting, lint a package file the way the team does (for example `pnpm exec eslint packages/a/src/x.ts` from where the lint script runs) and check that it reports the same finding the Hone check lists for that file.
+
+The `"ts"` projection kind is for a TypeScript `eslint.config.ts`, which ESLint loads through jiti installed at the repository root. To take it, set the kind in `hone.config.json`, run `hone:project`, which writes one typed `hone.eslint.ts` at each config root, change each config's import to `./hone.eslint.js`, and commit:
+
+```json
+{ "eslintProjectionKind": "ts" }
+```
+
+```ts
+import projection from "./hone.eslint.js";
+```
 
 Commit the projection, every slice and the configs. Hone's check reads this configuration and fails if the projection or a slice is missing, not in effect, or out of date, so re-run `hone:project` whenever `hone.config.json` or `hone-records` changes or Hone is updated. The repository's ESLint must resolve `@hailstails/hone` from the repository root. [README.md](README.md#adopting-the-eslint-mechanism) has the details.
 

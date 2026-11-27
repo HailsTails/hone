@@ -13,7 +13,6 @@ import { mappedOutcome } from "../checks-outcomes.ts";
 import type { SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import { SETTINGS_FILE_NAME } from "../config-roots/checks-nested-repositories.ts";
 import { brokenConfigVerdict, type GoverningIgnores } from "../config-roots/governing-config.ts";
-import { CHECKS_PROJECTION_PATH } from "../projection/checks-projection.ts";
 import type {
   ConfigFileSearch,
   IgnoredState,
@@ -48,11 +47,6 @@ export type ConfigLocation = {
   readonly repoRoot: AbsolutePath;
   readonly governingIgnoreOf: GoverningIgnores;
   readonly names: { readonly settingsFile: string; readonly projectionFile: string };
-};
-
-const VERSION_TWO_NAMES: ConfigLocation["names"] = {
-  settingsFile: SETTINGS_FILE_NAME,
-  projectionFile: CHECKS_PROJECTION_PATH,
 };
 
 const fileRuleStates = (request: {
@@ -267,8 +261,15 @@ export const queriedFilesOf = (request: {
   readonly files: readonly RepoPath[];
   readonly ruleIds: readonly string[];
   readonly location: Omit<ConfigLocation, "names">;
+  readonly projectionFile: RepoPath;
 }): Promise<Outcome<QueriedFiles>> =>
-  queriedFiles({ ...request, location: { ...request.location, names: VERSION_TWO_NAMES } });
+  queriedFiles({
+    ...request,
+    location: {
+      ...request.location,
+      names: { settingsFile: SETTINGS_FILE_NAME, projectionFile: request.projectionFile },
+    },
+  });
 
 const answeredHolds = (request: {
   readonly answeredByPlace: AnsweredByPlace;

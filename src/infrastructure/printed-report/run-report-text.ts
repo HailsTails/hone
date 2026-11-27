@@ -84,7 +84,10 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     ),
   "projection-problems": (request) =>
     request.report["projection-problems"].map((problem) =>
-      projectionProblemLine({ projectCommand: request.projectCommand, problem }),
+      projectionProblemLine({
+        projectCommand: request.projectCommand,
+        problem,
+      }),
     ),
   assessment: (request) => request.report.assessment.map((partial) => assessmentLine({ partial })),
   "settings-notes": (request) =>

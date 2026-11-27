@@ -11,6 +11,48 @@ describe("runLoadFailureSchema", () => {
     expect(parsed).toEqual({ success: true, data: { kind: "config-absent", repo: "/repo" } });
   });
 
+  it("reads a stale projection back with the project command and the file", () => {
+    const parsed = runLoadFailureSchema.safeParse({
+      kind: "projection-stale",
+      problem: {
+        scope: "projection",
+        engine: { name: "eslint" },
+        state: "out-of-date",
+        file: repoPathOf("hone.eslint.ts"),
+      },
+      projectCommand: "hone project --repo /repo",
+    });
+
+    expect(parsed).toEqual({
+      success: true,
+      data: {
+        kind: "projection-stale",
+        problem: {
+          scope: "projection",
+          engine: { name: "eslint" },
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.ts"),
+        },
+        projectCommand: "hone project --repo /repo",
+      },
+    });
+  });
+
+  it("reads a stale projection failure for an obsolete output", () => {
+    const failure = {
+      kind: "projection-stale",
+      problem: {
+        scope: "file",
+        engine: { name: "eslint" },
+        state: "left-over",
+        file: "hone.eslint.ts",
+      },
+      projectCommand: "hone project --repo /repo",
+    };
+
+    expect(runLoadFailureSchema.safeParse(failure)).toEqual({ success: true, data: failure });
+  });
+
   it("reads an engine's failure back with the runner failure it carries", () => {
     const parsed = runLoadFailureSchema.safeParse({
       kind: "engine-failed",

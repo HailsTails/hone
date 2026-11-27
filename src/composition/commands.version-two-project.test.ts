@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { CommandRequest } from "../application/ports/command-request.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
@@ -39,12 +40,14 @@ import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
 const ranVersionTwoProject = (request: {
-  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>;
+  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest> & {
+    readonly fileRemoval?: FileRemovalPort;
+  };
   readonly command: CommandRequest;
 }) => {
   const handler = commandOf({
     tool: VERSION_TWO_PROJECT,
-    ports: { ...request.command, ...request.ports },
+    ports: { fileRemoval: { remove: vi.fn() }, ...request.command, ...request.ports },
   });
   return handler(request.command);
 };
@@ -314,7 +317,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const FILE: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
 const SETTINGS: NamedSettingsReading = {
   available: [],
@@ -327,6 +334,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -399,16 +407,21 @@ const commandWith = (request: {
   moduleUrl: request.moduleUrl,
 });
 
-const ranWith = async (request: {
+const ranWith = async ({
+  fileRemoval = { remove: vi.fn<FileRemovalPort["remove"]>() },
+  ...request
+}: {
   readonly arguments: readonly string[];
   readonly stagesOver: StagesOver;
   readonly moduleUrl: string;
   readonly fileText: FileTextPort;
+  readonly fileRemoval?: FileRemovalPort;
 }) => {
   const processPort = processWith({ arguments: request.arguments });
   const { fileText } = request;
   await ranVersionTwoProject({
     ports: {
+      fileRemoval,
       namedEngine: { load: vi.fn() },
       gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
       directory: {
@@ -443,6 +456,29 @@ describe("versionTwoProjectCommandOf", () => {
     expect({ ran, written: vi.mocked(fileText.write).mock.calls }).toEqual({
       ran: { writes: [[{ text: "hone.eslint.mjs written\n" }]], exits: [[{ code: 0 }]] },
       written: [[{ path: "/repo/hone.eslint.mjs", text: "export default [];\n" }]],
+    });
+  });
+
+  it("removes a projection returned by the engine and reports the removal", async () => {
+    const remove = vi
+      .fn<FileRemovalPort["remove"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+    const ran = await ranWith({
+      moduleUrl: ENTRY_URL,
+      arguments: ["--repo", "/repo"],
+      fileText: fileTextAbsent(),
+      fileRemoval: { remove },
+      stagesOver: stagesOverProjecting({
+        projected: {
+          outcome: "ok",
+          value: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }],
+        },
+      }),
+    });
+
+    expect({ ran, removed: remove.mock.calls }).toEqual({
+      ran: { writes: [[{ text: "hone.eslint.ts removed\n" }]], exits: [[{ code: 0 }]] },
+      removed: [[{ path: "/repo/hone.eslint.ts" }]],
     });
   });
 

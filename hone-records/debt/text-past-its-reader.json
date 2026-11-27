@@ -51,14 +51,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/named-piece.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
     }
   ]

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { VersionTwoSettingsFile } from "../../application/ports/settings/settings-file-format.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { SettingsFile, SettingsFileFault } from "../../domain/settings/settings-file.ts";
+import type { SettingsFileFault } from "../../domain/settings/settings-file.ts";
 import {
   SETTINGS_FILE_FORMAT,
   settingsFileOf,
@@ -14,7 +15,7 @@ import {
 
 const SMALLEST_DOCUMENT = { version: 2, ruleSets: {}, checks: {} };
 
-const SMALLEST_FILE: SettingsFile = {
+const SMALLEST_FILE: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [],
@@ -24,19 +25,8 @@ const SMALLEST_FILE: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
-};
-
-type KeyRow = {
-  readonly name: string;
-  readonly document: ReadonlyJsonValue;
-  readonly file: SettingsFile;
-};
-
-type RefusalRow = {
-  readonly name: string;
-  readonly document: ReadonlyJsonValue;
-  readonly fault: SettingsFileFault;
 };
 
 describe("settingsFileOf", () => {
@@ -47,7 +37,11 @@ describe("settingsFileOf", () => {
     });
   });
 
-  it.each<KeyRow>([
+  it.each<{
+    readonly name: string;
+    readonly document: ReadonlyJsonValue;
+    readonly file: VersionTwoSettingsFile;
+  }>([
     {
       name: "an excluded path",
       document: { version: 2, ruleSets: {}, checks: {}, exclude: ["vendor"] },
@@ -61,6 +55,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -83,6 +78,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -125,6 +121,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -141,6 +138,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -157,6 +155,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -173,6 +172,7 @@ describe("settingsFileOf", () => {
         checkEditions: "latest",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -189,8 +189,19 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
         eslintConfigRoots: [],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
+    },
+    {
+      name: "the explicit mjs projection kind",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "mjs" },
+      file: SMALLEST_FILE,
+    },
+    {
+      name: "the ts projection kind",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "ts" },
+      file: { ...SMALLEST_FILE, eslintProjectionKind: "ts" },
     },
     {
       name: "an ESLint config root",
@@ -205,6 +216,7 @@ describe("settingsFileOf", () => {
         checkEditions: "pinned",
         eslintConfigLookup: { lookup: "detected" },
         eslintConfigRoots: [repoPathOf("web")],
+        eslintProjectionKind: "mjs",
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
     },
@@ -212,6 +224,17 @@ describe("settingsFileOf", () => {
     const read = settingsFileOf({ document });
 
     expect(read).toEqual({ outcome: "ok", value: file });
+  });
+
+  it("refuses a projection kind it does not know as malformed", () => {
+    const document = { version: 2, ruleSets: {}, checks: {}, eslintProjectionKind: "d.mts" };
+
+    const read = settingsFileOf({ document });
+
+    expect(read).toEqual({
+      outcome: "failed",
+      error: { kind: "malformed", detail: expect.any(String) },
+    });
   });
 
   it("reads a top-level generated key into the conventions it declares", () => {
@@ -289,7 +312,11 @@ describe("settingsFileOf", () => {
     });
   });
 
-  it.each<RefusalRow>([
+  it.each<{
+    readonly name: string;
+    readonly document: ReadonlyJsonValue;
+    readonly fault: SettingsFileFault;
+  }>([
     {
       name: "the reason-only option, which version 2 does not have",
       document: { ...SMALLEST_DOCUMENT, fileExceptionWhyChains: "optional" },
@@ -437,7 +464,7 @@ describe("settingsFileOf", () => {
   });
 });
 
-const FULL_FILE: SettingsFile = {
+const FULL_FILE: VersionTwoSettingsFile = {
   exclude: [repoPathOf("vendor")],
   ruleSets: [
     { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
@@ -476,6 +503,7 @@ const FULL_FILE: SettingsFile = {
   checkEditions: "latest",
   eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
   eslintConfigRoots: [repoPathOf("web")],
+  eslintProjectionKind: "ts",
   conventions: {
     conventions: {
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
@@ -486,7 +514,7 @@ const FULL_FILE: SettingsFile = {
   },
 };
 
-const UNSORTED_FILE: SettingsFile = {
+const UNSORTED_FILE: VersionTwoSettingsFile = {
   ...SMALLEST_FILE,
   ruleSets: [
     {
@@ -551,6 +579,7 @@ describe("settingsWireOf", () => {
       reportOutput: "counts",
       checkEditions: "latest",
       eslintConfigLookup: "nearest-to-file",
+      eslintProjectionKind: "ts",
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
       layers: { domain: ["src/domain"] },
       testFiles: { suffixes: ["spec"], folders: ["__tests__"] },

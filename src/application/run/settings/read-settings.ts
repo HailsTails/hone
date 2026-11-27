@@ -39,7 +39,10 @@ import type {
   SettingsDocument,
   SettingsSources,
 } from "../../ports/settings-sources.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
@@ -87,7 +90,7 @@ const cataloguesHeld = (
 
 const parsedSettingsFile = (
   request: Pick<NamedSettingsRequest, "sources" | "settingsFormat">,
-): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
+): Result<SettingsDocument & { readonly file: VersionTwoSettingsFile }, VersionTwoLoadFailure> => {
   const document = request.sources.settingsFile({});
   if (document.outcome === "failed") {
     return document;
@@ -116,6 +119,7 @@ export type NamedSettingsReading = {
   readonly externalCatalogues?: readonly RuleSetCatalogue[];
   readonly runSettings: RunSettings<VersionTwoReportOutput>;
   readonly eslintConfigLookup: EslintConfigLookupChoice;
+  readonly eslintProjectionKind: VersionTwoSettingsFile["eslintProjectionKind"];
   readonly conventions: Conventions;
   readonly notes: readonly SettingsNote[];
   readonly available: readonly Check[];
@@ -123,8 +127,8 @@ export type NamedSettingsReading = {
     readonly selected: readonly SelectedCheck[];
     readonly notRun: readonly ChosenCheck[];
     readonly notAdopted: readonly ChosenCheck[];
-    readonly excluded: SettingsFile["exclude"];
-    readonly eslintConfigRoots: SettingsFile["eslintConfigRoots"];
+    readonly excluded: VersionTwoSettingsFile["exclude"];
+    readonly eslintConfigRoots: VersionTwoSettingsFile["eslintConfigRoots"];
   };
 };
 
@@ -154,7 +158,7 @@ export const catalogueWithExternalChecks = (request: {
 
 const withNamedSource = (request: {
   readonly held: RuleSetCatalogue;
-  readonly ruleSets: SettingsFile["ruleSets"];
+  readonly ruleSets: VersionTwoSettingsFile["ruleSets"];
 }): RuleSetCatalogue => {
   const { ruleSet, catalogue } = request.held;
   if (ruleSet === TOOL_RULE_SET) return request.held;
@@ -270,12 +274,12 @@ const checkSharedAcrossRuleSetsOf = (request: {
   return shared;
 };
 
-export const readNamedSettingsFile = (
+export const bindNamedSettings = (
   request: SourcesRequest & {
     readonly readPiece: CheckPieceSource;
     readonly path: string;
   },
-): Result<NamedSettingsReading, SettingsFailure> => {
+): Result<Omit<NamedSettingsReading, "eslintProjectionKind">, SettingsFailure> => {
   const { file, path } = request;
   const catalogues = cataloguesHeld({ sources: request.sources, file });
   if (catalogues.outcome === "failed") return catalogues;
@@ -316,6 +320,21 @@ export const readNamedSettingsFile = (
       ...(externalCatalogues.length === 0 ? {} : { externalCatalogues }),
     },
   };
+};
+
+export const readNamedSettingsFile = (request: {
+  readonly sources: SettingsSources;
+  readonly file: VersionTwoSettingsFile;
+  readonly readPiece: CheckPieceSource;
+  readonly path: string;
+}): Result<NamedSettingsReading, SettingsFailure> => {
+  const bound = bindNamedSettings(request);
+  return bound.outcome === "failed"
+    ? bound
+    : {
+        outcome: "ok",
+        value: { ...bound.value, eslintProjectionKind: request.file.eslintProjectionKind },
+      };
 };
 
 export const readNamedSettings = (

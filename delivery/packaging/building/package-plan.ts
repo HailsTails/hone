@@ -36,8 +36,6 @@ const COMMAND_SOURCE = "src/hone.ts";
 
 const RUNNER_ENTRY = /^src\/infrastructure\/engines\/[^/]+\/runner\/runner\.ts$/;
 
-const OXLINT_PLUGIN_ENTRY = "src/infrastructure/engines/eslint/runner/oxlint-naming-plugin.ts";
-
 const TOP_LEVEL_PROCESS_ENTRY = /^src\/[^/]+\.process\.ts$/;
 
 const PROCESS_ENTRY_SHAPES = [RUNNER_ENTRY, TOP_LEVEL_PROCESS_ENTRY] as const;
@@ -303,9 +301,8 @@ export const packagePlanOf = (request: {
   if (pieces.outcome === "failed") {
     return pieces;
   }
-  const processEntries = shippedPaths(request).filter(
-    (path) =>
-      path === OXLINT_PLUGIN_ENTRY || PROCESS_ENTRY_SHAPES.some((shape) => shape.test(path)),
+  const processEntries = shippedPaths(request).filter((path) =>
+    PROCESS_ENTRY_SHAPES.some((shape) => shape.test(path)),
   );
   const pieceModules = pieces.value.flatMap(pieceModuleEntries);
   return {

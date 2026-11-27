@@ -43,7 +43,9 @@ describe("createBlockFlagsPort", () => {
       }),
     };
 
-    const flags = await createBlockFlagsPort({ runners: { walker, eslint, oxlint: eslint } }).read({
+    const flags = await createBlockFlagsPort({
+      runners: { walker, eslint, oxlint: { conform: vi.fn<ConformingRunner["conform"]>() } },
+    }).read({
       blocks: [BLOCK],
       bindings: [ASSERTION_SITE, ANY],
     });
@@ -86,7 +88,7 @@ describe("createBlockFlagsPort", () => {
       runners: {
         walker: { conform: vi.fn<ConformingRunner["conform"]>() },
         eslint,
-        oxlint: eslint,
+        oxlint: { conform: vi.fn<ConformingRunner["conform"]>() },
       },
     }).read({ blocks: [BLOCK], bindings: [ANY] });
 

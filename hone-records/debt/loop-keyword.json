@@ -16,10 +16,6 @@
     {
       "answers": "loop-keyword#loop-statement",
       "file": "src/infrastructure/engines/walker/runner/prepare-walker-pieces.ts"
-    },
-    {
-      "answers": "loop-keyword#loop-statement",
-      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
     }
   ]
 }

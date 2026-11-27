@@ -1,3 +1,4 @@
+import { excludeProjectionOutputs } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { NamedEngineRunRequest } from "../../ports/engine/engine-run.ts";
 
@@ -10,7 +11,7 @@ export const mapRequestToJudgedRequest = <Request extends JudgedPaths>(request: 
   const outputs = new Set(request.outputs);
   return {
     ...request.engineRequest,
-    files: request.engineRequest.files.filter((file) => !outputs.has(file)),
-    trackedPaths: request.engineRequest.trackedPaths.filter((file) => !outputs.has(file)),
+    files: excludeProjectionOutputs({ files: request.engineRequest.files, outputs }),
+    trackedPaths: excludeProjectionOutputs({ files: request.engineRequest.trackedPaths, outputs }),
   };
 };

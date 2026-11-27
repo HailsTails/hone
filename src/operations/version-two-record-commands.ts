@@ -74,7 +74,11 @@ const runOverCurrentProjection = async (
     ? run
     : {
         outcome: "failed",
-        error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
+        error: {
+          kind: "projection-stale",
+          problem: stale,
+          projectCommand: request.projectCommand,
+        },
       };
 };
 

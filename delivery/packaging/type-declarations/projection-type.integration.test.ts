@@ -7,9 +7,10 @@ import { eslintBoundaryFor } from "../../../src/infrastructure/engines/eslint/ru
 import {
   defaultTypeScriptPeers,
   loadParsePort,
+  typeScriptPeersNamed,
 } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import type { ConsumerResolution } from "./consumer-types-port.ts";
-import { createDefaultConsumerTypesPort } from "./consumer-types.ts";
+import { createConsumerTypesPort, createDefaultConsumerTypesPort } from "./consumer-types.ts";
 import { createDefaultTypeScriptDeclarationPort } from "./typescript-declaration-port.ts";
 
 const INSTALL_ROOT = `${import.meta.dirname}/../../..`;
@@ -47,6 +48,7 @@ const CHECKS = [
 ];
 
 const ROOT_PROJECTION = checksProjectionText({
+  kind: "mjs",
   pluginImport: PLUGIN_SPECIFIER,
   checks: CHECKS,
   answered: [
@@ -55,6 +57,7 @@ const ROOT_PROJECTION = checksProjectionText({
 });
 
 const PACKAGE_PROJECTION = checksProjectionText({
+  kind: "mjs",
   pluginImport: PLUGIN_SPECIFIER,
   checks: CHECKS,
   answered: [],
@@ -458,3 +461,90 @@ describe.each(ESLINT_LINES)(
     });
   },
 );
+
+const TS_ROOT_CONFIG = `import { defineConfig } from "${CONFIG_API}";
+import hone from "./hone.eslint.js";
+
+export default defineConfig([...hone, { files: ["**/*.ts"], rules: {} }]);
+`;
+
+const TS_ROOT_PROJECTION = checksProjectionText({
+  kind: "ts",
+  pluginImport: PLUGIN_SPECIFIER,
+  checks: CHECKS,
+  answered: [
+    { ruleSet: TOOL_RULE_SET, symptom: "S-1", check: "C-1", file: repoPathOf("src/old.ts") },
+  ],
+});
+
+describe.each(ESLINT_LINES)(
+  "a typed ESLint config importing a ts kind projection as ./hone.eslint.js, compiled in memory against the consumer's own node_modules/eslint on $folder, under strict with skipLibCheck off",
+  ({ folder }) => {
+    describe.each(RESOLUTIONS)("under %s resolution", (resolution) => {
+      it("compiles eslint.config.ts", async () => {
+        const plugin = await EMITTED_PLUGIN;
+        assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
+
+        const diagnostics = await createDefaultConsumerTypesPort({
+          installRoot: INSTALL_ROOT,
+        }).read({
+          entry: "eslint.config.ts",
+          resolution,
+          form: "typescript",
+          texts: [
+            { path: "package.json", text: CONSUMER_PACKAGE },
+            { path: "hone.eslint.ts", text: TS_ROOT_PROJECTION },
+            { path: "eslint.config.ts", text: TS_ROOT_CONFIG },
+          ],
+          packages: [
+            { kind: "installed", name: "eslint", nodeModules: NODE_MODULES, folder },
+            {
+              kind: "written",
+              name: "@hailstails/hone",
+              texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
+            },
+          ],
+        });
+
+        expect(diagnostics).toEqual({ outcome: "ok", value: [] });
+      });
+    });
+  },
+);
+
+describe("a ts kind projection imported as ./hone.eslint.js on the TypeScript floor", () => {
+  it("compiles a .ts config for the root projection under nodenext resolution with TypeScript 4.8.4", async () => {
+    const plugin = await EMITTED_PLUGIN;
+    assert(plugin.outcome === "ok", "the plugin's declarations are emitted");
+    const floor = typeScriptPeersNamed({
+      installRoot: INSTALL_ROOT,
+      installForm: "source",
+      packageName: "typescript-floor",
+    });
+
+    const diagnostics = await createConsumerTypesPort({
+      load: () => loadParsePort({ peers: floor }),
+    }).read({
+      entry: "eslint.config.ts",
+      resolution: "nodenext",
+      form: "typescript",
+      texts: [
+        { path: "package.json", text: CONSUMER_PACKAGE },
+        {
+          path: "eslint.config.ts",
+          text: 'import hone from "./hone.eslint.js";\n\nexport default [...hone];\n',
+        },
+        { path: "hone.eslint.ts", text: TS_ROOT_PROJECTION },
+      ],
+      packages: [
+        {
+          kind: "written",
+          name: "@hailstails/hone",
+          texts: [{ path: "package.json", text: HONE_PACKAGE }, ...plugin.value.declarations],
+        },
+      ],
+    });
+
+    expect(diagnostics).toEqual({ outcome: "ok", value: [] });
+  });
+});

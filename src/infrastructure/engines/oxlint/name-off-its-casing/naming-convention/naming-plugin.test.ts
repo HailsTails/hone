@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { runOxlint } from "../../../node/process/oxlint-port.ts";
+import { runOxlint } from "../../../../node/process/oxlint-port.ts";
 
 describe("Oxlint naming convention adapter", () => {
   it("executes syntax-only naming selectors without TypeScript parser services", async () => {
@@ -11,7 +11,7 @@ describe("Oxlint naming convention adapter", () => {
         {
           namespace: "hone-naming",
           id: "hone-naming/naming-convention",
-          module: `${import.meta.dirname}/oxlint-naming-plugin.ts`,
+          module: `${import.meta.dirname}/naming-plugin.ts`,
           options: [{ selector: "variable", format: ["camelCase"] }],
         },
       ],

@@ -6,5 +6,6 @@
   },
   "settings": {
     "rule": "eslint/no-param-reassign"
-  }
+  },
+  "examplesFrom": "eslint"
 }

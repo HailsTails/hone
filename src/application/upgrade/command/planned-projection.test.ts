@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
+import type { VersionTwoSettingsFile } from "../../ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
-import { plannedProjectionOf } from "./planned-projection.ts";
+import { plannedProjectionOf, planProjectionEntries } from "./planned-projection.ts";
 
-const SETTINGS: SettingsFile = {
+const SETTINGS: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [],
@@ -17,6 +18,7 @@ const SETTINGS: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: {
     conventions: {
       generated: [],
@@ -75,6 +77,27 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
 const UNUSED_SETTINGS_FORMAT = { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() };
 
 const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
+
+describe("planProjectionEntries", () => {
+  it("preserves writes and removal alongside the replacement configuration", () => {
+    const projection = repoPathOf("hone.eslint.mjs");
+    const declaration = repoPathOf("hone.eslint.d.mts");
+    const planned = planProjectionEntries([
+      { kind: "write", file: projection, text: "export default [];" },
+      { kind: "write", file: declaration, text: "export {};" },
+      { kind: "remove", file: repoPathOf("hone.eslint.ts") },
+    ]);
+
+    expect(planned).toEqual({
+      entries: [
+        { kind: "write", file: projection, text: "export default [];" },
+        { kind: "write", file: declaration, text: "export {};" },
+        { kind: "remove", file: "hone.eslint.ts" },
+      ],
+      projections: [{ file: projection, text: "export default [];" }],
+    });
+  });
+});
 
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {

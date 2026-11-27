@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {

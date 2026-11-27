@@ -44,6 +44,10 @@ describe("runOxlint", () => {
     const sites = await runOxlint({
       resolveFrom: import.meta.dirname,
       rules: ["eslint/max-params", "eslint/no-param-reassign"],
+      nativeOptions: new Map([
+        ["eslint/max-params", [{ max: 2, countVoidThis: true }]],
+        ["eslint/no-param-reassign", [{ props: false }]],
+      ]),
       sources,
     });
 

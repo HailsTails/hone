@@ -2,14 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
+import type { ProjectedFile, ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
+import type { FileRemovalPort } from "../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { projectedFilesWrittenOf } from "./projected-files-written.ts";
+import { applyProjectionEntries } from "./apply-projection-entries.ts";
 
 const REPO = absoluteRootOf("/repo");
 
-const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const FILE: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
 const POSIX_PATH: Pick<PathPort, "join"> = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.mjs"),
@@ -29,16 +34,84 @@ const fileTextHolding = (request: { readonly current: string }): FileTextPort =>
 
 const writtenOver = (request: {
   readonly fileText: FileTextPort;
-  readonly files: readonly ProjectedFile[];
+  readonly files: readonly ProjectionEntry[];
 }) =>
-  projectedFilesWrittenOf({
+  applyProjectionEntries({
     fileText: request.fileText,
+    fileRemoval: { remove: vi.fn() },
     path: POSIX_PATH,
     repoRoot: REPO,
     files: request.files,
   });
 
-describe("projectedFilesWrittenOf", () => {
+describe("applyProjectionEntries", () => {
+  it("removes a projected file and reports it removed", () => {
+    const file = repoPathOf("hone.eslint.ts");
+    const remove = vi
+      .fn<FileRemovalPort["remove"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+    const join = vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.ts");
+    const fileText = fileTextAbsent();
+
+    const written = applyProjectionEntries({
+      fileText,
+      fileRemoval: { remove },
+      path: { join },
+      repoRoot: REPO,
+      files: [{ kind: "remove", file }],
+    });
+
+    expect(written).toEqual({ outcome: "ok", value: [{ path: file, effect: "removed" }] });
+    expect(join).toHaveBeenCalledExactlyOnceWith({ segments: ["/repo", file] });
+    expect(remove).toHaveBeenCalledExactlyOnceWith({ path: "/repo/hone.eslint.ts" });
+    expect(fileText.write).not.toHaveBeenCalled();
+  });
+
+  it("reports the remove failure against the projected file", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "unremovable", path: "/repo/hone.eslint.ts", detail: "EACCES" },
+    });
+
+    const written = applyProjectionEntries({
+      fileText: fileTextAbsent(),
+      fileRemoval: { remove },
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.ts") },
+      repoRoot: REPO,
+      files: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }],
+    });
+
+    expect(written).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unremovable", file: "hone.eslint.ts", detail: "EACCES" },
+    });
+  });
+
+  it("keeps the previous projection when a replacement cannot be written", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>();
+    const fileText = {
+      ...fileTextAbsent(),
+      write: vi.fn<FileTextPort["write"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "unwritable", path: "/repo/hone.eslint.mjs", detail: "ENOSPC" },
+      }),
+    };
+
+    const written = applyProjectionEntries({
+      fileText,
+      fileRemoval: { remove },
+      path: POSIX_PATH,
+      repoRoot: REPO,
+      files: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }, FILE],
+    });
+
+    expect(written).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unwritable", path: "/repo/hone.eslint.mjs", detail: "ENOSPC" },
+    });
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   it("writes a file the repository does not hold, and reports it written", () => {
     const fileText = fileTextAbsent();
     expect({

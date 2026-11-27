@@ -55,12 +55,61 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
+  it("uses another engine's examples while keeping this engine's implementation", () => {
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/install/oxlint/piece.json")
+      .mockReturnValueOnce("/install/eslint/direct-call.examples.json")
+      .mockReturnValueOnce("/install/oxlint");
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{},"examplesFrom":"eslint"}',
+    });
+
+    const piece = readNamedPiece({
+      ...SUBJECT,
+      mechanism: "oxlint",
+      path: { join },
+      fileText: { exists: () => "present", read },
+    });
+
+    expect(piece).toMatchObject({
+      outcome: "ok",
+      value: {
+        examplesPath: "/install/eslint/direct-call.examples.json",
+        pieceRoot: "/install/oxlint",
+      },
+    });
+    expect(join).toHaveBeenNthCalledWith(2, {
+      segments: [
+        "/install",
+        "src",
+        "infrastructure",
+        "engines",
+        "eslint",
+        "ambient-randomness",
+        "direct-call",
+        "direct-call.examples.json",
+      ],
+    });
+  });
+
   it.each([
-    { ownEditions: undefined, declared: ["1", "2"], latest: "2" },
-    { ownEditions: ["1", "3"], declared: ["1", "3"], latest: "3" },
+    {
+      declaration:
+        '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"},"settings":{"operation":"ambient"},"checkSettings":{"limit":{"default":3}}}',
+      declared: ["1", "2"],
+      latest: "2",
+    },
+    {
+      declaration:
+        '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"},"settings":{"operation":"ambient"},"checkSettings":{"limit":{"default":3}},"editions":["1","3"]}',
+      declared: ["1", "3"],
+      latest: "3",
+    },
   ])(
-    "takes shared fields from the implementation and keeps the check's own settings and editions $ownEditions",
-    ({ ownEditions, declared, latest }) => {
+    "takes shared fields from the implementation and keeps the check's own settings and editions $latest",
+    ({ declaration, declared, latest }) => {
       const implementationPath =
         "/install/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json";
       const implementationRoot =
@@ -75,13 +124,7 @@ describe("readNamedPiece", () => {
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({
           outcome: "ok",
-          value: JSON.stringify({
-            version: 2,
-            implementation: { symptom: "ambient-randomness", check: "random-call" },
-            settings: { operation: "ambient" },
-            checkSettings: { limit: { default: 3 } },
-            editions: ownEditions,
-          }),
+          value: declaration,
         })
         .mockReturnValueOnce({
           outcome: "ok",

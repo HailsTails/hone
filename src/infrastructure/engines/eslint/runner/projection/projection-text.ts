@@ -6,7 +6,7 @@ import {
   clauseAddressText,
   sameClauseAddress,
 } from "../../../../../domain/rule-set/clause-address.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import { enabledRuleEntry, reservedNamespace } from "../toolchain/eslint-instance.ts";
 import { escapedGlobPath } from "./projection.ts";
 

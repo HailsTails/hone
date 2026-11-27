@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type {
   Check,
@@ -21,13 +21,16 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
-import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
+import type { SettingsFileFault } from "../../../domain/settings/settings-file.ts";
 import type {
   CheckPieceSource,
   PieceClause,
   SettingsSources,
 } from "../../ports/settings-sources.ts";
-import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type {
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../ports/settings/settings-file-format.ts";
 import { type NamedSettingsReading, readNamedSettings } from "./read-settings.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -166,7 +169,7 @@ const DOCUMENT = { version: 2 };
 
 const LOOPS_ADDRESS: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" };
 
-const SETTINGS_FILE: SettingsFile = {
+const SETTINGS_FILE: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [
@@ -186,11 +189,12 @@ const SETTINGS_FILE: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "ts",
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
 const formatGiving = (
-  file: Result<SettingsFile, SettingsFileFault>,
+  file: Result<VersionTwoSettingsFile, SettingsFileFault>,
 ): Pick<SettingsFileFormat, "fileOf"> => ({
   fileOf: vi.fn<SettingsFileFormat["fileOf"]>().mockReturnValue(file),
 });
@@ -211,7 +215,7 @@ const sourcesHolding = (request: { readonly document: unknown }): SettingsSource
 });
 
 describe("readNamedSettings and the settings document", () => {
-  it("gives the check choices, binding, edition, and reporting settings from the document", () => {
+  it("gives the check choices, binding, edition, reporting settings and ESLint projection kind from the document", () => {
     expect(
       readNamedSettings({
         settingsFormat: SETTINGS_FORMAT,
@@ -265,6 +269,7 @@ describe("readNamedSettings and the settings document", () => {
         },
         runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "ts",
         conventions: DEFAULT_CONVENTIONS,
         notes: [],
       },
@@ -519,90 +524,97 @@ describe("readNamedSettings", () => {
     });
   });
 
-  it("places a folder team's symptom, recipe and check files under the team's folder", () => {
+  describe("a catalogue loaded from the team's folder", () => {
     const acme = { name: ruleSetNameOf("acme") };
-    const teamLoop: Symptom = {
-      ...LOOP_KEYWORD,
-      ruleSet: acme,
-      name: "team-loop",
-      sourceFile: "rules/typescript/symptoms/team-loop.md",
+    const teamCatalogue: SymptomCatalogue = {
+      ...SETTINGS_CATALOGUE,
+      symptoms: [
+        {
+          ...LOOP_KEYWORD,
+          ruleSet: acme,
+          name: "team-loop",
+          sourceFile: "rules/typescript/symptoms/team-loop.md",
+        },
+      ],
+      recipes: [
+        {
+          ruleSet: acme,
+          name: "team-iteration",
+          sourceFile: "rules/typescript/recipes/team-iteration.md",
+          title: "Team iteration",
+          standing: "accepted",
+          reason: { text: "It reads flat.", standing: "accepted" },
+        },
+      ],
+      clauses: [],
+      checks: [
+        {
+          ...LOOP_KEYWORD_LOOPS,
+          symptom: { ruleSet: acme, name: "team-loop" },
+          page: "rules/typescript/symptoms/team-loop/loops.md",
+        },
+      ],
     };
-    const sources = {
-      ...sourcesHolding({ document: DOCUMENT }),
-      catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+
+    it.each([
+      {
+        entry: "recipe",
+        catalogue: {
+          recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
+        },
+      },
+      {
+        entry: "symptom",
+        catalogue: {
+          symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
+        },
+      },
+      {
+        entry: "check",
+        catalogue: {
+          checks: [
+            {
+              symptom: { ruleSet: acme, name: "team-loop" },
+              page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
+            },
+          ],
+        },
+      },
+    ])("places the $entry under the team's folder", ({ catalogue }) => {
+      const sources = {
+        ...sourcesHolding({ document: DOCUMENT }),
+        catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: teamCatalogue },
+        }),
+      };
+      const settingsFormat = formatGiving({
         outcome: "ok",
         value: {
-          held: "catalogue",
-          catalogue: {
-            ...SETTINGS_CATALOGUE,
-            symptoms: [teamLoop],
-            recipes: [
-              {
-                ruleSet: acme,
-                name: "team-iteration",
-                sourceFile: "rules/typescript/recipes/team-iteration.md",
-                title: "Team iteration",
-                standing: "accepted",
-                reason: { text: "It reads flat.", standing: "accepted" },
-              },
-            ],
-            clauses: [],
-            checks: [
-              {
-                name: "loops",
-                symptom: { ruleSet: acme, name: "team-loop" },
-                page: "rules/typescript/symptoms/team-loop/loops.md",
-                engines: [WALKER],
-                forms: [],
-                findingSpecifics: [],
-              },
-            ],
-          },
-        },
-      }),
-    };
-    const settingsFormat = formatGiving({
-      outcome: "ok",
-      value: {
-        ...SETTINGS_FILE,
-        ruleSets: [
-          { name: acme.name, location: { location: "folder", path: repoPathOf("team-rules") } },
-        ],
-        checks: [
-          {
-            address: { ruleSet: acme, check: "team-loop#loops" },
-            state: { state: "run", engine: "walker" },
-          },
-        ],
-        checkSettings: [],
-      },
-    });
-    const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
-      outcome: "ok",
-      value: { ...LOOPS_PIECE, forms: {} },
-    });
-
-    const read = readNamedSettings({ sources, settingsFormat, readPiece });
-
-    expect(read).toMatchObject({
-      outcome: "ok",
-      value: {
-        externalCatalogues: [
-          {
-            ruleSet: acme,
-            catalogue: {
-              recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
-              symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
-              checks: [
-                {
-                  symptom: { ruleSet: acme, name: "team-loop" },
-                  page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
-                },
-              ],
+          ...SETTINGS_FILE,
+          ruleSets: [
+            { name: acme.name, location: { location: "folder", path: repoPathOf("team-rules") } },
+          ],
+          checks: [
+            {
+              address: { ruleSet: acme, check: "team-loop#loops" },
+              state: { state: "run", engine: "walker" },
             },
-          },
-        ],
-      },
+          ],
+          checkSettings: [],
+        },
+      });
+
+      const read = readNamedSettings({
+        sources,
+        settingsFormat,
+        readPiece: vi
+          .fn<CheckPieceSource>()
+          .mockReturnValue({ outcome: "ok", value: { ...LOOPS_PIECE, forms: {} } }),
+      });
+
+      assert(read.outcome === "ok");
+      expect(read.value.externalCatalogues).toMatchObject([{ ruleSet: acme, catalogue }]);
     });
   });
 

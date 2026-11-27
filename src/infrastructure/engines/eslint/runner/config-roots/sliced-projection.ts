@@ -9,7 +9,7 @@ import type { ClauseAddress } from "../../../../../domain/rule-set/clause-addres
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import type { CoreInstall } from "../projection/core-install.ts";
 import { type ProjectionStates, projectionStateAt } from "../projection/projection-states.ts";
 import { type ProjectedPiece, projectionText } from "../projection/projection-text.ts";

@@ -303,15 +303,28 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
   });
 });
 
-describe("runLoadFailureLine, a stale projection", () => {
+describe("runLoadFailureLine, projection failures", () => {
   const PROJECT_COMMAND =
     "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
   it.each<LineRow>([
     {
       failure: {
+        kind: "file-unremovable",
+        file: repoPathOf("hone.eslint.ts"),
+        detail: "EACCES",
+      },
+      line: "load failure: file-unremovable hone.eslint.ts could not remove the projection file: EACCES",
+    },
+    {
+      failure: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+        problem: {
+          scope: "projection",
+          engine: ESLINT_ENGINE,
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.mjs"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
       line: `load failure: projection-stale eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
@@ -323,7 +336,7 @@ describe("runLoadFailureLine, a stale projection", () => {
           scope: "slice",
           engine: ESLINT_ENGINE,
           state: "missing",
-          slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+          file: repoPathOf("packages/ui/hone.eslint.mjs"),
         },
         projectCommand: PROJECT_COMMAND,
       },
@@ -332,12 +345,17 @@ describe("runLoadFailureLine, a stale projection", () => {
     {
       failure: {
         kind: "projection-stale",
-        problem: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+        problem: {
+          kind: "engine-not-run",
+          engine: ESLINT_ENGINE,
+          projection: "missing",
+          file: repoPathOf("hone.eslint.mjs"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
       line: `load failure: projection-stale engine-not-run eslint missing: hone.eslint.mjs is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
     },
-  ])("prints the stale projection", ({ failure, line }) => {
+  ])("prints the projection failure", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: undefined })).toBe(line);
   });
 });

@@ -2,11 +2,13 @@ import { z } from "zod";
 
 import type {
   NamedEnginePort,
+  NamedEngineLocation,
   NamedEngineFailure,
 } from "../../../../application/ports/engine/engine-port.ts";
 import type {
   NamedEngineRun,
   NamedEngineRunRequest,
+  NamedEslintRunRequest,
 } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   RunnerInvalid,
@@ -20,7 +22,7 @@ import type {
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { checkedObservations } from "../../../../domain/runner/checked-observations.ts";
-import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../../../domain/runner/checks-run-report.ts";
 import {
   rejectedCall,
   type RunnerFailure,
@@ -75,7 +77,7 @@ type ParsedNamedRunner = z.output<typeof namedChecksRunnerModuleSchema>;
 type NamedEngineCall = {
   readonly mechanism: EngineId;
   readonly runner: ParsedNamedRunner;
-  readonly request: NamedEngineRunRequest;
+  readonly request: NamedEngineRunRequest | NamedEslintRunRequest;
 };
 
 export const createRunnerLoader =
@@ -187,7 +189,7 @@ const measuredVersionOne = async (
 
 const projectNamedEngine = async (
   call: NamedEngineCall,
-): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
+): Promise<NamedOutcome<readonly ProjectionEntry[]>> => {
   const parsed = checksProjectResultSchema.safeParse(
     await returnedBy({ call: () => call.runner.project(mapCallToRunnerRequest(call)) }),
   );
@@ -215,20 +217,30 @@ export const measureVersionOneProjectionOver = (
   };
 };
 
+const bindRunner = (location: NamedEngineLocation, runner: ParsedNamedRunner) => {
+  const { mechanism } = location;
+  const createCall = (request: NamedEngineRunRequest): NamedEngineCall => ({
+    mechanism,
+    runner,
+    request:
+      location.mechanism === "eslint"
+        ? { ...request, projectionKind: location.projectionKind }
+        : request,
+  });
+  return {
+    run: (request: NamedEngineRunRequest) => runNamedEngine(createCall(request)),
+    project: (request: NamedEngineRunRequest) => projectNamedEngine(createCall(request)),
+  };
+};
+
 export const createNamedEnginePort = (ports: RunnerModulePorts): NamedEnginePort => {
   const load = createRunnerLoader(ports);
   return {
     load: async (location) => {
-      const runner = await load(location);
+      const { mechanism, installRoot, moduleExtension, modules, path } = location;
+      const runner = await load({ mechanism, installRoot, moduleExtension, modules, path });
       if (runner.outcome === "failed") return runner;
-      const { mechanism } = location;
-      return {
-        outcome: "ok",
-        value: {
-          run: (request) => runNamedEngine({ mechanism, runner: runner.value, request }),
-          project: (request) => projectNamedEngine({ mechanism, runner: runner.value, request }),
-        },
-      };
+      return { outcome: "ok", value: bindRunner(location, runner.value) };
     },
   };
 };

@@ -24,4 +24,4 @@ export type { JsonValue, ReadonlyJsonValue } from "./domain/settings/json-values
 export type {
   EslintPieceSettings,
   RuleOptions,
-} from "./infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-types.ts";
+} from "./infrastructure/engines/protocol/plugin-settings/eslint-piece-settings-types.ts";

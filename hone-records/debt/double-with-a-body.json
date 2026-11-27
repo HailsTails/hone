@@ -72,10 +72,6 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/engines/walker/runner/pieces/syntax-node-check.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/upgrade/team-layout/version-one-team-layout.test.ts"
     }
   ]
 }

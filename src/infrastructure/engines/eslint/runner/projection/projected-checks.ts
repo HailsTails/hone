@@ -14,16 +14,16 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
+  eslintPieceSettingsSchema,
+  ruleOptionsOf,
+} from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import {
   CHECKS_PLUGIN_NAMESPACE,
   checkRuleIdOf,
   ESLINT_MECHANISM,
   type RuledCheck,
   runsOnEslint,
 } from "../hone-plugin/check-rule-id.ts";
-import {
-  eslintPieceSettingsSchema,
-  ruleOptionsOf,
-} from "../pieces/eslint-piece-settings-schema.ts";
 import type { ProjectedCheck } from "./checks-projection.ts";
 import type { CoreInstall } from "./core-install.ts";
 import { type PluginImport, pluginImportOf } from "./projection.ts";

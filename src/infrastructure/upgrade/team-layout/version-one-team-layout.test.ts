@@ -85,20 +85,30 @@ const sourcesListing = (request: {
 }) => {
   const { files } = request;
   const listings = { ...LISTINGS, ...request.listings };
-  const fileText: FileTextPort = {
-    exists: ({ path }) => (path in files || path in listings ? "present" : "absent"),
-    read: ({ path }) => {
-      const text = files[path];
-      return text === undefined
-        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
-        : { outcome: "ok", value: text };
-    },
-    write: vi.fn<FileTextPort["write"]>(),
+  const present: Readonly<Record<string, "present" | "absent">> = Object.fromEntries(
+    [...Object.keys(files), ...Object.keys(listings)].map((path) => [path, "present"]),
+  );
+  const contents: Readonly<Record<string, ReturnType<FileTextPort["read"]>>> = Object.fromEntries(
+    Object.entries(files).map(([path, text]) => [path, { outcome: "ok", value: text }]),
+  );
+  const exists: FileTextPort["exists"] = ({ path }) => {
+    const { [path]: presence = "absent" } = present;
+    return presence;
   };
-  const directory: DirectoryPort = {
-    list: ({ path }) => ({ outcome: "ok", value: listings[path] ?? [] }),
-    create: vi.fn<DirectoryPort["create"]>(),
+  const read: FileTextPort["read"] = ({ path }) => {
+    const missing: ReturnType<FileTextPort["read"]> = {
+      outcome: "failed",
+      error: { kind: "unreadable", path, detail: "ENOENT" },
+    };
+    const { [path]: document = missing } = contents;
+    return document;
   };
+  const list: DirectoryPort["list"] = ({ path }) => {
+    const { [path]: entries = [] } = listings;
+    return { outcome: "ok", value: entries };
+  };
+  const fileText: FileTextPort = { exists, read, write: vi.fn<FileTextPort["write"]>() };
+  const directory: DirectoryPort = { list, create: vi.fn<DirectoryPort["create"]>() };
   return {
     fileText,
     directory,
@@ -267,6 +277,23 @@ describe("readVersionOneTeamLayout", () => {
           },
         ],
       },
+    });
+  });
+
+  it("refuses Oxlint as a version one piece mechanism", () => {
+    const layout = readVersionOneTeamLayout({
+      ...sourcesHolding({
+        ...FILES,
+        "/repo/acme/mechanisms/audit/ACME-1/piece.json":
+          '{ "version": 1, "discipline": "ACME-1", "mechanism": "oxlint", "clauses": [{ "clause": "scratch-files", "settings": { "module": "check.ts" } }] }',
+      }),
+      ruleSet: ACME,
+      root: ROOT,
+    });
+
+    expect(layout).toMatchObject({
+      outcome: "failed",
+      error: { path: "/repo/acme/mechanisms/audit/ACME-1/piece.json" },
     });
   });
 

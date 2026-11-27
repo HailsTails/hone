@@ -2,7 +2,7 @@ import type { CheckAddressText } from "../../../../../domain/language-layer/chec
 import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
 import type { MisnamedRuleId } from "../../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 
 export type { MisnamedRuleId };
 

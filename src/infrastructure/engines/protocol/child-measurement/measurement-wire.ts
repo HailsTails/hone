@@ -52,6 +52,7 @@ const engineReplySchema = z.strictObject({
   mechanism: engineIdSchema,
   coverableKinds: z.array(nativeExceptionKindSchema).readonly(),
   report: namedChecksRunReportSchema,
+  comparedOutputs: z.array(repoPathSchema).readonly().optional(),
 });
 
 const measurementReplySchema = z.discriminatedUnion("outcome", [
@@ -71,20 +72,10 @@ export const createMeasurementInput = (request: { readonly tree: CheckedTree }):
 
 const mapRunToEngineReply = (request: {
   readonly run: NamedEngineRun;
-}): z.input<typeof engineReplySchema> => ({
-  mechanism: request.run.mechanism,
-  coverableKinds: request.run.coverableKinds,
-  report: {
-    slices: request.run.slices,
-    nestedConfigurations: request.run.nestedConfigurations,
-    unprojectedFolders: request.run.unprojectedFolders,
-    misnamedRuleIds: request.run.misnamedRuleIds,
-    hits: request.run.hits,
-    nativeExceptions: request.run.nativeExceptions,
-    measured: request.run.measured,
-    projection: request.run.projection,
-  },
-});
+}): z.input<typeof engineReplySchema> => {
+  const { mechanism, coverableKinds, comparedOutputs, ...report } = request.run;
+  return { mechanism, coverableKinds, report, comparedOutputs };
+};
 
 const mapMeasuredToReply = (request: {
   readonly measured: MeasuredRuns;
@@ -161,10 +152,11 @@ const mapReplyToRuns = (request: { readonly reply: MeasurementReply }): Measured
     ? { outcome: "failed", error: request.reply.failure }
     : {
         outcome: "ok",
-        value: request.reply.runs.map(({ mechanism, coverableKinds, report }) => ({
+        value: request.reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
           ...report,
           mechanism,
           coverableKinds,
+          ...(comparedOutputs === undefined ? {} : { comparedOutputs }),
         })),
       };
 

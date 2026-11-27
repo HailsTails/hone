@@ -6,6 +6,7 @@
   },
   "settings": {
     "plugin": "eslint",
-    "adapter": "naming-convention"
-  }
+    "module": "naming-plugin.ts"
+  },
+  "examplesFrom": "eslint"
 }

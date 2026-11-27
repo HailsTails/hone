@@ -61,7 +61,8 @@ describe("createOxlintRunner", () => {
     }).conform({ binding, cases });
 
     expect(lint).toHaveBeenCalledWith({
-      resolveFrom: "/hone/explicit-any",
+      resolveFrom: expect.not.stringContaining("/hone/explicit-any"),
+      nativeOptions: new Map([["typescript/no-explicit-any", []]]),
       rules: ["typescript/no-explicit-any"],
       sources: cases,
     });
@@ -92,7 +93,8 @@ describe("createOxlintRunner", () => {
 
     expect(report).toEqual({ outcome: "ok", value: [] });
     expect(lint).toHaveBeenCalledWith({
-      resolveFrom: "/hone/skipped-tests",
+      resolveFrom: expect.not.stringContaining("/hone/skipped-tests"),
+      nativeOptions: new Map(),
       rules: [],
       sources: [],
       pluginRules: [
@@ -134,6 +136,10 @@ describe("createOxlintRunner", () => {
 
     expect(lint).toHaveBeenCalledWith({
       resolveFrom: root,
+      nativeOptions: new Map([
+        ["typescript/no-explicit-any", []],
+        ["eslint/max-params", [{ max: 2, countVoidThis: true }]],
+      ]),
       rules: ["typescript/no-explicit-any", "eslint/max-params"],
       sources: [{ fileName: file, source }],
     });

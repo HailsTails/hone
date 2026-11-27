@@ -9,7 +9,7 @@ import type { RunnerClause } from "../../../../../../domain/runner/runner-module
 import {
   eslintPieceSettingsSchema,
   ruleOptionsOf,
-} from "../../pieces/eslint-piece-settings-schema.ts";
+} from "../../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import {
   type LoadedEslintPlugin,
   eslintPluginModuleSchema,
@@ -21,7 +21,7 @@ export const ESLINT_9_VERSION = ESLint.version;
 
 export const eslint9ToolchainModules: EslintToolchainModules = {
   ...defaultEslintToolchainModules,
-  eslint: () => Promise.resolve({ ESLint }),
+  eslint: () => Promise.resolve({ ["ESLint"]: ESLint }),
 };
 
 type ConformanceRow = {
@@ -43,7 +43,7 @@ const ESLINT_9_SOURCES: NativeRuleSources = {
 
 const nativeRulePieceSchema = z.object({
   createPlugin: z.function({
-    input: [z.custom<NativeRuleSources>((value) => value === ESLINT_9_SOURCES)],
+    input: [z.custom<NativeRuleSources>((sources) => sources === ESLINT_9_SOURCES)],
     output: z.unknown(),
   }),
 });
@@ -88,8 +88,10 @@ const linesFlagged = async (request: {
   return distinctSorted(lintResult?.messages.map((message) => message.line) ?? []);
 };
 
-const sameLines = (left: readonly number[], right: readonly number[]): boolean =>
-  left.length === right.length && left.every((line, index) => line === right[index]);
+const compareLines = (left: readonly number[], right: readonly number[]): "same" | "different" =>
+  left.length === right.length && left.every((line, index) => line === right[index])
+    ? "same"
+    : "different";
 
 export const eslint9CaseMismatches = async (request: {
   readonly row: ConformanceRow;
@@ -119,5 +121,7 @@ export const eslint9CaseMismatches = async (request: {
       flaggedLines: await linesFlagged({ eslint, sourceCase }),
     })),
   );
-  return outcomes.filter((outcome) => !sameLines(outcome.expectedLines, outcome.flaggedLines));
+  return outcomes.filter(
+    (outcome) => compareLines(outcome.expectedLines, outcome.flaggedLines) === "different",
+  );
 };

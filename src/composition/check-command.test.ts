@@ -346,6 +346,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -385,8 +386,8 @@ const FAILING_RUN: NamedEngineRun = {
 const SLICES_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
   slices: [
-    { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
-    { slice: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
+    { file: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
+    { file: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
   ],
 };
 
