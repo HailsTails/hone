@@ -31,7 +31,6 @@ import type {
   RunAssessment,
   RunReport,
 } from "../../domain/report/run-report.ts";
-import { typescriptFilesOf } from "../../domain/repository/checked-tree.ts";
 import { excludeProjectionOutputs } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
@@ -164,7 +163,9 @@ const reportAfterAnswering = (
     paid: answering.paid,
     refused: records.refused,
     unmeasured: [...answering.unmeasured, ...request.unmeasured],
-    ...(answering.judged === "counted-debt" ? { debtComparison: answering.debtComparison } : {}),
+    ...(answering.judged === "counted-debt"
+      ? { judged: answering.judged, debtComparison: answering.debtComparison }
+      : { judged: answering.judged }),
     assessment: assessmentOf(request),
     "settings-notes": request.notes,
     "record-notes": records.notes,
@@ -180,23 +181,32 @@ export type RunReportRequest = ReportInputs & {
   readonly runs: readonly NamedEngineRun[];
 };
 
-const mapSelectionToComparisonScope = (
-  request: RunReportRequest & {
-    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
-  },
-) => {
+const createComparisonCoverage = (request: {
+  readonly runs: readonly NamedEngineRun[];
+  readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+}): DebtComparisonEvidence["coverage"] => {
   const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs));
-  const typescript = typescriptFilesOf({ tracked: request.tracked });
+  const scoped = request.runs.flatMap(({ mechanism, coverage }) =>
+    coverage.kind === "scoped" ? [{ mechanism, ...coverage }] : [],
+  );
   const candidates = new Map(
-    request.runs.map(({ mechanism, candidateFiles }) => [
+    scoped.map(({ mechanism, candidateFiles }) => [
       mechanism,
       excludeProjectionOutputs({ files: candidateFiles, outputs }),
     ]),
   );
-  const fallback = excludeProjectionOutputs({ files: typescript, outputs });
-  return request.selected.flatMap(({ address: check, engine }) =>
-    (candidates.get(engine) ?? fallback).map((file) => ({ check, file })),
+  const unavailable = new Set(
+    request.selected.flatMap(({ engine }) => (candidates.has(engine) ? [] : [engine])),
   );
+  return unavailable.size > 0
+    ? { kind: "scope-unavailable", engines: [...unavailable] }
+    : {
+        kind: "scoped",
+        pairs: request.selected.flatMap(({ address: check, engine }) =>
+          (candidates.get(engine) ?? []).map((file) => ({ check, file })),
+        ),
+        inapplicable: scoped.flatMap(({ inapplicable }) => inapplicable),
+      };
 };
 
 const createComparisonEvidence = (
@@ -209,8 +219,7 @@ const createComparisonEvidence = (
 ): DebtComparisonEvidence => ({
   base: request.records.base,
   ruleSets: request.selection.selected.map(({ binding }) => binding.ruleSet),
-  scope: mapSelectionToComparisonScope(request),
-  inapplicable: request.runs.flatMap(({ inapplicable }) => inapplicable),
+  coverage: createComparisonCoverage(request),
   measured: request.measurements.runs.flatMap(({ measured, selected }) => {
     const chosen = new Set(selected);
     return measured.filter(({ check }) => chosen.has(check));

@@ -364,9 +364,8 @@ const CLEAN_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
-  candidateFiles: [],
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
   comparedOutputs: [],
-  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -655,6 +654,7 @@ verdict: fail
 });
 
 const EMPTY_RUN_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],

@@ -350,9 +350,8 @@ const eslintRunOf = (request: {
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
   ...PROJECTIONS[request.projection],
-  candidateFiles: [FILE_A],
+  coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
   comparedOutputs: [],
-  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -451,6 +450,7 @@ const REQUEST: RunReportRequest = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -1180,10 +1180,14 @@ it("counts a finding held only by the proposal and accepts one answered by landi
     outcome: "ok",
     value: {
       findings: [],
+      judged: "counted-debt",
       debtComparison: { issues: [{ kind: "uncovered", observed: 1 }] },
     },
   });
-  expect(fromLanding).toMatchObject({ outcome: "ok", value: { debtComparison: { issues: [] } } });
+  expect(fromLanding).toMatchObject({
+    outcome: "ok",
+    value: { judged: "counted-debt", debtComparison: { issues: [] } },
+  });
 });
 
 it("refuses unmeasured files in the engine's verified scope and stale projection", () => {
@@ -1191,9 +1195,12 @@ it("refuses unmeasured files in the engine's verified scope and stale projection
   const output = repoPathOf("hone.eslint.d.mts");
   const run: NamedEngineRun = {
     ...eslintRunOf({ hits: [], projection: "current" }),
-    candidateFiles: [FILE_A, FILE_B, config, output],
+    coverage: {
+      kind: "scoped",
+      candidateFiles: [FILE_A, FILE_B, config, output],
+      inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
+    },
     measured: [CAST_HIT],
-    inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
     comparedOutputs: [output],
   };
   const request: RunReportRequest = {
@@ -1217,5 +1224,30 @@ it("refuses unmeasured files in the engine's verified scope and stale projection
   expect(stale).toMatchObject({
     outcome: "ok",
     value: { debtComparison: { issues: [{ kind: "projection-unmeasured" }] } },
+  });
+});
+
+it("refuses a counted report when a child run did not report candidate scope", () => {
+  const report = namedRunReportOf({
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [
+      {
+        ...eslintRunOf({ hits: [], projection: "current" }),
+        coverage: { kind: "scope-unavailable" },
+        measured: [CAST_HIT],
+      },
+    ],
+  });
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: {
+      judged: "counted-debt",
+      debtComparison: { issues: [{ kind: "coverage-unavailable", engines: [ESLINT] }] },
+    },
   });
 });

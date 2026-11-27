@@ -112,21 +112,20 @@ const verifiedNamedRun = (request: {
     requested: { ...requested, files },
     report: decodeNamedChecksReport(report),
   });
-  return checked.outcome === "failed"
-    ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
-    : {
-        outcome: "ok",
-        value: {
-          ...checked.value,
-          mechanism: call.mechanism,
-          coverableKinds: call.runner.projectedKinds,
-          candidateFiles:
-            call.mechanism === "walker" || report.inapplicable !== undefined
-              ? files
-              : requested.files,
-          comparedOutputs: [],
-        },
-      };
+  if (checked.outcome === "failed") {
+    return runnerFailed({ mechanism: call.mechanism, failure: checked.error });
+  }
+  const { inapplicable, ...observations } = checked.value;
+  return {
+    outcome: "ok",
+    value: {
+      ...observations,
+      mechanism: call.mechanism,
+      coverableKinds: call.runner.projectedKinds,
+      coverage: { kind: "scoped", candidateFiles: files, inapplicable },
+      comparedOutputs: [],
+    },
+  };
 };
 
 const runNamedEngine = async (call: NamedEngineCall): Promise<NamedOutcome<NamedEngineRun>> => {

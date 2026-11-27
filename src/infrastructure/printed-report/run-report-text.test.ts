@@ -419,6 +419,7 @@ const NOTED_LOCATION: PlacedRecord = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -443,6 +444,7 @@ const EMPTY_REPORT: RunReport = {
 };
 
 const EVERY_SECTION: RunReport = {
+  judged: "touched-debt",
   excluded: [repoPathOf("dist")],
   "not-adopted": [CAST_CHECK],
   "not-run": [TEST_BODY_CHECK],
@@ -766,6 +768,7 @@ describe("assessmentScopeOf", () => {
 it("prints the landing ceiling and the observed count before the verdict", () => {
   const report: RunReport = {
     ...EMPTY_REPORT,
+    judged: "counted-debt",
     debtComparison: {
       revision: "pinned",
       issues: [
@@ -790,6 +793,7 @@ it("prints the landing ceiling and the observed count before the verdict", () =>
 it("includes the comparison count or just the verdict at the requested detail", () => {
   const report: RunReport = {
     ...EMPTY_REPORT,
+    judged: "counted-debt",
     debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
   };
 
@@ -803,6 +807,7 @@ it("includes the comparison count or just the verdict at the requested detail", 
 it("explains how to restore the landing history when the preview cannot use the base", () => {
   const report: RunReport = {
     ...EMPTY_REPORT,
+    judged: "counted-debt",
     debtComparison: { revision: undefined, issues: [{ kind: "base-unavailable" }] },
   };
 

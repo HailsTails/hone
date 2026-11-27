@@ -61,7 +61,7 @@ const measureInChild = (
           detail: `the measurement process did not finish: ${executed.error.detail}`,
         },
       }
-    : decodeMeasuredRuns({ ...executed.value, tree: request.tree });
+    : decodeMeasuredRuns(executed.value);
 };
 
 export const createChildEnginesStage =

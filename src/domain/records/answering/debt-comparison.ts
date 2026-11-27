@@ -3,6 +3,7 @@ import { checkAddressOf } from "../../language-layer/check-address.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { OwnedName } from "../../rule-set/rule-set-identity.ts";
 import type { CheckMeasurement, CheckNativeException } from "../../runner/check-observations.ts";
 import { SETTINGS_FILE_NAME } from "../../settings/settings-file.ts";
@@ -20,6 +21,7 @@ type PairProblem = "base-count-missing" | "head-record-changed" | "unmeasured" |
 
 export type DebtComparisonIssue =
   | { readonly kind: ComparisonScope }
+  | { readonly kind: "coverage-unavailable"; readonly engines: readonly EngineId[] }
   | { readonly kind: "whole-symptom"; readonly file: RepoPath; readonly symptom: string }
   | (CheckMeasurement & { readonly kind: PairProblem })
   | (CheckMeasurement & { readonly kind: "uncovered"; readonly observed: number })
@@ -34,10 +36,19 @@ export type DebtComparison = {
   readonly issues: readonly DebtComparisonIssue[];
 };
 
+type ScopedComparison = {
+  readonly kind: "scoped";
+  readonly pairs: readonly CheckMeasurement[];
+  readonly inapplicable: readonly CheckMeasurement[];
+};
+
+type ComparisonCoverage =
+  | ScopedComparison
+  | { readonly kind: "scope-unavailable"; readonly engines: readonly EngineId[] };
+
 export type DebtComparisonEvidence = Pick<RecordsReading, "base"> & {
   readonly ruleSets: readonly OwnedName["ruleSet"][];
-  readonly scope: readonly CheckMeasurement[];
-  readonly inapplicable: readonly CheckMeasurement[];
+  readonly coverage: ComparisonCoverage;
   readonly measured: readonly CheckMeasurement[];
   readonly exceptions: readonly CheckNativeException[];
   readonly projection: "current" | "unmeasured";
@@ -105,7 +116,10 @@ const compareMeasuredCount = (request: {
 };
 
 const compareMeasuredDebt = (
-  request: Comparing & { readonly base: Extract<Comparing["base"], { readonly measured: "yes" }> },
+  request: Comparing & {
+    readonly base: Extract<Comparing["base"], { readonly measured: "yes" }>;
+    readonly coverage: ScopedComparison;
+  },
 ): readonly DebtComparisonIssue[] => {
   const baseDebts = request.base.placements.flatMap(({ record }) =>
     record.kind === "debt" ? [record] : [],
@@ -120,7 +134,7 @@ const compareMeasuredDebt = (
     "file" in exception ? [exception] : [],
   );
   const compared = new Map(
-    [...basePlaces, ...request.findings, ...request.scope, ...exceptionPlaces].map(
+    [...basePlaces, ...request.findings, ...request.coverage.pairs, ...exceptionPlaces].map(
       ({ check, file }) => {
         const pair = { check, file };
         return [mapPairToKey(pair), pair];
@@ -128,7 +142,7 @@ const compareMeasuredDebt = (
     ),
   );
   const measured = new Set(request.measured.map(mapPairToKey));
-  const inapplicable = new Set(request.inapplicable.map(mapPairToKey));
+  const inapplicable = new Set(request.coverage.inapplicable.map(mapPairToKey));
   const found = new Set(request.findings.map(mapPairToKey));
   const observed = Map.groupBy(request.debtFindings, mapPairToKey);
   const suppressed = new Set(exceptionPlaces.map(mapPairToKey));
@@ -181,8 +195,15 @@ export const compareDebt = (request: Comparing): DebtComparison => {
   if (base.measured === "partial") {
     return { revision, issues: [{ kind: "base-refused" }, ...issues] };
   }
+  const { coverage } = request;
+  if (coverage.kind === "scope-unavailable") {
+    return {
+      revision,
+      issues: [...issues, { kind: "coverage-unavailable", engines: coverage.engines }],
+    };
+  }
   return {
     revision,
-    issues: issues.length === 0 ? compareMeasuredDebt({ ...request, base }) : issues,
+    issues: issues.length === 0 ? compareMeasuredDebt({ ...request, base, coverage }) : issues,
   };
 };

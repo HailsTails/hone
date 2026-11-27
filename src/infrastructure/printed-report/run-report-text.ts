@@ -163,6 +163,8 @@ const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
       return "hone.config.json changed since the landing commit";
     case "projection-unmeasured":
       return "refresh the projection and restore measured coverage";
+    case "coverage-unavailable":
+      return `no verified file scope for ${issue.engines.join(", ")}. Run the check with its engine coverage available.`;
     case "no-checks":
       return "no checks selected";
     case "external-checks":
@@ -185,7 +187,7 @@ const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
 };
 
 const renderDebtComparison = ({ report, output }: RunReportRequest): string => {
-  if (report.debtComparison === undefined || output === "verdict-only") return "";
+  if (report.judged !== "counted-debt" || output === "verdict-only") return "";
   const { revision, issues } = report.debtComparison;
   const landing = revision === undefined ? "" : ` against ${revision}`;
   const heading = `debt comparison (${issues.length})${landing}\n`;

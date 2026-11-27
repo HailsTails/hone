@@ -50,11 +50,6 @@ describe("createMeasurementInput", () => {
   });
 });
 
-const MEASUREMENT_TREE = {
-  tracked: [repoPathOf("src/a.ts"), repoPathOf("README.md")],
-  declaredConfigRoots: [],
-};
-
 const MEASURED_WITH_APPLICABILITY: NamedEngineRun = {
   mechanism: "eslint",
   coverableKinds: ["inline-disable"],
@@ -72,11 +67,14 @@ const MEASURED_WITH_APPLICABILITY: NamedEngineRun = {
     },
   ],
   measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
-  candidateFiles: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+  coverage: {
+    kind: "scoped",
+    candidateFiles: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+    inapplicable: [
+      { check: "claimed-type#non-null-assertions", file: repoPathOf("hone.eslint.d.mts") },
+    ],
+  },
   comparedOutputs: [],
-  inapplicable: [
-    { check: "claimed-type#non-null-assertions", file: repoPathOf("hone.eslint.d.mts") },
-  ],
 };
 
 describe("runEnginesMeasurement", () => {
@@ -259,7 +257,6 @@ describe("runEnginesMeasurement over a tree that does not parse", () => {
 describe("decodeMeasuredRuns", () => {
   it("reads the engine's projection file, compared outputs and measurements", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 0,
       stderr: "",
       reply:
@@ -287,8 +284,7 @@ describe("decodeMeasuredRuns", () => {
           measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
           projection: "out-of-date",
           projectionFile: repoPathOf("hone.eslint.ts"),
-          candidateFiles: [repoPathOf("src/a.ts")],
-          inapplicable: [],
+          coverage: { kind: "scope-unavailable" },
           comparedOutputs: [repoPathOf("hone.eslint.ts"), repoPathOf("hone.eslint.d.mts")],
         },
       ],
@@ -301,9 +297,8 @@ describe("decodeMeasuredRuns", () => {
       coverableKinds: ["inline-disable"],
       projection: "current-with-file",
       projectionFile: repoPathOf("hone.eslint.mjs"),
-      candidateFiles: [],
+      coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
       comparedOutputs: [],
-      inapplicable: [],
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
@@ -316,9 +311,8 @@ describe("decodeMeasuredRuns", () => {
       mechanism: "walker",
       coverableKinds: [],
       projection: "none",
-      candidateFiles: [],
+      coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
       comparedOutputs: [],
-      inapplicable: [],
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
@@ -353,7 +347,6 @@ describe("decodeMeasuredRuns", () => {
 
   it("decodes the runs of a reply in the order written, eslint before walker", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 0,
       stderr: "",
       reply:
@@ -368,9 +361,8 @@ describe("decodeMeasuredRuns", () => {
           coverableKinds: ["inline-disable"],
           projection: "current-with-file",
           projectionFile: repoPathOf("hone.eslint.mjs"),
-          candidateFiles: [repoPathOf("src/a.ts")],
+          coverage: { kind: "scope-unavailable" },
           comparedOutputs: [],
-          inapplicable: [],
           slices: [],
           nestedConfigurations: [],
           unprojectedFolders: [],
@@ -383,9 +375,8 @@ describe("decodeMeasuredRuns", () => {
           mechanism: "walker",
           coverableKinds: [],
           projection: "none",
-          candidateFiles: [repoPathOf("src/a.ts")],
+          coverage: { kind: "scope-unavailable" },
           comparedOutputs: [],
-          inapplicable: [],
           slices: [],
           nestedConfigurations: [],
           unprojectedFolders: [],
@@ -400,7 +391,6 @@ describe("decodeMeasuredRuns", () => {
 
   it("keeps the kind of a load failure that decodes, whatever the exit status", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 2,
       stderr: "warning: slow disk",
       reply:
@@ -418,7 +408,6 @@ describe("decodeMeasuredRuns", () => {
 
   it("fails as an unexpected error when a run carries a failed result in place of its report", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 0,
       stderr: "",
       reply:
@@ -438,7 +427,6 @@ describe("decodeMeasuredRuns", () => {
 
   it("fails as an unexpected error naming the exit status and error output when the reply is not JSON", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 1,
       stderr: "TypeError: boom",
       reply: "",
@@ -457,7 +445,6 @@ describe("decodeMeasuredRuns", () => {
 
   it("fails as an unexpected error when the reply is JSON but no measurement reply", () => {
     const runs = decodeMeasuredRuns({
-      tree: MEASUREMENT_TREE,
       status: 0,
       stderr: "",
       reply: '{"outcome":"finished"}',

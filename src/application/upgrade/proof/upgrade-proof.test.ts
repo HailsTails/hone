@@ -213,6 +213,7 @@ const FOUND_PROJECTIONS: VersionOneProjectionsReading = {
 const ORPHAN = repoPathOf("old/disciplines.eslint.mjs");
 
 const EMPTY_AFTER: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],

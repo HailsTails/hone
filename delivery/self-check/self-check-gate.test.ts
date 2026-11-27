@@ -33,6 +33,7 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
 const EMPTY_RUN_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -325,6 +326,7 @@ describe("runSelfCheck", () => {
 it("names the comparison section when it is the only refusal", () => {
   const report: RunReport = {
     ...EMPTY_RUN_REPORT,
+    judged: "counted-debt",
     debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
   };
   const produced = producedOf({ report, output: "actionable" });

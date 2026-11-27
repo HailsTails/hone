@@ -4,6 +4,7 @@ import type {
   NamedEngineProjection,
   NamedEngineRun,
 } from "../../../../application/ports/engine/engine-run.ts";
+import type { CheckMeasurement } from "../../../../domain/runner/check-observations.ts";
 import type {
   ChecksSliceProblem,
   MisnamedRuleId,
@@ -96,8 +97,8 @@ export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
 type DecodedRunReport = NamedEngineProjection &
   Omit<
     NamedEngineRun,
-    "projection" | "mechanism" | "coverableKinds" | "candidateFiles" | "comparedOutputs"
-  >;
+    "projection" | "mechanism" | "coverableKinds" | "coverage" | "comparedOutputs"
+  > & { readonly inapplicable: readonly CheckMeasurement[] };
 
 export const decodeNamedChecksReport = (
   wire: z.output<typeof namedChecksRunReportSchema>,

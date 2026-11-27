@@ -27,13 +27,18 @@ const compareWithoutAllowances = (
 ) => compareDebt({ ...request, debtFindings: request.findings });
 
 const DEBT_PLACEMENT = { place: { file: LEDGER, index: 0 }, record: DEBT };
+const SCOPE = {
+  kind: "scoped",
+  pairs: [ORDER_LOOP, RECEIPT_LOOP],
+  inapplicable: [],
+} satisfies Parameters<typeof compareDebt>[0]["coverage"];
+
 const MEASURED_INPUT: Parameters<typeof compareWithoutAllowances>[0] = {
   base: { measured: "yes", placements: [DEBT_PLACEMENT] },
   records: [DEBT_PLACEMENT],
   touched: { measured: "yes", paths: new Set([ORDER]), landingRevision: "pinned" },
   ruleSets: ["hone"],
-  scope: [ORDER_LOOP, RECEIPT_LOOP],
-  inapplicable: [],
+  coverage: SCOPE,
   findings: [ORDER_LOOP, ORDER_LOOP],
   measured: [ORDER_LOOP, RECEIPT_LOOP],
   exceptions: [],
@@ -118,7 +123,11 @@ it("refuses stale projection coverage and partially read landing data", () => {
 });
 
 it("checks a finding even when the engine also marked its pair inapplicable", () => {
-  const request = { ...MEASURED_INPUT, inapplicable: [ORDER_LOOP, RECEIPT_LOOP], measured: [] };
+  const request = {
+    ...MEASURED_INPUT,
+    coverage: { ...SCOPE, inapplicable: [ORDER_LOOP, RECEIPT_LOOP] },
+    measured: [],
+  };
 
   const compared = compareWithoutAllowances(request);
 
@@ -130,7 +139,7 @@ it("refuses whole-check suppression even when the file check was inapplicable", 
     ...MEASURED_INPUT,
     measured: [],
     findings: [],
-    inapplicable: [ORDER_LOOP, RECEIPT_LOOP],
+    coverage: { ...SCOPE, inapplicable: [ORDER_LOOP, RECEIPT_LOOP] },
     exceptions: [
       {
         kind: "command-line-option",

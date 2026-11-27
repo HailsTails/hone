@@ -134,18 +134,21 @@ describe("createNamedEnginePort", () => {
 
   it("passes only the engine's named bindings and accepts a walker measurement on a tracked config file", async () => {
     const measured = [{ check: BINDING.address, file: CONFIG }];
+    const inapplicable = [{ check: BINDING.address, file: FILE_A }];
     const report = {
       hits: [],
       nativeExceptions: [],
       measured,
-      inapplicable: [{ check: BINDING.address, file: FILE_A }],
       projection: "none",
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
       misnamedRuleIds: [],
     };
-    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
+    const run = vi.fn<RunnerCall>().mockResolvedValue({
+      outcome: "ok",
+      value: { ...report, inapplicable },
+    });
     const runner = {
       fileScope: "tracked",
       projectedKinds: [],
@@ -168,7 +171,7 @@ describe("createNamedEnginePort", () => {
         ...report,
         mechanism: "walker",
         coverableKinds: [],
-        candidateFiles: [FILE_A, CONFIG],
+        coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable },
         comparedOutputs: [],
       },
     });
@@ -416,6 +419,43 @@ describe("createNamedEnginePort", () => {
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
 
+  it("keeps the declared ESLint scope when inapplicability is omitted or empty", async () => {
+    const report: NamedChecksRunReport = {
+      projection: "current",
+      slices: [],
+      measured: [],
+      hits: [],
+      nativeExceptions: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+    };
+    const run = vi
+      .fn<RunnerCall>()
+      .mockResolvedValueOnce({ outcome: "ok", value: report })
+      .mockResolvedValueOnce({ outcome: "ok", value: { ...report, inapplicable: [] } });
+    const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
+      outcome: "ok",
+      value: { namedChecksRunner: { ...namedRunner(), run } },
+    });
+    const engine = await createNamedEnginePort({ runnerModuleOf }).load({
+      ...LOCATION,
+      mechanism: "eslint",
+      projectionKind: "ts",
+    });
+    assert(engine.outcome === "ok");
+
+    const omitted = await engine.value.run(REQUEST);
+    const empty = await engine.value.run(REQUEST);
+
+    const expected = {
+      outcome: "ok",
+      value: { coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] } },
+    };
+    expect(omitted).toMatchObject(expected);
+    expect(empty).toMatchObject(expected);
+  });
+
   it("passes the required projection kind only into the named ESLint runner request", async () => {
     const project = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: [] });
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
@@ -513,9 +553,8 @@ describe("measureVersionOneProjectionOver", () => {
           ...UPGRADE_REPORT,
           mechanism: "walker",
           coverableKinds: [],
-          candidateFiles: [FILE_A],
+          coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
           comparedOutputs: [],
-          inapplicable: [],
         },
         unappliedSlices: [UPGRADE_SLICE],
       },
@@ -599,9 +638,8 @@ describe("measureVersionOneProjectionOver", () => {
           ...report,
           mechanism: "walker",
           coverableKinds: [],
-          candidateFiles: [FILE_A, CONFIG],
+          coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] },
           comparedOutputs: [],
-          inapplicable: [],
         },
         unappliedSlices: [],
       },

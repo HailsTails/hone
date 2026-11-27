@@ -108,6 +108,10 @@ type CountedAnswering = FindingAnswers & {
 
 export type Answering = TouchedFileAnswering | CountedAnswering;
 
+export type ForfeitureJudgement =
+  | Pick<TouchedFileAnswering, "judged">
+  | Pick<CountedAnswering, "judged" | "debtComparison">;
+
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
 const holdersAt = (

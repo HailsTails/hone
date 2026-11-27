@@ -51,10 +51,18 @@ export type NamedEngineProjection =
       readonly projectionFile: RepoPath;
     };
 
+type EngineCoverage =
+  | {
+      readonly kind: "scoped";
+      readonly candidateFiles: readonly RepoPath[];
+      readonly inapplicable: readonly CheckMeasurement[];
+    }
+  | { readonly kind: "scope-unavailable" };
+
 export type NamedEngineRun = NamedEngineProjection & {
   readonly mechanism: EngineId;
   readonly comparedOutputs: readonly RepoPath[];
-  readonly candidateFiles: readonly RepoPath[];
+  readonly coverage: EngineCoverage;
   readonly coverableKinds: readonly CheckNativeException["kind"][];
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
   readonly slices: readonly ChecksProjectionProblem[];
@@ -63,5 +71,4 @@ export type NamedEngineRun = NamedEngineProjection & {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly CheckNativeException[];
   readonly measured: readonly CheckMeasurement[];
-  readonly inapplicable: readonly CheckMeasurement[];
 };

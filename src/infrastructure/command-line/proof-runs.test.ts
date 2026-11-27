@@ -9,6 +9,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { proofRunsOf } from "./proof-runs.ts";
 
 const AFTER: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],

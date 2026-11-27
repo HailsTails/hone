@@ -6,7 +6,7 @@ import type { ReplyPort } from "../../../../application/ports/host/reply-port.ts
 import type { RequestPort } from "../../../../application/ports/host/request-port.ts";
 import type { RunLoadFailure } from "../../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import { type CheckedTree, typescriptFilesOf } from "../../../../domain/repository/checked-tree.ts";
+import type { CheckedTree } from "../../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { parsedJson } from "../../../content-files/parsed-json.ts";
@@ -80,8 +80,7 @@ const mapRunToEngineReply = (request: {
     mechanism,
     coverableKinds,
     comparedOutputs,
-    candidateFiles: _candidateFiles,
-    inapplicable: _inapplicable,
+    coverage: _coverage,
     ...report
   } = request.run;
   return {
@@ -163,35 +162,31 @@ const decodeReply = (request: { readonly reply: string }): Result<MeasurementRep
     : { outcome: "failed", error: z.prettifyError(reply.error) };
 };
 
-const mapReplyToRuns = (request: {
-  readonly reply: MeasurementReply;
-  readonly tree: CheckedTree;
-}): MeasuredRuns => {
-  if (request.reply.outcome === "not-loaded") {
-    return { outcome: "failed", error: request.reply.failure };
-  }
-  const candidateFiles = typescriptFilesOf({ tracked: request.tree.tracked });
-  return {
-    outcome: "ok",
-    value: request.reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
-      ...decodeNamedChecksReport(report),
-      mechanism,
-      coverableKinds,
-      candidateFiles,
-      comparedOutputs: comparedOutputs ?? [],
-    })),
-  };
-};
+const mapReplyToRuns = (reply: MeasurementReply): MeasuredRuns =>
+  reply.outcome === "not-loaded"
+    ? { outcome: "failed", error: reply.failure }
+    : {
+        outcome: "ok",
+        value: reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => {
+          const { inapplicable: _inapplicable, ...observations } = decodeNamedChecksReport(report);
+          return {
+            ...observations,
+            mechanism,
+            coverableKinds,
+            coverage: { kind: "scope-unavailable" },
+            comparedOutputs: comparedOutputs ?? [],
+          };
+        }),
+      };
 
 export const decodeMeasuredRuns = (request: {
   readonly status: number;
   readonly reply: string;
   readonly stderr: string;
-  readonly tree: CheckedTree;
 }): MeasuredRuns => {
   const reply = decodeReply(request);
   return reply.outcome === "ok"
-    ? mapReplyToRuns({ reply: reply.value, tree: request.tree })
+    ? mapReplyToRuns(reply.value)
     : {
         outcome: "failed",
         error: {

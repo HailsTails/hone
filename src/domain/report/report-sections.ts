@@ -1,6 +1,6 @@
-import type { RunReport } from "./run-report.ts";
+import type { RunReport, RunReportSections } from "./run-report.ts";
 
-export type RunSectionName = Exclude<keyof RunReport, "debtComparison">;
+export type RunSectionName = keyof RunReportSections;
 
 export type RunSectionRole = "failing" | "next-step" | "informational" | "guidance";
 
@@ -70,8 +70,9 @@ export const summariseRunFailures = ({
   const sections: FailingRunSection[] = RUN_SECTION_NAMES.filter(
     (name) => runSectionRoleOf({ section: name }) === "failing" && report[name].length > 0,
   ).map((name) => ({ name, count: report[name].length }));
-  const comparisons = report.debtComparison?.issues.length ?? 0;
-  if (comparisons > 0) sections.push({ name: "debtComparison", count: comparisons });
+  if (report.judged === "counted-debt" && report.debtComparison.issues.length > 0) {
+    sections.push({ name: "debtComparison", count: report.debtComparison.issues.length });
+  }
   return { verdict: sections.length === 0 ? "pass" : "fail", sections };
 };
 

@@ -70,6 +70,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -233,6 +234,7 @@ describe("runVerdictOf", () => {
 it("fails a run when the measured debt comparison refuses a pair", () => {
   const report: RunReport = {
     ...EMPTY_REPORT,
+    judged: "counted-debt",
     debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
   };
 
