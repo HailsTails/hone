@@ -211,6 +211,16 @@ describe("projectionProblemLine", () => {
         },
         line: "oxlint not-included packages/web/hone.oxlint.json: extend ./hone.oxlint.json from the oxlint configuration in packages/web, after any configuration that changes the selected rules",
       },
+      {
+        name: "Oxlint files with no configuration at the repository root",
+        problem: {
+          scope: "slice",
+          engine: { name: "oxlint" },
+          state: "unconfigured",
+          file: repoPathOf("hone.oxlint.json"),
+        },
+        line: `oxlint unconfigured hone.oxlint.json: the repository root has no tracked Oxlint config; add and track one, then run ${PROJECT_COMMAND}, or exclude files outside your intended scope and remove any obsolete projection`,
+      },
     ],
   )("prints $name", ({ problem, line }) => {
     expect(projectionProblemLine({ projectCommand: PROJECT_COMMAND, problem })).toBe(line);

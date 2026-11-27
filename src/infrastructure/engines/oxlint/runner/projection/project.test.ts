@@ -7,21 +7,18 @@ import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createProjectionPlan } from "./project.ts";
 
 describe("createProjectionPlan", () => {
-  it("writes a projection for each config and leaves a former package projection alone", () => {
-    const rootFile = repoPathOf("index.ts");
+  it("writes only for configured roots when the repo has a package config and a former projection", () => {
     const packageFile = repoPathOf("packages/app/index.ts");
 
     const planned = createProjectionPlan({
       repoRoot: absoluteRootOf("/repo"),
       installRoot: absolutePathSchema.parse("/install"),
       trackedPaths: [
-        repoPathOf(".oxlintrc.json"),
         repoPathOf("packages/app/.oxlintrc.json"),
         repoPathOf("packages/former/hone.oxlint.json"),
-        rootFile,
         packageFile,
       ],
-      files: [rootFile, packageFile],
+      files: [packageFile],
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
@@ -32,9 +29,10 @@ describe("createProjectionPlan", () => {
     expect(planned).toMatchObject({
       outcome: "ok",
       value: {
-        entries: [
-          { kind: "write", file: "hone.oxlint.json" },
-          { kind: "write", file: "packages/app/hone.oxlint.json" },
+        entries: [{ kind: "write", file: "packages/app/hone.oxlint.json" }],
+        scopes: [
+          { file: "packages/app/hone.oxlint.json", config: "packages/app/.oxlintrc.json" },
+          { file: "packages/former/hone.oxlint.json", config: undefined, files: [] },
         ],
       },
     });

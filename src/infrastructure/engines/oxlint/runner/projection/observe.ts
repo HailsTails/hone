@@ -14,15 +14,14 @@ import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type {
   ConfiguredOxlintResult,
   runConfiguredOxlint,
-} from "../../../../node/process/configured-oxlint.ts";
-import type { RunOxlint } from "../../../../node/process/oxlint-port.ts";
-import { readInlineDisables } from "./inline.ts";
+} from "../toolchain/configured-oxlint.ts";
+import { mapDisabledChecks } from "./inline.ts";
 import { answersCheck, type ProjectionRule } from "./oxlint-projection.ts";
 import type { PlannedProjection } from "./project.ts";
 
 const path = createDefaultPathPort({});
 
-type ScopeState = "current" | "missing" | "out-of-date" | "not-included";
+type ScopeState = "current" | "missing" | "out-of-date" | "not-included" | "unconfigured";
 
 export type ScopeObservation = {
   readonly state: ScopeState;
@@ -36,7 +35,8 @@ type ScopeRequest = Pick<NamedEngineRunRequest, "repoRoot" | "answered"> & {
   readonly scope: PlannedProjection;
   readonly rules: readonly ProjectionRule[];
   readonly fileText: Pick<FileTextPort, "read">;
-  readonly lint: RunOxlint;
+  readonly resolveCli: () => Result<string, RunnerFailure>;
+  readonly disableConfiguration: string;
   readonly configured: typeof runConfiguredOxlint;
 };
 
@@ -82,13 +82,13 @@ const mapScopeObservations = (
   request: ScopeRequest & {
     readonly sources: readonly ScopeSource[];
     readonly observed: Extract<ConfiguredOxlintResult, { readonly state: "included" }>;
-    readonly inline: readonly CheckNativeException[];
   },
 ): ScopeObservation => {
   const { scope, rules, sources, observed } = request;
   const linted = new Set(observed.linted);
   const checks = rules.map(({ binding }) => binding.address);
   const byRule = Map.groupBy(rules, ({ rule }) => rule.id);
+  const byFileName = new Map(sources.map((source) => [source.fileName, source.file]));
   return {
     state: "current",
     file: scope.file,
@@ -106,7 +106,12 @@ const mapScopeObservations = (
       .filter(({ fileName }) => linted.has(fileName))
       .flatMap(({ file }) => checks.map((check) => ({ file, check }))),
     nativeExceptions: [
-      ...request.inline,
+      ...observed.disables.flatMap(({ fileName, line, text }) => {
+        const file = byFileName.get(fileName);
+        if (file === undefined)
+          throw new Error(`Oxlint reported a disable in an unrequested file: ${fileName}`);
+        return mapDisabledChecks({ file, line, text, rules });
+      }),
       ...sources
         .filter(({ fileName }) => !linted.has(fileName))
         .flatMap(({ file }) =>
@@ -127,9 +132,9 @@ const mapScopeObservations = (
   };
 };
 
-const observeIncluded = async (
+const observeIncluded = (
   request: ScopeRequest & { readonly config: RepoPath },
-): Promise<Result<ScopeObservation, RunnerFailure>> => {
+): Result<ScopeObservation, RunnerFailure> => {
   const { scope, rules } = request;
   const read = gatheredOutcomes({
     outcomes: scope.files.map((file) =>
@@ -137,42 +142,39 @@ const observeIncluded = async (
     ),
   });
   if (read.outcome === "failed") return read;
+  const toolchain = request.resolveCli();
+  if (toolchain.outcome === "failed") return toolchain;
   const observed = request.configured({
-    repoRoot: request.repoRoot,
+    cli: toolchain.value,
+    disableConfiguration: request.disableConfiguration,
     folder: absolutePathSchema.parse(path.join({ segments: [request.repoRoot, scope.folder] })),
     config: request.config.slice(request.config.lastIndexOf("/") + 1),
     projection: scope.file.slice(scope.file.lastIndexOf("/") + 1),
     rules: [...new Set(rules.map(({ rule }) => rule.id))],
     sources: read.value,
-    peerFolders: rules.flatMap(({ rule }) =>
-      rule.kind === "plugin" && rule.peerFolder !== undefined ? [rule.peerFolder] : [],
-    ),
   });
   if (observed.outcome === "failed") return observed;
   if (observed.value.state === "not-included") return emptyObservation(request, "not-included");
-  const inline = await readInlineDisables({ ...request, sources: read.value });
-  if (inline.outcome === "failed") return inline;
   return {
     outcome: "ok",
     value: mapScopeObservations({
       ...request,
       sources: read.value,
       observed: observed.value,
-      inline: inline.value,
     }),
   };
 };
 
-export const observeProjection = async (
+export const observeProjection = (
   request: ScopeRequest,
-): Promise<Result<ScopeObservation, RunnerFailure>> => {
+): Result<ScopeObservation, RunnerFailure> => {
   const { scope } = request;
-  if (scope.files.length === 0) return emptyObservation(request, "current");
+  if (scope.config === undefined) return emptyObservation(request, "unconfigured");
   const projection = request.fileText.read({
     path: path.join({ segments: [request.repoRoot, scope.file] }),
   });
   if (projection.outcome === "failed") return emptyObservation(request, "missing");
   if (projection.value !== scope.generated.text) return emptyObservation(request, "out-of-date");
-  if (scope.config === undefined) return emptyObservation(request, "not-included");
+  if (scope.files.length === 0) return emptyObservation(request, "current");
   return observeIncluded({ ...request, config: scope.config });
 };

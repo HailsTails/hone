@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { PackageManifestPort } from "../../../application/ports/host/package-manifest-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { PackageManifestPort } from "../../../../../application/ports/host/package-manifest-port.ts";
 import { createReadOxlintToolchain } from "./oxlint-toolchain.ts";
 
 describe("readOxlintToolchain", () => {

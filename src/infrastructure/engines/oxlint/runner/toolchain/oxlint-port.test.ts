@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { runOxlint } from "./oxlint-port.ts";
 
+const cli = `${import.meta.dirname}/../../../../../../node_modules/oxlint/bin/oxlint`;
+
 describe("runOxlint", () => {
   it("maps native diagnostics to the source and preserves columns when disables are present", async () => {
     const sources = [
@@ -15,8 +17,9 @@ describe("runOxlint", () => {
     ];
 
     const sites = await runOxlint({
+      cli,
       resolveFrom: import.meta.dirname,
-      rules: ["typescript/no-explicit-any"],
+      rules: [{ kind: "native", id: "typescript/no-explicit-any", options: [] }],
       sources,
     });
 
@@ -42,12 +45,12 @@ describe("runOxlint", () => {
     ];
 
     const sites = await runOxlint({
+      cli,
       resolveFrom: import.meta.dirname,
-      rules: ["eslint/max-params", "eslint/no-param-reassign"],
-      nativeOptions: new Map([
-        ["eslint/max-params", [{ max: 2, countVoidThis: true }]],
-        ["eslint/no-param-reassign", [{ props: false }]],
-      ]),
+      rules: [
+        { kind: "native", id: "eslint/max-params", options: [{ max: 2, countVoidThis: true }] },
+        { kind: "native", id: "eslint/no-param-reassign", options: [{ props: false }] },
+      ],
       sources,
     });
 
@@ -62,13 +65,14 @@ describe("runOxlint", () => {
 
   it("preserves distinct source basenames for filename-sensitive plugins", async () => {
     const sites = await runOxlint({
+      cli,
       resolveFrom: import.meta.dirname,
-      rules: [],
-      pluginRules: [
+      rules: [
         {
+          kind: "plugin",
           namespace: "hone-filename",
           id: "hone-filename/filename-case",
-          module: `${import.meta.dirname}/../../engines/eslint/name-off-its-casing/filename-case/eslint-plugin.ts`,
+          module: `${import.meta.dirname}/../../../eslint/name-off-its-casing/filename-case/eslint-plugin.ts`,
           options: [],
         },
       ],
@@ -85,14 +89,15 @@ describe("runOxlint", () => {
   });
 
   it("registers a shared plugin once when two selected checks use it", async () => {
-    const module = `${import.meta.dirname}/../../engines/eslint/test-switched-off/focused-tests/eslint-plugin.ts`;
+    const module = `${import.meta.dirname}/../../../eslint/test-switched-off/focused-tests/eslint-plugin.ts`;
     const namespace = "hone-test-modifiers";
     const sites = await runOxlint({
+      cli,
       resolveFrom: import.meta.dirname,
-      rules: [],
-      pluginRules: [
-        { namespace, module, id: "hone-test-modifiers/focused-tests", options: [] },
+      rules: [
+        { kind: "plugin", namespace, module, id: "hone-test-modifiers/focused-tests", options: [] },
         {
+          kind: "plugin",
           namespace,
           module,
           id: "hone-test-modifiers/skipped-tests",
@@ -118,8 +123,9 @@ describe("runOxlint", () => {
 
   it("refuses parser diagnostics", async () => {
     const sites = await runOxlint({
+      cli,
       resolveFrom: import.meta.dirname,
-      rules: ["typescript/no-explicit-any"],
+      rules: [{ kind: "native", id: "typescript/no-explicit-any", options: [] }],
       sources: [{ fileName: "src/value.ts", source: "const =;" }],
     });
 

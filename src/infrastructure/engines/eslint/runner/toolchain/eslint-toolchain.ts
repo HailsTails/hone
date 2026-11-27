@@ -42,13 +42,6 @@ export type EslintToolchainPeers = PeerToolchain<EslintToolchainModules>;
 
 type ToolchainLoad<T> = Promise<Result<T, RunnerFailure>>;
 
-export {
-  ESLINT_REQUIREMENT,
-  ESLINT_TOOLCHAIN_REQUIREMENTS,
-  TYPESCRIPT_ESLINT_PARSER_REQUIREMENT,
-  TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT,
-} from "../../../protocol/toolchain/eslint-peer-requirements.ts";
-
 export const defaultEslintToolchainModules: EslintToolchainModules = {
   eslint: () => import("eslint"),
   typescriptParser: () => import("@typescript-eslint/parser"),

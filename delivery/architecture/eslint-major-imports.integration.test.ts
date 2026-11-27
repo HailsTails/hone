@@ -29,7 +29,7 @@ const ESLINT_MAJOR_IMPORTS = [
     specifier: "eslint-9",
     kind: "import",
     form: "value",
-    names: ["ESLint"],
+    names: ["* as eslint9"],
   },
   {
     boundary: "no ESLint major",

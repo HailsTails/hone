@@ -1,20 +1,23 @@
 import { z } from "zod";
 
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { PackageManifestPort } from "../../../application/ports/host/package-manifest-port.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { RunnerFailure, UnavailablePeer } from "../../../domain/runner/runner-failure.ts";
-import { parsedJson } from "../../content-files/parsed-json.ts";
-import { ESLINT_TOOLCHAIN_REQUIREMENTS } from "../../engines/protocol/toolchain/eslint-peer-requirements.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { PackageManifestPort } from "../../../../../application/ports/host/package-manifest-port.ts";
+import type { Result } from "../../../../../domain/result.ts";
+import type {
+  RunnerFailure,
+  UnavailablePeer,
+} from "../../../../../domain/runner/runner-failure.ts";
+import { parsedJson } from "../../../../content-files/parsed-json.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createPackageManifestPort } from "../../../../node/modules/package-manifest-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { ESLINT_TOOLCHAIN_REQUIREMENTS } from "../../../protocol/toolchain/eslint-peer-requirements.ts";
 import {
   NOT_INSTALLED,
   supportedRange,
   versionSupport,
   type ToolchainRequirement,
-} from "../../engines/protocol/toolchain/toolchain-requirement.ts";
-import { createDefaultFileTextPort } from "../file-system/file-text-port.ts";
-import { createPackageManifestPort } from "../modules/package-manifest-port.ts";
-import { createDefaultPathPort } from "../path-port.ts";
+} from "../../../protocol/toolchain/toolchain-requirement.ts";
 
 const path = createDefaultPathPort({});
 const versionSchema = z.object({ version: z.string() });
@@ -38,6 +41,8 @@ type ManifestPorts = {
   readonly text: Pick<FileTextPort, "read">;
   readonly manifests: PackageManifestPort;
 };
+
+export type OxlintToolchain = Result<string, RunnerFailure>;
 
 const readManifest = (
   request: ManifestPorts & {
@@ -68,7 +73,7 @@ export const createReadOxlintToolchain =
   (request: {
     readonly folder: string;
     readonly peerFolders: readonly string[];
-  }): Result<string, RunnerFailure> => {
+  }): OxlintToolchain => {
     const oxlint = readManifest({
       ...ports,
       folder: request.folder,

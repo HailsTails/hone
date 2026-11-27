@@ -1,6 +1,7 @@
 import type { NamedEngineRunRequest } from "../../../../../application/ports/engine/engine-run.ts";
 import { failureDetailOf } from "../../../../../domain/failure-detail.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type {
   ProjectedFile,
@@ -14,9 +15,11 @@ import { createProjectionScopes, type ProjectionScope } from "./scopes.ts";
 
 const path = createDefaultPathPort({});
 
-export type PlannedProjection = ProjectionScope & {
-  readonly generated: ProjectedFile;
-};
+export type PlannedProjection = ProjectionScope &
+  (
+    | { readonly config: undefined }
+    | { readonly config: RepoPath; readonly generated: ProjectedFile }
+  );
 
 export type ProjectionPlan = {
   readonly scopes: readonly PlannedProjection[];
@@ -36,7 +39,8 @@ export const createProjectionPlan = (
   });
   if (rules.outcome === "failed") return rules;
   try {
-    const scopes = createProjectionScopes(request).map((scope) => {
+    const scopes = createProjectionScopes(request).map((scope): PlannedProjection => {
+      if (scope.config === undefined) return { ...scope, config: undefined };
       const { file } = createOxlintProjection({
         path,
         root: request.repoRoot,
@@ -45,9 +49,11 @@ export const createProjectionPlan = (
         rules: rules.value,
         answers: request.answered,
       });
-      return { ...scope, generated: file };
+      return { ...scope, config: scope.config, generated: file };
     });
-    const entries = scopes.map(({ generated }) => generated);
+    const entries = scopes.flatMap((scope) =>
+      scope.config === undefined ? [] : [scope.generated],
+    );
     return { outcome: "ok", value: { scopes, entries, rules: rules.value } };
   } catch (thrown) {
     return {

@@ -134,6 +134,9 @@ const sliceProblemReason = (
     case "not-included":
       return `extend ./${file.slice(file.lastIndexOf("/") + 1)} from the ${engine.name} configuration in ${folder}, after any configuration that changes the selected rules`;
     case "unconfigured":
+      if (engine.name === "oxlint") {
+        return `${folder || "the repository root"} has no tracked Oxlint config; add and track one, then run ${request.projectCommand}, or exclude files outside your intended scope and remove any obsolete projection`;
+      }
       return `${folder} has no ${engine.name} configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check`;
   }
 };

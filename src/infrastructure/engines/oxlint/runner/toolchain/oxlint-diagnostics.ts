@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { createDefaultExecutionPort } from "./execution-port.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import { createDefaultExecutionPort } from "../../../../node/process/execution-port.ts";
 
 const execution = createDefaultExecutionPort({
   policy: {
@@ -72,6 +72,8 @@ export const runOxlintProcess = (
   request: OxlintInvocation & {
     readonly options: readonly string[];
     readonly rules: number;
+    readonly config?: string;
+    readonly targets?: readonly string[];
   },
 ): readonly Diagnostic[] => {
   const output = readOxlintDiagnostics(
@@ -79,13 +81,14 @@ export const runOxlintProcess = (
       ...request,
       arguments: [
         "--format=json",
-        "--config=.oxlintrc.json",
+        "--config",
+        request.config ?? ".oxlintrc.json",
         "--no-ignore",
         "--disable-nested-config",
         "--threads=1",
         ...request.options,
         "--",
-        "sources",
+        ...(request.targets ?? ["sources"]),
       ],
     }),
   );

@@ -44,6 +44,9 @@ const INLINE_CONFIG_PARSER =
 
 const NATIVE_RULES = /^src\/infrastructure\/engines\/eslint\/runner\/pieces\/native-rules\.ts$/;
 
+const OXLINT_NAMING_PLUGIN =
+  /^src\/infrastructure\/engines\/oxlint\/name-off-its-casing\/naming-convention\/naming-plugin\.ts$/;
+
 const PROBE_AUDIT_PIECE =
   /^src\/infrastructure\/content-files\/rule-sets\/probe-rule-set\/mechanisms\/audit\//;
 
@@ -82,8 +85,19 @@ export const VENDOR_BOUNDARIES: readonly ImportBoundary[] = [
       PLATFORM_PORT,
       PROBE_AUDIT_PIECE,
       PROBE_ESLINT_PIECE,
+      OXLINT_NAMING_PLUGIN,
     ],
     allowed: [RELATIVE_IMPORT, ZOD_IMPORT],
+  },
+  {
+    name: "Oxlint naming plugin",
+    holds: [OXLINT_NAMING_PLUGIN],
+    leavesOut: [],
+    allowed: [
+      RELATIVE_IMPORT,
+      ZOD_IMPORT,
+      { kind: "specifier", specifier: /^oxlint\/plugins-dev$/, forms: ["type-only"] },
+    ],
   },
   {
     name: "unlisted mechanisms",

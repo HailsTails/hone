@@ -1,8 +1,5 @@
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import type { Result } from "../../../../../domain/result.ts";
 import type { CheckNativeException } from "../../../../../domain/runner/check-observations.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunOxlint } from "../../../../node/process/oxlint-port.ts";
 import type { ProjectionRule } from "./oxlint-projection.ts";
 
 const DISABLE = /^\s*(?:\/\/|\/\*)\s*(?:oxlint|eslint)-disable(?:-next-line|-line)?\b/u;
@@ -44,30 +41,4 @@ export const mapDisabledChecks = (request: {
         ]
       : [];
   });
-};
-
-export const readInlineDisables = async (request: {
-  readonly repoRoot: string;
-  readonly sources: readonly {
-    readonly file: RepoPath;
-    readonly fileName: string;
-    readonly source: string;
-  }[];
-  readonly rules: readonly ProjectionRule[];
-  readonly lint: RunOxlint;
-}): Promise<Result<readonly CheckNativeException[], RunnerFailure>> => {
-  const sources = request.sources.filter(({ source }) => /(?:oxlint|eslint)-disable/u.test(source));
-  if (sources.length === 0) return { outcome: "ok", value: [] };
-  const observed: CheckNativeException[] = [];
-  const scan = await request.lint({
-    resolveFrom: request.repoRoot,
-    rules: [],
-    sources,
-    observeDisable: ({ index, line, text }) => {
-      observed.push(
-        ...mapDisabledChecks({ file: sources[index].file, line, text, rules: request.rules }),
-      );
-    },
-  });
-  return scan.outcome === "failed" ? scan : { outcome: "ok", value: observed };
 };

@@ -33,14 +33,18 @@ export const createProjectionScopes = (request: {
   const configsByFolder = Map.groupBy(configs, (file) =>
     file.slice(0, Math.max(0, file.lastIndexOf("/"))),
   );
-  const folders = [...new Set(["", ...configsByFolder.keys()])].toSorted(
-    (left, right) => right.length - left.length,
-  );
+  const folders = [...configsByFolder.keys()].toSorted((left, right) => right.length - left.length);
   const filesByFolder = Map.groupBy(
     request.files,
     (file) => folders.find((folder) => folder === "" || file.startsWith(`${folder}/`)) ?? "",
   );
-  return folders.toSorted().map((folder) => {
+  const projectedFolders = request.trackedPaths.flatMap((file) =>
+    file.slice(file.lastIndexOf("/") + 1) === OXLINT_PROJECTION
+      ? [file.slice(0, Math.max(0, file.lastIndexOf("/")))]
+      : [],
+  );
+  const scopes = new Set([...folders, ...filesByFolder.keys(), ...projectedFolders]);
+  return [...scopes].toSorted().map((folder) => {
     const [config, duplicate] = configsByFolder.get(folder) ?? [];
     if (duplicate !== undefined)
       throw new Error(`More than one Oxlint config governs ${folder || "."}`);

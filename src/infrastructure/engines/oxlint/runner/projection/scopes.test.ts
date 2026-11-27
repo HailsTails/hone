@@ -42,7 +42,9 @@ describe("findUntrackedConfig", () => {
       .mockReturnValueOnce("absent")
       .mockReturnValue("present");
 
-    expect(findUntrackedConfig({ trackedPaths: [root], files, exists })).toBe(nested);
+    const found = findUntrackedConfig({ trackedPaths: [root], files, exists });
+
+    expect(found).toBe(nested);
     expect(exists).not.toHaveBeenCalledWith(root);
   });
 });

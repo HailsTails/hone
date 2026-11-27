@@ -4,8 +4,6 @@ import { gatheredOutcomes, listedOutcome } from "../../../../domain/gathered-out
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { installRootOfRunnerEntry } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { runConfiguredOxlint } from "../../../node/process/configured-oxlint.ts";
-import { runOxlint, type RunOxlint } from "../../../node/process/oxlint-port.ts";
 import type { RunnerFileScope } from "../../protocol/checks/checks-runner-module-schema.ts";
 import type {
   NamedChecksRunner,
@@ -14,33 +12,32 @@ import type {
 import { observeProjection, type ScopeObservation } from "./projection/observe.ts";
 import { createProjectionPlan } from "./projection/project.ts";
 import { createProjectionPath, findUntrackedConfig } from "./projection/scopes.ts";
-import { readRule, type SelectedOxlintRule } from "./selected-rule.ts";
+import { listPeerFolders, readRule } from "./selected-rule.ts";
+import { runConfiguredOxlint } from "./toolchain/configured-oxlint.ts";
+import { runOxlint, type RunOxlint } from "./toolchain/oxlint-port.ts";
+import { readOxlintToolchain, type OxlintToolchain } from "./toolchain/oxlint-toolchain.ts";
 
 const installRoot = installRootOfRunnerEntry({ entryFile: import.meta.filename });
 
-const createRuleRequest = (
-  rules: readonly SelectedOxlintRule[],
-): Pick<Parameters<RunOxlint>[0], "rules" | "pluginRules" | "nativeOptions"> => {
-  const native = rules.filter((rule) => rule.kind === "native");
-  const pluginRules = rules.filter((rule) => rule.kind === "plugin");
-  return {
-    rules: native.map(({ id }) => id),
-    nativeOptions: new Map(native.map(({ id, options }) => [id, options])),
-    ...(pluginRules.length > 0 ? { pluginRules } : {}),
-  };
-};
-
 const path = createDefaultPathPort({});
+const DISABLE_CONFIGURATION =
+  "src/infrastructure/engines/oxlint/runner/toolchain/disable-inspection.json";
 
-const reportOf = (request: {
+const createReport = (request: {
   readonly observations: readonly ScopeObservation[];
 }): NamedChecksRunReport => {
-  const [root, ...packages] = request.observations;
+  const rootFile = createProjectionPath("");
+  const root = request.observations.find(({ file }) => file === rootFile);
+  const projection =
+    root === undefined || root.state === "unconfigured"
+      ? { projection: "none" as const }
+      : { projection: root.state, projectionFile: root.file };
   return {
-    projection: root?.state ?? "current",
-    projectionFile: createProjectionPath(""),
-    slices: packages.flatMap(({ file, state }): NamedChecksRunReport["slices"] =>
-      state === "current" ? [] : [{ file, state }],
+    ...projection,
+    slices: request.observations.flatMap(({ file, state }): NamedChecksRunReport["slices"] =>
+      state === "current" || (file === rootFile && state !== "unconfigured")
+        ? []
+        : [{ file, state }],
     ),
     nestedConfigurations: [],
     unprojectedFolders: [],
@@ -70,23 +67,30 @@ const createRun =
     const planned = createProjectionPlan(request);
     if (planned.outcome === "failed") return planned;
     const { scopes, rules } = planned.value;
+    const peerFolders = listPeerFolders(rules.map(({ rule }) => rule));
+    const disableConfiguration = path.join({
+      segments: [request.installRoot, DISABLE_CONFIGURATION],
+    });
+    let toolchain: OxlintToolchain | undefined;
+    const resolveCli = () =>
+      (toolchain ??= ports.readToolchain({ folder: request.repoRoot, peerFolders }));
     const observed = gatheredOutcomes({
-      outcomes: await Promise.all(
-        scopes.map(async (scope) =>
-          listedOutcome({
-            outcome: await observeProjection({
-              ...ports,
-              scope,
-              rules,
-              repoRoot: request.repoRoot,
-              answered: request.answered,
-            }),
+      outcomes: scopes.map((scope) =>
+        listedOutcome({
+          outcome: observeProjection({
+            ...ports,
+            scope,
+            rules,
+            resolveCli,
+            disableConfiguration,
+            repoRoot: request.repoRoot,
+            answered: request.answered,
           }),
-        ),
+        }),
       ),
     });
     if (observed.outcome === "failed") return observed;
-    return { outcome: "ok", value: reportOf({ observations: observed.value }) };
+    return { outcome: "ok", value: createReport({ observations: observed.value }) };
   };
 
 const project: NamedChecksRunner["project"] = (request) => {
@@ -97,7 +101,7 @@ const project: NamedChecksRunner["project"] = (request) => {
 };
 
 const createConform =
-  (lint: RunOxlint): NamedChecksRunner["conform"] =>
+  (ports: Pick<OxlintRunnerPorts, "lint" | "readToolchain">): NamedChecksRunner["conform"] =>
   async ({ binding, cases }) => {
     const rule = readRule({ installRoot, binding });
     if (rule.outcome === "failed") return rule;
@@ -108,9 +112,16 @@ const createConform =
         error: { kind: "tool-failed", detail: "Hone cannot resolve the working directory" },
       };
     }
-    const linted = await lint({
+    const rules = [rule.value];
+    const toolchain = ports.readToolchain({
+      folder: workingDirectory.value,
+      peerFolders: listPeerFolders(rules),
+    });
+    if (toolchain.outcome === "failed") return toolchain;
+    const linted = await ports.lint({
+      cli: toolchain.value,
       resolveFrom: workingDirectory.value,
-      ...createRuleRequest([rule.value]),
+      rules,
       sources: cases,
     });
     return linted.outcome === "failed"
@@ -129,6 +140,7 @@ const createConform =
 type OxlintRunnerPorts = {
   readonly lint: RunOxlint;
   readonly configured: typeof runConfiguredOxlint;
+  readonly readToolchain: typeof readOxlintToolchain;
   readonly fileText: Pick<FileTextPort, "read" | "exists">;
 };
 
@@ -141,12 +153,13 @@ export const createOxlintRunner = (
   fileScope: "typescript",
   projectedKinds: ["config-override", "inline-disable"],
   run: createRun(ports),
-  conform: createConform(ports.lint),
+  conform: createConform(ports),
   project,
 });
 
 export const namedChecksRunner = createOxlintRunner({
   lint: runOxlint,
   configured: runConfiguredOxlint,
+  readToolchain: readOxlintToolchain,
   fileText: createDefaultFileTextPort({}),
 });

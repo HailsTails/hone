@@ -9,9 +9,10 @@ import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { DEFAULT_TEST_FILES } from "../../../../domain/settings/test-files.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import type { runConfiguredOxlint } from "../../../node/process/configured-oxlint.ts";
-import type { RunOxlint } from "../../../node/process/oxlint-port.ts";
 import { createOxlintRunner } from "./runner.ts";
+import type { runConfiguredOxlint } from "./toolchain/configured-oxlint.ts";
+import type { RunOxlint } from "./toolchain/oxlint-port.ts";
+import type { readOxlintToolchain } from "./toolchain/oxlint-toolchain.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(
   createDefaultPathPort({}).join({ segments: [import.meta.dirname, "../../../../.."] }),
@@ -65,6 +66,10 @@ describe("createOxlintRunner", () => {
     const report = await createOxlintRunner({
       lint,
       configured: vi.fn<typeof runConfiguredOxlint>(),
+      readToolchain: vi.fn<typeof readOxlintToolchain>().mockReturnValue({
+        outcome: "ok",
+        value: "/oxlint",
+      }),
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
@@ -72,9 +77,9 @@ describe("createOxlintRunner", () => {
     }).conform({ binding, cases });
 
     expect(lint).toHaveBeenCalledWith({
+      cli: "/oxlint",
       resolveFrom: expect.not.stringContaining("/hone/explicit-any"),
-      nativeOptions: new Map([["typescript/no-explicit-any", []]]),
-      rules: ["typescript/no-explicit-any"],
+      rules: [{ kind: "native", id: "typescript/no-explicit-any", options: [] }],
       sources: cases,
     });
     expect(report).toEqual({
@@ -91,6 +96,10 @@ describe("createOxlintRunner", () => {
     const runner = createOxlintRunner({
       lint,
       configured: vi.fn<typeof runConfiguredOxlint>(),
+      readToolchain: vi.fn<typeof readOxlintToolchain>().mockReturnValue({
+        outcome: "ok",
+        value: "/oxlint",
+      }),
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
@@ -111,11 +120,10 @@ describe("createOxlintRunner", () => {
 
     expect(report).toEqual({ outcome: "ok", value: [] });
     expect(lint).toHaveBeenCalledWith({
+      cli: "/oxlint",
       resolveFrom: expect.not.stringContaining("/hone/skipped-tests"),
-      nativeOptions: new Map(),
-      rules: [],
       sources: [],
-      pluginRules: [
+      rules: [
         {
           kind: "plugin",
           id: "hone-test-switched-off-focused-tests/skipped-tests",
@@ -134,6 +142,7 @@ describe("createOxlintRunner", () => {
     const runner = createOxlintRunner({
       lint: vi.fn<RunOxlint>(),
       configured,
+      readToolchain: vi.fn<typeof readOxlintToolchain>(),
       fileText: {
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
         read: vi.fn<FileTextPort["read"]>().mockReturnValue({

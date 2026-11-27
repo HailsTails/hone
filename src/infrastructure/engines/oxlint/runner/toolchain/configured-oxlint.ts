@@ -1,17 +1,21 @@
 import { z } from "zod";
 
-import { failureDetailOf } from "../../../domain/failure-detail.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
-import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
+import { failureDetailOf } from "../../../../../domain/failure-detail.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { ReadonlyJsonValue } from "../../../../../domain/settings/json-values/json-value.ts";
 import {
   mapDiagnosticsToSites,
   readOxlintDiagnostics,
   runOxlintCommand,
   type OxlintSite,
 } from "./oxlint-diagnostics.ts";
-import { readOxlintToolchain } from "./oxlint-toolchain.ts";
+import {
+  findDisableMarker,
+  readDisableDirectives,
+  type DisableDirective,
+} from "./oxlint-directives.ts";
 
 const configSchema = z.object({
   jsPlugins: z.array(z.object({ name: z.string(), specifier: z.string() })).nullish(),
@@ -102,15 +106,37 @@ type BatchRequest = {
   readonly config: string;
   readonly rules: readonly string[];
   readonly sources: readonly ConfiguredSource[];
+  readonly disableConfiguration: string;
 };
 
 type BatchObservation = {
   readonly linted: readonly string[];
   readonly sites: readonly OxlintSite[];
+  readonly disables: readonly DisableDirective[];
+};
+
+const readBatchDisables = (request: BatchRequest): readonly DisableDirective[] => {
+  const { disableConfiguration } = request;
+  const sources = new Map(
+    request.sources
+      .filter(({ source }) => findDisableMarker(source) !== null)
+      .map(({ fileName, source }) => [fileName, Buffer.from(source)]),
+  );
+  const targets = [...sources.keys()];
+  return targets.length === 0
+    ? []
+    : readDisableDirectives({
+        ...request,
+        config: disableConfiguration,
+        targets,
+        files: targets,
+        sources,
+      });
 };
 
 const runBatch = (request: BatchRequest): BatchObservation => {
   const files = request.sources.map(({ fileName }) => fileName);
+  const disables = readBatchDisables(request);
   const configurationArguments = [
     "--config",
     request.config,
@@ -126,7 +152,7 @@ const runBatch = (request: BatchRequest): BatchObservation => {
     .filter(Boolean)
     .map((file) => file.replaceAll("\\", "/"));
   if (linted.some((file) => !files.includes(file))) throw new Error(listing.trim());
-  if (linted.length === 0) return { linted, sites: [] };
+  if (linted.length === 0) return { linted, sites: [], disables };
   const output = readOxlintDiagnostics(
     runOxlintCommand({
       ...request,
@@ -139,7 +165,7 @@ const runBatch = (request: BatchRequest): BatchObservation => {
   const diagnostics = output.diagnostics.filter(
     ({ code }) => code === undefined || codes.has(code),
   );
-  return { linted, sites: mapDiagnosticsToSites({ ...request, files, diagnostics }) };
+  return { linted, disables, sites: mapDiagnosticsToSites({ ...request, files, diagnostics }) };
 };
 
 const runBatches = (request: BatchRequest): BatchObservation => {
@@ -158,13 +184,14 @@ const runBatches = (request: BatchRequest): BatchObservation => {
   const observed = batches.map(({ offset, sources }) => {
     const observedBatch = runBatch({ ...request, sources });
     return {
-      linted: observedBatch.linted,
+      ...observedBatch,
       sites: observedBatch.sites.map((site) => ({ ...site, index: site.index + offset })),
     };
   });
   return {
     linted: observed.flatMap(({ linted }) => linted),
     sites: observed.flatMap(({ sites }) => sites),
+    disables: observed.flatMap(({ disables }) => disables),
   };
 };
 
@@ -172,26 +199,15 @@ export type ConfiguredOxlintResult =
   | { readonly state: "not-included" }
   | ({ readonly state: "included" } & BatchObservation);
 
-export const runConfiguredOxlint = (request: {
-  readonly repoRoot: AbsolutePath;
-  readonly folder: AbsolutePath;
-  readonly config: string;
-  readonly projection: string;
-  readonly rules: readonly string[];
-  readonly sources: readonly ConfiguredSource[];
-  readonly peerFolders: readonly string[];
-}): Result<ConfiguredOxlintResult, RunnerFailure> => {
-  const toolchain = readOxlintToolchain({
-    folder: request.repoRoot,
-    peerFolders: request.peerFolders,
-  });
-  if (toolchain.outcome === "failed") return toolchain;
+export const runConfiguredOxlint = (
+  request: BatchRequest & {
+    readonly projection: string;
+  },
+): Result<ConfiguredOxlintResult, RunnerFailure> => {
   try {
-    const configured = { ...request, cli: toolchain.value };
-    const state = configurationState(configured);
-    return state === "not-included"
-      ? { outcome: "ok", value: { state } }
-      : { outcome: "ok", value: { state, ...runBatches(configured) } };
+    const state = configurationState(request);
+    if (state === "not-included") return { outcome: "ok", value: { state } };
+    return { outcome: "ok", value: { state, ...runBatches(request) } };
   } catch (thrown) {
     return {
       outcome: "failed",

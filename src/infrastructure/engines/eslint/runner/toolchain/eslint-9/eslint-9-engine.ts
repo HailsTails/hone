@@ -1,5 +1,5 @@
 import * as typescriptParser from "@typescript-eslint/parser";
-import { ESLint } from "eslint-9";
+import * as eslint9 from "eslint-9";
 import { builtinRules } from "eslint-9/use-at-your-own-risk";
 import { z } from "zod";
 
@@ -17,11 +17,11 @@ import {
 import { defaultNativeRuleSources, type NativeRuleSources } from "../../pieces/native-rules.ts";
 import { defaultEslintToolchainModules, type EslintToolchainModules } from "../eslint-toolchain.ts";
 
-export const ESLINT_9_VERSION = ESLint.version;
+export const ESLINT_9_VERSION = eslint9.ESLint.version;
 
 export const eslint9ToolchainModules: EslintToolchainModules = {
   ...defaultEslintToolchainModules,
-  eslint: () => Promise.resolve({ ["ESLint"]: ESLint }),
+  eslint: () => Promise.resolve(eslint9),
 };
 
 type ConformanceRow = {
@@ -79,7 +79,7 @@ const pluginUnderEslint9 = async (request: {
 };
 
 const linesFlagged = async (request: {
-  readonly eslint: ESLint;
+  readonly eslint: eslint9.ESLint;
   readonly sourceCase: SourceCase;
 }): Promise<readonly number[]> => {
   const [lintResult] = await request.eslint.lintText(request.sourceCase.source, {
@@ -99,7 +99,7 @@ export const eslint9CaseMismatches = async (request: {
   const settings = eslintPieceSettingsSchema.parse(request.row.clause.settings);
   const { pluginNamespace, pluginModule, rule } = settings;
   const options = ruleOptionsOf({ settings, edition: request.row.clause.edition });
-  const eslint = new ESLint({
+  const eslint = new eslint9.ESLint({
     overrideConfigFile: true,
     overrideConfig: [
       {

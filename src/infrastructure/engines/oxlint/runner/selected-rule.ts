@@ -10,16 +10,19 @@ import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts"
 import type { ReadonlyJsonValue } from "../../../../domain/settings/json-values/json-value.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import {
-  OXLINT_RULES,
-  type OxlintRule,
-  type OxlintPluginRule,
-} from "../../../node/process/oxlint-port.ts";
 import { readNamedPiece } from "../../named-piece.ts";
 import {
   eslintPieceSettingsSchema,
   ruleOptionsOf,
 } from "../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+
+const OXLINT_RULES = [
+  "typescript/no-explicit-any",
+  "eslint/max-params",
+  "eslint/no-param-reassign",
+] as const;
+
+type OxlintRule = (typeof OXLINT_RULES)[number];
 
 const settingsSchema = z.union([
   z.strictObject({ rule: z.enum(OXLINT_RULES) }),
@@ -49,7 +52,19 @@ export type SelectedOxlintRule =
       readonly id: OxlintRule;
       readonly options: readonly ReadonlyJsonValue[];
     }
-  | (OxlintPluginRule & { readonly kind: "plugin" });
+  | {
+      readonly kind: "plugin";
+      readonly namespace: string;
+      readonly peerFolder?: string;
+      readonly id: string;
+      readonly module: string;
+      readonly options: readonly ReadonlyJsonValue[];
+    };
+
+export const listPeerFolders = (rules: readonly SelectedOxlintRule[]): readonly string[] =>
+  rules.flatMap((rule) =>
+    rule.kind === "plugin" && rule.peerFolder !== undefined ? [rule.peerFolder] : [],
+  );
 
 type PluginSettings = Extract<z.output<typeof settingsSchema>, { readonly plugin: "eslint" }>;
 

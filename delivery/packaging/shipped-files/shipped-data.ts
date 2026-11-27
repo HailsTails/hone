@@ -5,6 +5,7 @@ const SHIPPED_DATA: readonly RegExp[] = [
   /^methods\/.+\.md$/,
   /^src\/infrastructure\/engines\/(?:walker|eslint)\/[^/]+\/[^/]+\/[^/]+\.examples\.json$/,
   /^src\/infrastructure\/engines\/.+\.md$/,
+  /^src\/infrastructure\/engines\/oxlint\/runner\/toolchain\/disable-inspection\.json$/,
 ];
 
 export type DataShipping = "shipped" | "not-shipped";
