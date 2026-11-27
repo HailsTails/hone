@@ -2,6 +2,7 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import {
   checkAddressOfNames,
+  type CheckAddressText,
   type CheckNames,
 } from "../../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
@@ -27,6 +28,7 @@ type InstallFiles = {
 };
 
 type InstalledPiece = {
+  readonly check: CheckAddressText;
   readonly mechanism: EngineId;
   readonly examplesPath: string;
   readonly piece: NamedPiece;
@@ -57,6 +59,7 @@ const installedPieceOf = (
   return {
     outcome: "ok",
     value: {
+      check: checkAddressOfNames(request),
       mechanism: request.mechanism,
       examplesPath: piece.value.examplesPath,
       piece: piece.value,

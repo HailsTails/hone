@@ -106,7 +106,13 @@ const REQUEST: NamedEngineRunRequest = {
   trackedPaths: [FILE_A, CONFIG],
   bindings: [
     BINDING,
-    { ...BINDING, address: "leftover-debugging#debug-statement", engine: "eslint" },
+    {
+      ...BINDING,
+      ruleSet: "hone",
+      address: "leftover-debugging#debug-statement",
+      engine: "eslint",
+      checkOptions: { kind: "none" },
+    },
   ],
   answered: [],
   declaredConfigRoots: [],
@@ -464,6 +470,7 @@ describe("measureVersionOneProjectionOver", () => {
       measured: [],
       projection: "not-included",
       projectionFile: projection.projectionFile,
+      recovery: { kind: "include-projection" },
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],

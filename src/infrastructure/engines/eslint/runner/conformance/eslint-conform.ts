@@ -17,8 +17,9 @@ import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import {
   type EslintPieceSettings,
   eslintPieceSettingsSchema,
-  ruleOptionsOf,
-} from "../pieces/eslint-piece-settings-schema.ts";
+} from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-types.ts";
+import { readEslintCheckOptions, readLegacyEslintCheckOptions } from "../pieces/check-options.ts";
 import {
   eslintPluginModuleSchema,
   type LoadedEslintPlugin,
@@ -121,7 +122,7 @@ const lintedSourceCases = (request: {
   }>;
   readonly cwd: AbsolutePath;
   readonly cases: readonly SourceCase[];
-  readonly edition: CheckBinding["edition"];
+  readonly options: RuleOptions;
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   if (request.selected.outcome === "failed") {
@@ -132,19 +133,21 @@ const lintedSourceCases = (request: {
     plugin: request.selected.value.plugin,
     pluginNamespace: request.selected.value.settings.pluginNamespace,
     rule: request.selected.value.settings.rule,
-    options: ruleOptionsOf({ settings: request.selected.value.settings, edition: request.edition }),
+    options: request.options,
     cases: request.cases,
   });
 };
+
+export type LoadConfiguredPlugin = (request: {
+  readonly configured: ConfiguredClause;
+}) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
 
 export const conformedCases = (request: {
   readonly clause: RunnerClause;
   readonly cases: readonly SourceCase[];
   readonly path: PathPort;
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
-  readonly loadedPlugin: (request: {
-    readonly configured: ConfiguredClause;
-  }) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
+  readonly loadedPlugin: LoadConfiguredPlugin;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const configured = configuredClause({ clause: request.clause, path: request.path });
   if (configured.outcome === "failed") {
@@ -160,7 +163,11 @@ export const conformedCases = (request: {
     lintedSourceCases({
       selected,
       cwd: cwd.data,
-      edition: request.clause.edition,
+      options: readLegacyEslintCheckOptions({
+        address: request.clause.address,
+        settings: configured.value.settings,
+        edition: request.clause.edition,
+      }),
       cases: request.cases,
       eslint: request.eslint,
     }),
@@ -175,6 +182,9 @@ export const conformedNamedCases = async (request: {
   readonly modules: ModuleLoaderPort;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const { binding } = request;
+  if (binding.engine !== "eslint") {
+    return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: "Expected an ESLint check" });
+  }
   const settings = eslintPieceSettingsSchema.safeParse(binding.settings);
   if (!settings.success) {
     return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: z.prettifyError(settings.error) });
@@ -197,7 +207,11 @@ export const conformedNamedCases = async (request: {
   return lintedSourceCases({
     selected: { outcome: "ok", value: { plugin: parsed.value, settings: settings.data } },
     cwd: cwd.data,
-    edition: binding.edition,
+    options: readEslintCheckOptions({
+      settings: settings.data,
+      edition: binding.edition,
+      checkOptions: binding.checkOptions,
+    }),
     cases: request.cases,
     eslint: request.eslint,
   });

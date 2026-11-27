@@ -2,9 +2,18 @@ import { z } from "zod";
 
 import { CATALOGUE_NAME } from "../../../src/domain/language-layer/catalogue-name.ts";
 import type { Result } from "../../../src/domain/result.ts";
+import {
+  runnerFolderSegments,
+  sharedPluginFolderSegments,
+} from "../../../src/domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import { namedPieceImplementationSchema } from "../../../src/infrastructure/engines/named-piece.ts";
+import {
+  namedPieceImplementationSchema,
+  namedPieceModuleScopeSchema,
+} from "../../../src/infrastructure/engines/named-piece.ts";
+import { engineIdSchema } from "../../../src/infrastructure/hone-config-file/identifiers.ts";
 import { CHANGELOG_FILE } from "../../release/changelog.ts";
+import type { ModuleExport } from "../published-manifest/published-manifest.ts";
 import { dataShippingOf } from "../shipped-files/shipped-data.ts";
 import { PUBLIC_TYPE_ENTRIES } from "../type-declarations/package-declarations.ts";
 
@@ -21,7 +30,7 @@ export type PackagePlan = {
   readonly command: string;
   readonly copied: readonly string[];
   readonly pieces: readonly PieceText[];
-  readonly exported: readonly string[];
+  readonly exported: readonly ModuleExport[];
 };
 
 export const SHIPPED_NODE_RANGE = "^22.18.0 || >=24";
@@ -65,7 +74,7 @@ export type DocumentAuthor = "release" | "maintainer";
 export const documentAuthorOf = (request: { readonly path: string }): DocumentAuthor =>
   RELEASE_WRITTEN_DOCUMENTS.has(request.path) ? "release" : "maintainer";
 
-const PACKAGE_IMPORTED_MECHANISMS: ReadonlySet<string> = new Set(["eslint"]);
+const PACKAGE_IMPORTED_MECHANISMS: ReadonlySet<string> = new Set(["eslint", "oxlint"]);
 
 export const TEST_FOLDERS: ReadonlySet<string> = new Set([
   "tests",
@@ -104,6 +113,7 @@ const legacyPieceFileSchema = z.looseObject({
 const namedPieceFileSchema = z.looseObject({
   version: z.literal(2),
   implementation: namedPieceImplementationSchema.optional(),
+  moduleScope: namedPieceModuleScopeSchema,
   settings: pieceModuleSettingsSchema.optional(),
 });
 
@@ -194,12 +204,17 @@ const pieceModuleEntries = (request: ParsedPiece): readonly string[] => {
       modulesNamedIn({ settings }).map((module) => `${folder}/${module}`),
     );
   }
-  const { implementation, settings } = file;
+  const { implementation, moduleScope, settings } = file;
   const mechanismFolder = pieceFolderOf({ path: pieceFolderOf({ path: folder }) });
+  const engine = engineIdSchema.safeParse(NAMED_PIECE_FILE.exec(request.piece.path)?.[1]);
   const moduleFolder =
-    implementation === undefined
-      ? folder
-      : `${mechanismFolder}/${implementation.symptom}/${implementation.check}`;
+    moduleScope === "shared"
+      ? sharedPluginFolderSegments("").slice(1).join("/")
+      : moduleScope === "runner" && engine.success
+        ? runnerFolderSegments({ installRoot: "", mechanism: engine.data }).slice(1).join("/")
+        : implementation === undefined
+          ? folder
+          : `${mechanismFolder}/${implementation.symptom}/${implementation.check}`;
   return settings === undefined
     ? []
     : modulesNamedIn({ settings }).map((module) => `${moduleFolder}/${module}`);
@@ -214,16 +229,30 @@ const mechanismImportOf = (request: ParsedPiece): MechanismImport =>
     ? "by-package-name"
     : "by-path";
 
+const sharedEslintExport = (request: ParsedPiece): readonly ModuleExport[] => {
+  if (request.file.kind !== "named" || request.file.file.moduleScope !== "shared") return [];
+  const plugin = request.file.file.settings?.pluginModule;
+  if (plugin === undefined) return [];
+  const folder = pieceFolderOf(request.piece);
+  return [
+    {
+      specifier: `${folder}/eslint-plugin.js`,
+      module: builtModulePath({
+        path: `${sharedPluginFolderSegments("").slice(1).join("/")}/${plugin}`,
+      }),
+    },
+  ];
+};
+
 const exportedModulesOf = (request: {
   readonly pieces: readonly ParsedPiece[];
-}): readonly string[] => [
-  ...new Set(
-    request.pieces
-      .filter((piece) => mechanismImportOf(piece) === "by-package-name")
-      .flatMap(pieceModuleEntries)
-      .map((path) => builtModulePath({ path })),
-  ),
-];
+}): readonly ModuleExport[] => {
+  const pieces = request.pieces.filter((piece) => mechanismImportOf(piece) === "by-package-name");
+  return [
+    ...new Set(pieces.flatMap(pieceModuleEntries).map((path) => builtModulePath({ path }))),
+    ...pieces.flatMap(sharedEslintExport),
+  ];
+};
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 

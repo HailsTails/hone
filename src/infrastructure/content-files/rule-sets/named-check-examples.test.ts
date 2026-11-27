@@ -26,6 +26,7 @@ describe("createNamedCheckExamplesRepository", () => {
       exists: vi
         .fn<FileTextPort["exists"]>()
         .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present")
         .mockReturnValueOnce("present"),
       read: vi
         .fn<FileTextPort["read"]>()
@@ -99,7 +100,10 @@ describe("createNamedCheckExamplesRepository", () => {
     },
   ])("refuses $name", ({ document, detail }) => {
     const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: OWNER_DECLARATION })

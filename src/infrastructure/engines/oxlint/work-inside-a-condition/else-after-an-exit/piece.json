@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "else"
+  },
+  "settings": {
+    "rule": "useless-else",
+    "pluginNamespace": "hone-work-inside-a-condition-else-after-an-exit",
+    "module": "else-after-an-exit.ts"
+  },
+  "moduleScope": "shared"
+}

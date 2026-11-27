@@ -91,7 +91,6 @@ const notRunOf = (request: {
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   const { nestedConfigurations, measured } = request.run;
-  const { projectionFile } = request.run;
   switch (request.run.projection) {
     case "missing":
       return [
@@ -105,12 +104,14 @@ const notRunOf = (request: {
           projection: "not-included",
           file: request.run.projectionFile,
           nestedConfigurations,
+          recovery: request.run.recovery,
         },
       ];
     case "none":
       return [];
     case "current":
-    case "out-of-date":
+    case "out-of-date": {
+      const { projectionFile } = request.run;
       if (
         projectionFile !== undefined &&
         measured.length === 0 &&
@@ -123,6 +124,7 @@ const notRunOf = (request: {
             projection: "not-included",
             file: projectionFile,
             nestedConfigurations,
+            recovery: { kind: "include-projection" },
           },
         ];
       }
@@ -132,6 +134,7 @@ const notRunOf = (request: {
         tracked: request.tracked,
         comparedOutputs: request.run.comparedOutputs ?? [],
       });
+    }
   }
 };
 
@@ -160,7 +163,7 @@ const problemOf = (request: {
     ...request.run.slices.map((problem): RunProjectionProblem =>
       problem.state === "left-over"
         ? { ...problem, scope: "file", engine }
-        : { scope: "slice", engine, state: problem.state, file: problem.file },
+        : { ...problem, scope: "slice", engine },
     ),
   ];
 };
@@ -201,6 +204,7 @@ const refreshableProblemOf = (request: {
         case "out-of-date":
         case "missing":
           return problem;
+        case "not-included":
         case "unconfigured":
           return undefined;
       }

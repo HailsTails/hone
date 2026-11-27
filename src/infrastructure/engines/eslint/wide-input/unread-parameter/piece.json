@@ -5,7 +5,8 @@
   },
   "settings": {
     "pluginNamespace": "hone",
-    "pluginModule": "eslint-plugin.ts",
+    "pluginModule": "unread-parameter.ts",
     "rule": "unread-parameter"
-  }
+  },
+  "moduleScope": "shared"
 }

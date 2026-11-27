@@ -12,6 +12,7 @@ import {
   ruleSetNameSchema,
 } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import { createChecksSliceProblemSchema } from "../checks/checks-runner-module-schema.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
 import type { DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
 
@@ -40,12 +41,7 @@ const projectionProblemSchema = z.union([
     state: z.literal("left-over"),
     file: repoPathSchema,
   }),
-  z.strictObject({
-    scope: z.literal("slice"),
-    engine: engineSchema,
-    state: z.enum(["out-of-date", "missing", "unconfigured"]),
-    file: repoPathSchema,
-  }),
+  createChecksSliceProblemSchema({ scope: z.literal("slice"), engine: engineSchema }),
   z.strictObject({
     kind: z.literal("engine-not-run"),
     engine: engineSchema,

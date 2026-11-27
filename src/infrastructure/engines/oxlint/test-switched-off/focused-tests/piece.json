@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "only"
+  },
+  "settings": {
+    "rule": "focused-tests",
+    "pluginNamespace": "hone-test-switched-off-focused-tests",
+    "module": "test-modifiers.ts"
+  },
+  "moduleScope": "shared"
+}

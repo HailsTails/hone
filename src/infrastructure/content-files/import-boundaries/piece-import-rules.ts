@@ -359,8 +359,10 @@ const typePackagesOf = (request: {
       "piece-type-packages.json",
     ],
   });
+  const suffix = `/engines/${request.mechanism}/runner/piece-type-packages.json`;
   const text = Object.entries(request.typePackageTexts).find(
-    ([key]) => request.path.joinRepository({ segments: [key] }) === listPath,
+    ([key]) =>
+      key.endsWith(suffix) && request.path.joinRepository({ segments: [key] }) === listPath,
   );
   if (text === undefined) {
     return { outcome: "failed", error: { kind: "type-packages-missing", path: listPath } };

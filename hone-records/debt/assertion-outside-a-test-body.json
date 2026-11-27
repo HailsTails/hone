@@ -47,10 +47,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/content-files/import-boundaries/piece-import-rules.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts"
     },
     {
@@ -83,15 +79,7 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/claimed-type/non-null-assertions/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/eslint-plugin.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
@@ -112,30 +100,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/tangled-function/cognitive-complexity/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/thrown-non-error/throw-only-error/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/untyped-value/explicit-any/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/eslint/work-inside-a-condition/else-after-an-exit/eslint-plugin.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",

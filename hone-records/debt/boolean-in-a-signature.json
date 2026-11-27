@@ -3,19 +3,11 @@
   "records": [
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "delivery/release/changelog.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
     },
     {
       "answers": "boolean-in-a-signature#boolean-annotation",

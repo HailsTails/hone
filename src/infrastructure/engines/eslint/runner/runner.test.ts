@@ -9,11 +9,11 @@ const { namedChecksRunner } = runnerModule;
 
 describe("runner", () => {
   it("exposes the named runner and the two upgrade projection operations", () => {
-    expect(Object.keys(runnerModule).sort()).toEqual([
-      "measureVersionOne",
-      "namedChecksRunner",
-      "versionOneProjectionOver",
-    ]);
+    expect({ ...runnerModule }).toEqual({
+      measureVersionOne: expect.any(Function),
+      namedChecksRunner: expect.any(Object),
+      versionOneProjectionOver: expect.any(Function),
+    });
   });
 
   it("exports a checks runner module core accepts, projecting config overrides and inline disables", () => {
@@ -30,6 +30,7 @@ describe("runner", () => {
           address: "first-symptom#first-check",
           ruleSet: "hone",
           engine: "eslint",
+          checkOptions: { kind: "none" },
           anchor: { kind: "file" },
           pieceRoot: "/install/checks/eslint/first-symptom/first-check",
           checkSettings: {},

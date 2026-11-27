@@ -119,12 +119,16 @@ describe("mapEnginesRequestToRunRequest", () => {
 });
 
 describe("runNamedEngines", () => {
-  it("loads each selected engine once and runs it over the mapped request", async () => {
+  it.each<CheckBinding>([
+    BINDING,
+    { ...BINDING, ruleSet: "hone", engine: "oxlint", checkOptions: { kind: "none" } },
+  ])("loads $engine and runs it over the mapped request", async (binding) => {
+    const mechanism = binding.engine;
     const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
       outcome: "failed",
       error: {
         kind: "runner-failed",
-        mechanism: "walker",
+        mechanism,
         failure: { kind: "tool-failed", detail: "stopped" },
       },
     });
@@ -135,7 +139,7 @@ describe("runNamedEngines", () => {
 
     await runNamedEngines({
       settings: {
-        selection: { selected: [{ binding: BINDING }] },
+        selection: { selected: [{ binding }] },
         eslintConfigLookup: { lookup: "detected" },
         eslintProjectionKind: "mjs",
         conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
@@ -151,7 +155,7 @@ describe("runNamedEngines", () => {
       tree: { tracked: [TYPESCRIPT, MANIFEST], declaredConfigRoots: [] },
     });
 
-    expect(load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ mechanism: "walker" }));
+    expect(load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ mechanism }));
     expect(run.mock.calls).toMatchObject([[{ files: [TYPESCRIPT] }]]);
   });
 
@@ -189,7 +193,17 @@ describe("runNamedEngines", () => {
     await runNamedEngines({
       settings: {
         selection: {
-          selected: [{ binding: BINDING }, { binding: { ...BINDING, engine: "eslint" } }],
+          selected: [
+            { binding: BINDING },
+            {
+              binding: {
+                ...BINDING,
+                ruleSet: "hone",
+                engine: "eslint",
+                checkOptions: { kind: "none" },
+              },
+            },
+          ],
         },
         eslintConfigLookup: { lookup: "detected" },
         eslintProjectionKind: "mjs",

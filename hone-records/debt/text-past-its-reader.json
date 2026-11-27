@@ -19,19 +19,11 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/published-manifest/published-manifest.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/release/release-state.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",
       "file": "delivery/install-proof/run-install-proof.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/published-manifest/peer-manifest.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",
@@ -43,23 +35,11 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/version-two-plugin-modules.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/application/upgrade/team-layout/team-layout-plan.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/named-piece.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",

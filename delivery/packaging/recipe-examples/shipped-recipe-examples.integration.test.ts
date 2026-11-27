@@ -3,6 +3,7 @@ import { assert, describe, expect, it } from "vitest";
 import { absolutePathSchema } from "../../../src/infrastructure/content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { namedChecksRunner as eslintRunner } from "../../../src/infrastructure/engines/eslint/runner/runner.ts";
+import { namedChecksRunner as oxlintRunner } from "../../../src/infrastructure/engines/oxlint/runner/runner.ts";
 import { namedChecksRunner as walkerRunner } from "../../../src/infrastructure/engines/walker/runner/runner.ts";
 import {
   defaultTypeScriptPeers,
@@ -56,7 +57,7 @@ describe("the examples on this repository's recipe pages", () => {
       pages: readRecipePages({ recipes, ruleSetRoot: repoRoot, fileText, path }),
       typeErrors: createDefaultTypeErrorsPort({ syntaxApi: parse.value.syntaxApi, repoRoot }),
       flags: createBlockFlagsPort({
-        runners: { walker: walkerRunner, eslint: eslintRunner },
+        runners: { walker: walkerRunner, eslint: eslintRunner, oxlint: oxlintRunner },
       }),
       flaggedForms: createDefaultFlaggedFormsPort({
         parse: parse.value,

@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from "vitest";
 
 import { absolutePathSchema } from "../../../src/infrastructure/content-files/absolute-path.ts";
 import { namedChecksRunner as eslintRunner } from "../../../src/infrastructure/engines/eslint/runner/runner.ts";
+import { namedChecksRunner as oxlintRunner } from "../../../src/infrastructure/engines/oxlint/runner/runner.ts";
 import { namedChecksRunner as walkerRunner } from "../../../src/infrastructure/engines/walker/runner/runner.ts";
 import { createDefaultFileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
@@ -59,7 +60,7 @@ describe("createBlockFlagsPort, over the real walker and ESLint", () => {
     };
 
     const flags = await createBlockFlagsPort({
-      runners: { walker: walkerRunner, eslint: eslintRunner },
+      runners: { walker: walkerRunner, eslint: eslintRunner, oxlint: oxlintRunner },
     }).read({
       bindings: bindings.value,
       blocks: [loop, untyped, clean],

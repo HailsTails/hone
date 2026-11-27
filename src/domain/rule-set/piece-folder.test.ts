@@ -6,8 +6,33 @@ import {
   enginesFolderSegmentsOf,
   namedPieceFolderSegmentsOf,
   pieceFolderSegmentsOf,
+  runnerFolderSegments,
+  sharedPluginFolderSegments,
   versionOneEnginesFolderSegmentsOf,
 } from "./piece-folder.ts";
+
+describe("sharedPluginFolderSegments", () => {
+  it("locates a shared plugin without choosing an engine's folder", () => {
+    const path = sharedPluginFolderSegments("/install");
+
+    expect(path).toEqual([
+      "/install",
+      "src",
+      "infrastructure",
+      "engines",
+      "protocol",
+      "plugin-rules",
+    ]);
+  });
+});
+
+describe("runnerFolderSegments", () => {
+  it("locates an engine's own bindings from the install", () => {
+    const path = runnerFolderSegments({ installRoot: "/install", mechanism: "oxlint" });
+
+    expect(path).toEqual(["/install", "src", "infrastructure", "engines", "oxlint", "runner"]);
+  });
+});
 
 describe("enginesFolderSegmentsOf", () => {
   it("is the install's engines source folder for the install's own rule set", () => {

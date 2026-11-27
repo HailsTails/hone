@@ -205,6 +205,7 @@ const folderFilesOf = (
 const PIECE_MODULE_SETTINGS: Readonly<Record<EngineId, z.ZodType<string>>> = {
   walker: z.looseObject({ module: z.string() }).transform(({ module }) => module),
   eslint: z.looseObject({ pluginModule: z.string() }).transform(({ pluginModule }) => pluginModule),
+  oxlint: z.never(),
 };
 
 const moduleOf = (request: {

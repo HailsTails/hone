@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "throw"
+  },
+  "settings": {
+    "rule": "throw-only-error",
+    "pluginNamespace": "hone-thrown-non-error-throw-only-error",
+    "module": "throw-only-error.ts"
+  },
+  "moduleScope": "shared"
+}

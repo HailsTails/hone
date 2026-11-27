@@ -6,7 +6,8 @@
   },
   "settings": {
     "pluginNamespace": "hone-cd27",
-    "pluginModule": "eslint-plugin.ts",
+    "pluginModule": "test-modifiers.ts",
     "rule": "focused-tests"
-  }
+  },
+  "moduleScope": "shared"
 }

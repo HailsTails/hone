@@ -15,7 +15,11 @@ import type {
 import type { RecordsUnmeasured } from "../records/measurement/records-unmeasured.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { Edition } from "../rule-set/edition-types.ts";
-import type { MisnamedRuleId } from "../runner/checks-run-report.ts";
+import type {
+  ChecksSliceProblem,
+  MisnamedRuleId,
+  ProjectionInclusion,
+} from "../runner/checks-run-report.ts";
 import type { SettingsNote } from "../settings/settings-note.ts";
 
 export type CheckEdition = {
@@ -38,6 +42,7 @@ export type EngineNotRun =
       readonly projection: "not-included";
       readonly file: RepoPath;
       readonly nestedConfigurations: readonly RepoPath[];
+      readonly recovery: ProjectionInclusion;
     }
   | {
       readonly kind: "engine-not-run";
@@ -62,12 +67,7 @@ export type RunProjectionProblem =
       readonly state: "left-over";
       readonly file: RepoPath;
     }
-  | {
-      readonly scope: "slice";
-      readonly engine: Engine;
-      readonly state: "out-of-date" | "missing" | "unconfigured";
-      readonly file: RepoPath;
-    };
+  | Readonly<ChecksSliceProblem & { scope: "slice"; engine: Engine }>;
 
 export type ForfeitureElsewhere = {
   readonly concern: "forfeiture";

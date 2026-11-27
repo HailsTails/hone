@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "class"
+  },
+  "settings": {
+    "rule": "no-extraneous-class",
+    "module": "oxlint-plugin.ts",
+    "pluginNamespace": "hone-authored-class-or-this-static-members-only",
+    "peer": "typescript-eslint"
+  }
+}

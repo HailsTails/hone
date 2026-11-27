@@ -106,7 +106,13 @@ export const checkUnderTestOf = (
   }
   const { ruleSet, check, engine } = request;
   const { piece, examples } = read.value;
-  const binding = createCheckBinding({ check, ruleSet: read.value.ruleSet, engine, piece });
+  const binding = createCheckBinding({
+    check,
+    ruleSet: read.value.ruleSet,
+    engine,
+    piece,
+    edition: piece.editions.default,
+  });
   return {
     outcome: "ok",
     value: {
@@ -143,13 +149,18 @@ export const checkConformanceOf = async (
     };
   }
   const { piece, examples, ruleSet } = read.value;
-  const binding = createCheckBinding({ check: request.check, ruleSet, engine: mechanism, piece });
   const conformed = gatheredOutcomes({
     outcomes: await Promise.all(
-      casesByEdition({ cases: examples, defaultEdition: binding.edition }).map(
+      casesByEdition({ cases: examples, defaultEdition: piece.editions.default }).map(
         ({ edition, cases }) =>
           request.enginePort.conform({
-            binding: { ...binding, edition },
+            binding: createCheckBinding({
+              check: request.check,
+              ruleSet,
+              engine: mechanism,
+              piece,
+              edition,
+            }),
             cases,
             runner: runner.value,
           }),

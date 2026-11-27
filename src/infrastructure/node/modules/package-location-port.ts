@@ -18,6 +18,9 @@ export type PackageLocationPort = {
 
 const path = createDefaultPathPort({});
 
+export const locateInstalledPackage: PackageLocationPort["locate"] = (request) =>
+  path.fromFileUrl({ url: import.meta.resolve(request.packageName) });
+
 export const installRootOfRunnerEntry = (request: { readonly entryFile: string }): string =>
   installRootAboveEntry({
     entryFile: request.entryFile,
@@ -31,5 +34,5 @@ export const createDefaultPackageLocationPort = (options: {
 }): PackageLocationPort => ({
   installRoot: options.installRoot,
   installForm: options.installForm,
-  locate: (request) => path.fromFileUrl({ url: import.meta.resolve(request.packageName) }),
+  locate: locateInstalledPackage,
 });

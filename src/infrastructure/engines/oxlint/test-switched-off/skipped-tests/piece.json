@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "skip"
+  },
+  "editions": ["1", "2"],
+  "settings": {
+    "rule": "skipped-tests"
+  },
+  "implementation": {
+    "symptom": "test-switched-off",
+    "check": "focused-tests"
+  }
+}

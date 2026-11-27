@@ -199,7 +199,7 @@ Stop and ask the human if anything outside the old trial uses the copied tools o
 | Debt decay ([forfeiture](rules/records.md#debt)) | optional `rin-harness-carve-out-decay.ts` run | built into every check run with `--base-revision` |
 | Stale and unrecorded exceptions | not checked | fail the run, including linter ignores, `eslint-disable` comments and `@ts-expect-error`, `@ts-ignore` and `@ts-nocheck` directives with no record; an inline disable or directive is held by a file record on its clause and file, never by a clause-wide carve-out, and a lint-script option that weakens the run cannot be recorded at all |
 | Path matching | old tools matched records by path suffix | exact repository paths |
-| Linter | Biome, ESLint or oxlint for explicit `any` only | ESLint through the generated projection; Biome and oxlint are not Hone mechanisms |
+| Linter | Biome, ESLint or oxlint for explicit `any` only | ESLint through the generated projection, or Oxlint for supported checks |
 | Exhaustive switch ([Default on a closed union](rules/typescript/symptoms.md#default-on-a-closed-union)) | typed ESLint `switch-exhaustiveness-check` suggested | the audit's `switch-defaults` clause only; type-aware linting is not supported |
 | Judgement rules | read by an agent on request | each rule item names its review lenses, methods in `methods/lenses/`; ADOPTING step 9 is the procedure |
 

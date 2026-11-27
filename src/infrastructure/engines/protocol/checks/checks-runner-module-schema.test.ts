@@ -272,6 +272,14 @@ describe("namedChecksRunResultSchema", () => {
     );
   });
 
+  it("refuses a root file when there is no root projection", () => {
+    const report = { ...REPORT, projection: "none", projectionFile: "hone.oxlint.json" };
+
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects a report that leaves out the misnamed rule ids", () => {
     const { misnamedRuleIds: _left, ...withoutMisnamed } = REPORT;
     expect(
@@ -301,13 +309,28 @@ describe("namedChecksRunResultSchema", () => {
       ...REPORT,
       projection: "not-included",
       projectionFile: "hone.eslint.mjs",
+      recovery: { kind: "engine-instructions", detail: "include the projected rules last" },
+      slices: [
+        {
+          file: "pkg/hone.eslint.mjs",
+          state: "unconfigured",
+          recovery: { kind: "engine-instructions", detail: "add a configuration" },
+        },
+      ],
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
-    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toMatchObject({
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed).toMatchObject({
       success: true,
       data: {
-        value: { nestedConfigurations: ["pkg"], unprojectedFolders: report.unprojectedFolders },
+        value: {
+          recovery: { kind: "engine-instructions", detail: "include the projected rules last" },
+          slices: report.slices,
+          nestedConfigurations: ["pkg"],
+          unprojectedFolders: report.unprojectedFolders,
+        },
       },
     });
     expect(
@@ -351,7 +374,16 @@ describe("namedChecksRunResultSchema", () => {
       slices: [
         { file: "packages/a/hone.eslint.mjs", state: "missing" },
         { file: "packages/b/hone.eslint.mjs", state: "out-of-date" },
-        { file: "packages/c/hone.eslint.mjs", state: "unconfigured" },
+        {
+          file: "packages/c/hone.eslint.mjs",
+          state: "unconfigured",
+          recovery: { kind: "generate-configuration" },
+        },
+        {
+          file: "packages/d/hone.oxlint.json",
+          state: "not-included",
+          recovery: { kind: "include-projection" },
+        },
       ],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({

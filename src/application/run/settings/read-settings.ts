@@ -15,6 +15,7 @@ import type { ClauseAddress } from "../../../domain/rule-set/clause-address-type
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
 import type { ClauseExceptions } from "../../../domain/rule-set/rule-set-types.ts";
+import { bindCheck } from "../../../domain/runner/check-binding.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import {
   type CheckChoiceRefusal,
@@ -237,7 +238,7 @@ const selectedCheckOf = (
         check: chosen.check,
         exceptions: piece.value.exceptions,
         editions: piece.value.editions,
-        binding: {
+        binding: bindCheck({
           address: chosen.address.check,
           ruleSet: chosen.address.ruleSet,
           engine: mechanism,
@@ -247,7 +248,7 @@ const selectedCheckOf = (
           forms: piece.value.forms,
           checkSettings: settled.value.clauseSettings,
           edition: settled.value.edition,
-        },
+        }),
       },
     ],
   };

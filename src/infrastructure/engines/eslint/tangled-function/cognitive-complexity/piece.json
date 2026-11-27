@@ -6,7 +6,8 @@
   },
   "settings": {
     "pluginNamespace": "hone-cd41",
-    "pluginModule": "eslint-plugin.ts",
+    "pluginModule": "function-complexity.ts",
     "rule": "cognitive-complexity"
-  }
+  },
+  "moduleScope": "shared"
 }

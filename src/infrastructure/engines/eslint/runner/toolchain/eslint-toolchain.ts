@@ -7,11 +7,15 @@ import type { InstallForm } from "../../../../node/modules/install-layout.ts";
 import { createDefaultPackageLocationPort } from "../../../../node/modules/package-location-port.ts";
 import type { DeepReadonly, Equal } from "../../../protocol/runner-module/type-equality.ts";
 import {
+  ESLINT_REQUIREMENT,
+  TYPESCRIPT_ESLINT_PARSER_REQUIREMENT,
+  TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT,
+} from "../../../protocol/toolchain/eslint-peer-requirements.ts";
+import {
   gatheredPeerFailure,
   installedPeer,
   loadedPeer,
   type PeerToolchain,
-  type ToolchainRequirement,
 } from "../../../protocol/toolchain/toolchain-requirement.ts";
 import {
   createEslintOn,
@@ -37,33 +41,6 @@ export type EslintToolchainModules = {
 export type EslintToolchainPeers = PeerToolchain<EslintToolchainModules>;
 
 type ToolchainLoad<T> = Promise<Result<T, RunnerFailure>>;
-
-export const ESLINT_REQUIREMENT: ToolchainRequirement = {
-  packageName: "eslint",
-  peer: "optional",
-  lines: [
-    { floor: "9.39.5", below: "10.0.0" },
-    { floor: "10.15.0", below: "11.0.0" },
-  ],
-};
-
-export const TYPESCRIPT_ESLINT_PARSER_REQUIREMENT: ToolchainRequirement = {
-  packageName: "@typescript-eslint/parser",
-  peer: "optional",
-  lines: [{ floor: "8.73.0", below: "9.0.0" }],
-};
-
-export const TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT: ToolchainRequirement = {
-  packageName: "@typescript-eslint/eslint-plugin",
-  peer: "optional",
-  lines: [{ floor: "8.73.0", below: "9.0.0" }],
-};
-
-export const ESLINT_TOOLCHAIN_REQUIREMENTS: readonly ToolchainRequirement[] = [
-  ESLINT_REQUIREMENT,
-  TYPESCRIPT_ESLINT_PARSER_REQUIREMENT,
-  TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT,
-];
 
 export const defaultEslintToolchainModules: EslintToolchainModules = {
   eslint: () => import("eslint"),

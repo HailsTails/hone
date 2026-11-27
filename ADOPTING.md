@@ -73,7 +73,7 @@ Options for one run go after the script name. npm needs `--` before them, as in 
 
 `hone --help` lists the commands, and `hone <command> --help` gives each one's options and exit codes.
 
-Hone runs on the toolchain the repository already uses, which the package declares as `peerDependencies`: `typescript` is required, because every check on the `walker` engine needs it, and the ESLint packages are optional, needed only for checks on the `eslint` engine. The supported ranges are those in the installed package's `package.json`. Declare `typescript` yourself at the repository root, at the version the repository already uses, rather than let the package manager choose or skip it. A package that is missing or out of range is named when the check runs; add it at a version inside its range, without moving ESLint or TypeScript to another major for Hone's sake.
+Hone runs on the toolchain the repository already uses, which the package declares as `peerDependencies`: `typescript` is required, because every check on the `walker` engine needs it, and the ESLint and Oxlint packages are optional peers. The supported ranges are those in the installed package's `package.json`. Declare `typescript` yourself at the repository root, at the version the repository already uses, rather than let the package manager choose or skip it. A package that is missing or out of range is named when the check runs; add it at a version inside its range, without moving ESLint or TypeScript to another major for Hone's sake.
 
 Hone finds these by Node's resolution upward from where the package is installed, so in a monorepo they must resolve from the repository root: declare them in the root `package.json` (with pnpm, `pnpm add -Dw` at the versions the packages already use), even where packages also declare their own. Yarn Plug'n'Play is not supported, because Hone resolves the toolchain through `node_modules`.
 
@@ -103,9 +103,9 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 }
 ```
 
-- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker` or `eslint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
+- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker`, `eslint` or `oxlint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
 - Listing a check adopts it. Only a listed check runs. A check of a symptom that a listed check sees, listed nowhere, is offered under `available` and never fails the run. The symptom [Strictness weakened](rules/typescript/symptoms.md#strictness-weakened) has seven checks, one per compiler flag; list the ones you want. Checks that are one rule today run together: listing one of the six test-body checks without the others stops the run with `checks-run-together` naming them.
-- A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker` or `eslint` but `authored-class-or-this#static-members-only` only on `eslint`, so adopting that symptom means adopting the ESLint engine for at least that check; see [README.md](README.md#adopting-the-eslint-mechanism). If ESLint cannot work in this repository, list such a check as `"not-run"`, as below.
+- A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker`, `eslint` or `oxlint`. Its `static-members-only` check runs on `eslint` or `oxlint`.
 - A check's value in `checks` is one of three:
   - an engine id, such as `walker`: the check runs and its findings fail the run;
   - `"not-run"`: the check is adopted, but its engine is not run; the report lists it under `not-run`;
@@ -113,14 +113,14 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 - A `"not-run"` or `"not-adopted"` check is never run and never projected, not even as `"off"`, and its engine is not loaded unless another check uses it, so a repository that lists every ESLint check this way needs no ESLint installed. Both leave the run a whole assessment.
 - When a check cannot simply run clean, [the spirit of the rules](rules/SPIRIT.md#not-adopted-not-run-carved-out-escaped) names three declared states. Choose one deliberately, with reasons:
   - Not adopted: the rule does not apply to this codebase; a tech lead declares that, in the open. Set the check to `"not-adopted"`.
-  - Adopted, engine not run: the rule binds, but its check is not a true measure of the rule's intent here, or cannot work here for a technical reason. The check is set aside; the intent is still owed, through review. Set the check to `"not-run"`. The ESLint-only checks of `name-off-its-casing` in a repository without ESLint are the usual case: `"name-off-its-casing#naming-convention": "not-run", "name-off-its-casing#filename-case": "not-run"`.
+  - Adopted, engine not run: the rule binds, but its check is not a true measure of the rule's intent here, or cannot work here for a technical reason. The check is set aside; the intent is still owed, through review. Set the check to `"not-run"`. For example, `"name-off-its-casing#naming-convention": "not-run", "name-off-its-casing#filename-case": "not-run"`.
   - Debt: the rule binds and its check is sound, but the codebase has debt it cannot address right now. Keep the check's engine, so it still runs, and record the debt file by file as debt records, which `hone record-debt` writes for you (step 7a).
 - `exclude` lists folders or exact files that no engine checks, as repository paths with forward slashes; an entry containing `*` is refused, because globs are not supported. A folder entry excludes everything under it. It is the only way to narrow what Hone checks: there is no include list, and every tracked file outside `exclude` is checked, including any folder added later. Use it for generated or third-party code, and, to check only part of a repository, list every other folder. The ESLint engine lints every tracked TypeScript file outside `exclude`, including any the repository's own ESLint config ignores: an ignore in that config does not narrow what Hone checks, and each selected check lists such a file under `unrecorded` until the ignore is removed or the file is listed in `exclude`.
 - `checkSettings` gives a check the settings its check page lists, keyed by check address. See [README.md](README.md#honeconfigjson).
 - `checkEditions` stays out, or `"pinned"`, unless you want stricter checks as soon as they ship. When Hone tightens a check, the stricter check arrives as a new edition, listed on the check's page, and becomes the default only in a major release. `"latest"` runs the newest edition of every listed check, so a minor upgrade can add findings. To take one check's newer edition only, give it `"edition"` in its `checkSettings` entry.
 - `ruleSets` stays `{}` unless you write disciplines of your own; see [docs/extending.md](docs/extending.md).
 
-Adopting a symptom with a check whose only engine is `eslint` needs the ESLint engine, or that check listed as `"not-run"`.
+Each check can be selected on any mechanism listed on the checks page.
 
 Starting with a few disciplines and adding more once the run passes is easier than fixing everything at once.
 
@@ -190,6 +190,14 @@ import projection from "./hone.eslint.js";
 ```
 
 Commit the projection, every slice and the configs. Hone's check reads this configuration and fails if the projection or a slice is missing, not in effect, or out of date, so re-run `hone:project` whenever `hone.config.json` or `hone-records` changes or Hone is updated. The repository's ESLint must resolve `@hailstails/hone` from the repository root. [README.md](README.md#adopting-the-eslint-mechanism) has the details.
+
+### 4b. Set up Oxlint for `oxlint` checks
+
+Install Oxlint in the repository root with `pnpm add -D oxlint@^1.95.0`. Select `"oxlint"` under `checks` in `hone.config.json` for any of the sixteen built-in checks that list Oxlint. Explicit any, parameter count and parameter reassignment use native rules. The other checks use Oxlint’s JavaScript plugin support. Static members and naming use TypeScript-ESLint’s rule library and require compatible `eslint`, `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` peers. The Oxlint naming binding supports syntax-only selectors.
+
+Run `hone project` and commit every `hone.oxlint.json` it writes. Add `"./hone.oxlint.json"` to `extends` in the existing JSON or JSONC Oxlint configuration beside each projection. In an auto-discovered `oxlint.config.ts` or `oxlint.config.mts`, import the projection as JSON and include the resulting object in `extends`. Hone uses Oxlint’s standard config filenames for discovery. Keep using your existing Oxlint commands.
+
+Hone projects its selected TypeScript checks and recorded exceptions into the root and package configurations. `hone check` uses Oxlint with those configurations and reports missing, stale, or ineffective projections. Track each configuration that governs the selected files and rerun `hone project` when the selection or records change.
 
 ## 5. Run the check
 

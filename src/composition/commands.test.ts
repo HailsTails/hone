@@ -1090,6 +1090,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
               address: "claimed-type#cast-expressions",
               ruleSet: TOOL_RULE_SET,
               engine: ESLINT,
+              checkOptions: { kind: "none" },
               pieceRoot: "/install/cast",
               settings: {},
               checkSettings: {},
@@ -1133,6 +1134,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
         run: {
           ...runOf({ hits: [] }),
           projection: "not-included",
+          recovery: { kind: "include-projection" },
           projectionFile: repoPathOf("hone.eslint.mjs"),
         },
       }),
@@ -1183,6 +1185,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
             {
               ...runOf({ hits: [] }),
               projection: "not-included",
+              recovery: { kind: "include-projection" },
               projectionFile: repoPathOf("hone.eslint.mjs"),
             },
           ],
@@ -1231,6 +1234,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
             {
               ...runOf({ hits: [] }),
               projection: "not-included",
+              recovery: { kind: "include-projection" },
               projectionFile: repoPathOf("hone.eslint.mjs"),
             },
           ],

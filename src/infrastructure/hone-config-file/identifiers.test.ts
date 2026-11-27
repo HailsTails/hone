@@ -4,6 +4,7 @@ import {
   clauseIdSchema,
   disciplineIdSchema,
   engineIdSchema,
+  versionOneEngineIdSchema,
   ruleSetIdentitySchema,
   ruleSetNameSchema,
 } from "./identifiers.ts";
@@ -69,11 +70,19 @@ describe("clauseIdSchema", () => {
 });
 
 describe("engineIdSchema", () => {
-  it.each(["walker", "eslint"])("accepts %j", (text) => {
+  it.each(["walker", "eslint", "oxlint"])("accepts %j", (text) => {
     expect(engineIdSchema.safeParse(text).success).toBe(true);
   });
 
-  it.each(["", "ESLint", "oxlint", "not-run", "not-adopted", "audit/ts"])("refuses %j", (text) => {
+  it.each(["", "ESLint", "not-run", "not-adopted", "audit/ts"])("refuses %j", (text) => {
     expect(engineIdSchema.safeParse(text).success).toBe(false);
+  });
+});
+
+describe("versionOneEngineIdSchema", () => {
+  it("refuses the version two Oxlint mechanism", () => {
+    const parsed = versionOneEngineIdSchema.safeParse("oxlint");
+
+    expect(parsed.success).toBe(false);
   });
 });

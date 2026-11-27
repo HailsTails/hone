@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { Engine } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import cd27Plugin from "../../../protocol/plugin-rules/test-modifiers.ts";
 import cd2Plugin from "../../claimed-type/non-null-assertions/eslint-plugin.ts";
 import cd40Plugin from "../../positional-parameters/parameter-count/eslint-plugin.ts";
-import cd27Plugin from "../../test-switched-off/focused-tests/eslint-plugin.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { PluginCheck } from "./check-rule-id.ts";
 import { checksPluginOf, inSymptomWords, reportInSymptomWords } from "./checks-plugin.ts";

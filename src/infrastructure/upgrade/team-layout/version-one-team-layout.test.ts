@@ -4,7 +4,10 @@ import type {
   DirectoryEntry,
   DirectoryPort,
 } from "../../../application/ports/file-system/directory-port.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type {
+  FileReadResult,
+  FileTextPort,
+} from "../../../application/ports/file-system/file-text-port.ts";
 import type { VersionOneTeamClause } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -47,11 +50,11 @@ const NAMES = NAMES_WITH(
 
 const HELPER = "export const scratch = /\\.scratch\\./;\n";
 
-const FILES: Readonly<Record<string, string>> = {
-  "/repo/acme/rules/ACME-1/discipline.json": DISCIPLINE,
-  "/repo/acme/mechanisms/audit/ACME-1/piece.json": PIECE,
-  "/repo/acme/mechanisms/audit/ACME-1/scratch.ts": MODULE,
-  "/repo/acme/mechanisms/audit/ACME-1/helpers/pattern.ts": HELPER,
+const FILES: Readonly<Record<string, FileReadResult>> = {
+  "/repo/acme/rules/ACME-1/discipline.json": { outcome: "ok", value: DISCIPLINE },
+  "/repo/acme/mechanisms/audit/ACME-1/piece.json": { outcome: "ok", value: PIECE },
+  "/repo/acme/mechanisms/audit/ACME-1/scratch.ts": { outcome: "ok", value: MODULE },
+  "/repo/acme/mechanisms/audit/ACME-1/helpers/pattern.ts": { outcome: "ok", value: HELPER },
 };
 
 const TOOL_RECORD_KINDS: readonly RecordKind[] = [
@@ -80,25 +83,42 @@ const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
 };
 
 const sourcesListing = (request: {
-  readonly files: Readonly<Record<string, string>>;
+  readonly files: Readonly<Record<string, FileReadResult>>;
+  readonly extraPresent?: Readonly<Record<string, "present">>;
   readonly listings: Readonly<Record<string, readonly DirectoryEntry[]>>;
 }) => {
   const { files } = request;
   const listings = { ...LISTINGS, ...request.listings };
-  const fileText: FileTextPort = {
-    exists: ({ path }) => (path in files || path in listings ? "present" : "absent"),
-    read: ({ path }) => {
-      const text = files[path];
-      return text === undefined
-        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
-        : { outcome: "ok", value: text };
-    },
-    write: vi.fn<FileTextPort["write"]>(),
+  const present: Readonly<Record<string, "present" | "absent">> = {
+    "/repo/acme": "present",
+    "/repo/acme/rules": "present",
+    "/repo/acme/rules/ACME-1": "present",
+    "/repo/acme/rules/ACME-1/discipline.json": "present",
+    "/repo/acme/mechanisms/audit/ACME-1": "present",
+    "/repo/acme/mechanisms/audit/ACME-1/piece.json": "present",
+    "/repo/acme/mechanisms/audit/ACME-1/scratch.ts": "present",
+    "/repo/acme/mechanisms/audit/ACME-1/helpers": "present",
+    "/repo/acme/mechanisms/audit/ACME-1/helpers/pattern.ts": "present",
+    ...request.extraPresent,
   };
-  const directory: DirectoryPort = {
-    list: ({ path }) => ({ outcome: "ok", value: listings[path] ?? [] }),
-    create: vi.fn<DirectoryPort["create"]>(),
+  const exists: FileTextPort["exists"] = ({ path }) => {
+    const { [path]: presence = "absent" } = present;
+    return presence;
   };
+  const read: FileTextPort["read"] = ({ path }) => {
+    const missing: FileReadResult = {
+      outcome: "failed",
+      error: { kind: "unreadable", path, detail: "ENOENT" },
+    };
+    const { [path]: document = missing } = files;
+    return document;
+  };
+  const list: DirectoryPort["list"] = ({ path }) => {
+    const { [path]: entries = [] } = listings;
+    return { outcome: "ok", value: entries };
+  };
+  const fileText: FileTextPort = { exists, read, write: vi.fn<FileTextPort["write"]>() };
+  const directory: DirectoryPort = { list, create: vi.fn<DirectoryPort["create"]>() };
   return {
     fileText,
     directory,
@@ -109,8 +129,10 @@ const sourcesListing = (request: {
   };
 };
 
-const sourcesHolding = (files: Readonly<Record<string, string>>) =>
-  sourcesListing({ files, listings: {} });
+const sourcesHolding = (
+  files: Readonly<Record<string, FileReadResult>>,
+  extraPresent?: Readonly<Record<string, "present">>,
+) => sourcesListing({ files, listings: {}, extraPresent });
 
 const SCRATCH_CLAUSE = {
   ruleSet: { name: "acme" },
@@ -197,7 +219,10 @@ describe("readVersionOneTeamLayout", () => {
   it("reads each mechanical clause with its name, summary, cases and piece, every file of the piece's folder, the team's definitions, and the version 1 files", () => {
     expect(
       readVersionOneTeamLayout({
-        ...sourcesHolding({ ...FILES, "/repo/acme/version-two-names.json": NAMES }),
+        ...sourcesHolding(
+          { ...FILES, "/repo/acme/version-two-names.json": { outcome: "ok", value: NAMES } },
+          { "/repo/acme/version-two-names.json": "present" },
+        ),
         ruleSet: ACME,
         root: ROOT,
       }),
@@ -220,12 +245,18 @@ describe("readVersionOneTeamLayout", () => {
   it("refuses a name given to no mechanical clause of the rule set", () => {
     expect(
       readVersionOneTeamLayout({
-        ...sourcesHolding({
-          ...FILES,
-          "/repo/acme/version-two-names.json": NAMES_WITH(
-            '{ "ACME-1#scratch-files": { "check": "scratch-file#scratch-files", "title": "Scratch files" }, "ACME-1#naming": { "check": "naming#naming", "title": "Naming" } }',
-          ),
-        }),
+        ...sourcesHolding(
+          {
+            ...FILES,
+            "/repo/acme/version-two-names.json": {
+              outcome: "ok",
+              value: NAMES_WITH(
+                '{ "ACME-1#scratch-files": { "check": "scratch-file#scratch-files", "title": "Scratch files" }, "ACME-1#naming": { "check": "naming#naming", "title": "Naming" } }',
+              ),
+            },
+          },
+          { "/repo/acme/version-two-names.json": "present" },
+        ),
         ruleSet: ACME,
         root: ROOT,
       }),
@@ -247,8 +278,8 @@ describe("readVersionOneTeamLayout", () => {
       readVersionOneTeamLayout({
         ...sourcesHolding({
           ...FILES,
-          "/repo/acme/rules/ACME-1/discipline.json": sharing,
-          "/repo/acme/mechanisms/audit/ACME-1/piece.json": sharedPiece,
+          "/repo/acme/rules/ACME-1/discipline.json": { outcome: "ok", value: sharing },
+          "/repo/acme/mechanisms/audit/ACME-1/piece.json": { outcome: "ok", value: sharedPiece },
         }),
         ruleSet: ACME,
         root: ROOT,
@@ -270,13 +301,36 @@ describe("readVersionOneTeamLayout", () => {
     });
   });
 
+  it("refuses Oxlint as a version one piece mechanism", () => {
+    const layout = readVersionOneTeamLayout({
+      ...sourcesHolding({
+        ...FILES,
+        "/repo/acme/mechanisms/audit/ACME-1/piece.json": {
+          outcome: "ok",
+          value:
+            '{ "version": 1, "discipline": "ACME-1", "mechanism": "oxlint", "clauses": [{ "clause": "scratch-files", "settings": { "module": "check.ts" } }] }',
+        },
+      }),
+      ruleSet: ACME,
+      root: ROOT,
+    });
+
+    expect(layout).toMatchObject({
+      outcome: "failed",
+      error: { path: "/repo/acme/mechanisms/audit/ACME-1/piece.json" },
+    });
+  });
+
   it("refuses a piece whose settings name no module", () => {
     expect(
       readVersionOneTeamLayout({
         ...sourcesHolding({
           ...FILES,
-          "/repo/acme/mechanisms/audit/ACME-1/piece.json":
-            '{ "version": 1, "discipline": "ACME-1", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": {} }] }',
+          "/repo/acme/mechanisms/audit/ACME-1/piece.json": {
+            outcome: "ok",
+            value:
+              '{ "version": 1, "discipline": "ACME-1", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": {} }] }',
+          },
         }),
         ruleSet: ACME,
         root: ROOT,
@@ -309,7 +363,10 @@ describe("versionOneTeamLayoutsOf", () => {
   it("reads the layout of a used team rule set still in the version 1 layout", () => {
     expect(
       versionOneTeamLayoutsOf({
-        ...sourcesHolding({ ...FILES, "/repo/acme/version-two-names.json": NAMES }),
+        ...sourcesHolding(
+          { ...FILES, "/repo/acme/version-two-names.json": { outcome: "ok", value: NAMES } },
+          { "/repo/acme/version-two-names.json": "present" },
+        ),
         selection: {
           ...SELECTION,
           clauses: [[SCRATCH_CLAUSE_ADDRESS, { state: "run", mechanism: "walker" }]],
@@ -324,8 +381,14 @@ describe("versionOneTeamLayoutsOf", () => {
         ...sourcesListing({
           files: {
             ...FILES,
-            "/repo/acme/rules/principles/repository-ready.md":
-              "# Repository ready\n\n```json\n{}\n```\n",
+            "/repo/acme/rules/principles/repository-ready.md": {
+              outcome: "ok",
+              value: "# Repository ready\n\n```json\n{}\n```\n",
+            },
+          },
+          extraPresent: {
+            "/repo/acme/rules/principles": "present",
+            "/repo/acme/rules/principles/repository-ready.md": "present",
           },
           listings: {
             "/repo/acme/rules": [

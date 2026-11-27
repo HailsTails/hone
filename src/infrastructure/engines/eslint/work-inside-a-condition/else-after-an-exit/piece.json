@@ -6,7 +6,8 @@
   },
   "settings": {
     "pluginNamespace": "hone-cd42",
-    "pluginModule": "eslint-plugin.ts",
+    "pluginModule": "else-after-an-exit.ts",
     "rule": "useless-else"
-  }
+  },
+  "moduleScope": "shared"
 }

@@ -9,8 +9,8 @@ import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.t
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-types.ts";
 import { parseInlineConfigComment } from "../native-exceptions/inline-config-parser.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import {
   type InlineConfigNode,
   inlineConfigNodesSchema,
