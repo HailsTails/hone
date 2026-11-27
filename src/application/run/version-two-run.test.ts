@@ -26,10 +26,10 @@ import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
-  createVersionTwoPlan,
   measureEngines,
   settledCatalogueOf,
   versionTwoInputsOf,
+  type VersionTwoPlan,
   type VersionTwoStages,
   versionTwoRunOver,
 } from "./version-two-run.ts";
@@ -410,16 +410,16 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
   ...request,
 });
 
-const CONFIGURED_PLAN = createVersionTwoPlan({
+const CONFIGURED_PLAN: VersionTwoPlan = {
   ...SETTINGS.runSettings,
   measuring: "when-debt-held",
-});
+};
 
-const PLAN_COMPARING_COUNTS = createVersionTwoPlan({
+const PLAN_COMPARING_COUNTS: VersionTwoPlan = {
   assessment: { forfeiture: "no-new-findings" },
   reportOutput: "actionable",
   measuring: "when-debt-held",
-});
+};
 
 describe("versionTwoRunOver", () => {
   it("reports the findings the engines raised, with the catalogue and the planned output", async () => {
@@ -451,11 +451,11 @@ describe("versionTwoRunOver", () => {
     const run = await versionTwoRunOver({
       stages,
       inputs: inputs.value,
-      plan: createVersionTwoPlan({
+      plan: {
         assessment: { forfeiture: "elsewhere" },
         reportOutput: "counts",
         measuring: "when-debt-held",
-      }),
+      },
     });
     expect(run).toMatchObject({ outcome: "ok", value: { output: "counts" } });
     expect(touched.mock.calls).toEqual([
@@ -479,7 +479,7 @@ describe("versionTwoRunOver", () => {
     const run = await versionTwoRunOver({
       stages,
       inputs: inputs.value,
-      plan: createVersionTwoPlan({ ...SETTINGS.runSettings, measuring: "always" }),
+      plan: { ...SETTINGS.runSettings, measuring: "always" },
     });
     expect(run).toMatchObject({ outcome: "ok", value: { touched: measured } });
     expect(touched.mock.calls).toEqual([

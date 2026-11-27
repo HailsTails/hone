@@ -481,6 +481,8 @@ const creditedNothing = (placed: PlacedRecord): StaleRecord =>
   staleFor({ placed, reason: "credited-nothing" });
 
 const NOTHING_ANSWERED = {
+  judged: "touched-debt",
+  unmeasured: [],
   findings: [],
   answered: [],
   held: [],
@@ -920,9 +922,15 @@ describe("answerFindings, forfeit", () => {
     });
   });
 
-  it.each([{ touched: UNMEASURED }, { touched: ELSEWHERE }])(
+  it.each([
+    {
+      touched: UNMEASURED,
+      unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
+    },
+    { touched: ELSEWHERE, unmeasured: [] },
+  ])(
     "forfeits nothing when the touched set is measured $touched.measured, so the debt still answers",
-    ({ touched }) => {
+    ({ touched, unmeasured }) => {
       expect(
         answerFindings({
           catalogue: CATALOGUE,
@@ -937,6 +945,7 @@ describe("answerFindings, forfeit", () => {
         outcome: "ok",
         value: {
           ...NOTHING_ANSWERED,
+          unmeasured,
           answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
         },
       });
@@ -2218,7 +2227,13 @@ it("retains touched debt when a finding comparison judges it", () => {
 
   expect(answered).toMatchObject({
     outcome: "ok",
-    value: { forfeited: [], answered: [{ finding: NO_CLASS_IN_A }] },
+    value: {
+      judged: "counted-debt",
+      unmeasured: [],
+      forfeited: [],
+      answered: [{ finding: NO_CLASS_IN_A }],
+      debtComparison: { issues: [{ kind: "base-unavailable" }] },
+    },
   });
 });
 

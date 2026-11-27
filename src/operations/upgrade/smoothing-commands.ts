@@ -9,7 +9,6 @@ import type {
 } from "../../application/ports/upgrade/smoothing-commands.ts";
 import { versionTwoProjectionOver } from "../../application/projection/version-two-projection.ts";
 import {
-  createVersionTwoPlan,
   versionTwoInputsOf,
   type VersionTwoStages,
   versionTwoRunOver,
@@ -120,7 +119,7 @@ const runRemoveCarried = async (
   const run = await versionTwoRunOver({
     stages: reach.stages,
     inputs: inputs.value,
-    plan: createVersionTwoPlan({ ...inputs.value.settings.runSettings, measuring: "always" }),
+    plan: { ...inputs.value.settings.runSettings, measuring: "always" },
   });
   if (run.outcome === "failed") return runFailed({ failure: run.error });
   const { report, catalogue } = run.value;

@@ -73,32 +73,25 @@ export type VersionTwoStages = {
 };
 
 export type VersionTwoPlan = {
-  readonly scope: TouchedScope;
-  readonly answer: FindingAssessment;
-  readonly reportOutput: VersionTwoReportOutput;
-};
-
-export const createVersionTwoPlan = (request: {
   readonly assessment: Assessment<CheckForfeiture>;
   readonly reportOutput: VersionTwoReportOutput;
   readonly measuring: TouchedMeasuring;
-}): VersionTwoPlan => {
-  const { reportOutput, measuring } = request;
+};
+
+const selectForfeiture = (
+  request: VersionTwoPlan,
+): {
+  readonly scope: TouchedScope;
+  readonly answer: FindingAssessment;
+} => {
+  const { measuring } = request;
   switch (request.assessment.forfeiture) {
     case "this-run":
-      return {
-        scope: { baseScope: "merge-base", measuring },
-        answer: answerFindings,
-        reportOutput,
-      };
+      return { scope: { baseScope: "merge-base", measuring }, answer: answerFindings };
     case "elsewhere":
-      return { scope: { baseScope: "elsewhere" }, answer: answerFindings, reportOutput };
+      return { scope: { baseScope: "elsewhere" }, answer: answerFindings };
     case "no-new-findings":
-      return {
-        scope: { baseScope: "pinned-ancestor" },
-        answer: answerCountedFindings,
-        reportOutput,
-      };
+      return { scope: { baseScope: "pinned-ancestor" }, answer: answerCountedFindings };
   }
 };
 
@@ -220,7 +213,7 @@ export const versionTwoRunOver = async (request: {
     return measured;
   }
   const { catalogue, settings, records, content, tree, runs } = measured.value;
-  const { scope, answer, reportOutput } = request.plan;
+  const { scope, answer } = selectForfeiture(request.plan);
   const { moved, followed, touched } = createRecordsAfterRenames({
     stages: request.stages,
     scope,
@@ -251,7 +244,7 @@ export const versionTwoRunOver = async (request: {
       touched,
       runs,
       moved,
-      output: reportOutput,
+      output: request.plan.reportOutput,
     },
   };
 };

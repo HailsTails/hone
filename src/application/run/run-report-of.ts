@@ -24,7 +24,7 @@ import { carriedListingOf } from "../../domain/records/hone-records/record-listi
 import type { RunMeasurements } from "../../domain/records/measurement/measured-at.ts";
 import {
   carriedJudgementOf,
-  recordsUnmeasuredOf,
+  unmeasuredCarriedRecords,
 } from "../../domain/records/measurement/records-unmeasured.ts";
 import type {
   AssessmentLeftElsewhere,
@@ -161,8 +161,8 @@ const reportAfterAnswering = (
     misnamed: runs.flatMap((run) => run.misnamedRuleIds),
     paid: answering.paid,
     refused: records.refused,
-    unmeasured: request.unmeasured,
-    ...(answering.debtComparison === undefined ? {} : { debtComparison: answering.debtComparison }),
+    unmeasured: [...answering.unmeasured, ...request.unmeasured],
+    ...(answering.judged === "counted-debt" ? { debtComparison: answering.debtComparison } : {}),
     assessment: assessmentOf(request),
     "settings-notes": request.notes,
     "record-notes": records.notes,
@@ -244,14 +244,13 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
   );
   const measurements = runMeasurementsOf({ ...request, selected });
   const unmeasured = [
-    ...recordsUnmeasuredOf({
+    ...unmeasuredCarriedRecords({
       records: records.records,
       base: records.base,
       touched: request.touched,
     }),
     ...engineUnmeasuredOf({ ...request, selected }),
   ];
-  const comparisonUnmeasured = unmeasured.filter(({ kind }) => kind !== "forfeiture-unmeasured");
   const answering = request.answer({
     ...request,
     records: records.records,
@@ -261,7 +260,7 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
       createComparisonEvidence({
         ...request,
         status,
-        unmeasured: comparisonUnmeasured,
+        unmeasured,
         selected,
         measurements,
       }),
@@ -271,6 +270,6 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
     ...request,
     answering: answering.value,
     status,
-    unmeasured: answering.value.debtComparison === undefined ? unmeasured : comparisonUnmeasured,
+    unmeasured,
   });
 };

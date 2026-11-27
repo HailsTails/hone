@@ -39,7 +39,6 @@ import type {
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import {
-  createVersionTwoPlan,
   versionTwoInputsOf,
   type VersionTwoRun,
   versionTwoRunOver,
@@ -258,10 +257,10 @@ const versionTwoRunFor = async (request: {
   return versionTwoRunOver({
     stages,
     inputs: inputs.value,
-    plan: createVersionTwoPlan({
+    plan: {
       ...inputs.value.settings.runSettings,
       measuring: "when-debt-held",
-    }),
+    },
   });
 };
 

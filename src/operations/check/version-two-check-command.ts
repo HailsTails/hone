@@ -1,6 +1,5 @@
 import type { CheckArguments } from "../../application/ports/command/command-arguments.ts";
 import {
-  createVersionTwoPlan,
   versionTwoInputsOf,
   type VersionTwoRun,
   type VersionTwoStages,
@@ -28,7 +27,7 @@ export const versionTwoCheckOf = async (
   return versionTwoRunOver({
     stages: request.stages,
     inputs: inputs.value,
-    plan: createVersionTwoPlan({
+    plan: {
       assessment: assessmentInEffect({
         requested: request.arguments,
         configured: configured.assessment,
@@ -38,6 +37,6 @@ export const versionTwoCheckOf = async (
         configured: configured.reportOutput,
       }),
       measuring: "when-debt-held",
-    }),
+    },
   });
 };

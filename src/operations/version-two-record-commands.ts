@@ -12,7 +12,6 @@ import {
 import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
 import {
   settledCatalogueOf,
-  createVersionTwoPlan,
   versionTwoInputsOf,
   type VersionTwoRun,
   type VersionTwoStages,
@@ -92,7 +91,7 @@ export const versionTwoRecordDebtOf = async (
     stages: request.stages,
     projectCommand: request.projectCommand,
     inputs: inputs.value,
-    plan: createVersionTwoPlan({ ...inputs.value.settings.runSettings, measuring: "always" }),
+    plan: { ...inputs.value.settings.runSettings, measuring: "always" },
   });
   if (run.outcome === "failed") {
     return run;
@@ -133,11 +132,11 @@ export const versionTwoPruneDebtOf = async (
     stages: request.stages,
     projectCommand: request.projectCommand,
     inputs: inputs.value,
-    plan: createVersionTwoPlan({
+    plan: {
       ...configured,
       assessment: assessmentInEffect({ requested: request, configured: configured.assessment }),
       measuring: "when-debt-held",
-    }),
+    },
   });
   if (run.outcome === "failed") {
     return run;

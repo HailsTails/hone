@@ -20,6 +20,10 @@ import {
   type RunMeasurements,
 } from "../measurement/measured-at.ts";
 import {
+  type RecordsUnmeasured,
+  unmeasuredDebtForfeiture,
+} from "../measurement/records-unmeasured.ts";
+import {
   compareDebt,
   type DebtComparison,
   type DebtComparisonEvidence,
@@ -81,7 +85,7 @@ type ComparisonRequest = AnsweringRequest & {
 
 export type FindingAssessment = (request: ComparisonRequest) => Result<Answering, SymptomUnheld>;
 
-export type Answering = {
+type FindingAnswers = {
   readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
   readonly held: readonly HeldException[];
@@ -89,8 +93,20 @@ export type Answering = {
   readonly forfeited: readonly PlacedRecord[];
   readonly paid: readonly PaidDebt[];
   readonly unrecorded: readonly AttributedCheckException[];
-  readonly debtComparison?: DebtComparison;
 };
+
+type TouchedFileAnswering = FindingAnswers & {
+  readonly judged: "touched-debt";
+  readonly unmeasured: readonly RecordsUnmeasured[];
+};
+
+type CountedAnswering = FindingAnswers & {
+  readonly judged: "counted-debt";
+  readonly unmeasured: readonly RecordsUnmeasured[];
+  readonly debtComparison: DebtComparison;
+};
+
+export type Answering = TouchedFileAnswering | CountedAnswering;
 
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
@@ -394,7 +410,7 @@ const heldExceptions = (request: {
 
 const judgeFindings = (
   request: AnsweringRequest & { readonly forfeited: readonly PlacedRecord[] },
-): Result<Answering, SymptomUnheld> => {
+): Result<FindingAnswers, SymptomUnheld> => {
   const { catalogue, content, forfeited } = request;
   const forfeit = new Set(forfeited);
   const inForce = request.records.filter((placed) => !forfeit.has(placed));
@@ -443,10 +459,25 @@ const judgeFindings = (
   };
 };
 
-export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> =>
-  judgeFindings({ ...request, forfeited: forfeitedRecords(request) });
+export const answerFindings = (
+  request: AnsweringRequest,
+): Result<TouchedFileAnswering, SymptomUnheld> => {
+  const judged = judgeFindings({ ...request, forfeited: forfeitedRecords(request) });
+  return judged.outcome === "failed"
+    ? judged
+    : {
+        outcome: "ok",
+        value: {
+          ...judged.value,
+          judged: "touched-debt",
+          unmeasured: unmeasuredDebtForfeiture(request),
+        },
+      };
+};
 
-export const answerCountedFindings: FindingAssessment = (request) => {
+export const answerCountedFindings = (
+  request: ComparisonRequest,
+): Result<CountedAnswering, SymptomUnheld> => {
   const judged = judgeFindings({ ...request, forfeited: [] });
   if (judged.outcome === "failed") return judged;
   const comparison = request.readComparison();
@@ -461,6 +492,8 @@ export const answerCountedFindings: FindingAssessment = (request) => {
     outcome: "ok",
     value: {
       ...judged.value,
+      judged: "counted-debt",
+      unmeasured: [],
       debtComparison: compareDebt({
         ...comparison,
         records: request.records,

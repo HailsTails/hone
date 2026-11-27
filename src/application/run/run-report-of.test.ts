@@ -882,12 +882,19 @@ describe("namedRunReportOf, findings and records", () => {
 });
 
 describe("namedRunReportOf, what the run could not measure", () => {
-  it("lists debt unmeasured for forfeiture when no base revision was given, beside an engine whose projection is not written", () => {
+  it("lists unmeasured forfeiture before unmeasured carryover and a missing engine projection", () => {
     expect(
       namedRunReportOf({
         ...REQUEST,
         touched: { measured: "no", base: { state: "not-given" } },
-        records: { ...NO_RECORDS, records: [debtAt({ file: FILE_B, index: 0 })] },
+        records: {
+          ...NO_RECORDS,
+          base: { measured: "no", base: { state: "not-given" } },
+          records: [
+            debtAt({ file: FILE_B, index: 0 }),
+            carriedLocationAt({ file: FILE_A, index: 1 }),
+          ],
+        },
         runs: [eslintRunOf({ hits: [], projection: "missing" })],
       }),
     ).toMatchObject({
@@ -895,6 +902,7 @@ describe("namedRunReportOf, what the run could not measure", () => {
       value: {
         unmeasured: [
           { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
+          { kind: "import-unmeasured", base: { state: "not-given" } },
           {
             kind: "engine-not-run",
             engine: ESLINT_ENGINE,
