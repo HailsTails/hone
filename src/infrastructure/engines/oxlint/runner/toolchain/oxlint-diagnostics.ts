@@ -52,10 +52,17 @@ export const runOxlintCommand = (request: {
   readonly cli: string;
   readonly folder: AbsolutePath;
   readonly arguments: readonly string[];
+  readonly loader?: string;
+  readonly input?: string;
 }): string => {
   const executed = execution.run({
-    arguments: [request.cli, ...request.arguments],
+    arguments: [
+      ...(request.loader === undefined ? [] : ["--loader", request.loader]),
+      request.cli,
+      ...request.arguments,
+    ],
     cwd: request.folder,
+    ...(request.input === undefined ? {} : { input: request.input }),
   });
   if (executed.outcome === "failed") throw new Error(executed.error.detail);
   const { status, stdout, stderr } = executed.value;

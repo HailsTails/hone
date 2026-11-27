@@ -38,7 +38,14 @@ const RUNNER_ENTRY = /^src\/infrastructure\/engines\/[^/]+\/runner\/runner\.ts$/
 
 const TOP_LEVEL_PROCESS_ENTRY = /^src\/[^/]+\.process\.ts$/;
 
-const PROCESS_ENTRY_SHAPES = [RUNNER_ENTRY, TOP_LEVEL_PROCESS_ENTRY] as const;
+const OXLINT_GOVERNANCE_ENTRY =
+  /^src\/infrastructure\/engines\/oxlint\/runner\/toolchain\/governance-config\.process\.ts$/;
+
+const PROCESS_ENTRY_SHAPES = [
+  RUNNER_ENTRY,
+  TOP_LEVEL_PROCESS_ENTRY,
+  OXLINT_GOVERNANCE_ENTRY,
+] as const;
 
 const PIECE_FILE = /^src\/infrastructure\/engines\/([^/]+)\/([^/]+)\/piece\.json$/;
 

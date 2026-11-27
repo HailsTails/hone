@@ -16,7 +16,7 @@ import type {
   runConfiguredOxlint,
 } from "../toolchain/configured-oxlint.ts";
 import { mapDisabledChecks } from "./inline.ts";
-import { answersCheck, type ProjectionRule } from "./oxlint-projection.ts";
+import type { ProjectionRule } from "./oxlint-projection.ts";
 import type { PlannedProjection } from "./project.ts";
 
 const path = createDefaultPathPort({});
@@ -31,12 +31,13 @@ export type ScopeObservation = {
   readonly nativeExceptions: readonly CheckNativeException[];
 };
 
-type ScopeRequest = Pick<NamedEngineRunRequest, "repoRoot" | "answered"> & {
+type ScopeRequest = Pick<NamedEngineRunRequest, "repoRoot"> & {
   readonly scope: PlannedProjection;
   readonly rules: readonly ProjectionRule[];
   readonly fileText: Pick<FileTextPort, "read">;
   readonly resolveCli: () => Result<string, RunnerFailure>;
   readonly disableConfiguration: string;
+  readonly governanceLoader: string;
   readonly configured: typeof runConfiguredOxlint;
 };
 
@@ -117,17 +118,6 @@ const mapScopeObservations = (
         .flatMap(({ file }) =>
           checks.map((check): CheckNativeException => ({ kind: "ignore", check, file })),
         ),
-      ...request.answered
-        .filter(({ file }) => scope.files.includes(file))
-        .flatMap((answer) =>
-          rules
-            .filter(({ binding }) => answersCheck({ binding, answer }))
-            .map(({ binding }): CheckNativeException => ({
-              kind: "config-override",
-              check: binding.address,
-              file: answer.file,
-            })),
-        ),
     ],
   };
 };
@@ -147,6 +137,7 @@ const observeIncluded = (
   const observed = request.configured({
     cli: toolchain.value,
     disableConfiguration: request.disableConfiguration,
+    governanceLoader: request.governanceLoader,
     folder: absolutePathSchema.parse(path.join({ segments: [request.repoRoot, scope.folder] })),
     config: request.config.slice(request.config.lastIndexOf("/") + 1),
     projection: scope.file.slice(scope.file.lastIndexOf("/") + 1),

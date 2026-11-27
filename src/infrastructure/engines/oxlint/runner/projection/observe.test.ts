@@ -20,13 +20,13 @@ describe("observeProjection", () => {
         generated: { kind: "write", file, text: "{}\n" },
       },
       repoRoot: absoluteRootOf("/repo"),
-      answered: [],
       rules: [],
       fileText: {
         read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: "{}" }),
       },
       resolveCli: vi.fn(),
       disableConfiguration: "/install/disable-inspection.json",
+      governanceLoader: "file:///install/governance-config.process.js",
       configured,
     });
 

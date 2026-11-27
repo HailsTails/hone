@@ -17,11 +17,11 @@ import {
   type DisableDirective,
 } from "./oxlint-directives.ts";
 
-const configSchema = z.object({
+const configSchema = z.looseObject({
   jsPlugins: z.array(z.object({ name: z.string(), specifier: z.string() })).nullish(),
   overrides: z
     .array(
-      z.object({
+      z.looseObject({
         files: z.array(z.string()),
         rules: z
           .record(z.string(), z.json())
@@ -72,13 +72,57 @@ export const readEffectiveChecks = (request: {
   }),
 });
 
-const configurationState = (request: {
+export const removeProjectedOffSwitches = (request: {
+  readonly config: EffectiveConfig;
+  readonly ids: ReadonlySet<string>;
+  readonly projectedOverrides: number;
+}): EffectiveConfig => {
+  const overrides = request.config.overrides ?? [];
+  const recorded = new Set(
+    overrides
+      .filter(({ rules }) => Object.keys(rules).some((id) => request.ids.has(id)))
+      .slice(-request.projectedOverrides)
+      .slice(1),
+  );
+  return {
+    ...request.config,
+    overrides: overrides.map((entry) =>
+      recorded.has(entry)
+        ? {
+            ...entry,
+            rules: Object.fromEntries(
+              Object.entries(entry.rules).filter(([id]) => !request.ids.has(id)),
+            ),
+          }
+        : entry,
+    ),
+  };
+};
+
+type LintConfiguration = {
+  readonly config: string;
+  readonly loader?: string;
+  readonly input?: string;
+};
+
+const createGovernanceConfiguration = (request: {
+  readonly loader: string;
+  readonly input: EffectiveConfig;
+}): LintConfiguration => {
+  const config = `.hone-oxlint-governance-${crypto.randomUUID()}.mjs`;
+  const loader = new URL(request.loader);
+  loader.searchParams.set("configuration", config);
+  return { config, loader: loader.href, input: JSON.stringify(request.input) };
+};
+
+const readConfiguration = (request: {
   readonly cli: string;
   readonly folder: AbsolutePath;
   readonly config: string;
   readonly projection: string;
   readonly rules: readonly string[];
-}): "included" | "not-included" => {
+  readonly governanceLoader: string;
+}): LintConfiguration | undefined => {
   const projected = printConfiguration({ ...request, config: request.projection });
   const active = printConfiguration(request);
   const ids = new Set(
@@ -92,15 +136,26 @@ const configurationState = (request: {
   const preservesOverrides =
     JSON.stringify(configured.overrides.slice(-required.overrides.length)) ===
     JSON.stringify(required.overrides);
-  return preservesOverrides &&
-    JSON.stringify(configured.plugins) === JSON.stringify(required.plugins)
-    ? "included"
-    : "not-included";
+  if (
+    !preservesOverrides ||
+    JSON.stringify(configured.plugins) !== JSON.stringify(required.plugins)
+  )
+    return undefined;
+  return required.overrides.length < 2
+    ? { config: request.config }
+    : createGovernanceConfiguration({
+        loader: request.governanceLoader,
+        input: removeProjectedOffSwitches({
+          config: active,
+          ids,
+          projectedOverrides: required.overrides.length,
+        }),
+      });
 };
 
 type ConfiguredSource = { readonly fileName: string; readonly source: string };
 
-type BatchRequest = {
+type ConfiguredRequest = {
   readonly cli: string;
   readonly folder: AbsolutePath;
   readonly config: string;
@@ -108,6 +163,8 @@ type BatchRequest = {
   readonly sources: readonly ConfiguredSource[];
   readonly disableConfiguration: string;
 };
+
+type BatchRequest = ConfiguredRequest & { readonly lint: LintConfiguration };
 
 type BatchObservation = {
   readonly linted: readonly string[];
@@ -137,15 +194,10 @@ const readBatchDisables = (request: BatchRequest): readonly DisableDirective[] =
 const runBatch = (request: BatchRequest): BatchObservation => {
   const files = request.sources.map(({ fileName }) => fileName);
   const disables = readBatchDisables(request);
-  const configurationArguments = [
-    "--config",
-    request.config,
-    "--disable-nested-config",
-    "--no-error-on-unmatched-pattern",
-  ];
+  const scopeArguments = ["--disable-nested-config", "--no-error-on-unmatched-pattern"];
   const listing = runOxlintCommand({
     ...request,
-    arguments: [...configurationArguments, "--debug=files", "--", ...files],
+    arguments: ["--config", request.config, ...scopeArguments, "--debug=files", "--", ...files],
   });
   const linted = listing
     .split(/\r?\n/u)
@@ -156,7 +208,16 @@ const runBatch = (request: BatchRequest): BatchObservation => {
   const output = readOxlintDiagnostics(
     runOxlintCommand({
       ...request,
-      arguments: [...configurationArguments, "--format=json", "--threads=1", "--", ...files],
+      ...request.lint,
+      arguments: [
+        "--config",
+        request.lint.config,
+        ...scopeArguments,
+        "--format=json",
+        "--threads=1",
+        "--",
+        ...linted,
+      ],
     }),
   );
   if (output.number_of_files !== linted.length)
@@ -200,14 +261,16 @@ export type ConfiguredOxlintResult =
   | ({ readonly state: "included" } & BatchObservation);
 
 export const runConfiguredOxlint = (
-  request: BatchRequest & {
+  request: ConfiguredRequest & {
     readonly projection: string;
+    readonly governanceLoader: string;
   },
 ): Result<ConfiguredOxlintResult, RunnerFailure> => {
   try {
-    const state = configurationState(request);
-    if (state === "not-included") return { outcome: "ok", value: { state } };
-    return { outcome: "ok", value: { state, ...runBatches(request) } };
+    const lint = readConfiguration(request);
+    return lint === undefined
+      ? { outcome: "ok", value: { state: "not-included" } }
+      : { outcome: "ok", value: { state: "included", ...runBatches({ ...request, lint }) } };
   } catch (thrown) {
     return {
       outcome: "failed",

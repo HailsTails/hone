@@ -42,7 +42,7 @@ const pluginSpecifier = (request: {
     : request.module;
 };
 
-export const answersCheck = (request: {
+const answersCheck = (request: {
   readonly answer: AnsweredFile;
   readonly binding: CheckBinding;
 }) => {
