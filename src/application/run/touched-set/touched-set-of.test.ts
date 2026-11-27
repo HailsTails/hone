@@ -170,3 +170,24 @@ describe("touchedSetOf", () => {
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
   });
 });
+
+it("requires a pinned ancestor for the landing comparison even with an empty ledger", () => {
+  const git = gitChanging({ files: [FILE_A] });
+
+  const touched = touchedSetOf({
+    assessment: { forfeiture: "this-run" },
+    measuring: "landing-comparison",
+    records: [],
+    repoRoot: REPO,
+    baseRevision: "pinned",
+    git,
+    renamed: { measured: "yes", renamed: new Map() },
+  });
+
+  expect(git.changedSince).toHaveBeenCalledExactlyOnceWith({
+    repoRoot: REPO,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+  });
+  expect(touched).toEqual({ measured: "yes", paths: new Set([FILE_A]) });
+});

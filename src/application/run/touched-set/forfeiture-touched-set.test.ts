@@ -100,3 +100,25 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
     ).toEqual({ measured: "no", base: { state: "not-given" } });
   });
 });
+
+it("keeps the pinned-ancestor requirement when measuring forfeiture this run", () => {
+  const changedSince = vi
+    .fn<GitPort["changedSince"]>()
+    .mockReturnValue({ outcome: "ok", value: [] });
+
+  const touched = touchedSetUnder({
+    forfeiture: "this-run",
+    repoRoot: REPO_ROOT,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+    git: { changedSince },
+    renamed: { measured: "yes", renamed: new Map() },
+  });
+
+  expect(changedSince).toHaveBeenCalledExactlyOnceWith({
+    repoRoot: REPO_ROOT,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+  });
+  expect(touched).toEqual({ measured: "yes", paths: new Set() });
+});

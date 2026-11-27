@@ -25,7 +25,8 @@ export const versionTwoCheckOf = (
       forfeiture:
         request.arguments.compareDebtAt === undefined ? request.arguments.forfeiture : "this-run",
       reportOutput: request.arguments.reportOutput,
-      measuring: request.arguments.compareDebtAt === undefined ? "when-debt-held" : "always",
+      measuring:
+        request.arguments.compareDebtAt === undefined ? "when-debt-held" : "landing-comparison",
       ...(request.arguments.compareDebtAt === undefined
         ? {}
         : { compareDebtAt: request.arguments.compareDebtAt }),

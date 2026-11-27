@@ -156,7 +156,7 @@ export const mapRunReportToFailingLines = (
 const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
   switch (issue.kind) {
     case "base-unavailable":
-      return "landing records or changes could not be read";
+      return "landing records or changes could not be read. Fetch the landing history and update your branch to include the pinned landing commit.";
     case "base-refused":
       return "landing records could not be validated";
     case "settings-changed":

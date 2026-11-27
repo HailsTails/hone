@@ -2,6 +2,7 @@ import type {
   BaseContentMembership,
   BaseFileText,
   CommitRecord,
+  GitChangeQuery,
   GitContentQuery,
   GitHistoryPort,
   GitPort,
@@ -167,23 +168,20 @@ type GitContext = {
   readonly repoRoot: AbsolutePath;
 };
 
-const changedPaths = (
-  request: GitContext & { readonly baseRevision: string },
+const diffChangedPaths = (
+  request: GitContext & { readonly committedRange: string; readonly head: string },
 ): Result<readonly RepoPath[], GitFailure> => {
   const committed = gitPaths({
     ...request,
-    gitArguments: [
-      "diff",
-      "--name-only",
-      "-z",
-      "--end-of-options",
-      `${request.baseRevision}...HEAD`,
-    ],
+    gitArguments: ["diff", "--name-only", "-z", "--end-of-options", request.committedRange],
   });
   if (committed.outcome === "failed") {
     return committed;
   }
-  const uncommitted = gitPaths({ ...request, gitArguments: ["diff", "--name-only", "-z", "HEAD"] });
+  const uncommitted = gitPaths({
+    ...request,
+    gitArguments: ["diff", "--name-only", "-z", request.head],
+  });
   if (uncommitted.outcome === "failed") {
     return uncommitted;
   }
@@ -204,6 +202,60 @@ const objectNameStatus = (request: { readonly text: string }): "valid" | "invali
   (request.text.length === 40 || request.text.length === 64) && !/[^0-9a-f]/.test(request.text)
     ? "valid"
     : "invalid";
+
+const readLandingHead = (request: GitContext & GitChangeQuery): Result<string, GitFailure> => {
+  const resolved = gitOutput({
+    ...request,
+    gitArguments: ["rev-parse", "--verify", "--end-of-options", "HEAD^{commit}"],
+  });
+  if (resolved.outcome === "failed") return resolved;
+  const head = resolved.value.stdout.trim();
+  if (objectNameStatus({ text: head }) === "invalid") {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "git-failed",
+        command: resolved.value.command,
+        detail: "git rev-parse did not return a complete commit name for HEAD",
+      },
+    };
+  }
+  const common = gitOutput({
+    ...request,
+    gitArguments: ["merge-base", "--end-of-options", request.baseRevision, head],
+  });
+  if (common.outcome === "failed") return common;
+  return common.value.stdout.trim() === request.baseRevision
+    ? { outcome: "ok", value: head }
+    : {
+        outcome: "failed",
+        error: {
+          kind: "git-failed",
+          command: common.value.command,
+          detail: "the pinned landing commit could not be verified as an ancestor of HEAD",
+        },
+      };
+};
+
+const changedPaths = (
+  request: GitContext & GitChangeQuery,
+): Result<readonly RepoPath[], GitFailure> => {
+  if (request.baseScope !== "pinned-ancestor") {
+    return diffChangedPaths({
+      ...request,
+      committedRange: `${request.baseRevision}...HEAD`,
+      head: "HEAD",
+    });
+  }
+  const head = readLandingHead(request);
+  return head.outcome === "failed"
+    ? head
+    : diffChangedPaths({
+        ...request,
+        committedRange: `${request.baseRevision}..${head.value}`,
+        head: head.value,
+      });
+};
 
 const contentMembership = (
   request: GitContext & GitContentQuery,
@@ -418,13 +470,7 @@ export const createGitPort = (options: {
         repoRoot: request.repoRoot,
         gitArguments: ["ls-files", "-z"],
       }),
-    changedSince: (request) =>
-      changedPaths({
-        spawn: options.spawn,
-        environment,
-        repoRoot: request.repoRoot,
-        baseRevision: request.baseRevision,
-      }),
+    changedSince: (request) => changedPaths({ ...request, spawn: options.spawn, environment }),
     contentInBase: (request) =>
       contentMembership({ ...request, spawn: options.spawn, environment }),
     textInBase: (request) => fileTextInBase({ ...request, spawn: options.spawn, environment }),

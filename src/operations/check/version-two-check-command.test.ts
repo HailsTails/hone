@@ -36,53 +36,57 @@ describe("versionTwoCheckOf", () => {
   });
 });
 
+const createEmptyLedgerStages = (request: {
+  readonly touched: VersionTwoStages["touched"];
+}): VersionTwoStages => ({
+  ...stagesFailingCatalogue(),
+  catalogue: () => ({
+    outcome: "ok",
+    value: {
+      principles: [],
+      rules: [],
+      cases: [],
+      recipes: [],
+      recordKinds: [],
+      engines: [],
+      symptoms: [],
+      clauses: [],
+      checks: [],
+      namedBans: [],
+    },
+  }),
+  settings: () => ({
+    outcome: "ok",
+    value: {
+      available: [],
+      selection: {
+        selected: [],
+        notAdopted: [],
+        notRun: [],
+        excluded: [],
+        eslintConfigRoots: [],
+      },
+      runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
+      eslintConfigLookup: { lookup: "detected" },
+      eslintProjectionKind: "mjs",
+      conventions: DEFAULT_CONVENTIONS,
+      notes: [],
+    },
+  }),
+  records: () => ({
+    outcome: "ok",
+    value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+  }),
+  tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
+  engines: async () => ({ outcome: "ok", value: [] }),
+  touched: request.touched,
+});
+
 it("measures change for an explicitly requested comparison even when no debt is held", async () => {
   const touched = vi
     .fn<VersionTwoStages["touched"]>()
     .mockReturnValue({ measured: "yes", paths: new Set() });
-  const stages: VersionTwoStages = {
-    ...stagesFailingCatalogue(),
-    catalogue: () => ({
-      outcome: "ok",
-      value: {
-        principles: [],
-        rules: [],
-        cases: [],
-        recipes: [],
-        recordKinds: [],
-        engines: [],
-        symptoms: [],
-        clauses: [],
-        checks: [],
-        namedBans: [],
-      },
-    }),
-    settings: () => ({
-      outcome: "ok",
-      value: {
-        available: [],
-        selection: {
-          selected: [],
-          notAdopted: [],
-          notRun: [],
-          excluded: [],
-          eslintConfigRoots: [],
-        },
-        runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
-        eslintConfigLookup: { lookup: "detected" },
-        eslintProjectionKind: "mjs",
-        conventions: DEFAULT_CONVENTIONS,
-        notes: [],
-      },
-    }),
-    records: () => ({
-      outcome: "ok",
-      value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
-    }),
-    tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
-    engines: async () => ({ outcome: "ok", value: [] }),
-    touched,
-  };
+  const stages = createEmptyLedgerStages({ touched });
 
   const run = await versionTwoCheckOf({
     stages,
@@ -90,7 +94,10 @@ it("measures change for an explicitly requested comparison even when no debt is 
   });
 
   expect(touched).toHaveBeenCalledWith(
-    expect.objectContaining({ assessment: { forfeiture: "this-run" }, measuring: "always" }),
+    expect.objectContaining({
+      assessment: { forfeiture: "this-run" },
+      measuring: "landing-comparison",
+    }),
   );
   expect(run).toMatchObject({
     outcome: "ok",

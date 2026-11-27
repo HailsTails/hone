@@ -6,7 +6,7 @@ import type { Assessment } from "../../../domain/settings/assessment.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import { touchedSetUnder } from "./forfeiture-touched-set.ts";
 
-export type TouchedMeasuring = "when-debt-held" | "always";
+export type TouchedMeasuring = "when-debt-held" | "always" | "landing-comparison";
 
 const NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
@@ -19,7 +19,9 @@ const measurementOf = (request: {
   readonly measuring: TouchedMeasuring;
   readonly records: readonly PlacedRecord[];
 }): "needed" | "not-needed" =>
-  request.measuring === "always" || holdsDebt(request) === "holds-debt" ? "needed" : "not-needed";
+  request.measuring !== "when-debt-held" || holdsDebt(request) === "holds-debt"
+    ? "needed"
+    : "not-needed";
 
 export const touchedSetOf = (request: {
   readonly assessment: Assessment;
@@ -39,5 +41,6 @@ export const touchedSetOf = (request: {
     baseRevision: request.baseRevision,
     git: request.git,
     renamed: request.renamed,
+    ...(request.measuring === "landing-comparison" ? { baseScope: "pinned-ancestor" } : {}),
   });
 };

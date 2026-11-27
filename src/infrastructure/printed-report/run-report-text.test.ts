@@ -799,3 +799,15 @@ it("includes the comparison count or just the verdict at the requested detail", 
   expect(counts).toBe("debt comparison (1) against pinned\nverdict: fail\n");
   expect(verdict).toBe("verdict: fail\n");
 });
+
+it("explains how to restore the landing history when the preview cannot use the base", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toMatch(/update your branch.*include the pinned landing commit/);
+  expect(text).toMatch(/verdict: fail\s*$/);
+});

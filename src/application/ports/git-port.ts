@@ -16,14 +16,17 @@ export type GitContentQuery = {
   readonly file: RepoPath;
 };
 
+export type GitChangeQuery = {
+  readonly repoRoot: AbsolutePath;
+  readonly baseRevision: string;
+  readonly baseScope?: "pinned-ancestor";
+};
+
 export type GitPort = {
   readonly trackedPaths: (request: {
     readonly repoRoot: AbsolutePath;
   }) => Result<readonly RepoPath[], GitFailure>;
-  readonly changedSince: (request: {
-    readonly repoRoot: AbsolutePath;
-    readonly baseRevision: string;
-  }) => Result<readonly RepoPath[], GitFailure>;
+  readonly changedSince: (request: GitChangeQuery) => Result<readonly RepoPath[], GitFailure>;
   readonly contentInBase: (request: GitContentQuery) => Result<BaseContentMembership, GitFailure>;
   readonly textInBase: (request: GitContentQuery) => Result<BaseFileText, GitFailure>;
   readonly renamedSince: (request: {

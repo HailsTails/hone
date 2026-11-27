@@ -125,3 +125,21 @@ describe("baseRevisionAvailabilityOf", () => {
     ).toEqual({ state: "git-failed", revision: "HEAD", gitMessage: "" });
   });
 });
+
+it("passes the pinned-ancestor requirement through to change measurement", () => {
+  const changedSince = vi.fn<GitPort["changedSince"]>().mockReturnValue(okPaths());
+
+  const touched = computeTouchedSet({
+    repoRoot: REPO_ROOT,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+    git: fakeGit(changedSince),
+  });
+
+  expect(changedSince).toHaveBeenCalledExactlyOnceWith({
+    repoRoot: REPO_ROOT,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+  });
+  expect(touched).toEqual({ measured: "yes", paths: new Set([A, B]) });
+});
