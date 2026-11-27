@@ -240,7 +240,6 @@ describe("createWalkerRunner run", () => {
           },
         ],
         nativeExceptions: [],
-        inapplicable: [],
         measured: [
           { check: FIRST, file: ALPHA },
           { check: SECOND, file: ALPHA },

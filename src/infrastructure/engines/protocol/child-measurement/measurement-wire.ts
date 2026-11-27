@@ -73,7 +73,14 @@ export const createMeasurementInput = (request: { readonly tree: CheckedTree }):
 const mapRunToEngineReply = (request: {
   readonly run: NamedEngineRun;
 }): z.input<typeof engineReplySchema> => {
-  const { mechanism, coverableKinds, comparedOutputs, ...report } = request.run;
+  const {
+    mechanism,
+    coverableKinds,
+    comparedOutputs,
+    candidateFiles: _candidateFiles,
+    inapplicable: _inapplicable,
+    ...report
+  } = request.run;
   return { mechanism, coverableKinds, report, comparedOutputs };
 };
 

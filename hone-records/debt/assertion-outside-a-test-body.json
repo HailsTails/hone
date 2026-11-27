@@ -163,10 +163,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/piece.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/date-used-directly/clock-sources/clock-sources.test.ts"
     },
     {

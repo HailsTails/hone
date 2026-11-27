@@ -50,30 +50,34 @@ describe("createMeasurementInput", () => {
   });
 });
 
+const MEASURED_WITH_APPLICABILITY: NamedEngineRun = {
+  mechanism: "eslint",
+  coverableKinds: ["inline-disable"],
+  projection: "current",
+  slices: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+  misnamedRuleIds: [],
+  hits: [],
+  nativeExceptions: [
+    {
+      kind: "config-override",
+      check: "claimed-type#non-null-assertions",
+      file: repoPathOf("src/a.ts"),
+    },
+  ],
+  measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
+  candidateFiles: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+  inapplicable: [
+    { check: "claimed-type#non-null-assertions", file: repoPathOf("hone.eslint.d.mts") },
+  ],
+};
+
 describe("runEnginesMeasurement", () => {
   it("measures over the roots, base revision and tree it was given, files the repository does not track included, replying with each engine's run", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({
       outcome: "ok",
-      value: [
-        {
-          mechanism: "eslint",
-          coverableKinds: ["inline-disable"],
-          projection: "current",
-          slices: [],
-          nestedConfigurations: [],
-          unprojectedFolders: [],
-          misnamedRuleIds: [],
-          hits: [],
-          nativeExceptions: [
-            {
-              kind: "config-override",
-              check: "claimed-type#non-null-assertions",
-              file: repoPathOf("src/a.ts"),
-            },
-          ],
-          measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
-        },
-      ],
+      value: [MEASURED_WITH_APPLICABILITY],
     });
     const request: RequestPort = {
       read: vi

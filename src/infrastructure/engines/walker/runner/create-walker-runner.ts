@@ -170,7 +170,7 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        inapplicable: observed.value.inapplicable.map((check) => ({
+        inapplicable: (observed.value.inapplicable ?? []).map((check) => ({
           check,
           file: request.file.file,
         })),
@@ -339,19 +339,20 @@ const conformCases = (request: {
 export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
   run: async (request) => {
     const walked = await runOverRepository({ ports, run: request });
-    return walked.outcome === "failed"
-      ? walked
-      : {
-          outcome: "ok",
-          value: {
-            ...walked.value,
-            projection: "none",
-            slices: [],
-            misnamedRuleIds: [],
-            nestedConfigurations: [],
-            unprojectedFolders: [],
-          },
-        };
+    if (walked.outcome === "failed") return walked;
+    const { inapplicable, ...observations } = walked.value;
+    return {
+      outcome: "ok",
+      value: {
+        ...observations,
+        ...(inapplicable.length === 0 ? {} : { inapplicable }),
+        projection: "none",
+        slices: [],
+        misnamedRuleIds: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
+      },
+    };
   },
   conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
   project: () => Promise.resolve({ outcome: "ok", value: [] }),

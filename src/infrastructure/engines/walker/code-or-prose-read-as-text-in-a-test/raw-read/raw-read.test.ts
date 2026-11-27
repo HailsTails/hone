@@ -226,7 +226,7 @@ describe("raw reads", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [] },
+      value: { hits: [], nativeExceptions: [], applicable: [], inapplicable: [BINDING.address] },
     });
   });
 

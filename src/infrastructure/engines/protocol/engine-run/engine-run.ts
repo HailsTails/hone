@@ -92,6 +92,9 @@ export const createRunnerLoader =
       : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
   };
 
+const filesInScope = (scope: ParsedNamedRunner["fileScope"], request: NamedEngineRunRequest) =>
+  scope === "tracked" ? request.trackedPaths : request.files;
+
 const mapCallToRunnerRequest = (call: NamedEngineCall): NamedEngineRunRequest => ({
   ...call.request,
   bindings: call.request.bindings.filter(({ engine }) => engine === call.mechanism),
@@ -103,7 +106,7 @@ const verifiedNamedRun = (request: {
   readonly report: z.output<typeof namedChecksRunReportSchema>;
 }): NamedOutcome<NamedEngineRun> => {
   const { call, requested, report } = request;
-  const files = call.runner.fileScope === "tracked" ? requested.trackedPaths : requested.files;
+  const files = filesInScope(call.runner.fileScope, requested);
   const checked = checkedObservations({ requested: { ...requested, files }, report });
   return checked.outcome === "failed"
     ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
@@ -113,7 +116,6 @@ const verifiedNamedRun = (request: {
           ...checked.value,
           mechanism: call.mechanism,
           coverableKinds: call.runner.projectedKinds,
-          ...(report.inapplicable === undefined ? {} : { candidateFiles: files }),
         },
       };
 };
@@ -229,7 +231,19 @@ const bindRunner = (location: NamedEngineLocation, runner: ParsedNamedRunner) =>
         : request,
   });
   return {
-    run: (request: NamedEngineRunRequest) => runNamedEngine(createCall(request)),
+    run: async (request: NamedEngineRunRequest): Promise<NamedOutcome<NamedEngineRun>> => {
+      const candidateFiles = filesInScope(runner.fileScope, request);
+      const scoped =
+        mechanism === "walker" ? { ...request, trackedPaths: candidateFiles } : request;
+      const run = await runNamedEngine(createCall(scoped));
+      if (run.outcome === "failed") return run;
+      return mechanism === "walker" || run.value.inapplicable !== undefined
+        ? {
+            outcome: "ok",
+            value: { ...run.value, candidateFiles },
+          }
+        : run;
+    },
     project: (request: NamedEngineRunRequest) => projectNamedEngine(createCall(request)),
   };
 };

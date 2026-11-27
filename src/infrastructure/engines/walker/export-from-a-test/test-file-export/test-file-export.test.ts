@@ -175,7 +175,7 @@ describe("test-file exports", () => {
 
       expect(observed).toEqual({
         outcome: "ok",
-        value: { hits: [], nativeExceptions: [], applicable: [] },
+        value: { hits: [], nativeExceptions: [], applicable: [], inapplicable: [BINDING.address] },
       });
     },
   );
@@ -254,7 +254,7 @@ describe("test-file exports", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [] },
+      value: { hits: [], nativeExceptions: [], applicable: [], inapplicable: [BINDING.address] },
     });
   });
 
