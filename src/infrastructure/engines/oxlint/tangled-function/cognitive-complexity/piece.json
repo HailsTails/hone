@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "function"
+  },
+  "settings": {
+    "rule": "cognitive-complexity",
+    "pluginNamespace": "hone-tangled-function-cognitive-complexity",
+    "module": "function-complexity.ts"
+  },
+  "moduleScope": "shared"
+}

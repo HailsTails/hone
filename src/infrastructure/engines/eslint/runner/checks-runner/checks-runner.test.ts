@@ -168,6 +168,7 @@ const CLASS_BINDINGS: NamedEslintRunRequest["bindings"] = [
     address: "authored-class-or-this#class-keyword",
     ruleSet: TOOL_RULE_SET,
     engine: "eslint",
+    checkOptions: { kind: "none" },
     pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
     settings: ESLINT_CD_14_PIECE.settings,
     anchor: { kind: "keyword", keyword: "class" },
@@ -340,6 +341,7 @@ describe("checksRunnerOver, measuring an inspected version one projection", () =
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
+          recovery: { kind: "include-projection" },
           projectionFile: "disciplines.eslint.mjs",
           slices: [],
         },
@@ -647,6 +649,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
       outcome: "ok",
       value: {
         projection: "not-included",
+        recovery: { kind: "include-projection" },
         projectionFile: "hone.eslint.mjs",
         nestedConfigurations: [NESTED_FOLDER],
         unprojectedFolders: [{ folder: NESTED_FOLDER, selectionFolder: NESTED_FOLDER }],
@@ -674,6 +677,7 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
+          recovery: { kind: "include-projection" },
           projectionFile: "hone.eslint.mjs",
           slices: [],
         },
@@ -1188,7 +1192,11 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         projection: "current",
         slices: [
           { file: PACKAGE_SLICE_PATH, state: "missing" },
-          { file: PACKAGE_SLICE_PATH, state: "unconfigured" },
+          {
+            file: PACKAGE_SLICE_PATH,
+            state: "unconfigured",
+            recovery: { kind: "generate-configuration" },
+          },
         ],
       },
     });
@@ -1220,7 +1228,13 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
-          slices: [{ file: PACKAGE_SLICE_PATH, state: "unconfigured" }],
+          slices: [
+            {
+              file: PACKAGE_SLICE_PATH,
+              state: "unconfigured",
+              recovery: { kind: "generate-configuration" },
+            },
+          ],
         },
       },
       linted: [[{ files: request.files }]],

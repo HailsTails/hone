@@ -3,15 +3,7 @@
   "records": [
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/disciplines-file/consumer-selection.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
     },
     {
       "answers": "shorthand-name#identifier-names",

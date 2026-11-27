@@ -19,6 +19,7 @@ import {
   conformedCases,
   conformedNamedCases,
   configuredClause,
+  type LoadConfiguredPlugin,
   type LoadedClause,
   type Outcome,
   parsedPluginOf,
@@ -86,10 +87,6 @@ const LOADED: Outcome<LoadedClause<ConfiguredClause>> = {
   outcome: "ok",
   value: { ...CONFIGURED, plugin: PLUGIN },
 };
-
-type LoadsPlugin = (request: {
-  readonly configured: ConfiguredClause;
-}) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
 
 const eslintLinting = (
   lintSourceCases: EslintPort["lintSourceCases"],
@@ -244,13 +241,24 @@ describe("conformedCases", () => {
       options: ["first"],
       optionsByEdition: { "2": ["second"] },
     };
-    const loadedPlugin = vi.fn<LoadsPlugin>().mockImplementation(async ({ configured }) => ({
+    const second = editionOf("2");
+    const clause = { ...CLASS_CLAUSE, edition: second, settings };
+    const loadedPlugin = vi.fn<LoadConfiguredPlugin>().mockResolvedValue({
       outcome: "ok",
-      value: { ...configured, plugin: PLUGIN },
-    }));
+      value: {
+        ...CONFIGURED,
+        clause,
+        settings: {
+          ...CONFIGURED.settings,
+          options: ["first"],
+          optionsByEdition: new Map([[second, ["second"]]]),
+        },
+        plugin: PLUGIN,
+      },
+    });
     await expect(
       conformedCases({
-        clause: { ...CLASS_CLAUSE, edition: editionOf("2"), settings },
+        clause,
         cases: [CLASS_CASE],
         path: POSIX_PATH,
         eslint: eslintLinting(lintSourceCases),
@@ -275,7 +283,7 @@ describe("conformedCases", () => {
     const lintSourceCases = vi
       .fn<EslintPort["lintSourceCases"]>()
       .mockResolvedValue(CLASS_VERDICTS);
-    const loadedPlugin = vi.fn<LoadsPlugin>().mockResolvedValue(LOADED);
+    const loadedPlugin = vi.fn<LoadConfiguredPlugin>().mockResolvedValue(LOADED);
     await expect(
       conformedCases({
         clause: CLASS_CLAUSE,
@@ -314,14 +322,14 @@ describe("conformedCases", () => {
         cases: [CLASS_CASE],
         path: POSIX_PATH,
         eslint: eslintLinting(lintSourceCases),
-        loadedPlugin: vi.fn<LoadsPlugin>().mockResolvedValue(failure),
+        loadedPlugin: vi.fn<LoadConfiguredPlugin>().mockResolvedValue(failure),
       }),
     ).resolves.toEqual(failure);
     expect(lintSourceCases).not.toHaveBeenCalled();
   });
 
   it("is piece-invalid, loading nothing, for settings outside the schema", async () => {
-    const loadedPlugin = vi.fn<LoadsPlugin>();
+    const loadedPlugin = vi.fn<LoadConfiguredPlugin>();
     await expect(
       conformedCases({
         clause: { ...CLASS_CLAUSE, settings: {} },
@@ -341,7 +349,7 @@ describe("conformedCases", () => {
         cases: [CLASS_CASE],
         path: POSIX_PATH,
         eslint: eslintLinting(vi.fn<EslintPort["lintSourceCases"]>()),
-        loadedPlugin: vi.fn<LoadsPlugin>().mockResolvedValue(LOADED),
+        loadedPlugin: vi.fn<LoadConfiguredPlugin>().mockResolvedValue(LOADED),
       }),
     ).resolves.toMatchObject({
       outcome: "failed",
@@ -363,14 +371,16 @@ describe("conformedNamedCases", () => {
       conformedNamedCases({
         binding: {
           address: "authored-class-or-this#class-keyword",
-          ruleSet: TOOL_RULE_SET,
+          ruleSet: { name: ruleSetNameOf("acme") },
           engine: "eslint",
+          checkOptions: { kind: "piece" },
           anchor: CLASS_CLAUSE.anchor,
           pieceRoot: PIECE_ROOT,
           checkSettings: {},
           edition: editionOf("2"),
           settings: {
             ...CONFIGURED.settings,
+            pluginNamespace: "acme",
             options: [{ allowed: true }],
             optionsByEdition: { "2": [{ allowed: false }] },
           },
@@ -389,7 +399,7 @@ describe("conformedNamedCases", () => {
           "no-class-authoring": { create: expect.any(Function), meta: { type: "problem" } },
         },
       },
-      pluginNamespace: "hone",
+      pluginNamespace: "acme",
       rule: "no-class-authoring",
       options: [{ allowed: false }],
       cases: [CLASS_CASE],

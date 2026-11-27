@@ -4,8 +4,8 @@ import type { RepoPath } from "../../../../../domain/repository/repo-path-types.
 import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { ownedNameText } from "../../../../../domain/rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-types.ts";
 import { CHECKS_PLUGIN_NAMESPACE } from "../hone-plugin/check-rule-id.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
 import { PROJECTION_TYPE_TEXT } from "../toolchain/eslint-major-boundary.ts";
 import { type ChecksProjectionOutputs, createChecksProjectionOutputs } from "./projection-kinds.ts";

@@ -12,6 +12,7 @@ import type {
   AnsweredFile,
   ChecksProjectionProblem,
   MisnamedRuleId,
+  ProjectionInclusion,
 } from "../../../domain/runner/checks-run-report.ts";
 import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-run.ts";
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
@@ -47,8 +48,13 @@ export type NamedEngineProjection =
   | { readonly projection: "current" }
   | { readonly projection: "current-with-file"; readonly projectionFile: RepoPath }
   | {
-      readonly projection: Exclude<ProjectionState, "current">;
+      readonly projection: Exclude<ProjectionState, "current" | "not-included">;
       readonly projectionFile: RepoPath;
+    }
+  | {
+      readonly projection: "not-included";
+      readonly projectionFile: RepoPath;
+      readonly recovery: ProjectionInclusion;
     };
 
 type EngineCoverage =

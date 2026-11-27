@@ -10,7 +10,7 @@ import type { Check } from "../../../src/domain/language-layer/symptom-catalogue
 import type { Result } from "../../../src/domain/result.ts";
 import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../src/domain/rule-set/identifier-types.ts";
-import type { CheckBinding } from "../../../src/domain/runner/check-binding.ts";
+import { bindCheck, type CheckBinding } from "../../../src/domain/runner/check-binding.ts";
 import { defaultClauseSettings } from "../../../src/domain/settings/clause-settings/default-clause-settings.ts";
 import { everyOk } from "../../../src/domain/settings/every-ok.ts";
 import { readNamedPiece } from "../../../src/infrastructure/engines/named-piece.ts";
@@ -46,19 +46,21 @@ const readEditionBindings = (
   const { editions, settings, pieceRoot, anchor, declarations, forms } = held.value;
   return {
     outcome: "ok",
-    value: editions.declared.map((edition) => ({
-      address,
-      ruleSet: TOOL_RULE_SET,
-      engine: request.engine,
-      edition,
-      settings,
-      pieceRoot,
-      anchor,
-      checkSettings: defaultClauseSettings({ declarations }),
-      forms: Object.fromEntries(
-        Object.entries(forms).map(([form, name]) => [form, checkAddressOfNames(name)]),
-      ),
-    })),
+    value: editions.declared.map((edition) =>
+      bindCheck({
+        address,
+        ruleSet: TOOL_RULE_SET,
+        engine: request.engine,
+        edition,
+        settings,
+        pieceRoot,
+        anchor,
+        checkSettings: defaultClauseSettings({ declarations }),
+        forms: Object.fromEntries(
+          Object.entries(forms).map(([form, name]) => [form, checkAddressOfNames(name)]),
+        ),
+      }),
+    ),
   };
 };
 

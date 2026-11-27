@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/exception-entry.ts"
     },
     {

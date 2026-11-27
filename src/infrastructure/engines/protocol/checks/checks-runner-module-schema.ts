@@ -53,12 +53,45 @@ export const misnamedRuleIdSchema = z.discriminatedUnion("kind", [
     .readonly(),
 ]);
 
-export const checksSliceProblemSchema = z
-  .object({
-    file: repoPathSchema,
-    state: z.enum(["missing", "out-of-date", "unconfigured"]),
+const engineInstructionsSchema = z
+  .strictObject({
+    kind: z.literal("engine-instructions"),
+    detail: z.string().min(1),
   })
   .readonly();
+
+const projectionInclusionSchema = z.union([
+  z.strictObject({ kind: z.literal("include-projection") }).readonly(),
+  engineInstructionsSchema,
+]);
+
+export const createChecksSliceProblemSchema = <Shape extends z.ZodRawShape>(scope: Shape) =>
+  z.discriminatedUnion("state", [
+    z
+      .strictObject({ ...scope, file: repoPathSchema, state: z.enum(["missing", "out-of-date"]) })
+      .readonly(),
+    z
+      .strictObject({
+        ...scope,
+        file: repoPathSchema,
+        state: z.literal("not-included"),
+        recovery: projectionInclusionSchema,
+      })
+      .readonly(),
+    z
+      .strictObject({
+        ...scope,
+        file: repoPathSchema,
+        state: z.literal("unconfigured"),
+        recovery: z.union([
+          z.strictObject({ kind: z.literal("generate-configuration") }).readonly(),
+          engineInstructionsSchema,
+        ]),
+      })
+      .readonly(),
+  ]);
+
+export const checksSliceProblemSchema = createChecksSliceProblemSchema({});
 
 const checksReportSchema = z.strictObject({
   slices: z
@@ -80,16 +113,24 @@ const checksReportSchema = z.strictObject({
 const reportWithProjection = <Shape extends z.ZodRawShape>(observations: Shape) => {
   const report = checksReportSchema.extend(observations);
   return z.discriminatedUnion("projection", [
+    report.extend({ projection: z.literal("none") }).readonly(),
     report
       .extend({
-        projection: z.enum(["none", "current"]),
+        projection: z.literal("current"),
         projectionFile: repoPathSchema.optional(),
       })
       .readonly(),
     report
       .extend({
-        projection: z.enum(["out-of-date", "missing", "not-included"]),
+        projection: z.enum(["out-of-date", "missing"]),
         projectionFile: repoPathSchema,
+      })
+      .readonly(),
+    report
+      .extend({
+        projection: z.literal("not-included"),
+        projectionFile: repoPathSchema,
+        recovery: projectionInclusionSchema,
       })
       .readonly(),
   ]);
@@ -109,17 +150,11 @@ type DecodedRunReport = NamedEngineProjection &
 export const decodeUnscopedChecksReport = (
   wire: z.output<typeof unscopedChecksRunReportSchema>,
 ): DecodedRunReport => {
-  const { projection, projectionFile, ...report } = wire;
-  switch (projection) {
-    case "none":
-      return { ...report, projection };
-    case "current":
-      return projectionFile === undefined
-        ? { ...report, projection }
-        : { ...report, projection: "current-with-file", projectionFile };
-    default:
-      return { ...report, projection, projectionFile };
-  }
+  if (wire.projection !== "current") return wire;
+  const { projectionFile, ...report } = wire;
+  return projectionFile === undefined
+    ? report
+    : { ...report, projection: "current-with-file", projectionFile };
 };
 
 export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [

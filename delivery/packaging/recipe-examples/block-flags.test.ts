@@ -8,6 +8,7 @@ const ANY: CheckBinding = {
   address: "untyped-value#explicit-any",
   ruleSet: "hone",
   engine: "eslint",
+  checkOptions: { kind: "none" },
   edition: editionOf("1"),
   settings: {},
   pieceRoot: "/repo/untyped-value/explicit-any",
@@ -43,7 +44,9 @@ describe("createBlockFlagsPort", () => {
       }),
     };
 
-    const flags = await createBlockFlagsPort({ runners: { walker, eslint } }).read({
+    const flags = await createBlockFlagsPort({
+      runners: { walker, eslint, oxlint: { conform: vi.fn<ConformingRunner["conform"]>() } },
+    }).read({
       blocks: [BLOCK],
       bindings: [ASSERTION_SITE, ANY],
     });
@@ -83,7 +86,11 @@ describe("createBlockFlagsPort", () => {
     };
 
     const flags = await createBlockFlagsPort({
-      runners: { walker: { conform: vi.fn<ConformingRunner["conform"]>() }, eslint },
+      runners: {
+        walker: { conform: vi.fn<ConformingRunner["conform"]>() },
+        eslint,
+        oxlint: { conform: vi.fn<ConformingRunner["conform"]>() },
+      },
     }).read({ blocks: [BLOCK], bindings: [ANY] });
 
     expect(flags).toEqual({

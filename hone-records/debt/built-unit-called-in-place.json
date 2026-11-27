@@ -19,10 +19,6 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/infrastructure/content-files/symptom-catalogues/bound-catalogue.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/infrastructure/engines/eslint/runner/lint-findings/source-lines.test.ts"
     },
     {

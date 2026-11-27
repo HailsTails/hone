@@ -37,6 +37,7 @@ import type {
   ChecksRunProjection,
   NamedChecksRunReport,
 } from "../../../protocol/checks/checks-runner-types.ts";
+import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import {
   nestedVersionTwoFoldersOf,
@@ -83,7 +84,6 @@ import {
 } from "../native-exceptions/checks-queried-files.ts";
 import { trackedNamedExceptionsOf } from "../native-exceptions/checks-tracked-exceptions.ts";
 import { scriptOptionJudge } from "../native-exceptions/script-option-effect.ts";
-import { eslintPieceSettingsSchema } from "../pieces/eslint-piece-settings-schema.ts";
 import {
   eslintPluginModuleSchema,
   type LoadedEslintPlugin,
@@ -406,10 +406,18 @@ type ProjectionStatus = {
 const reportProjection = (request: {
   readonly projection: ChecksProjectionState;
   readonly projectionFile: RepoPath;
-}): ChecksRunProjection =>
-  request.projection === "current"
-    ? { projection: request.projection }
-    : { projection: request.projection, projectionFile: request.projectionFile };
+}): ChecksRunProjection => {
+  const { projection, projectionFile } = request;
+  switch (projection) {
+    case "current":
+      return { projection };
+    case "not-included":
+      return { projection, projectionFile, recovery: { kind: "include-projection" } };
+    case "missing":
+    case "out-of-date":
+      return { projection, projectionFile };
+  }
+};
 
 const importingDirectoryOf = (request: {
   readonly run: NamedEngineRunRequest;
@@ -604,7 +612,7 @@ const unconfiguredSlicesOf = (request: {
   readonly platform: EslintPlatformPorts;
   readonly slices: ChecksSlices;
 }): readonly ChecksSliceProblem[] =>
-  request.slices.packages.flatMap((slice) =>
+  request.slices.packages.flatMap((slice): readonly ChecksSliceProblem[] =>
     slice.directory !== undefined &&
     request.run.declaredConfigRoots.includes(slice.directory) &&
     folderConfigurationOf({
@@ -613,7 +621,7 @@ const unconfiguredSlicesOf = (request: {
       repoRoot: request.run.repoRoot,
       folder: slice.directory,
     }) === "unconfigured"
-      ? [{ file: slice.file, state: "unconfigured" as const }]
+      ? [{ file: slice.file, state: "unconfigured", recovery: { kind: "generate-configuration" } }]
       : [],
   );
 

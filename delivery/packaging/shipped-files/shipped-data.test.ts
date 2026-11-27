@@ -14,6 +14,10 @@ describe("dataShippingOf", () => {
     { path: "methods/lenses/naming.md", shipping: "shipped" },
     { path: "src/infrastructure/engines/eslint/CD-14/README.md", shipping: "shipped" },
     {
+      path: "src/infrastructure/content-files/rule-sets/check-examples/untyped-value/explicit-any.examples.json",
+      shipping: "shipped",
+    },
+    {
       path: "src/infrastructure/engines/walker/exported-for-test/export-test-sibling/export-test-sibling.examples.json",
       shipping: "shipped",
     },

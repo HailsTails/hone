@@ -197,6 +197,14 @@ const createFixtureRunnerLoader = (eslint: ModuleLoad): RunnerModuleOf => {
   const replies: Readonly<Record<EngineId, ModuleLoad>> = {
     walker: { outcome: "ok", value: { namedChecksRunner: createFixtureWalker() } },
     eslint,
+    oxlint: {
+      outcome: "failed",
+      error: {
+        kind: "module-unloadable",
+        path: "oxlint/runner.ts",
+        detail: "Oxlint runner is unavailable to the fixture",
+      },
+    },
   };
   return async ({ mechanism }) => replies[mechanism];
 };

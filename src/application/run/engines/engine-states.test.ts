@@ -10,7 +10,7 @@ import type {
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
+import type { NamedEngineProjection, NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import {
   engineMeasurementOf,
   engineProblemsOf,
@@ -90,6 +90,7 @@ const NOT_INCLUDED_PROJECTION: NamedEngineRun = {
   ...ESLINT_RUN,
   projection: "not-included",
   projectionFile: PROJECTION_FILE,
+  recovery: { kind: "engine-instructions", detail: "the projected rules must come last" },
 };
 
 const TRACKED = [repoPathOf("src/a.ts")];
@@ -128,12 +129,13 @@ describe("engineUnmeasuredOf", () => {
         projection: "not-included",
         file: repoPathOf("hone.eslint.mjs"),
         nestedConfigurations: [],
+        recovery: { kind: "engine-instructions", detail: "the projected rules must come last" },
       },
     ]);
   });
 
   it.each<NamedEngineRun>([
-    NOT_INCLUDED_PROJECTION,
+    { ...NOT_INCLUDED_PROJECTION, recovery: { kind: "include-projection" } },
     { ...ESLINT_RUN, projection: "current-with-file", projectionFile: PROJECTION_FILE },
     OUT_OF_DATE_PROJECTION,
   ])("names a nested folder beyond all measured coverage when projection is $projection", (run) => {
@@ -157,6 +159,7 @@ describe("engineUnmeasuredOf", () => {
         projection: "not-included",
         file: repoPathOf("hone.eslint.mjs"),
         nestedConfigurations: [folder],
+        recovery: { kind: "include-projection" },
       },
     ]);
   });
@@ -403,7 +406,11 @@ describe("engineProblemsOf", () => {
       slices: [
         { file: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
         { file: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
-        { file: repoPathOf("packages/c/hone.eslint.mjs"), state: "unconfigured" },
+        {
+          file: repoPathOf("packages/c/hone.eslint.mjs"),
+          state: "unconfigured",
+          recovery: { kind: "generate-configuration" },
+        },
       ],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
@@ -423,6 +430,7 @@ describe("engineProblemsOf", () => {
         scope: "slice",
         engine: ESLINT_ENGINE,
         state: "unconfigured",
+        recovery: { kind: "generate-configuration" },
         file: "packages/c/hone.eslint.mjs",
       },
     ]);
@@ -486,7 +494,15 @@ describe("refreshableProjectionOf", () => {
   it("is nothing for a slice no configuration loads, which project does not repair", () => {
     expect(
       refreshableProjectionOf({
-        problems: [{ scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE }],
+        problems: [
+          {
+            scope: "slice",
+            engine: ESLINT_ENGINE,
+            state: "unconfigured",
+            recovery: { kind: "generate-configuration" },
+            file: SLICE,
+          },
+        ],
         unmeasured: [],
       }),
     ).toBeUndefined();
@@ -504,6 +520,7 @@ describe("refreshableProjectionOf", () => {
             projection: "not-included",
             file: repoPathOf("hone.eslint.mjs"),
             nestedConfigurations: [],
+            recovery: { kind: "include-projection" },
           },
         ],
       }),
@@ -533,7 +550,13 @@ describe("refreshableProjectionOf", () => {
     expect(
       refreshableProjectionOf({
         problems: [
-          { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE },
+          {
+            scope: "slice",
+            engine: ESLINT_ENGINE,
+            state: "unconfigured",
+            recovery: { kind: "generate-configuration" },
+            file: SLICE,
+          },
           problem,
         ],
         unmeasured: [],

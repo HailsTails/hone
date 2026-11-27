@@ -25,6 +25,12 @@ const KNOWN_FILES = [
       "delivery/install-proof/run-install-proof.ts",
     ]),
   },
+  {
+    boundary: "Oxlint naming plugin",
+    files: [
+      "src/infrastructure/engines/oxlint/name-off-its-casing/naming-convention/naming-plugin.ts",
+    ],
+  },
   { boundary: "unlisted mechanisms", files: [] },
   {
     boundary: "runners",

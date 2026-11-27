@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "class"
+  },
+  "settings": {
+    "rule": "no-class-authoring",
+    "pluginNamespace": "hone-authored-class-or-this-class-keyword",
+    "module": "class-authoring-plugin.ts"
+  },
+  "moduleScope": "runner"
+}

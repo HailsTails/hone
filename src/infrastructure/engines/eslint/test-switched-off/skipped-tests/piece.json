@@ -5,10 +5,7 @@
     "keyword": "skip"
   },
   "settings": {
-    "rule": "skipped-tests",
-    "optionsByEdition": {
-      "2": ["conditional-and-todo"]
-    }
+    "rule": "skipped-tests"
   },
   "implementation": {
     "symptom": "test-switched-off",

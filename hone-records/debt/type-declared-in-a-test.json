@@ -83,10 +83,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.test.ts"
     },
     {

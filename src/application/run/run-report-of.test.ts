@@ -335,7 +335,11 @@ const PROJECTIONS = {
   current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
   "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
   missing: { projection: "missing", projectionFile: PROJECTION_FILE },
-  "not-included": { projection: "not-included", projectionFile: PROJECTION_FILE },
+  "not-included": {
+    projection: "not-included",
+    projectionFile: PROJECTION_FILE,
+    recovery: { kind: "include-projection" },
+  },
 } satisfies Record<
   "none" | "current" | "out-of-date" | "missing" | "not-included",
   NamedEngineProjection
@@ -346,7 +350,7 @@ const eslintRunOf = (request: {
   readonly projection: keyof typeof PROJECTIONS;
 }): NamedEngineRun => ({
   mechanism: ESLINT,
-  hits: request.hits,
+  ...request,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
   ...PROJECTIONS[request.projection],
@@ -383,6 +387,7 @@ const SELECTS_CAST: RunReportRequest["selection"] = {
         address: "claimed-type#cast-expressions",
         ruleSet: TOOL_RULE_SET,
         engine: "eslint",
+        checkOptions: { kind: "none" },
         anchor: { kind: "file" },
         pieceRoot: "/install/pieces",
         settings: {},
@@ -494,6 +499,7 @@ describe("namedRunReportOf, findings and records", () => {
               projection: "not-included",
               file: repoPathOf("hone.eslint.mjs"),
               nestedConfigurations: [nested],
+              recovery: { kind: "include-projection" },
             },
           ],
           assessment: [],
@@ -683,7 +689,12 @@ describe("namedRunReportOf, findings and records", () => {
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
-        runs: [eslintRunOf({ hits: [], projection: "not-included" })],
+        runs: [
+          eslintRunOf({
+            hits: [],
+            projection: "not-included",
+          }),
+        ],
       }),
     ).toEqual({
       outcome: "ok",
@@ -696,6 +707,7 @@ describe("namedRunReportOf, findings and records", () => {
             projection: "not-included",
             file: repoPathOf("hone.eslint.mjs"),
             nestedConfigurations: [],
+            recovery: { kind: "include-projection" },
           },
         ],
       },
@@ -1049,6 +1061,7 @@ describe("namedRunReportOf, the selection and the settings", () => {
                 address: "claimed-type#cast-expressions",
                 ruleSet: TOOL_RULE_SET,
                 engine: "eslint",
+                checkOptions: { kind: "none" },
                 anchor: { kind: "file" },
                 pieceRoot: "/install/pieces",
                 settings: {},

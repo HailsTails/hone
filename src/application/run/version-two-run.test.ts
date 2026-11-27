@@ -847,6 +847,7 @@ it("refuses comparison for an externally supplied selected check", async () => {
           pieceRoot: "/install/pieces",
           settings: {},
           checkSettings: {},
+          checkOptions: { kind: "piece" },
           edition,
         },
         editions: { declared: [edition], default: edition, latest: edition },

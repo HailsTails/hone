@@ -50,9 +50,19 @@ const readInstalledPieceFile = (
         return { outcome: "ok", value: undefined };
       }
       const { pieceRoot, settings, declarations, editions } = installed.value.piece;
+      const legacySettings =
+        request.mechanism === "eslint"
+          ? { ...settings, authoredCheck: installed.value.check }
+          : settings;
       return {
         outcome: "ok",
-        value: { clause: id, pieceRoot, settings, clauseSettings: declarations, editions },
+        value: {
+          clause: id,
+          pieceRoot,
+          settings: legacySettings,
+          clauseSettings: declarations,
+          editions,
+        },
       };
     },
   });

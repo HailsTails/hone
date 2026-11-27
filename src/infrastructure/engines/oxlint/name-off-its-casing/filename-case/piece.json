@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "rule": "filename-case",
+    "pluginNamespace": "hone-name-off-its-casing-filename-case",
+    "module": "filename-case.ts"
+  },
+  "moduleScope": "shared"
+}

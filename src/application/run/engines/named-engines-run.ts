@@ -111,7 +111,7 @@ const loadNamedEngines = async (
               mechanism: "eslint",
               projectionKind: request.settings.eslintProjectionKind,
             }
-          : { ...location, mechanism: "walker" },
+          : { ...location, mechanism: location.mechanism },
       ),
   });
   return engines.outcome === "failed"

@@ -33,7 +33,9 @@ const LET_SECOND: CheckBinding = { ...LET_FIRST, edition: editionOf("2") };
 const ANY: CheckBinding = {
   ...LET_FIRST,
   address: "untyped-value#explicit-any",
+  ruleSet: "hone",
   engine: "eslint",
+  checkOptions: { kind: "none" },
 };
 
 type RunRow = {

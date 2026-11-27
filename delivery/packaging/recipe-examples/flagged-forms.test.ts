@@ -30,7 +30,13 @@ const OTHER_CHECK: CheckBinding = {
   edition: editionOf("11"),
 };
 
-const OTHER_ENGINE: CheckBinding = { ...NEWEST, engine: "eslint", edition: editionOf("12") };
+const OTHER_ENGINE: CheckBinding = {
+  ...NEWEST,
+  ruleSet: "hone",
+  engine: "eslint",
+  checkOptions: { kind: "none" },
+  edition: editionOf("12"),
+};
 
 describe("createFlaggedFormsPort", () => {
   it("runs the check's newest walker edition over the block and names the form of each hit that has a remedy", async () => {

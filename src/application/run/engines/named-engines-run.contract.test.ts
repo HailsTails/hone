@@ -61,8 +61,8 @@ const CAST_ENGINE_CHECK: EngineCheck = {
 
 const README = repoPathOf("README.md");
 
-const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => ({
-  engine: request.mechanism,
+const WALKER_BINDING: CheckBinding = {
+  engine: AUDIT,
   address: "claimed-type#cast-expressions",
   ruleSet: "hone",
   anchor: { kind: "file" },
@@ -70,16 +70,22 @@ const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => (
   checkSettings: {},
   edition: editionOf("1"),
   settings: {},
-});
+};
+const ESLINT_BINDING: CheckBinding = {
+  ...WALKER_BINDING,
+  ruleSet: "hone",
+  engine: ESLINT,
+  checkOptions: { kind: "none" },
+};
 
-const selectedOn = (request: {
-  readonly mechanism: CheckBinding["engine"];
-}): NamedSettingsReading["selection"]["selected"][number] => ({
+const selectedOn = (
+  binding: CheckBinding,
+): NamedSettingsReading["selection"]["selected"][number] => ({
   address: { ruleSet: "hone", check: "claimed-type#cast-expressions" },
   check: CAST_CHECK,
   exceptions: "allowed",
   editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
-  binding: bindingOn(request),
+  binding,
 });
 
 const settingsBinding = (request: {
@@ -180,7 +186,7 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   files: [A],
   trackedPaths: [A, README],
   checks: [CAST_ENGINE_CHECK],
-  bindings: [bindingOn({ mechanism: ESLINT })],
+  bindings: [ESLINT_BINDING],
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
@@ -214,9 +220,9 @@ describe("runNamedEngines", () => {
     const run = await runNamedEngines(
       enginesRequestOf({
         selected: [
-          selectedOn({ mechanism: AUDIT }),
-          selectedOn({ mechanism: ESLINT }),
-          selectedOn({ mechanism: AUDIT }),
+          selectedOn(WALKER_BINDING),
+          selectedOn(ESLINT_BINDING),
+          selectedOn(WALKER_BINDING),
         ],
         lookup: DETECTED,
         engine: { load },
@@ -256,7 +262,7 @@ describe("runNamedEngines", () => {
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     await runNamedEngines(
       enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
+        selected: [selectedOn(ESLINT_BINDING)],
         lookup: DETECTED,
         engine: engine.port,
       }),
@@ -274,7 +280,7 @@ describe("runNamedEngines", () => {
     });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     const request = enginesRequestOf({
-      selected: [selectedOn({ mechanism: ESLINT })],
+      selected: [selectedOn(ESLINT_BINDING)],
       lookup: DETECTED,
       engine: engine.port,
     });
@@ -302,7 +308,7 @@ describe("runNamedEngines", () => {
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
     await runNamedEngines(
       enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
+        selected: [selectedOn(ESLINT_BINDING)],
         lookup: { lookup: "declared", value: "repository-root" },
         engine: engine.port,
       }),
@@ -318,7 +324,7 @@ describe("runNamedEngines", () => {
     expect(
       await runNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -347,7 +353,7 @@ describe("runNamedEngines", () => {
     expect(
       await runNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -387,7 +393,7 @@ describe("projectNamedEngines", () => {
     expect(
       await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -405,7 +411,7 @@ describe("projectNamedEngines", () => {
     expect(
       await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: AUDIT })],
+          selected: [selectedOn(WALKER_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -432,7 +438,7 @@ describe("projectNamedEngines", () => {
     expect(
       await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -461,7 +467,7 @@ describe("projectNamedEngines", () => {
     expect(
       await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),

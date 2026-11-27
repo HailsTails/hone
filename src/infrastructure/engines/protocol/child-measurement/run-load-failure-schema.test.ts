@@ -53,6 +53,23 @@ describe("runLoadFailureSchema", () => {
     expect(runLoadFailureSchema.safeParse(failure)).toEqual({ success: true, data: failure });
   });
 
+  it("reads an out-of-date package projection with its recovery command", () => {
+    const failure = {
+      kind: "projection-stale",
+      problem: {
+        scope: "slice",
+        engine: { name: "eslint" },
+        state: "out-of-date",
+        file: "packages/web/hone.eslint.ts",
+      },
+      projectCommand: "hone project --repo /repo",
+    };
+
+    const parsed = runLoadFailureSchema.safeParse(failure);
+
+    expect(parsed).toEqual({ success: true, data: failure });
+  });
+
   it("reads an engine's failure back with the runner failure it carries", () => {
     const parsed = runLoadFailureSchema.safeParse({
       kind: "engine-failed",

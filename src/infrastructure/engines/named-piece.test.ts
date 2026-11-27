@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
@@ -55,12 +55,136 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
+  it("binds the installed rule set's examples to the engine's declaration", () => {
+    const piecePath = "/install/oxlint/piece.json";
+    const sharedPath = "/install/content-files/parameter-count.examples.json";
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce(piecePath)
+      .mockReturnValueOnce("/install/oxlint/parameter-count.examples.json")
+      .mockReturnValueOnce(sharedPath)
+      .mockReturnValueOnce("/install/oxlint");
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"rule":"eslint/max-params"}}',
+    });
+    const exists = vi
+      .fn<FileTextPort["exists"]>()
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent")
+      .mockReturnValueOnce("present");
+
+    const piece = readNamedPiece({
+      ...SUBJECT,
+      symptom: catalogueNameOf("positional-parameters"),
+      check: catalogueNameOf("parameter-count"),
+      mechanism: "oxlint",
+      path: { join },
+      fileText: { exists, read },
+    });
+
+    expect(piece).toMatchObject({
+      outcome: "ok",
+      value: {
+        examplesPath: sharedPath,
+        pieceRoot: "/install/oxlint",
+        settings: { rule: "eslint/max-params" },
+      },
+    });
+    expect(join).toHaveBeenNthCalledWith(3, {
+      segments: [
+        "/install",
+        "src",
+        "infrastructure",
+        "content-files",
+        "rule-sets",
+        "check-examples",
+        "positional-parameters",
+        "parameter-count.examples.json",
+      ],
+    });
+  });
+
+  it("keeps the check's declaration local while loading a shared plugin", () => {
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/install/eslint/filename-case/piece.json")
+      .mockReturnValueOnce("/install/eslint/filename-case/filename-case.examples.json")
+      .mockReturnValueOnce("/install/src/infrastructure/engines/protocol/plugin-rules");
+    const fileText = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+        outcome: "ok",
+        value:
+          '{"version":2,"anchor":{"kind":"file"},"moduleScope":"shared","settings":{"pluginModule":"filename-case.ts"}}',
+      }),
+    };
+
+    const piece = readNamedPiece({
+      ...SUBJECT,
+      mechanism: "eslint",
+      symptom: catalogueNameOf("name-off-its-casing"),
+      check: catalogueNameOf("filename-case"),
+      path: { join },
+      fileText,
+    });
+
+    expect(piece).toMatchObject({
+      outcome: "ok",
+      value: {
+        declarationPath: "/install/eslint/filename-case/piece.json",
+        pieceRoot: "/install/src/infrastructure/engines/protocol/plugin-rules",
+        settings: { pluginModule: "filename-case.ts" },
+      },
+    });
+  });
+
+  it("reads the team's own settings for a check with a built-in name", () => {
+    const pieceRoot = "/team/engines/eslint/positional-parameters/parameter-count";
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/team/engines/eslint/positional-parameters/parameter-count/piece.json")
+      .mockReturnValueOnce(
+        "/team/engines/eslint/positional-parameters/parameter-count/parameter-count.examples.json",
+      )
+      .mockReturnValueOnce(pieceRoot);
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
+      outcome: "ok",
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"rule":"team-parameter-count"}}',
+    });
+
+    const piece = readNamedPiece({
+      installRoot: "/install",
+      ruleSetRoot: "/team",
+      mechanism: "eslint",
+      symptom: catalogueNameOf("positional-parameters"),
+      check: catalogueNameOf("parameter-count"),
+      path: { join },
+      fileText: { exists, read },
+    });
+
+    assert(piece.outcome === "ok");
+    expect(piece.value.pieceRoot).toBe(pieceRoot);
+    expect(piece.value.settings).toEqual({ rule: "team-parameter-count" });
+  });
+
   it.each([
-    { ownEditions: undefined, declared: ["1", "2"], latest: "2" },
-    { ownEditions: ["1", "3"], declared: ["1", "3"], latest: "3" },
+    {
+      declaration:
+        '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"},"settings":{"operation":"ambient"},"checkSettings":{"limit":{"default":3}}}',
+      declared: ["1", "2"],
+      latest: "2",
+    },
+    {
+      declaration:
+        '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"},"settings":{"operation":"ambient"},"checkSettings":{"limit":{"default":3}},"editions":["1","3"]}',
+      declared: ["1", "3"],
+      latest: "3",
+    },
   ])(
-    "takes shared fields from the implementation and keeps the check's own settings and editions $ownEditions",
-    ({ ownEditions, declared, latest }) => {
+    "takes shared fields from the implementation and keeps the check's own settings and editions $latest",
+    ({ declaration, declared, latest }) => {
       const implementationPath =
         "/install/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json";
       const implementationRoot =
@@ -75,13 +199,7 @@ describe("readNamedPiece", () => {
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({
           outcome: "ok",
-          value: JSON.stringify({
-            version: 2,
-            implementation: { symptom: "ambient-randomness", check: "random-call" },
-            settings: { operation: "ambient" },
-            checkSettings: { limit: { default: 3 } },
-            editions: ownEditions,
-          }),
+          value: declaration,
         })
         .mockReturnValueOnce({
           outcome: "ok",

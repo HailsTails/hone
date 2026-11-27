@@ -315,7 +315,10 @@ describe("checkUnderTestOf binding", () => {
 });
 
 describe("checkConformanceOf", () => {
-  it("runs an installed check's examples as a binding of Hone's own rule set", async () => {
+  it("passes the coverage for the edition of a skipped-test example", async () => {
+    const first = editionOf("1");
+    const second = editionOf("2");
+    const example = { ...FIRST_EXAMPLE, edition: second };
     const runner = { conform: vi.fn() };
     const enginePort: NamedConformancePort = {
       load: vi
@@ -329,15 +332,18 @@ describe("checkConformanceOf", () => {
       read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
         outcome: "ok",
         value: {
-          piece: EDITION_ONE_PIECE,
-          examples: [FIRST_EXAMPLE],
+          piece: {
+            ...EDITION_ONE_PIECE,
+            editions: { declared: [first, second], default: first, latest: second },
+          },
+          examples: [example],
         },
       }),
     };
     await checkConformanceOf({
       ruleSet: "hone",
-      check: "example#sample",
-      engine: "walker",
+      check: "test-switched-off#skipped-tests",
+      engine: "eslint",
       installRoot: absoluteRootOf("/install"),
       moduleExtension: ".ts",
       modules: { load: vi.fn() },
@@ -348,17 +354,18 @@ describe("checkConformanceOf", () => {
     });
     expect(enginePort.conform).toHaveBeenCalledExactlyOnceWith({
       binding: {
-        address: "example#sample",
+        address: "test-switched-off#skipped-tests",
         ruleSet: "hone",
-        engine: "walker",
+        engine: "eslint",
         anchor: { kind: "file" },
         pieceRoot: "/install/piece",
         settings: {},
         forms: {},
         checkSettings: {},
-        edition: "1",
+        edition: "2",
+        checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
       },
-      cases: [FIRST_EXAMPLE],
+      cases: [example],
       runner,
     });
   });

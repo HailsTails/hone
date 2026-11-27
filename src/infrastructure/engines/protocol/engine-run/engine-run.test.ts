@@ -108,7 +108,13 @@ const REQUEST: NamedEngineRunRequest = {
   trackedPaths: [FILE_A, CONFIG],
   bindings: [
     BINDING,
-    { ...BINDING, address: "leftover-debugging#debug-statement", engine: "eslint" },
+    {
+      ...BINDING,
+      ruleSet: "hone",
+      address: "leftover-debugging#debug-statement",
+      engine: "eslint",
+      checkOptions: { kind: "none" },
+    },
   ],
   answered: [],
   declaredConfigRoots: [],
@@ -512,11 +518,12 @@ const UPGRADE_REPORT = {
   measured: [],
   projection: "not-included",
   projectionFile: UPGRADE_PROJECTION.projectionFile,
+  recovery: { kind: "include-projection" },
   slices: [],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
-} satisfies Omit<NamedChecksRunReport, "inapplicable">;
+} satisfies Omit<Extract<NamedChecksRunReport, { projection: "not-included" }>, "inapplicable">;
 
 describe("measureVersionOneProjectionOver", () => {
   it("uses an engine’s declared upgrade export and returns the inspected slice separately from the named report", async () => {

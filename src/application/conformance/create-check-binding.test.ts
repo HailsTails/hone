@@ -7,6 +7,7 @@ import { createCheckBinding } from "./create-check-binding.ts";
 describe("createCheckBinding", () => {
   it("binds a team check with default settings and its default edition", () => {
     const request = {
+      edition: editionOf("1"),
       check: "scratch-file#scratch-files",
       ruleSet: { name: ruleSetNameOf("acme") },
       engine: "walker",

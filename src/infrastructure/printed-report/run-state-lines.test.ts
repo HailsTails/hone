@@ -44,6 +44,7 @@ const NOT_INCLUDED: RunUnmeasured = {
   projection: "not-included",
   file: repoPathOf("hone.eslint.mjs"),
   nestedConfigurations: [],
+  recovery: { kind: "include-projection" },
 };
 
 const NESTED_NOT_INCLUDED: RunUnmeasured = {
@@ -52,6 +53,7 @@ const NESTED_NOT_INCLUDED: RunUnmeasured = {
   projection: "not-included",
   file: repoPathOf("hone.eslint.mjs"),
   nestedConfigurations: [LEGACY],
+  recovery: { kind: "include-projection" },
 };
 
 const ESLINT_SLICE_PROBLEM: RunProjectionProblem = {
@@ -109,6 +111,17 @@ describe("unmeasuredLine", () => {
       name: "an engine whose projection is not in effect under nested configurations",
       unmeasured: NESTED_NOT_INCLUDED,
       line: `${NOT_INCLUDED_TEXT}${NESTED_NOTE}`,
+    },
+    {
+      name: "an engine's stated reason its projection is not in effect",
+      unmeasured: {
+        ...NOT_INCLUDED,
+        recovery: {
+          kind: "engine-instructions",
+          detail: "the engine requires its projected rules last",
+        },
+      },
+      line: "engine-not-run eslint not-included: the engine requires its projected rules last",
     },
   ])("prints $name", ({ unmeasured, line }) => {
     expect(
@@ -198,8 +211,43 @@ describe("projectionProblemLine", () => {
       },
       {
         name: "a slice with no configuration to load it",
-        problem: { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", file: SLICE },
+        problem: {
+          scope: "slice",
+          engine: ESLINT_ENGINE,
+          state: "unconfigured",
+          file: SLICE,
+          recovery: { kind: "generate-configuration" },
+        },
         line: "eslint unconfigured packages/web/hone.eslint.mjs: packages/web has no eslint configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check",
+      },
+      {
+        name: "a slice with a supplied reason its projection is not in effect",
+        problem: {
+          scope: "slice",
+          engine: { name: "oxlint" },
+          state: "not-included",
+          file: repoPathOf("packages/web/hone.oxlint.json"),
+          recovery: {
+            kind: "engine-instructions",
+            detail:
+              "extend ./hone.oxlint.json after any configuration that changes the selected rules",
+          },
+        },
+        line: "oxlint not-included packages/web/hone.oxlint.json: extend ./hone.oxlint.json after any configuration that changes the selected rules",
+      },
+      {
+        name: "a slice with a supplied reason its configuration is missing",
+        problem: {
+          scope: "slice",
+          engine: { name: "oxlint" },
+          state: "unconfigured",
+          file: repoPathOf("hone.oxlint.json"),
+          recovery: {
+            kind: "engine-instructions",
+            detail: "the repository root has no tracked config",
+          },
+        },
+        line: `oxlint unconfigured hone.oxlint.json: the repository root has no tracked config; regenerate the projection with ${PROJECT_COMMAND}`,
       },
     ],
   )("prints $name", ({ problem, line }) => {

@@ -90,35 +90,38 @@ describe("the ESLint majors Hone supports", () => {
   );
 });
 
-describe("the ESLint checks runner, loaded as core loads it, conforms to each ESLint check's shared cases on real ESLint", () => {
-  it.each(ESLINT_CHECKS)(
-    "%s has no conformance failure over its flag and allow cases",
-    async (check) => {
-      const path = createDefaultPathPort({});
+describe.each(["eslint", "oxlint"] as const)(
+  "the %s runner conforms to every ESLint check’s flag and allow cases",
+  (engine) => {
+    it.each(ESLINT_CHECKS)(
+      "%s has no conformance failure over its flag and allow cases",
+      async (check) => {
+        const path = createDefaultPathPort({});
 
-      const conformance = await checkConformanceOf({
-        ruleSet: TOOL_RULE_SET,
-        check,
-        engine: "eslint",
-        installRoot: INSTALL_ROOT,
-        moduleExtension: ".ts",
-        path,
-        modules: createDefaultModuleLoaderPort({}),
-        examples: createNamedCheckExamplesRepository({
-          fileText: createDefaultFileTextPort({}),
+        const conformance = await checkConformanceOf({
+          ruleSet: TOOL_RULE_SET,
+          check,
+          engine,
+          installRoot: INSTALL_ROOT,
+          moduleExtension: ".ts",
           path,
-        }),
-        loadFailureDetail,
-        enginePort: {
-          load: createRunnerLoader({ runnerModuleOf: runnerModuleAt }),
-          conform: namedCheckConformance,
-        },
-      });
+          modules: createDefaultModuleLoaderPort({}),
+          examples: createNamedCheckExamplesRepository({
+            fileText: createDefaultFileTextPort({}),
+            path,
+          }),
+          loadFailureDetail,
+          enginePort: {
+            load: createRunnerLoader({ runnerModuleOf: runnerModuleAt }),
+            conform: namedCheckConformance,
+          },
+        });
 
-      expect(conformance).toEqual({ outcome: "ok", value: [] });
-    },
-  );
-});
+        expect(conformance).toEqual({ outcome: "ok", value: [] });
+      },
+    );
+  },
+);
 
 describe.each(ESLINT_MAJORS)(
   "the ESLint checks runner on $line, built as the shipped one is, conforms to each ESLint check's shared cases",

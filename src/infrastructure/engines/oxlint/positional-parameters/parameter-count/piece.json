@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "function"
+  },
+  "settings": {
+    "rule": "eslint/max-params"
+  }
+}

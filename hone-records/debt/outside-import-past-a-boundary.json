@@ -27,10 +27,6 @@
     },
     {
       "answers": "outside-import-past-a-boundary#import-or-require",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts"
-    },
-    {
-      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/infrastructure/node/process/reply-port.ts"
     },
     {

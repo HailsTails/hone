@@ -1,4 +1,5 @@
 import type {
+  NamedEngineProjection,
   NamedEngineRun,
   NamedEngineRunRequest,
 } from "../../../../application/ports/engine/engine-run.ts";
@@ -9,19 +10,13 @@ import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { CheckMeasurement } from "../../../../domain/runner/check-observations.ts";
 import type { ProjectionEntry } from "../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type {
-  CaseVerdict,
-  ProjectionState,
-} from "../../../../domain/runner/runner-result-types.ts";
+import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
 
 export type ChecksRunFailure = RunnerFailure;
 
 export type ChecksRunProjection =
-  | { readonly projection: "none" | "current"; readonly projectionFile?: RepoPath }
-  | {
-      readonly projection: Exclude<ProjectionState, "current">;
-      readonly projectionFile: RepoPath;
-    };
+  | { readonly projection: "current"; readonly projectionFile?: RepoPath }
+  | Exclude<NamedEngineProjection, { readonly projection: "current" | "current-with-file" }>;
 
 export type NamedChecksRunReport = ChecksRunProjection & {
   readonly inapplicable: readonly CheckMeasurement[];
