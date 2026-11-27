@@ -339,6 +339,16 @@ const syntaxChecksOf = (request: {
       : [],
   );
 
+const listInapplicableChecks = (request: {
+  readonly includeApplicability?: true;
+  readonly prepared: readonly FilePiece[];
+}): readonly CheckAddressText[] =>
+  request.includeApplicability === true
+    ? request.prepared.flatMap(({ check, piece }) =>
+        check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
+      )
+    : [];
+
 export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWalkerFileResult => {
   const cache = cachedFile(request);
   const file = cache.file;
@@ -349,12 +359,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
   const applicable = prepared.value.filter((selected) => selected.check.kind !== "skipped");
-  const inapplicable =
-    request.includeApplicability === true
-      ? prepared.value.flatMap(({ check, piece }) =>
-          check.kind === "skipped" ? piece.bindings.map(({ address }) => address) : [],
-        )
-      : [];
+  const inapplicable = listInapplicableChecks({ ...request, prepared: prepared.value });
   if (!applicable.some((selected) => selected.check.kind === "syntax")) {
     return completedFile({
       file,
