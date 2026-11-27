@@ -1133,6 +1133,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
         run: {
           ...runOf({ hits: [] }),
           projection: "not-included",
+          recovery: { kind: "include-projection" },
           projectionFile: repoPathOf("hone.eslint.mjs"),
         },
       }),
@@ -1183,6 +1184,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
             {
               ...runOf({ hits: [] }),
               projection: "not-included",
+              recovery: { kind: "include-projection" },
               projectionFile: repoPathOf("hone.eslint.mjs"),
             },
           ],
@@ -1231,6 +1233,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
             {
               ...runOf({ hits: [] }),
               projection: "not-included",
+              recovery: { kind: "include-projection" },
               projectionFile: repoPathOf("hone.eslint.mjs"),
             },
           ],

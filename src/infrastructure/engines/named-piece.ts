@@ -11,19 +11,22 @@ import {
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { AuthoredPieceDeclaration } from "../../domain/rule-set/authored-rule-set-types.ts";
+import type { PieceSettings } from "../../domain/rule-set/authored-rule-set-types.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
-import { parsedJson } from "../content-files/parsed-json.ts";
 import {
-  anchorKindSchema,
-  pieceFileSchema,
-  readInstalledCheckSettings,
-} from "../content-files/rule-sets/rule-set-reader.ts";
+  namedPieceFolderSegmentsOf,
+  runnerFolderSegments,
+  sharedPluginFolderSegments,
+} from "../../domain/rule-set/piece-folder.ts";
+import { parsedJson } from "../content-files/parsed-json.ts";
+import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
 import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
 
 const catalogueNameSchema = z.string().refine(isCatalogueName);
+
+export const namedPieceModuleScopeSchema = z.enum(["piece", "shared", "runner"]).default("piece");
 
 export const namedPieceImplementationSchema = z.strictObject({
   symptom: catalogueNameSchema,
@@ -31,6 +34,7 @@ export const namedPieceImplementationSchema = z.strictObject({
 });
 
 export type NamedPiece = PieceClause & {
+  readonly settings: PieceSettings;
   readonly forms: Readonly<Record<string, CheckNames>>;
   readonly declarationPath: string;
   readonly exampleOwner: CheckNames;
@@ -46,6 +50,7 @@ const checkDeclaration = {
 const implementationSchema = z.strictObject({
   ...checkDeclaration,
   anchor: anchorKindSchema,
+  moduleScope: namedPieceModuleScopeSchema,
   settings: z.record(z.string(), z.json()),
   forms: z.record(z.string(), namedPieceImplementationSchema).default({}),
   editions: legacyPieceEntry.editions,
@@ -217,27 +222,37 @@ export const readNamedPiece = (
       : { outcome: "ok", value: piece };
   if (shared.outcome === "failed") return shared;
   const owner = shared.value;
+  if (owner.moduleScope !== "piece" && request.ruleSetRoot !== request.installRoot) {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: declarationPath,
+        detail: "a team piece must keep its module in its own piece folder",
+      },
+    };
+  }
   const exampleOwner =
     "examples" in piece && piece.examples === "with-implementation" ? implementation : localCheck;
-  const sharedOptions = readInstalledCheckSettings({
-    ...request,
-    check: checkAddressOfNames(localCheck),
-  });
+  const moduleFolder =
+    owner.moduleScope === "shared"
+      ? sharedPluginFolderSegments(request.installRoot)
+      : owner.moduleScope === "runner"
+        ? runnerFolderSegments(request)
+        : namedPieceFolderSegmentsOf({ ...request, ...implementation });
   return {
     outcome: "ok",
     value: {
       anchor: piece.anchor ?? owner.anchor,
       exceptions: piece.exceptions,
-      settings: { ...sharedOptions, ...owner.settings, ...piece.settings },
+      settings: { ...owner.settings, ...piece.settings },
       declarations: piece.checkSettings,
       editions: piece.editions ?? owner.editions,
       forms: owner.forms,
       declarationPath,
       exampleOwner,
       examplesPath: resolveExamplesPath({ ...request, exampleOwner }),
-      pieceRoot: request.path.join({
-        segments: namedPieceFolderSegmentsOf({ ...request, ...implementation }),
-      }),
+      pieceRoot: request.path.join({ segments: moduleFolder }),
     },
   };
 };

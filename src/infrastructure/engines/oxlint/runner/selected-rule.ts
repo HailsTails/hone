@@ -3,6 +3,10 @@ import { z } from "zod";
 import { moduleFileForm } from "../../../../application/ports/host/module-extension.ts";
 import { isRepoPath } from "../../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
+import {
+  type HoneCheckOptions,
+  nonNullAssertionMessage,
+} from "../../../../domain/rule-set/check-options.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
@@ -13,6 +17,30 @@ import {
   ruleOptionsOf,
   ruleOptionsSchema,
 } from "../../protocol/plugin-settings/rule-options.ts";
+import {
+  typescriptEslintClassOptions,
+  typescriptEslintNamingOptions,
+} from "../../protocol/plugin-settings/typescript-eslint-options.ts";
+
+const createArguments = (options: HoneCheckOptions): readonly ReadonlyJsonValue[] => {
+  switch (options.kind) {
+    case "parameter-count":
+      return [{ max: options.maximumSlots, countVoidThis: options.voidReceiver === "count" }];
+    case "parameter-reassignment":
+      return [{ props: options.assignments === "binding-and-properties" }];
+    case "static-members-only":
+      return typescriptEslintClassOptions(options);
+    case "naming-convention":
+      return typescriptEslintNamingOptions(options);
+    case "non-null-assertions":
+      return options.rejects.map((assertion) => ({
+        selector: assertion === "asserted-value" ? "TSNonNullExpression" : "[definite=true]",
+        message: nonNullAssertionMessage[assertion],
+      }));
+    case "skipped-tests":
+      return options.coverage === "including-conditional-and-todo" ? ["conditional-and-todo"] : [];
+  }
+};
 
 const OXLINT_RULES = [
   "typescript/no-explicit-any",
@@ -82,7 +110,10 @@ export const readRule = (request: {
     });
   }
   const settings = parsed.data;
-  const options = ruleOptionsOf({ settings, edition: binding.edition });
+  const options =
+    binding.checkOptions === undefined
+      ? ruleOptionsOf({ settings, edition: binding.edition })
+      : createArguments(binding.checkOptions);
   if (!("pluginNamespace" in settings)) {
     return { outcome: "ok", value: { kind: "native", id: settings.rule, options } };
   }

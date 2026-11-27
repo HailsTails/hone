@@ -14,7 +14,6 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
-import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
 import {
   CHECKS_PLUGIN_NAMESPACE,
   checkRuleIdOf,
@@ -22,6 +21,7 @@ import {
   type RuledCheck,
   runsOnEslint,
 } from "../hone-plugin/check-rule-id.ts";
+import { readEslintCheckOptions } from "../pieces/check-options.ts";
 import type { ProjectedCheck } from "./checks-projection.ts";
 import type { CoreInstall } from "./core-install.ts";
 import { type PluginImport, pluginImportOf } from "./projection.ts";
@@ -39,12 +39,13 @@ const projectedRuleOf = (request: {
   readonly ruleSet: CheckBinding["ruleSet"];
   readonly settings: z.output<typeof eslintPieceSettingsSchema>;
   readonly edition: CheckBinding["edition"];
+  readonly checkOptions: CheckBinding["checkOptions"];
 }): ProjectedCheck => ({
   ruleSet: request.ruleSet,
   symptom: request.check.symptom.name,
   check: request.check.name,
   ruleId: checkRuleIdOf({ check: request.check }),
-  options: ruleOptionsOf(request),
+  options: readEslintCheckOptions(request),
 });
 
 export const projectedNamedChecksOf = (request: {
@@ -82,6 +83,7 @@ export const projectedNamedChecksOf = (request: {
           ruleSet: binding.ruleSet,
           settings: settings.data,
           edition: binding.edition,
+          checkOptions: binding.checkOptions,
         });
         if (binding.ruleSet === TOOL_RULE_SET) return { outcome: "ok", value: [projected] };
         const { pluginNamespace, pluginModule, rule } = settings.data;

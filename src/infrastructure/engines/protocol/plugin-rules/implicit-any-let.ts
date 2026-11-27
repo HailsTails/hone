@@ -35,13 +35,12 @@ const implicitAnyLet = siteRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Disallow let and var declarations with neither a type nor an initialiser (CD-1)",
+      description: "Disallow let and var declarations with neither a type nor an initialiser",
     },
     schema: [],
     messages: {
       implicitAny:
-        "CD-1: give this variable a type annotation or an initialiser so it is not implicitly any.",
+        "Give this variable a type annotation or an initialiser so it is not implicitly any.",
     },
   },
   observe: (context) => ({

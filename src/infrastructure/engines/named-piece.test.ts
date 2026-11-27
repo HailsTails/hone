@@ -55,7 +55,7 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
-  it("binds the installed rule set's examples and defaults to the engine's declaration", () => {
+  it("binds the installed rule set's examples to the engine's declaration", () => {
     const piecePath = "/install/oxlint/piece.json";
     const sharedPath = "/install/content-files/parameter-count.examples.json";
     const join = vi
@@ -88,7 +88,7 @@ describe("readNamedPiece", () => {
       value: {
         examplesPath: sharedPath,
         pieceRoot: "/install/oxlint",
-        settings: { rule: "eslint/max-params", options: [{ max: 2, countVoidThis: true }] },
+        settings: { rule: "eslint/max-params" },
       },
     });
     expect(join).toHaveBeenNthCalledWith(3, {
@@ -105,7 +105,41 @@ describe("readNamedPiece", () => {
     });
   });
 
-  it("does not apply installed defaults to a team's check with the same name", () => {
+  it("keeps the check's declaration local while loading a shared plugin", () => {
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/install/eslint/filename-case/piece.json")
+      .mockReturnValueOnce("/install/eslint/filename-case/filename-case.examples.json")
+      .mockReturnValueOnce("/install/src/infrastructure/engines/protocol/plugin-rules");
+    const fileText = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+        outcome: "ok",
+        value:
+          '{"version":2,"anchor":{"kind":"file"},"moduleScope":"shared","settings":{"pluginModule":"filename-case.ts"}}',
+      }),
+    };
+
+    const piece = readNamedPiece({
+      ...SUBJECT,
+      mechanism: "eslint",
+      symptom: catalogueNameOf("name-off-its-casing"),
+      check: catalogueNameOf("filename-case"),
+      path: { join },
+      fileText,
+    });
+
+    expect(piece).toMatchObject({
+      outcome: "ok",
+      value: {
+        declarationPath: "/install/eslint/filename-case/piece.json",
+        pieceRoot: "/install/src/infrastructure/engines/protocol/plugin-rules",
+        settings: { pluginModule: "filename-case.ts" },
+      },
+    });
+  });
+
+  it("reads the team's own settings for a check with a built-in name", () => {
     const pieceRoot = "/team/engines/eslint/positional-parameters/parameter-count";
     const join = vi
       .fn<PathPort["join"]>()

@@ -435,11 +435,11 @@ const enclosure = (request: { readonly node: SyntaxNode }): "enclosed" | "outerm
 const cognitiveComplexity = siteRule({
   meta: {
     type: "suggestion",
-    docs: { description: "Limit each function's cognitive complexity to 15 (CD-41)" },
+    docs: { description: "Limit each function's cognitive complexity to 15" },
     schema: [],
     messages: {
       cognitiveComplexity:
-        "CD-41: this function's cognitive complexity is {{score}}, above the limit of {{max}}; move the branching into helpers it composes.",
+        "This function's cognitive complexity is {{score}}, above the limit of {{max}}; move the branching into helpers it composes.",
     },
   },
   observe: (context) => {
@@ -496,11 +496,11 @@ const reportLongFunction = (request: {
 const functionLength = siteRule({
   meta: {
     type: "suggestion",
-    docs: { description: "Limit each function body to 50 lines (CD-41)" },
+    docs: { description: "Limit each function body to 50 lines" },
     schema: [],
     messages: {
       functionLength:
-        "CD-41: this function body has {{lines}} lines, above the limit of {{max}}; split it into helpers.",
+        "This function body has {{lines}} lines, above the limit of {{max}}; split it into helpers.",
     },
   },
   observe: (context) => ({ functions: (node) => reportLongFunction({ context, node }) }),

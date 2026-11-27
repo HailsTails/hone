@@ -29,6 +29,7 @@ describe("readListedPieces", () => {
       .fn<FileTextPort["exists"]>()
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
+      .mockReturnValueOnce("present")
       .mockReturnValueOnce("absent")
       .mockReturnValue("present");
     const read = vi

@@ -313,7 +313,7 @@ const lengthAllowCases: readonly SourceCase[] = [
   },
 ];
 
-describe("CD-41 cognitive-complexity rule through the ESLint runner's lintSourceCases", () => {
+describe("cognitive-complexity rule through the ESLint runner's lintSourceCases", () => {
   it.each([...complexityFlagCases, ...complexityAllowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {
@@ -336,7 +336,7 @@ describe("CD-41 cognitive-complexity rule through the ESLint runner's lintSource
   );
 });
 
-describe("CD-41 function-length rule through the ESLint runner's lintSourceCases", () => {
+describe("function-length rule through the ESLint runner's lintSourceCases", () => {
   it.each([...lengthFlagCases, ...lengthAllowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {

@@ -7,6 +7,7 @@
   "settings": {
     "rule": "throw-only-error",
     "pluginNamespace": "hone-thrown-non-error-throw-only-error",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "throw-only-error.ts"
+  },
+  "moduleScope": "shared"
 }

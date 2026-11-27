@@ -7,6 +7,7 @@
   "settings": {
     "rule": "focused-tests",
     "pluginNamespace": "hone-test-switched-off-focused-tests",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "test-modifiers.ts"
+  },
+  "moduleScope": "shared"
 }

@@ -1,4 +1,4 @@
-import implicitAny from "../../../protocol/plugin-rules/implicit-any-let.ts";
+import { readHoneRules } from "../../runner/pieces/hone-rules.ts";
 import {
   defaultNativeRuleSources,
   type NativeRuleSources,
@@ -9,7 +9,7 @@ export const createPlugin = (sources: NativeRuleSources) => ({
   meta: { name: "hone-cd1", version: "0.0.0-local" },
   rules: {
     ...typescriptEslintRules({ names: ["no-explicit-any"], sources }),
-    ...implicitAny.rules,
+    ...readHoneRules({ names: ["implicit-any-let"] }),
   },
 });
 

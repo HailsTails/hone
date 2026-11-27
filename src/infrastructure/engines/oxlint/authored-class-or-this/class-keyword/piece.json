@@ -7,6 +7,7 @@
   "settings": {
     "rule": "no-class-authoring",
     "pluginNamespace": "hone-authored-class-or-this-class-keyword",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "class-authoring-plugin.ts"
+  },
+  "moduleScope": "runner"
 }

@@ -6,6 +6,7 @@
   "settings": {
     "rule": "filename-case",
     "pluginNamespace": "hone-name-off-its-casing-filename-case",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "filename-case.ts"
+  },
+  "moduleScope": "shared"
 }

@@ -49,13 +49,45 @@ export const misnamedRuleIdSchema = z.discriminatedUnion("kind", [
     .readonly(),
 ]);
 
-export const checksSliceProblemSchema = z
-  .object({
-    file: repoPathSchema,
-    state: z.enum(["missing", "out-of-date", "not-included", "unconfigured"]),
-    detail: z.string().min(1).optional(),
+const engineInstructionsSchema = z
+  .strictObject({
+    kind: z.literal("engine-instructions"),
+    detail: z.string().min(1),
   })
   .readonly();
+
+const projectionInclusionSchema = z.union([
+  z.strictObject({ kind: z.literal("include-projection") }).readonly(),
+  engineInstructionsSchema,
+]);
+
+export const createChecksSliceProblemSchema = <Shape extends z.ZodRawShape>(scope: Shape) =>
+  z.discriminatedUnion("state", [
+    z
+      .strictObject({ ...scope, file: repoPathSchema, state: z.enum(["missing", "out-of-date"]) })
+      .readonly(),
+    z
+      .strictObject({
+        ...scope,
+        file: repoPathSchema,
+        state: z.literal("not-included"),
+        recovery: projectionInclusionSchema,
+      })
+      .readonly(),
+    z
+      .strictObject({
+        ...scope,
+        file: repoPathSchema,
+        state: z.literal("unconfigured"),
+        recovery: z.union([
+          z.strictObject({ kind: z.literal("generate-configuration") }).readonly(),
+          engineInstructionsSchema,
+        ]),
+      })
+      .readonly(),
+  ]);
+
+export const checksSliceProblemSchema = createChecksSliceProblemSchema({});
 
 const checksReportSchema = z.strictObject({
   slices: z
@@ -83,9 +115,15 @@ export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
     .readonly(),
   checksReportSchema
     .extend({
-      projection: z.enum(["out-of-date", "missing", "not-included"]),
+      projection: z.enum(["out-of-date", "missing"]),
       projectionFile: repoPathSchema,
-      projectionDetail: z.string().min(1).optional(),
+    })
+    .readonly(),
+  checksReportSchema
+    .extend({
+      projection: z.literal("not-included"),
+      projectionFile: repoPathSchema,
+      recovery: projectionInclusionSchema,
     })
     .readonly(),
 ]);

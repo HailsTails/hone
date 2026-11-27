@@ -1,4 +1,4 @@
-import classAuthoring from "../../../protocol/plugin-rules/class-authoring.ts";
+import { readHoneRules } from "../../runner/pieces/hone-rules.ts";
 import {
   defaultNativeRuleSources,
   type NativeRuleSources,
@@ -13,7 +13,7 @@ export type ClassAuthoringPlugin = {
 export const createPlugin = (sources: NativeRuleSources): ClassAuthoringPlugin => ({
   meta: { name: "hone", version: "0.0.0-local" },
   rules: {
-    ...classAuthoring.rules,
+    ...readHoneRules({ names: ["no-class-authoring"] }),
     ...typescriptEslintRules({ names: ["no-extraneous-class"], sources }),
   },
 });

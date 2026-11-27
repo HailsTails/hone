@@ -78,10 +78,10 @@ const classKindOf = ({ node }: { readonly node: ClassSite }): ClassSyntax["kind"
 const noClassAuthoring = siteRule({
   meta: {
     type: "problem",
-    docs: { description: "Disallow authored runtime classes (CD-14)" },
+    docs: { description: "Disallow authored runtime classes" },
     schema: [],
     messages: {
-      noClass: "CD-14: use functions and closure-backed factories instead of authoring a class.",
+      noClass: "Use functions and closure-backed factories instead of authoring a class.",
     },
   },
   observe: (context) => {

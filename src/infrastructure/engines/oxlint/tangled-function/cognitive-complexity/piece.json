@@ -7,6 +7,7 @@
   "settings": {
     "rule": "cognitive-complexity",
     "pluginNamespace": "hone-tangled-function-cognitive-complexity",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "function-complexity.ts"
+  },
+  "moduleScope": "shared"
 }

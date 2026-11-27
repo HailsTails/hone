@@ -39,14 +39,6 @@ describe("authored class ESLint declarations", () => {
         pluginNamespace: "hone",
         pluginModule: "eslint-plugin.ts",
         rule: "no-extraneous-class",
-        options: [
-          {
-            allowConstructorOnly: true,
-            allowEmpty: true,
-            allowStaticOnly: false,
-            allowWithDecorator: true,
-          },
-        ],
       },
     });
   });

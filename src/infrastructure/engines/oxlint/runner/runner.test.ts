@@ -74,7 +74,10 @@ describe("createOxlintRunner", () => {
           {
             file: "hone.oxlint.json",
             state: "unconfigured",
-            detail: expect.stringContaining("the repository root has no tracked Oxlint config"),
+            recovery: {
+              kind: "engine-instructions",
+              detail: expect.stringContaining("the repository root has no tracked Oxlint config"),
+            },
           },
         ],
       },

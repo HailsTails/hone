@@ -1,4 +1,5 @@
 import type { CheckAddressText } from "../../domain/language-layer/check-address-text.ts";
+import { bindHoneCheckOptions } from "../../domain/rule-set/check-options.ts";
 import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../domain/runner/check-binding.ts";
@@ -22,5 +23,6 @@ export const createCheckBinding = (request: {
     forms: piece.forms,
     checkSettings: defaultClauseSettings({ declarations: piece.declarations }),
     edition: piece.editions.default,
+    ...bindHoneCheckOptions({ ruleSet, address: check, edition: piece.editions.default }),
   };
 };

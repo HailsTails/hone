@@ -11,6 +11,7 @@ import type {
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
+import { bindHoneCheckOptions } from "../../../domain/rule-set/check-options.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
@@ -247,6 +248,11 @@ const selectedCheckOf = (
           forms: piece.value.forms,
           checkSettings: settled.value.clauseSettings,
           edition: settled.value.edition,
+          ...bindHoneCheckOptions({
+            ruleSet: chosen.address.ruleSet,
+            address: chosen.address.check,
+            edition: settled.value.edition,
+          }),
         },
       },
     ],

@@ -29,7 +29,6 @@ import type {
   EmbeddedRunner,
   EmbeddedRunRequest,
 } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
 import { mappedOutcome } from "../checks-outcomes.ts";
 import type { ChecksRunnerPorts, EslintPlatformPorts } from "../checks-runner/checks-ports.ts";
 import type { ConfigLookup } from "../config-roots/config-lookup.ts";
@@ -81,6 +80,7 @@ import {
 import { trackedExceptionsOfRules } from "../native-exceptions/checks-tracked-exceptions.ts";
 import type { SelectedRule } from "../native-exceptions/package-script-scanner.ts";
 import { scriptOptionJudge } from "../native-exceptions/script-option-effect.ts";
+import { readLegacyEslintCheckOptions } from "../pieces/check-options.ts";
 import type { LoadedEslintPlugin } from "../pieces/eslint-plugin-schema.ts";
 import { type CoreInstall, coreInstallOf } from "../projection/core-install.ts";
 import { projectionHolding } from "../projection/projection-holding.ts";
@@ -284,7 +284,11 @@ const projectionClausesOf = (request: {
   request.configured.map((entry) => ({
     address: entry.clause.address,
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
+    options: readLegacyEslintCheckOptions({
+      address: entry.clause.address,
+      settings: entry.settings,
+      edition: entry.clause.edition,
+    }),
     pluginNamespace: entry.settings.pluginNamespace,
     pieceRoot: entry.clause.pieceRoot,
     pluginModule: entry.settings.pluginModule,
@@ -493,7 +497,11 @@ const governedRulesOf = (request: {
 }): readonly GovernedRule[] =>
   request.selected.map((entry) => ({
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
+    options: readLegacyEslintCheckOptions({
+      address: entry.clause.address,
+      settings: entry.settings,
+      edition: entry.clause.edition,
+    }),
   }));
 
 const pluginsByNamespace = (request: {

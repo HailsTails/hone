@@ -1,7 +1,7 @@
 import { assert, expect, it } from "vitest";
 
-import { runOxlint } from "../../runner/toolchain/oxlint-port.ts";
-import { readOxlintToolchain } from "../../runner/toolchain/oxlint-toolchain.ts";
+import { runOxlint } from "./toolchain/oxlint-port.ts";
+import { readOxlintToolchain } from "./toolchain/oxlint-toolchain.ts";
 
 it("passes the authored selector and message through Oxlint's JavaScript rule", async () => {
   const toolchain = readOxlintToolchain({ folder: import.meta.dirname, peerFolders: [] });
@@ -16,7 +16,7 @@ it("passes the authored selector and message through Oxlint's JavaScript rule", 
         kind: "plugin",
         namespace: "hone-null",
         id,
-        module: `${import.meta.dirname}/oxlint-plugin.ts`,
+        module: `${import.meta.dirname}/non-null-assertions-plugin.ts`,
         options: [{ selector: "[definite=true]", message: "Initialise the field." }],
       },
     ],

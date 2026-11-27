@@ -10,7 +10,7 @@ const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/instal
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
-const CD_14 = disciplineIdOf("CD-14");
+const CLASS_DISCIPLINE_ID = disciplineIdOf("CD-14");
 
 const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 
@@ -33,7 +33,7 @@ const NAMES_TEXT = `{
   "recordKinds": {}
 }`;
 
-const NAMES_WITHOUT_CD_14_TEXT = `{
+const NAMES_WITHOUT_CLASS_SYNTAX_TEXT = `{
   "version": 1,
   "clauses": [{ "clause": "CD-15#loops", "sight": { "kind": "one-symptom", "symptom": "loop-keyword" }, "checks": ["loop-keyword#loop-statement"], "anchor": { "kind": "file" } }],
   "recordKinds": {}
@@ -63,7 +63,7 @@ const fileTextOf = (request: {
   write: vi.fn<FileTextPort["write"]>(),
 });
 
-const CD_14_DISCIPLINE = {
+const CLASS_SYNTAX_DISCIPLINE = {
   outcome: "ok",
   value: {
     held: "present",
@@ -107,13 +107,13 @@ describe("readInstallDiscipline", () => {
     const exists = vi.fn<FileTextPort["exists"]>();
     const read = vi
       .fn<FileTextPort["read"]>()
-      .mockReturnValueOnce({ outcome: "ok", value: NAMES_WITHOUT_CD_14_TEXT });
+      .mockReturnValueOnce({ outcome: "ok", value: NAMES_WITHOUT_CLASS_SYNTAX_TEXT });
     expect(
       readInstallDiscipline({
         fileText: fileTextOf({ exists, read }),
         path: PATH,
         installRoot: INSTALL_ROOT,
-        discipline: CD_14,
+        discipline: CLASS_DISCIPLINE_ID,
       }),
     ).toEqual({
       outcome: "ok",
@@ -143,10 +143,10 @@ describe("readInstallDiscipline", () => {
       fileText: fileTextOf({ exists, read }),
       path: PATH,
       installRoot: INSTALL_ROOT,
-      discipline: CD_14,
+      discipline: CLASS_DISCIPLINE_ID,
     });
 
-    expect(discipline).toEqual(CD_14_DISCIPLINE);
+    expect(discipline).toEqual(CLASS_SYNTAX_DISCIPLINE);
     expect(exists).not.toHaveBeenCalledWith({
       path: "/install/src/infrastructure/engines/oxlint/authored-class-or-this/class-keyword/piece.json",
     });
@@ -171,7 +171,7 @@ describe("readInstallDiscipline", () => {
         fileText: fileTextOf({ exists, read }),
         path: PATH,
         installRoot: INSTALL_ROOT,
-        discipline: CD_14,
+        discipline: CLASS_DISCIPLINE_ID,
       }),
     ).toEqual({
       outcome: "failed",
@@ -197,7 +197,7 @@ describe("readInstallDiscipline", () => {
       fileText: fileTextOf({ exists, read }),
       path: PATH,
       installRoot: INSTALL_ROOT,
-      discipline: CD_14,
+      discipline: CLASS_DISCIPLINE_ID,
     });
 
     expect(discipline).toEqual({
@@ -228,7 +228,7 @@ describe("readInstallDiscipline", () => {
       fileText: fileTextOf({ exists, read }),
       path: PATH,
       installRoot: INSTALL_ROOT,
-      discipline: CD_14,
+      discipline: CLASS_DISCIPLINE_ID,
     });
 
     expect(discipline).toEqual({
@@ -253,7 +253,7 @@ describe("readInstallDiscipline", () => {
         fileText: fileTextOf({ exists, read }),
         path: PATH,
         installRoot: INSTALL_ROOT,
-        discipline: CD_14,
+        discipline: CLASS_DISCIPLINE_ID,
       }),
     ).toEqual({
       outcome: "failed",
@@ -276,7 +276,7 @@ describe("readInstallDiscipline", () => {
         fileText: fileTextOf({ exists, read }),
         path: PATH,
         installRoot: INSTALL_ROOT,
-        discipline: CD_14,
+        discipline: CLASS_DISCIPLINE_ID,
       }),
     ).toEqual({
       outcome: "failed",

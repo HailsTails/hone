@@ -7,7 +7,7 @@ import type { ModuleLoaderPort } from "../../../../../../application/ports/host/
 import type { SourceCase } from "../../../../../../domain/rule-set/rule-set-types.ts";
 import type { RunnerClause } from "../../../../../../domain/runner/runner-module-types.ts";
 import { eslintPieceSettingsSchema } from "../../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
-import { ruleOptionsOf } from "../../../../protocol/plugin-settings/rule-options.ts";
+import { readLegacyEslintCheckOptions } from "../../pieces/check-options.ts";
 import {
   type LoadedEslintPlugin,
   eslintPluginModuleSchema,
@@ -96,7 +96,11 @@ export const eslint9CaseMismatches = async (request: {
 }): Promise<readonly CaseMismatch[]> => {
   const settings = eslintPieceSettingsSchema.parse(request.row.clause.settings);
   const { pluginNamespace, pluginModule, rule } = settings;
-  const options = ruleOptionsOf({ settings, edition: request.row.clause.edition });
+  const options = readLegacyEslintCheckOptions({
+    address: request.row.clause.address,
+    settings,
+    edition: request.row.clause.edition,
+  });
   const eslint = new eslint9.ESLint({
     overrideConfigFile: true,
     overrideConfig: [

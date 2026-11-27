@@ -19,10 +19,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/published-manifest/published-manifest.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/release/release-state.test.ts"
     },
     {
@@ -36,10 +32,6 @@
     {
       "answers": "text-past-its-reader#test-body",
       "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "delivery/packaging/version-two-plugin-modules.test.ts"
     },
     {
       "answers": "text-past-its-reader#test-body",

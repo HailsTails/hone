@@ -108,6 +108,40 @@ describe("packagePlanOf", () => {
     });
   });
 
+  it("builds one shared implementation when either engine selects the check", () => {
+    const sourcePaths = [
+      "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/piece.json",
+      "src/infrastructure/engines/oxlint/name-off-its-casing/filename-case/piece.json",
+      "src/infrastructure/engines/protocol/plugin-rules/filename-case.ts",
+    ];
+    const pieces = [
+      {
+        path: "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/piece.json",
+        text: '{"version":2,"moduleScope":"shared","settings":{"pluginModule":"filename-case.ts"}}',
+      },
+      {
+        path: "src/infrastructure/engines/oxlint/name-off-its-casing/filename-case/piece.json",
+        text: '{"version":2,"moduleScope":"shared","settings":{"module":"filename-case.ts"}}',
+      },
+    ];
+
+    const plan = packagePlanOf({ sourcePaths, pieces });
+
+    expect(plan).toMatchObject({
+      outcome: "ok",
+      value: {
+        exported: [
+          "src/infrastructure/engines/protocol/plugin-rules/filename-case.js",
+          {
+            specifier:
+              "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/eslint-plugin.js",
+            module: "src/infrastructure/engines/protocol/plugin-rules/filename-case.js",
+          },
+        ],
+      },
+    });
+  });
+
   it("exports Oxlint plugin modules for adopter configurations", () => {
     const declaration = "src/infrastructure/engines/oxlint/naming/name-format/piece.json";
     const module = "src/infrastructure/engines/oxlint/naming/name-format/plugin.ts";

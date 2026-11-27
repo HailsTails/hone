@@ -85,7 +85,7 @@ const implicitAllowCases: readonly SourceCase[] = [
   },
 ];
 
-describe("CD-1 implicit-any-let rule through the ESLint runner's lintSourceCases", () => {
+describe("implicit-any-let rule through the ESLint runner's lintSourceCases", () => {
   it.each([...implicitFlagCases, ...implicitAllowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {

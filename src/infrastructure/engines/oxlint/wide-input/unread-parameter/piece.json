@@ -6,6 +6,7 @@
   "settings": {
     "rule": "unread-parameter",
     "pluginNamespace": "hone-wide-input-unread-parameter",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "unread-parameter.ts"
+  },
+  "moduleScope": "shared"
 }

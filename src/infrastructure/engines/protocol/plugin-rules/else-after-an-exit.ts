@@ -104,11 +104,11 @@ const reportedElses = (request: {
 const uselessElse = siteRule({
   meta: {
     type: "suggestion",
-    docs: { description: "Disallow else after a branch that always exits (CD-42)" },
+    docs: { description: "Disallow else after a branch that always exits" },
     schema: [],
     messages: {
       uselessElse:
-        "CD-42: the branch above always exits, so drop this else and return the happy path last.",
+        "The branch above always exits, so drop this else and return the happy path last.",
     },
   },
   observe: (context) => ({

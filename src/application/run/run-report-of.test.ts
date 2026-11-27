@@ -30,7 +30,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit, CheckNativeException } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedEngineProjection, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
@@ -327,15 +327,21 @@ const CAST_HIT: CheckHit = {
 
 const CAST_FINDING = { ...CAST_HIT, mechanism: ESLINT };
 
-const eslintRunOf = (request: {
-  readonly hits: readonly CheckHit[];
-  readonly projection: NamedEngineRun["projection"];
-}): NamedEngineRun => ({
+const eslintRunOf = (
+  request: {
+    readonly hits: readonly CheckHit[];
+  } & (
+    | Pick<
+        Extract<NamedEngineRun, { readonly projection: "not-included" }>,
+        "projection" | "recovery"
+      >
+    | { readonly projection: Exclude<NamedEngineRun["projection"], "not-included"> }
+  ),
+): NamedEngineRun => ({
   mechanism: ESLINT,
-  hits: request.hits,
+  ...request,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
-  projection: request.projection,
   projectionFile: repoPathOf("hone.eslint.mjs"),
   slices: [],
   measured: [],
@@ -458,14 +464,22 @@ const EMPTY_REPORT: RunReport = {
 };
 
 describe("namedRunReportOf, findings and records", () => {
-  it.each(["not-included", "current", "out-of-date"] as const)(
-    "names the nested folder once when the %s projection measured nothing",
+  it.each<NamedEngineProjection>([
+    {
+      projection: "not-included",
+      projectionFile: repoPathOf("hone.eslint.mjs"),
+      recovery: { kind: "include-projection" },
+    },
+    { projection: "current" },
+    { projection: "out-of-date", projectionFile: repoPathOf("hone.eslint.mjs") },
+  ])(
+    "names the nested folder once when the $projection projection measured nothing",
     (projection) => {
       const nested = repoPathOf("packages/web");
       expect(
         namedRunReportOf({
           ...REQUEST,
-          runs: [{ ...eslintRunOf({ hits: [], projection }), nestedConfigurations: [nested] }],
+          runs: [{ ...eslintRunOf({ hits: [], ...projection }), nestedConfigurations: [nested] }],
         }),
       ).toMatchObject({
         outcome: "ok",
@@ -477,6 +491,7 @@ describe("namedRunReportOf, findings and records", () => {
               projection: "not-included",
               file: repoPathOf("hone.eslint.mjs"),
               nestedConfigurations: [nested],
+              recovery: { kind: "include-projection" },
             },
           ],
           assessment: [],
@@ -666,7 +681,13 @@ describe("namedRunReportOf, findings and records", () => {
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
-        runs: [eslintRunOf({ hits: [], projection: "not-included" })],
+        runs: [
+          eslintRunOf({
+            hits: [],
+            projection: "not-included",
+            recovery: { kind: "include-projection" },
+          }),
+        ],
       }),
     ).toEqual({
       outcome: "ok",
@@ -679,6 +700,7 @@ describe("namedRunReportOf, findings and records", () => {
             projection: "not-included",
             file: repoPathOf("hone.eslint.mjs"),
             nestedConfigurations: [],
+            recovery: { kind: "include-projection" },
           },
         ],
       },

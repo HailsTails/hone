@@ -39,8 +39,19 @@ export type ChecksProjectionProblem =
   | ChecksSliceProblem
   | { readonly state: "left-over"; readonly file: RepoPath };
 
-export type ChecksSliceProblem = {
-  readonly file: RepoPath;
-  readonly state: "missing" | "out-of-date" | "not-included" | "unconfigured";
-  readonly detail?: string;
-};
+type EngineInstructions = { readonly kind: "engine-instructions"; readonly detail: string };
+
+export type ProjectionInclusion = { readonly kind: "include-projection" } | EngineInstructions;
+
+export type ChecksSliceProblem =
+  | { readonly file: RepoPath; readonly state: "missing" | "out-of-date" }
+  | {
+      readonly file: RepoPath;
+      readonly state: "not-included";
+      readonly recovery: ProjectionInclusion;
+    }
+  | {
+      readonly file: RepoPath;
+      readonly state: "unconfigured";
+      readonly recovery: { readonly kind: "generate-configuration" } | EngineInstructions;
+    };

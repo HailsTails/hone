@@ -6,10 +6,10 @@ import { absoluteWithin } from "../../../../../domain/repository/absolute-within
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import type { RuleOptions } from "../../../../../domain/runner/check-binding.ts";
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-types.ts";
 import type { CoreInstall } from "../projection/core-install.ts";
 import { type ProjectionStates, projectionStateAt } from "../projection/projection-states.ts";
 import { type ProjectedPiece, projectionText } from "../projection/projection-text.ts";

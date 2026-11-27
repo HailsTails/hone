@@ -18,7 +18,8 @@ import {
   type EslintPieceSettings,
   eslintPieceSettingsSchema,
 } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
-import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
+import type { RuleOptions } from "../../../protocol/plugin-settings/eslint-piece-settings-types.ts";
+import { readEslintCheckOptions, readLegacyEslintCheckOptions } from "../pieces/check-options.ts";
 import {
   eslintPluginModuleSchema,
   type LoadedEslintPlugin,
@@ -121,7 +122,7 @@ const lintedSourceCases = (request: {
   }>;
   readonly cwd: AbsolutePath;
   readonly cases: readonly SourceCase[];
-  readonly edition: CheckBinding["edition"];
+  readonly options: RuleOptions;
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   if (request.selected.outcome === "failed") {
@@ -132,7 +133,7 @@ const lintedSourceCases = (request: {
     plugin: request.selected.value.plugin,
     pluginNamespace: request.selected.value.settings.pluginNamespace,
     rule: request.selected.value.settings.rule,
-    options: ruleOptionsOf({ settings: request.selected.value.settings, edition: request.edition }),
+    options: request.options,
     cases: request.cases,
   });
 };
@@ -160,7 +161,11 @@ export const conformedCases = (request: {
     lintedSourceCases({
       selected,
       cwd: cwd.data,
-      edition: request.clause.edition,
+      options: readLegacyEslintCheckOptions({
+        address: request.clause.address,
+        settings: configured.value.settings,
+        edition: request.clause.edition,
+      }),
       cases: request.cases,
       eslint: request.eslint,
     }),
@@ -197,7 +202,11 @@ export const conformedNamedCases = async (request: {
   return lintedSourceCases({
     selected: { outcome: "ok", value: { plugin: parsed.value, settings: settings.data } },
     cwd: cwd.data,
-    edition: binding.edition,
+    options: readEslintCheckOptions({
+      settings: settings.data,
+      edition: binding.edition,
+      checkOptions: binding.checkOptions,
+    }),
     cases: request.cases,
     eslint: request.eslint,
   });

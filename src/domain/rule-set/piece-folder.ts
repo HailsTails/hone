@@ -9,6 +9,23 @@ type RuleSetPlace = {
 
 const INSTALL_ENGINES_SEGMENTS: readonly string[] = ["src", "infrastructure", "engines"];
 
+export const sharedPluginFolderSegments = (installRoot: string): readonly string[] => [
+  installRoot,
+  ...INSTALL_ENGINES_SEGMENTS,
+  "protocol",
+  "plugin-rules",
+];
+
+export const runnerFolderSegments = (request: {
+  readonly installRoot: string;
+  readonly mechanism: EngineId;
+}): readonly string[] => [
+  request.installRoot,
+  ...INSTALL_ENGINES_SEGMENTS,
+  request.mechanism,
+  "runner",
+];
+
 export const enginesFolderSegmentsOf = (request: RuleSetPlace): readonly string[] =>
   request.ruleSetRoot === request.installRoot ? INSTALL_ENGINES_SEGMENTS : ["engines"];
 

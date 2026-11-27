@@ -53,7 +53,7 @@ describe("runLoadFailureSchema", () => {
     expect(runLoadFailureSchema.safeParse(failure)).toEqual({ success: true, data: failure });
   });
 
-  it("retains the reason a projection slice is out of date", () => {
+  it("reads an out-of-date package projection with its recovery command", () => {
     const failure = {
       kind: "projection-stale",
       problem: {
@@ -61,7 +61,6 @@ describe("runLoadFailureSchema", () => {
         engine: { name: "eslint" },
         state: "out-of-date",
         file: "packages/web/hone.eslint.ts",
-        detail: "projected rules differ from the selected rules",
       },
       projectCommand: "hone project --repo /repo",
     };

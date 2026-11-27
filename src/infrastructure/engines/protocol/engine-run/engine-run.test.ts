@@ -464,6 +464,7 @@ describe("measureVersionOneProjectionOver", () => {
       measured: [],
       projection: "not-included",
       projectionFile: projection.projectionFile,
+      recovery: { kind: "include-projection" },
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],

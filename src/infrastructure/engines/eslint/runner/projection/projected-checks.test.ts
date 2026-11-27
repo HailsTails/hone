@@ -92,8 +92,8 @@ const PARAMETER_COUNT_BINDING: CheckBinding = {
     pluginNamespace: "hone-cd40",
     pluginModule: "cd40/cd40.eslint-plugin.ts",
     rule: "max-params",
-    options: [{ max: 2, countVoidThis: true }],
   },
+  checkOptions: { kind: "parameter-count", maximumSlots: 2, voidReceiver: "count" },
   checkSettings: {},
   edition: editionOf("1"),
 };

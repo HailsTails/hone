@@ -105,7 +105,7 @@ const allowCases: readonly SourceCase[] = [
   },
 ];
 
-describe("CD-42 useless-else rule through the ESLint runner's lintSourceCases", () => {
+describe("useless-else rule through the ESLint runner's lintSourceCases", () => {
   it.each([...flagCases, ...allowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {

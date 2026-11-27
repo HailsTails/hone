@@ -6,7 +6,8 @@
   },
   "settings": {
     "rule": "no-restricted-syntax",
-    "module": "oxlint-plugin.ts",
+    "module": "non-null-assertions-plugin.ts",
     "pluginNamespace": "hone-claimed-type-non-null-assertions"
-  }
+  },
+  "moduleScope": "runner"
 }

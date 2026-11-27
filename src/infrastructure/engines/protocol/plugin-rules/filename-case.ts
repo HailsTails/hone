@@ -51,10 +51,10 @@ const filenameDisposition = (request: { readonly basename: string }): FilenameDi
 const filenameCase = siteRule({
   meta: {
     type: "suggestion",
-    docs: { description: "Require kebab-case or PascalCase file names (CD-7)" },
+    docs: { description: "Require kebab-case or PascalCase file names" },
     schema: [],
     messages: {
-      filenameCase: "CD-7: name this file in kebab-case or PascalCase.",
+      filenameCase: "Name this file in kebab-case or PascalCase.",
     },
   },
   observe: (context) => ({

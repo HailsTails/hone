@@ -60,10 +60,10 @@ const thrownDisposition = (request: {
 const throwOnlyError = siteRule({
   meta: {
     type: "problem",
-    docs: { description: "Disallow throwing values that cannot be Error objects (CD-10)" },
+    docs: { description: "Disallow throwing values that cannot be Error objects" },
     schema: [],
     messages: {
-      throwOnlyError: "CD-10: throw an Error, not a literal, object, template or undefined.",
+      throwOnlyError: "Throw an Error, not a literal, object, template or undefined.",
     },
   },
   observe: (context) => ({

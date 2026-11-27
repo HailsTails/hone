@@ -105,9 +105,7 @@ const notRunOf = (request: {
           projection: "not-included",
           file: request.run.projectionFile,
           nestedConfigurations,
-          ...(request.run.projectionDetail === undefined
-            ? {}
-            : { detail: request.run.projectionDetail }),
+          recovery: request.run.recovery,
         },
       ];
     case "none":
@@ -126,6 +124,7 @@ const notRunOf = (request: {
             projection: "not-included",
             file: projectionFile,
             nestedConfigurations,
+            recovery: { kind: "include-projection" },
           },
         ];
       }

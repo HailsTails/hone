@@ -127,7 +127,7 @@ const skippedAllowCases: readonly SourceCase[] = [
   },
 ];
 
-describe("CD-27 focused-tests rule through the ESLint runner's lintSourceCases", () => {
+describe("focused-tests rule through the ESLint runner's lintSourceCases", () => {
   it.each([...focusedFlagCases, ...focusedAllowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {
@@ -150,7 +150,7 @@ describe("CD-27 focused-tests rule through the ESLint runner's lintSourceCases",
   );
 });
 
-describe("CD-27 skipped-tests rule through the ESLint runner's lintSourceCases", () => {
+describe("skipped-tests rule through the ESLint runner's lintSourceCases", () => {
   it.each([...skippedFlagCases, ...skippedAllowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {

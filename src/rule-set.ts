@@ -22,4 +22,4 @@ export type {
 export type { AnchorKind } from "./domain/finding/anchor.ts";
 export type { JsonValue, ReadonlyJsonValue } from "./domain/settings/json-values/json-value.ts";
 export type { EslintPieceSettings } from "./infrastructure/engines/protocol/plugin-settings/eslint-piece-settings-types.ts";
-export type { RuleOptions } from "./domain/runner/check-binding.ts";
+export type { RuleOptions } from "./infrastructure/engines/protocol/plugin-settings/eslint-piece-settings-types.ts";

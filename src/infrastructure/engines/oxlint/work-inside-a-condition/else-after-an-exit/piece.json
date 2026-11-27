@@ -7,6 +7,7 @@
   "settings": {
     "rule": "useless-else",
     "pluginNamespace": "hone-work-inside-a-condition-else-after-an-exit",
-    "module": "oxlint-plugin.ts"
-  }
+    "module": "else-after-an-exit.ts"
+  },
+  "moduleScope": "shared"
 }

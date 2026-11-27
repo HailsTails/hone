@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { moduleFileForm } from "../../../../application/ports/host/module-extension.ts";
+import { isCheckAddressText } from "../../../../domain/language-layer/check-address-text.ts";
 import { isRepoPathText } from "../../../../domain/repository/repo-path.ts";
 import type { Equal } from "../runner-module/type-equality.ts";
 import type { EslintPieceSettings } from "./eslint-piece-settings-types.ts";
@@ -26,6 +27,7 @@ export const eslintPieceSettingsSchema = z
     pluginNamespace: pluginNamespaceSchema,
     pluginModule: pieceModulePathSchema,
     rule: z.string(),
+    authoredCheck: z.string().refine(isCheckAddressText).optional(),
     options: ruleOptionsSchema.optional(),
     optionsByEdition: optionsByEditionSchema.optional(),
   })

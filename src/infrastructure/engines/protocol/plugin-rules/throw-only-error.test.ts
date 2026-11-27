@@ -115,7 +115,7 @@ const allowCases: readonly SourceCase[] = [
   },
 ];
 
-describe("CD-10 throw-only-error rule through the ESLint runner's lintSourceCases", () => {
+describe("throw-only-error rule through the ESLint runner's lintSourceCases", () => {
   it.each([...flagCases, ...allowCases])(
     "flags exactly the expected lines of the case $name",
     async (sourceCase) => {

@@ -1,4 +1,7 @@
-import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
+import type {
+  NamedEngineProjection,
+  NamedEngineRunRequest,
+} from "../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../domain/gathered-outcomes.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
@@ -23,18 +26,29 @@ const path = createDefaultPathPort({});
 const DISABLE_CONFIGURATION =
   "src/infrastructure/engines/oxlint/runner/toolchain/disable-inspection.json";
 
-const createProjectionDetail = (request: Pick<ScopeObservation, "file" | "state">) => {
-  const { file, state } = request;
+const instructionsToIncludeProjection = (file: ScopeObservation["file"]): string => {
   const separator = file.lastIndexOf("/");
-  const folder = separator === -1 ? "" : file.slice(0, separator);
-  if (state === "unconfigured") {
-    return `${folder || "the repository root"} has no tracked Oxlint config; add and track one, or exclude files outside your intended scope and remove any obsolete projection`;
-  }
-  if (state === "not-included") {
-    const location = folder === "" ? "for the files under check" : `in ${folder}`;
-    return `extend ./${file.slice(separator + 1)} from the Oxlint configuration ${location}, after any configuration that changes the selected rules`;
-  }
-  return undefined;
+  const location =
+    separator === -1 ? "for the files under check" : `in ${file.slice(0, separator)}`;
+  return `extend ./${file.slice(separator + 1)} from the Oxlint configuration ${location}, after any configuration that changes the selected rules`;
+};
+
+const instructionsForMissingConfiguration = (file: ScopeObservation["file"]): string => {
+  const separator = file.lastIndexOf("/");
+  const folder = separator === -1 ? "the repository root" : file.slice(0, separator);
+  return `${folder} has no tracked Oxlint config; add and track one, or exclude files outside your intended scope and remove any obsolete projection`;
+};
+
+const createRootProjection = (root: ScopeObservation | undefined): NamedEngineProjection => {
+  if (root === undefined || root.state === "unconfigured") return { projection: "none" };
+  const { state, file } = root;
+  return state === "not-included"
+    ? {
+        projection: state,
+        projectionFile: file,
+        recovery: { kind: "engine-instructions", detail: instructionsToIncludeProjection(file) },
+      }
+    : { projection: state, projectionFile: file };
 };
 
 const createReport = (request: {
@@ -42,19 +56,35 @@ const createReport = (request: {
 }): NamedChecksRunReport => {
   const rootFile = createProjectionPath("");
   const root = request.observations.find(({ file }) => file === rootFile);
-  const projection =
-    root === undefined || root.state === "unconfigured"
-      ? { projection: "none" as const }
-      : { projection: root.state, projectionFile: root.file };
-  const projectionDetail =
-    root?.state === "not-included" ? createProjectionDetail(root) : undefined;
   return {
-    ...projection,
-    ...(projectionDetail === undefined ? {} : { projectionDetail }),
+    ...createRootProjection(root),
     slices: request.observations.flatMap(({ file, state }): NamedChecksRunReport["slices"] => {
-      if (state === "current" || (file === rootFile && state !== "unconfigured")) return [];
-      const detail = createProjectionDetail({ file, state });
-      return [detail === undefined ? { file, state } : { file, state, detail }];
+      if (state === "unconfigured") {
+        return [
+          {
+            file,
+            state,
+            recovery: {
+              kind: "engine-instructions",
+              detail: instructionsForMissingConfiguration(file),
+            },
+          },
+        ];
+      }
+      if (state === "current" || file === rootFile) return [];
+      if (state === "not-included") {
+        return [
+          {
+            file,
+            state,
+            recovery: {
+              kind: "engine-instructions",
+              detail: instructionsToIncludeProjection(file),
+            },
+          },
+        ];
+      }
+      return [{ file, state }];
     }),
     nestedConfigurations: [],
     unprojectedFolders: [],

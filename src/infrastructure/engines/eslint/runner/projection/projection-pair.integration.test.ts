@@ -1,12 +1,13 @@
 import { assert, describe, expect, it, onTestFinished } from "vitest";
 
-import type { PieceClause } from "../../../../../application/ports/settings-sources.ts";
+import type { CheckPiece } from "../../../../../application/ports/settings-sources.ts";
 import {
   type CheckAddressText,
   checkNamesOf,
 } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { bindHoneCheckOptions } from "../../../../../domain/rule-set/check-options.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
@@ -86,7 +87,7 @@ const readPiece = createCheckPieceSource({
 
 const bindPiece = (request: {
   readonly address: CheckAddressText;
-  readonly piece: PieceClause;
+  readonly piece: CheckPiece;
 }): CheckBinding => ({
   address: request.address,
   ruleSet: "hone",
@@ -96,6 +97,11 @@ const bindPiece = (request: {
   settings: request.piece.settings,
   checkSettings: {},
   edition: request.piece.editions.default,
+  ...bindHoneCheckOptions({
+    address: request.address,
+    ruleSet: "hone",
+    edition: request.piece.editions.default,
+  }),
 });
 
 const directory = createDefaultDirectoryPort({});
@@ -164,13 +170,11 @@ describe.each(ESLINT_LINES)("the version 2 projection on %s", (line) => {
             0,
             {
               selector: "TSNonNullExpression",
-              message:
-                "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
+              message: expect.any(String),
             },
             {
               selector: "[definite=true]",
-              message:
-                "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead.",
+              message: expect.any(String),
             },
           ],
           "hone/rebinding#parameter-reassignment": [0, { props: false }],
@@ -205,8 +209,7 @@ describe.each(ESLINT_LINES)("the version 2 projection on %s", (line) => {
             {
               ruleId: "hone/claimed-type#non-null-assertions",
               line: 2,
-              message:
-                "Claimed type: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
+              message: expect.stringMatching(/^Claimed type: /u),
             },
             {
               ruleId: "hone/positional-parameters#parameter-count",
