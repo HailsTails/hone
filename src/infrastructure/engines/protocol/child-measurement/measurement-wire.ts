@@ -6,13 +6,16 @@ import type { ReplyPort } from "../../../../application/ports/host/reply-port.ts
 import type { RequestPort } from "../../../../application/ports/host/request-port.ts";
 import type { RunLoadFailure } from "../../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import type { CheckedTree } from "../../../../domain/repository/checked-tree.ts";
+import { type CheckedTree, typescriptFilesOf } from "../../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { parsedJson } from "../../../content-files/parsed-json.ts";
 import { engineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { namedChecksRunReportSchema } from "../checks/checks-runner-module-schema.ts";
+import {
+  decodeNamedChecksReport,
+  namedChecksRunReportSchema,
+} from "../checks/checks-runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
 import { runLoadFailureSchema } from "./run-load-failure-schema.ts";
@@ -81,7 +84,13 @@ const mapRunToEngineReply = (request: {
     inapplicable: _inapplicable,
     ...report
   } = request.run;
-  return { mechanism, coverableKinds, report, comparedOutputs };
+  return {
+    mechanism,
+    coverableKinds,
+    report:
+      report.projection === "current-with-file" ? { ...report, projection: "current" } : report,
+    ...(comparedOutputs.length === 0 ? {} : { comparedOutputs }),
+  };
 };
 
 const mapMeasuredToReply = (request: {
@@ -154,27 +163,35 @@ const decodeReply = (request: { readonly reply: string }): Result<MeasurementRep
     : { outcome: "failed", error: z.prettifyError(reply.error) };
 };
 
-const mapReplyToRuns = (request: { readonly reply: MeasurementReply }): MeasuredRuns =>
-  request.reply.outcome === "not-loaded"
-    ? { outcome: "failed", error: request.reply.failure }
-    : {
-        outcome: "ok",
-        value: request.reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
-          ...report,
-          mechanism,
-          coverableKinds,
-          ...(comparedOutputs === undefined ? {} : { comparedOutputs }),
-        })),
-      };
+const mapReplyToRuns = (request: {
+  readonly reply: MeasurementReply;
+  readonly tree: CheckedTree;
+}): MeasuredRuns => {
+  if (request.reply.outcome === "not-loaded") {
+    return { outcome: "failed", error: request.reply.failure };
+  }
+  const candidateFiles = typescriptFilesOf({ tracked: request.tree.tracked });
+  return {
+    outcome: "ok",
+    value: request.reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
+      ...decodeNamedChecksReport(report),
+      mechanism,
+      coverableKinds,
+      candidateFiles,
+      comparedOutputs: comparedOutputs ?? [],
+    })),
+  };
+};
 
 export const decodeMeasuredRuns = (request: {
   readonly status: number;
   readonly reply: string;
   readonly stderr: string;
+  readonly tree: CheckedTree;
 }): MeasuredRuns => {
   const reply = decodeReply(request);
   return reply.outcome === "ok"
-    ? mapReplyToRuns({ reply: reply.value })
+    ? mapReplyToRuns({ reply: reply.value, tree: request.tree })
     : {
         outcome: "failed",
         error: {

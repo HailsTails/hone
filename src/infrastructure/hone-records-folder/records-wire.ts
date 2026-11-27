@@ -88,13 +88,17 @@ export const carriedAuthorisedLocationWireSchema = z.strictObject(
   { error: addressFieldRetirement },
 );
 
-export const isWrittenRecordEqual: Equal<
-  DeepReadonly<
-    | Omit<z.input<typeof debtWireSchema>, "findings">
-    | z.input<typeof carriedAuthorisedLocationWireSchema>
-  >,
-  WrittenRecord
-> = true;
+type Assert<Condition extends true> = Condition;
+
+export type WrittenRecordMatchesWire = Assert<
+  Equal<
+    DeepReadonly<
+      | Omit<z.input<typeof debtWireSchema>, "findings">
+      | z.input<typeof carriedAuthorisedLocationWireSchema>
+    >,
+    WrittenRecord
+  >
+>;
 
 export const deviationWireSchema = z.strictObject({
   recipe: catalogueNameSchema,

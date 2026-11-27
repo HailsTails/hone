@@ -1,6 +1,6 @@
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
+import { type CheckedTree, typescriptFilesOf } from "../../../domain/repository/checked-tree.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { AnsweredFile, ProjectionEntry } from "../../../domain/runner/checks-run-report.ts";
@@ -18,7 +18,6 @@ import type {
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
 import type { ProjectionKind } from "../../ports/settings/settings-file-format.ts";
-import { typescriptFilesOf } from "../checked-tree-of.ts";
 import { mapRequestToJudgedRequest } from "./judged-request.ts";
 
 export type EngineSettings = {

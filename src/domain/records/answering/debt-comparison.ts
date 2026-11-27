@@ -107,7 +107,9 @@ const compareMeasuredCount = (request: {
 const compareMeasuredDebt = (
   request: Comparing & { readonly base: Extract<Comparing["base"], { readonly measured: "yes" }> },
 ): readonly DebtComparisonIssue[] => {
-  const baseDebts = request.base.held.filter((record) => record.kind === "debt");
+  const baseDebts = request.base.placements.flatMap(({ record }) =>
+    record.kind === "debt" ? [record] : [],
+  );
   const currentDebts = request.records.flatMap(({ record }) =>
     record.kind === "debt" ? [record] : [],
   );

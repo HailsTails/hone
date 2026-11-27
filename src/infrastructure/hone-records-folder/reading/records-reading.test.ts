@@ -414,13 +414,16 @@ describe("readRecords", () => {
         notes: [],
         base: {
           measured: "partial",
-          held: [
+          placements: [
             {
-              kind: "debt",
-              symptom: { ruleSet: "hone", name: "claimed-type" },
-              reach: WHOLE_SYMPTOM,
-              file: "src/basket.ts",
-              holding: { held: "stated" },
+              place: { file: DEBT_FILE, index: 0 },
+              record: {
+                kind: "debt",
+                symptom: { ruleSet: "hone", name: "claimed-type" },
+                reach: WHOLE_SYMPTOM,
+                file: "src/basket.ts",
+                holding: { held: "stated" },
+              },
             },
           ],
         },
@@ -1220,7 +1223,15 @@ it("keeps readable landing records and marks incomplete evidence when a landing 
   expect(read).toMatchObject({
     outcome: "ok",
     value: {
-      base: { measured: "partial", held: [{ file: "src/cart.ts", findings: 2 }] },
+      base: {
+        measured: "partial",
+        placements: [
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: { file: "src/cart.ts", findings: 2 },
+          },
+        ],
+      },
     },
   });
 });

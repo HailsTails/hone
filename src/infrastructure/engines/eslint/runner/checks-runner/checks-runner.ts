@@ -4,7 +4,6 @@ import type {
   EngineCheck,
   NamedEngineRunRequest,
   NamedEslintRunRequest,
-  NamedEngineProjection,
 } from "../../../../../application/ports/engine/engine-run.ts";
 import type {
   CheckedVersionOneProjection,
@@ -35,6 +34,7 @@ import type { NativeException } from "../../../../../domain/runner/runner-result
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type {
   NamedChecksRunner,
+  ChecksRunProjection,
   NamedChecksRunReport,
 } from "../../../protocol/checks/checks-runner-types.ts";
 import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
@@ -149,7 +149,7 @@ const NO_PROJECTION_REACH: Pick<
 const NO_FINDINGS = { hits: [], nativeExceptions: [], measured: [], misnamedRuleIds: [] };
 
 const reportAs = (request: {
-  readonly projection: NamedEngineProjection;
+  readonly projection: ChecksRunProjection;
   readonly slices: readonly ChecksProjectionProblem[];
 }): Outcome<NamedChecksRunReport> => ({
   outcome: "ok",
@@ -400,7 +400,7 @@ type ProjectionStatus = {
 const reportProjection = (request: {
   readonly projection: ChecksProjectionState;
   readonly projectionFile: RepoPath;
-}): NamedEngineProjection =>
+}): ChecksRunProjection =>
   request.projection === "current"
     ? { projection: request.projection }
     : { projection: request.projection, projectionFile: request.projectionFile };

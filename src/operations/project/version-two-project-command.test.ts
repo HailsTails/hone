@@ -68,7 +68,7 @@ const loadProjectionStages = (catalogue: VersionTwoStages["catalogue"]): Version
       records: [],
       refused: [],
       notes: [],
-      base: { measured: "yes", held: [], placements: [] },
+      base: { measured: "yes", placements: [] },
     },
   }),
   tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),

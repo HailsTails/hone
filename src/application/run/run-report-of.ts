@@ -31,6 +31,7 @@ import type {
   RunAssessment,
   RunReport,
 } from "../../domain/report/run-report.ts";
+import { typescriptFilesOf } from "../../domain/repository/checked-tree.ts";
 import { excludeProjectionOutputs } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
@@ -38,7 +39,6 @@ import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
-import { typescriptFilesOf } from "./checked-tree-of.ts";
 import {
   engineProblemsOf,
   engineUnmeasuredOf,
@@ -112,7 +112,9 @@ const carriedStandingLeftElsewhereOf = (
 
 const nestedProjectionAssessments = (runs: readonly NamedEngineRun[]): readonly RunAssessment[] =>
   runs.flatMap(({ mechanism, projection, measured, nestedConfigurations }) =>
-    (projection === "current" || projection === "out-of-date") &&
+    (projection === "current" ||
+      projection === "current-with-file" ||
+      projection === "out-of-date") &&
     measured.length > 0 &&
     nestedConfigurations.length > 0
       ? [
@@ -183,12 +185,12 @@ const mapSelectionToComparisonScope = (
     readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
   },
 ) => {
-  const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs ?? []));
+  const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs));
   const typescript = typescriptFilesOf({ tracked: request.tracked });
   const candidates = new Map(
     request.runs.map(({ mechanism, candidateFiles }) => [
       mechanism,
-      excludeProjectionOutputs({ files: candidateFiles ?? typescript, outputs }),
+      excludeProjectionOutputs({ files: candidateFiles, outputs }),
     ]),
   );
   const fallback = excludeProjectionOutputs({ files: typescript, outputs });
@@ -208,7 +210,7 @@ const createComparisonEvidence = (
   base: request.records.base,
   ruleSets: request.selection.selected.map(({ binding }) => binding.ruleSet),
   scope: mapSelectionToComparisonScope(request),
-  inapplicable: request.runs.flatMap(({ inapplicable }) => inapplicable ?? []),
+  inapplicable: request.runs.flatMap(({ inapplicable }) => inapplicable),
   measured: request.measurements.runs.flatMap(({ measured, selected }) => {
     const chosen = new Set(selected);
     return measured.filter(({ check }) => chosen.has(check));

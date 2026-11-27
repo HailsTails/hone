@@ -10,7 +10,7 @@ import type {
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
+import type { NamedEngineProjection, NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import {
   engineMeasurementOf,
   engineProblemsOf,
@@ -55,16 +55,31 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
+const PROJECTION_FILE = repoPathOf("hone.eslint.mjs");
+
+const PROJECTIONS = {
+  none: { projection: "none" },
+  current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
+  "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
+  missing: { projection: "missing", projectionFile: PROJECTION_FILE },
+  "not-included": { projection: "not-included", projectionFile: PROJECTION_FILE },
+} satisfies Record<
+  "none" | "current" | "out-of-date" | "missing" | "not-included",
+  NamedEngineProjection
+>;
+
 const runWith = (request: {
   readonly mechanism: NamedEngineRun["mechanism"];
-  readonly projection: NamedEngineRun["projection"];
+  readonly projection: keyof typeof PROJECTIONS;
 }): NamedEngineRun => ({
   mechanism: request.mechanism,
   hits: [],
   nativeExceptions: [],
   coverableKinds: [],
-  projection: request.projection,
-  projectionFile: repoPathOf("hone.eslint.mjs"),
+  ...PROJECTIONS[request.projection],
+  candidateFiles: [],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],

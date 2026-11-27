@@ -30,6 +30,7 @@ import {
 } from "../../../../domain/runner/runner-failure.ts";
 import {
   checksProjectResultSchema,
+  decodeNamedChecksReport,
   measurementResultSchema,
   namedChecksRunReportSchema,
   namedChecksRunResultSchema,
@@ -107,7 +108,10 @@ const verifiedNamedRun = (request: {
 }): NamedOutcome<NamedEngineRun> => {
   const { call, requested, report } = request;
   const files = filesInScope(call.runner.fileScope, requested);
-  const checked = checkedObservations({ requested: { ...requested, files }, report });
+  const checked = checkedObservations({
+    requested: { ...requested, files },
+    report: decodeNamedChecksReport(report),
+  });
   return checked.outcome === "failed"
     ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
     : {
@@ -116,6 +120,11 @@ const verifiedNamedRun = (request: {
           ...checked.value,
           mechanism: call.mechanism,
           coverableKinds: call.runner.projectedKinds,
+          candidateFiles:
+            call.mechanism === "walker" || report.inapplicable !== undefined
+              ? files
+              : requested.files,
+          comparedOutputs: [],
         },
       };
 };
@@ -231,19 +240,14 @@ const bindRunner = (location: NamedEngineLocation, runner: ParsedNamedRunner) =>
         : request,
   });
   return {
-    run: async (request: NamedEngineRunRequest): Promise<NamedOutcome<NamedEngineRun>> => {
-      const candidateFiles = filesInScope(runner.fileScope, request);
-      const scoped =
-        mechanism === "walker" ? { ...request, trackedPaths: candidateFiles } : request;
-      const run = await runNamedEngine(createCall(scoped));
-      if (run.outcome === "failed") return run;
-      return mechanism === "walker" || run.value.inapplicable !== undefined
-        ? {
-            outcome: "ok",
-            value: { ...run.value, candidateFiles },
-          }
-        : run;
-    },
+    run: (request: NamedEngineRunRequest): Promise<NamedOutcome<NamedEngineRun>> =>
+      runNamedEngine(
+        createCall(
+          mechanism === "walker"
+            ? { ...request, trackedPaths: filesInScope(runner.fileScope, request) }
+            : request,
+        ),
+      ),
     project: (request: NamedEngineRunRequest) => projectNamedEngine(createCall(request)),
   };
 };

@@ -170,7 +170,7 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        inapplicable: (observed.value.inapplicable ?? []).map((check) => ({
+        inapplicable: observed.value.inapplicable.map((check) => ({
           check,
           file: request.file.file,
         })),

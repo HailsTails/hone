@@ -116,7 +116,7 @@ const DEBT_ON_A: RecordsReading = {
   ],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const UNUSED_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>() };
@@ -129,6 +129,9 @@ const AUDIT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  candidateFiles: [],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],

@@ -2211,7 +2211,6 @@ it("retains touched debt when a finding comparison judges it", () => {
     readComparison: () => ({
       base: {
         measured: "yes",
-        held: [DEBT_ON_CLASS_IN_A.record],
         placements: [DEBT_ON_CLASS_IN_A],
       },
       ruleSets: ["hone"],

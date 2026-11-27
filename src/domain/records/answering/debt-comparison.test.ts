@@ -28,7 +28,7 @@ const compareWithoutAllowances = (
 
 const DEBT_PLACEMENT = { place: { file: LEDGER, index: 0 }, record: DEBT };
 const MEASURED_INPUT: Parameters<typeof compareWithoutAllowances>[0] = {
-  base: { measured: "yes", held: [DEBT], placements: [DEBT_PLACEMENT] },
+  base: { measured: "yes", placements: [DEBT_PLACEMENT] },
   records: [DEBT_PLACEMENT],
   touched: { measured: "yes", paths: new Set([ORDER]), landingRevision: "pinned" },
   ruleSets: ["hone"],
@@ -94,7 +94,6 @@ it("refuses presence-only debt even with a measured zero", () => {
     ...MEASURED_INPUT,
     base: {
       measured: "yes",
-      held: [presence],
       placements: [{ ...DEBT_PLACEMENT, record: presence }],
     },
     records: [{ place: { file: LEDGER, index: 0 }, record: presence }],
@@ -109,7 +108,7 @@ it("refuses presence-only debt even with a measured zero", () => {
 it("refuses stale projection coverage and partially read landing data", () => {
   const request: Parameters<typeof compareWithoutAllowances>[0] = {
     ...MEASURED_INPUT,
-    base: { measured: "partial", held: [] },
+    base: { measured: "partial", placements: [] },
     projection: "unmeasured",
   };
 
@@ -178,7 +177,7 @@ it("requires landing debt to be check-specific", () => {
   const whole: Debt = { ...DEBT, reach: { reaches: "whole-symptom" } };
   const request: Parameters<typeof compareWithoutAllowances>[0] = {
     ...MEASURED_INPUT,
-    base: { measured: "yes", held: [whole], placements: [{ ...DEBT_PLACEMENT, record: whole }] },
+    base: { measured: "yes", placements: [{ ...DEBT_PLACEMENT, record: whole }] },
     records: [],
     findings: [],
   };
@@ -196,7 +195,6 @@ it("refuses ambiguous duplicate landing counts", () => {
     ...MEASURED_INPUT,
     base: {
       measured: "yes",
-      held: [DEBT, duplicate],
       placements: [DEBT_PLACEMENT, { place: { file: LEDGER, index: 1 }, record: duplicate }],
     },
   };

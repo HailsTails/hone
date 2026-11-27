@@ -81,8 +81,16 @@ const projectionProblemOf = (request: {
         report,
       ): report is Extract<
         NamedEngineRun,
-        { readonly projection: Exclude<NamedEngineRun["projection"], "none" | "current"> }
-      > => report.projection !== "none" && report.projection !== "current",
+        {
+          readonly projection: Exclude<
+            NamedEngineRun["projection"],
+            "none" | "current" | "current-with-file"
+          >;
+        }
+      > =>
+        report.projection !== "none" &&
+        report.projection !== "current" &&
+        report.projection !== "current-with-file",
     );
   return problem === undefined
     ? undefined

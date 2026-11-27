@@ -9,12 +9,12 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../../domain/report/run-report.ts";
+import { typescriptFilesOf } from "../../../domain/repository/checked-tree.ts";
 import { excludeProjectionOutputs } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
-import { typescriptFilesOf } from "../checked-tree-of.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
 type Selected = Pick<CheckBinding, "address" | "engine">;
@@ -91,7 +91,6 @@ const notRunOf = (request: {
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   const { nestedConfigurations, measured } = request.run;
-  const { projectionFile } = request.run;
   switch (request.run.projection) {
     case "missing":
       return [
@@ -110,9 +109,10 @@ const notRunOf = (request: {
     case "none":
       return [];
     case "current":
+    case "current-with-file":
     case "out-of-date":
       if (
-        projectionFile !== undefined &&
+        request.run.projection !== "current" &&
         measured.length === 0 &&
         nestedConfigurations.length > 0
       ) {
@@ -121,7 +121,7 @@ const notRunOf = (request: {
             kind: "engine-not-run",
             engine,
             projection: "not-included",
-            file: projectionFile,
+            file: request.run.projectionFile,
             nestedConfigurations,
           },
         ];
@@ -130,7 +130,7 @@ const notRunOf = (request: {
         engine,
         measurement: runMeasurementOf(request),
         tracked: request.tracked,
-        comparedOutputs: request.run.comparedOutputs ?? [],
+        comparedOutputs: request.run.comparedOutputs,
       });
   }
 };

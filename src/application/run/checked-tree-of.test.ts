@@ -6,7 +6,7 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { checkedTreeOf, typescriptFilesOf } from "./checked-tree-of.ts";
+import { checkedTreeOf } from "./checked-tree-of.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -120,22 +120,5 @@ describe("checkedTreeOf", () => {
       outcome: "failed",
       error: { kind: "config-root-untracked", root: PACKAGES_WEB },
     });
-  });
-});
-
-describe("typescriptFilesOf", () => {
-  it("gives the tracked files with a TypeScript extension, and no other", () => {
-    expect(
-      typescriptFilesOf({
-        tracked: [
-          repoPathOf("src/a.ts"),
-          repoPathOf("src/b.tsx"),
-          repoPathOf("src/c.mts"),
-          repoPathOf("src/d.cts"),
-          repoPathOf("src/e.js"),
-          repoPathOf("README.md"),
-        ],
-      }),
-    ).toEqual(["src/a.ts", "src/b.tsx", "src/c.mts", "src/d.cts"]);
   });
 });

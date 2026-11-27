@@ -37,13 +37,6 @@ const trackedFolderOf = (request: {
     ? "tracked"
     : "untracked";
 
-const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
-
-export const typescriptFilesOf = (request: {
-  readonly tracked: readonly RepoPath[];
-}): readonly RepoPath[] =>
-  request.tracked.filter((trackedPath) => TYPESCRIPT_FILE.test(trackedPath));
-
 export const checkedTreeOf = (request: TreeRequest): Result<CheckedTree, TreeFailure> => {
   const listed = request.git.trackedPaths({ repoRoot: request.repoRoot });
   if (listed.outcome === "failed") {

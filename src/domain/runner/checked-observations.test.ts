@@ -31,6 +31,7 @@ describe("checkedObservations", () => {
       hits: [hit],
       measured: [{ check: BINDING.address, file: FILE }],
       nativeExceptions: [],
+      inapplicable: [],
     };
 
     expect(checkedObservations({ requested: REQUESTED, report })).toEqual({
@@ -45,7 +46,7 @@ describe("checkedObservations", () => {
     expect(
       checkedObservations({
         requested: REQUESTED,
-        report: { hits: [], measured, nativeExceptions: [] },
+        report: { hits: [], measured, nativeExceptions: [], inapplicable: [] },
       }),
     ).toEqual({
       outcome: "failed",
@@ -65,7 +66,7 @@ describe("checkedObservations", () => {
     expect(
       checkedObservations({
         requested: REQUESTED,
-        report: { hits: [], measured: [], nativeExceptions },
+        report: { hits: [], measured: [], nativeExceptions, inapplicable: [] },
       }),
     ).toEqual({
       outcome: "failed",

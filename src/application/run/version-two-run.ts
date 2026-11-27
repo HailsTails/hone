@@ -191,7 +191,7 @@ const createRecordsAfterRenames = (request: {
       ? recordsAtMovedPathsOf({
           records: records.records,
           renamed: renamed.renamed,
-          held: records.base.held,
+          held: records.base.placements.map(({ record }) => record),
         })
       : [];
   const followed = readingFollowingRenames({ reading: records, renamed, moved });

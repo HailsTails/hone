@@ -8,7 +8,7 @@ import { type RunnerFailure, runnerInvalidOutput } from "./runner-failure.ts";
 type CheckObservations = {
   readonly hits: readonly CheckHit[];
   readonly measured: readonly CheckMeasurement[];
-  readonly inapplicable?: readonly CheckMeasurement[] | undefined;
+  readonly inapplicable: readonly CheckMeasurement[];
   readonly nativeExceptions: readonly CheckNativeException[];
 };
 
@@ -44,7 +44,7 @@ export const checkedObservations = <Report extends CheckObservations>(request: {
     unrequestedFileDetail({ kind: "a measured pair", entries: report.measured, checks, files }) ??
     unrequestedFileDetail({
       kind: "an inapplicable pair",
-      entries: report.inapplicable ?? [],
+      entries: report.inapplicable,
       checks,
       files,
     }) ??

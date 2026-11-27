@@ -506,7 +506,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const HELD_DEBT: PlacedRecord = {
@@ -533,6 +533,9 @@ const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun 
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  candidateFiles: [],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -746,7 +749,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
           value: {
             ...NO_RECORDS,
             records: [HELD_DEBT],
-            base: { measured: "yes", held: [HELD_DEBT.record], placements: [HELD_DEBT] },
+            base: { measured: "yes", placements: [HELD_DEBT] },
           },
         }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({

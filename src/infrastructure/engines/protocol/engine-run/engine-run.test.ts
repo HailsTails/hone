@@ -5,11 +5,13 @@ import type { NamedEngineRunRequest } from "../../../../application/ports/engine
 import type { RunnerModuleOf } from "../../../../application/ports/engine/runner-location.ts";
 import type { RunnerCall } from "../../../../application/ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import type { CheckedVersionOneProjection } from "../../../../application/ports/upgrade/version-one-measurement.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { createPathPort } from "../../../node/path-port.ts";
+import type { NamedChecksRunReport } from "../checks/checks-runner-types.ts";
 import {
   createNamedEnginePort,
   createRunnerLoader,
@@ -167,6 +169,7 @@ describe("createNamedEnginePort", () => {
         mechanism: "walker",
         coverableKinds: [],
         candidateFiles: [FILE_A, CONFIG],
+        comparedOutputs: [],
       },
     });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
@@ -455,29 +458,32 @@ describe("createNamedEnginePort", () => {
   });
 });
 
+const UPGRADE_SLICE = repoPathOf("packages/web/disciplines.eslint.mjs");
+
+const UPGRADE_PROJECTION: CheckedVersionOneProjection = {
+  settingsFile: "disciplines.json",
+  projectionFile: repoPathOf("disciplines.eslint.mjs"),
+  packageFiles: [UPGRADE_SLICE],
+  rules: new Map(),
+};
+
+const UPGRADE_REPORT: NamedChecksRunReport = {
+  hits: [],
+  nativeExceptions: [],
+  measured: [],
+  projection: "not-included",
+  projectionFile: UPGRADE_PROJECTION.projectionFile,
+  slices: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+  misnamedRuleIds: [],
+};
+
 describe("measureVersionOneProjectionOver", () => {
   it("uses an engine’s declared upgrade export and returns the inspected slice separately from the named report", async () => {
-    const slice = repoPathOf("packages/web/disciplines.eslint.mjs");
-    const projection = {
-      settingsFile: "disciplines.json",
-      projectionFile: repoPathOf("disciplines.eslint.mjs"),
-      packageFiles: [slice],
-      rules: new Map(),
-    };
-    const report = {
-      hits: [],
-      nativeExceptions: [],
-      measured: [],
-      projection: "not-included",
-      projectionFile: projection.projectionFile,
-      slices: [],
-      nestedConfigurations: [],
-      unprojectedFolders: [],
-      misnamedRuleIds: [],
-    };
     const upgradeExport = vi.fn().mockResolvedValue({
       outcome: "ok",
-      value: { report, unappliedSlices: [slice] },
+      value: { report: UPGRADE_REPORT, unappliedSlices: [UPGRADE_SLICE] },
     });
     const run = vi.fn<RunnerCall>();
     const runner = {
@@ -498,13 +504,20 @@ describe("measureVersionOneProjectionOver", () => {
       measureVersionOneProjection({
         request: REQUEST,
         location: LOCATION,
-        projection,
+        projection: UPGRADE_PROJECTION,
       }),
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        report: { ...report, mechanism: "walker", coverableKinds: [] },
-        unappliedSlices: [slice],
+        report: {
+          ...UPGRADE_REPORT,
+          mechanism: "walker",
+          coverableKinds: [],
+          candidateFiles: [FILE_A],
+          comparedOutputs: [],
+          inapplicable: [],
+        },
+        unappliedSlices: [UPGRADE_SLICE],
       },
     });
     expect(upgradeExport).toHaveBeenCalledExactlyOnceWith({
@@ -512,7 +525,7 @@ describe("measureVersionOneProjectionOver", () => {
         ...REQUEST,
         bindings: [BINDING],
       },
-      projection,
+      projection: UPGRADE_PROJECTION,
     });
     expect(run).not.toHaveBeenCalled();
   });
@@ -582,7 +595,14 @@ describe("measureVersionOneProjectionOver", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        report: { ...report, mechanism: "walker", coverableKinds: [] },
+        report: {
+          ...report,
+          mechanism: "walker",
+          coverableKinds: [],
+          candidateFiles: [FILE_A, CONFIG],
+          comparedOutputs: [],
+          inapplicable: [],
+        },
         unappliedSlices: [],
       },
     });

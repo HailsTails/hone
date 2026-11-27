@@ -31,7 +31,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit, CheckNativeException } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedEngineProjection, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
@@ -328,16 +328,31 @@ const CAST_HIT: CheckHit = {
 
 const CAST_FINDING = { ...CAST_HIT, mechanism: ESLINT };
 
+const PROJECTION_FILE = repoPathOf("hone.eslint.mjs");
+
+const PROJECTIONS = {
+  none: { projection: "none" },
+  current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
+  "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
+  missing: { projection: "missing", projectionFile: PROJECTION_FILE },
+  "not-included": { projection: "not-included", projectionFile: PROJECTION_FILE },
+} satisfies Record<
+  "none" | "current" | "out-of-date" | "missing" | "not-included",
+  NamedEngineProjection
+>;
+
 const eslintRunOf = (request: {
   readonly hits: readonly CheckHit[];
-  readonly projection: NamedEngineRun["projection"];
+  readonly projection: keyof typeof PROJECTIONS;
 }): NamedEngineRun => ({
   mechanism: ESLINT,
   hits: request.hits,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
-  projection: request.projection,
-  projectionFile: repoPathOf("hone.eslint.mjs"),
+  ...PROJECTIONS[request.projection],
+  candidateFiles: [FILE_A],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -410,7 +425,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
@@ -868,7 +883,7 @@ describe("namedRunReportOf, findings and records", () => {
           records: [carried],
           refused: [refused],
           notes: [],
-          base: { measured: "yes", held: [], placements: [] },
+          base: { measured: "yes", placements: [] },
         },
       }),
     ).toMatchObject({
@@ -1156,7 +1171,6 @@ it("counts a finding held only by the proposal and accepts one answered by landi
       records: [location],
       base: {
         measured: "yes",
-        held: [location.record],
         placements: [location],
       },
     },

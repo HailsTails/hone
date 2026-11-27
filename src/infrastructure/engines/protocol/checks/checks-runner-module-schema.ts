@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import type {
+  NamedEngineProjection,
+  NamedEngineRun,
+} from "../../../../application/ports/engine/engine-run.ts";
+import type {
   ChecksSliceProblem,
   MisnamedRuleId,
   ProjectedFile,
@@ -88,6 +92,29 @@ export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
     })
     .readonly(),
 ]);
+
+type DecodedRunReport = NamedEngineProjection &
+  Omit<
+    NamedEngineRun,
+    "projection" | "mechanism" | "coverableKinds" | "candidateFiles" | "comparedOutputs"
+  >;
+
+export const decodeNamedChecksReport = (
+  wire: z.output<typeof namedChecksRunReportSchema>,
+): DecodedRunReport => {
+  const { projection, projectionFile, inapplicable, ...report } = wire;
+  const observed = { ...report, inapplicable: inapplicable ?? [] };
+  switch (projection) {
+    case "none":
+      return { ...observed, projection };
+    case "current":
+      return projectionFile === undefined
+        ? { ...observed, projection }
+        : { ...observed, projection: "current-with-file", projectionFile };
+    default:
+      return { ...observed, projection, projectionFile };
+  }
+};
 
 export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [
   z.strictObject({ outcome: z.literal("ok"), value: namedChecksRunReportSchema }).readonly(),

@@ -355,7 +355,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const CLEAN_RUN: NamedEngineRun = {
@@ -364,6 +364,9 @@ const CLEAN_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  candidateFiles: [],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],

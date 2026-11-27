@@ -43,7 +43,9 @@ export type NamedEslintRunRequest = NamedEngineRunRequest & {
 };
 
 export type NamedEngineProjection =
-  | { readonly projection: "none" | "current"; readonly projectionFile?: RepoPath }
+  | { readonly projection: "none" }
+  | { readonly projection: "current" }
+  | { readonly projection: "current-with-file"; readonly projectionFile: RepoPath }
   | {
       readonly projection: Exclude<ProjectionState, "current">;
       readonly projectionFile: RepoPath;
@@ -51,8 +53,8 @@ export type NamedEngineProjection =
 
 export type NamedEngineRun = NamedEngineProjection & {
   readonly mechanism: EngineId;
-  readonly comparedOutputs?: readonly RepoPath[];
-  readonly candidateFiles?: readonly RepoPath[];
+  readonly comparedOutputs: readonly RepoPath[];
+  readonly candidateFiles: readonly RepoPath[];
   readonly coverableKinds: readonly CheckNativeException["kind"][];
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
   readonly slices: readonly ChecksProjectionProblem[];
@@ -61,5 +63,5 @@ export type NamedEngineRun = NamedEngineProjection & {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly CheckNativeException[];
   readonly measured: readonly CheckMeasurement[];
-  readonly inapplicable?: readonly CheckMeasurement[] | undefined;
+  readonly inapplicable: readonly CheckMeasurement[];
 };

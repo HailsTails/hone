@@ -373,6 +373,7 @@ describe("observeWalkerFile", () => {
         ],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address, SECOND_CLAUSE.address, THIRD_CLAUSE.address],
+        inapplicable: [],
       },
     });
     expect(readText).toHaveBeenCalledTimes(1);
@@ -717,6 +718,7 @@ describe("observeWalkerFile", () => {
         hits: [],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address],
+        inapplicable: [],
       },
     });
     expect(recordAnchor.mock.calls).toEqual([[{ line: 2, column: 6 }]]);

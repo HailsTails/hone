@@ -65,7 +65,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };

@@ -331,7 +331,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [], placements: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const HIT: CheckHit = {
@@ -373,6 +373,9 @@ const RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  candidateFiles: [],
+  comparedOutputs: [],
+  inapplicable: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -507,7 +510,7 @@ describe("versionTwoRunOver", () => {
     const onDisk: RecordsReading = {
       ...RECORDS,
       records: [debtAtBase],
-      base: { measured: "yes", held: [debtAtBase.record], placements: [debtAtBase] },
+      base: { measured: "yes", placements: [debtAtBase] },
     };
     const stages = stagesGiving({
       records: vi

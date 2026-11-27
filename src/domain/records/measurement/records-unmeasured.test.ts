@@ -74,7 +74,7 @@ describe("unmeasured records", () => {
   it("lists forfeiture unmeasured when the touched set is unmeasured and debt exists", () => {
     const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
       records: [STATED_DEBT],
-      base: { measured: "yes", held: [], placements: [] },
+      base: { measured: "yes", placements: [] },
       touched: { measured: "no", base: { state: "not-given" } },
     };
 
@@ -132,7 +132,7 @@ describe("unmeasured records", () => {
   it("lists nothing when forfeiture is measured elsewhere and the base was measured", () => {
     const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
       records: [STATED_DEBT, CARRIED_LOCATION],
-      base: { measured: "yes", held: [], placements: [] },
+      base: { measured: "yes", placements: [] },
       touched: { measured: "elsewhere" },
     };
 
@@ -187,7 +187,7 @@ describe("carriedJudgementOf", () => {
     expect(
       carriedJudgementOf({
         records: [CARRIED_LOCATION],
-        base: { measured: "yes", held: [], placements: [] },
+        base: { measured: "yes", placements: [] },
         touched: ELSEWHERE,
       }),
     ).toEqual({ judgement: "judged" });
