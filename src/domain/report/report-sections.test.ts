@@ -12,6 +12,7 @@ import {
   type RunSectionRole,
   runSectionRoleOf,
   runVerdictOf,
+  summariseRunFailures,
 } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";
 
@@ -235,7 +236,10 @@ it("fails a run when the measured debt comparison refuses a pair", () => {
     debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
   };
 
-  const verdict = runVerdictOf({ report });
+  const summary = summariseRunFailures({ report });
 
-  expect(verdict).toBe("fail");
+  expect(summary).toEqual({
+    verdict: "fail",
+    sections: [{ name: "debtComparison", count: 1 }],
+  });
 });

@@ -57,10 +57,23 @@ export const RUN_SECTION_NAMES: readonly RunSectionName[] = [
 export const runSectionRoleOf = (request: { readonly section: RunSectionName }): RunSectionRole =>
   RUN_SECTION_ROLES[request.section];
 
+type FailingRunSection = {
+  readonly name: RunSectionName | "debtComparison";
+  readonly count: number;
+};
+
+export const summariseRunFailures = ({
+  report,
+}: {
+  readonly report: RunReport;
+}): { readonly verdict: RunVerdict; readonly sections: readonly FailingRunSection[] } => {
+  const sections: FailingRunSection[] = RUN_SECTION_NAMES.filter(
+    (name) => runSectionRoleOf({ section: name }) === "failing" && report[name].length > 0,
+  ).map((name) => ({ name, count: report[name].length }));
+  const comparisons = report.debtComparison?.issues.length ?? 0;
+  if (comparisons > 0) sections.push({ name: "debtComparison", count: comparisons });
+  return { verdict: sections.length === 0 ? "pass" : "fail", sections };
+};
+
 export const runVerdictOf = (request: { readonly report: RunReport }): RunVerdict =>
-  (request.report.debtComparison?.issues.length ?? 0) === 0 &&
-  RUN_SECTION_NAMES.filter((section) => runSectionRoleOf({ section }) === "failing").every(
-    (section) => request.report[section].length === 0,
-  )
-    ? "pass"
-    : "fail";
+  summariseRunFailures(request).verdict;
