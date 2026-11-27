@@ -341,17 +341,17 @@ export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
     const walked = await runOverRepository({ ports, run: request });
     if (walked.outcome === "failed") return walked;
     const { inapplicable, ...observations } = walked.value;
+    const report: NamedChecksRunReport = {
+      ...observations,
+      projection: "none",
+      slices: [],
+      misnamedRuleIds: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+    };
     return {
       outcome: "ok",
-      value: {
-        ...observations,
-        ...(inapplicable.length === 0 ? {} : { inapplicable }),
-        projection: "none",
-        slices: [],
-        misnamedRuleIds: [],
-        nestedConfigurations: [],
-        unprojectedFolders: [],
-      },
+      value: inapplicable.length === 0 ? report : { ...report, inapplicable },
     };
   },
   conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
