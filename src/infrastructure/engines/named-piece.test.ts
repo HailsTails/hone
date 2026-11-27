@@ -55,40 +55,48 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
-  it("uses another engine's examples while keeping this engine's implementation", () => {
+  it("uses the installed rule set's shared examples while keeping the engine's implementation", () => {
+    const piecePath = "/install/oxlint/piece.json";
+    const sharedPath = "/install/content-files/direct-call.examples.json";
     const join = vi
       .fn<PathPort["join"]>()
-      .mockReturnValueOnce("/install/oxlint/piece.json")
-      .mockReturnValueOnce("/install/eslint/direct-call.examples.json")
+      .mockReturnValueOnce(piecePath)
+      .mockReturnValueOnce("/install/oxlint/direct-call.examples.json")
+      .mockReturnValueOnce(sharedPath)
       .mockReturnValueOnce("/install/oxlint");
     const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
       outcome: "ok",
-      value: '{"version":2,"anchor":{"kind":"file"},"settings":{},"examplesFrom":"eslint"}',
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{}}',
     });
+    const exists = vi
+      .fn<FileTextPort["exists"]>()
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent")
+      .mockReturnValueOnce("present");
 
     const piece = readNamedPiece({
       ...SUBJECT,
       mechanism: "oxlint",
       path: { join },
-      fileText: { exists: () => "present", read },
+      fileText: { exists, read },
     });
 
     expect(piece).toMatchObject({
       outcome: "ok",
       value: {
-        examplesPath: "/install/eslint/direct-call.examples.json",
+        examplesPath: sharedPath,
         pieceRoot: "/install/oxlint",
       },
     });
-    expect(join).toHaveBeenNthCalledWith(2, {
+    expect(join).toHaveBeenNthCalledWith(3, {
       segments: [
         "/install",
         "src",
         "infrastructure",
-        "engines",
-        "eslint",
+        "content-files",
+        "rule-sets",
+        "check-examples",
         "ambient-randomness",
-        "direct-call",
         "direct-call.examples.json",
       ],
     });

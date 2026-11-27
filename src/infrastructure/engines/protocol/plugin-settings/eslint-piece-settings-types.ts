@@ -1,7 +1,5 @@
 import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
-import type { JsonValue } from "../../../../domain/settings/json-values/json-value.ts";
-
-export type RuleOptions = readonly JsonValue[];
+import type { RuleOptions } from "../../../../domain/runner/check-binding.ts";
 
 export type EslintPieceSettings = {
   readonly pluginNamespace: string;

@@ -5,7 +5,8 @@
     "keyword": "throw"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "throw-only-error",
+    "pluginNamespace": "hone-thrown-non-error-throw-only-error",
+    "module": "oxlint-plugin.ts"
+  }
 }

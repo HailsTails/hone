@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { mapDiagnosticsToSites } from "./oxlint-diagnostics.ts";
+import { mapDiagnosticsToSites, readOxlintDiagnostics } from "./oxlint-diagnostics.ts";
+
+describe("readOxlintDiagnostics", () => {
+  it("keeps the tool's explanation when plugin setup fails before JSON output", () => {
+    const output = "Failed to setup JS plugin options:\nRule does not accept options";
+
+    const read = () => readOxlintDiagnostics(output);
+
+    expect(read).toThrow(output);
+  });
+});
 
 describe("mapDiagnosticsToSites", () => {
   it("maps byte offsets to source columns", () => {

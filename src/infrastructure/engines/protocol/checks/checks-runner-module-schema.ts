@@ -53,6 +53,7 @@ export const checksSliceProblemSchema = z
   .object({
     file: repoPathSchema,
     state: z.enum(["missing", "out-of-date", "not-included", "unconfigured"]),
+    detail: z.string().min(1).optional(),
   })
   .readonly();
 
@@ -84,6 +85,7 @@ export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
     .extend({
       projection: z.enum(["out-of-date", "missing", "not-included"]),
       projectionFile: repoPathSchema,
+      projectionDetail: z.string().min(1).optional(),
     })
     .readonly(),
 ]);

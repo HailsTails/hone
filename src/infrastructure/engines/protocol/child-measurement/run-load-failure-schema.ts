@@ -45,6 +45,7 @@ const projectionProblemSchema = z.union([
     engine: engineSchema,
     state: z.enum(["out-of-date", "missing", "not-included", "unconfigured"]),
     file: repoPathSchema,
+    detail: z.string().min(1).optional(),
   }),
   z.strictObject({
     kind: z.literal("engine-not-run"),

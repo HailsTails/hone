@@ -110,6 +110,11 @@ describe("unmeasuredLine", () => {
       unmeasured: NESTED_NOT_INCLUDED,
       line: `${NOT_INCLUDED_TEXT}${NESTED_NOTE}`,
     },
+    {
+      name: "an engine's stated reason its projection is not in effect",
+      unmeasured: { ...NOT_INCLUDED, detail: "the engine requires its projected rules last" },
+      line: "engine-not-run eslint not-included: the engine requires its projected rules last",
+    },
   ])("prints $name", ({ unmeasured, line }) => {
     expect(
       unmeasuredLine({
@@ -202,24 +207,27 @@ describe("projectionProblemLine", () => {
         line: "eslint unconfigured packages/web/hone.eslint.mjs: packages/web has no eslint configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check",
       },
       {
-        name: "an Oxlint package config that omits its projection",
+        name: "a slice with a supplied reason its projection is not in effect",
         problem: {
           scope: "slice",
           engine: { name: "oxlint" },
           state: "not-included",
           file: repoPathOf("packages/web/hone.oxlint.json"),
+          detail:
+            "extend ./hone.oxlint.json after any configuration that changes the selected rules",
         },
-        line: "oxlint not-included packages/web/hone.oxlint.json: extend ./hone.oxlint.json from the oxlint configuration in packages/web, after any configuration that changes the selected rules",
+        line: "oxlint not-included packages/web/hone.oxlint.json: extend ./hone.oxlint.json after any configuration that changes the selected rules",
       },
       {
-        name: "Oxlint files with no configuration at the repository root",
+        name: "a slice with a supplied reason its configuration is missing",
         problem: {
           scope: "slice",
           engine: { name: "oxlint" },
           state: "unconfigured",
           file: repoPathOf("hone.oxlint.json"),
+          detail: "the repository root has no tracked config",
         },
-        line: `oxlint unconfigured hone.oxlint.json: the repository root has no tracked Oxlint config; add and track one, then run ${PROJECT_COMMAND}, or exclude files outside your intended scope and remove any obsolete projection`,
+        line: `oxlint unconfigured hone.oxlint.json: the repository root has no tracked config; regenerate the projection with ${PROJECT_COMMAND}`,
       },
     ],
   )("prints $name", ({ problem, line }) => {

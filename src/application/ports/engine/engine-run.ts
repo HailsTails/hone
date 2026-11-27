@@ -47,6 +47,7 @@ export type NamedEngineProjection =
   | {
       readonly projection: Exclude<ProjectionState, "current">;
       readonly projectionFile: RepoPath;
+      readonly projectionDetail?: string;
     };
 
 export type NamedEngineRun = NamedEngineProjection & {

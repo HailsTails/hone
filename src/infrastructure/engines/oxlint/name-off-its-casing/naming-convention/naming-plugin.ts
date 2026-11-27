@@ -1,8 +1,8 @@
 import type { RuleTester } from "oxlint/plugins-dev";
 
-import { readNamingRule } from "../../runner/naming-rule.ts";
+import { readTypescriptEslintRule } from "../../runner/typescript-eslint-rule.ts";
 
-const rule = await readNamingRule({ moduleUrl: import.meta.url });
+const rule = await readTypescriptEslintRule({ name: "naming-convention" });
 
 type OxlintRule = Parameters<RuleTester["run"]>[1];
 type NamingContext = Parameters<NonNullable<OxlintRule["create"]>>[0];

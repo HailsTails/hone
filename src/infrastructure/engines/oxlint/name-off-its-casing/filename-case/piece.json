@@ -4,7 +4,8 @@
     "kind": "file"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "filename-case",
+    "pluginNamespace": "hone-name-off-its-casing-filename-case",
+    "module": "oxlint-plugin.ts"
+  }
 }

@@ -38,6 +38,7 @@ export type EngineNotRun =
       readonly projection: "not-included";
       readonly file: RepoPath;
       readonly nestedConfigurations: readonly RepoPath[];
+      readonly detail?: string;
     }
   | {
       readonly kind: "engine-not-run";
@@ -67,6 +68,7 @@ export type RunProjectionProblem =
       readonly engine: Engine;
       readonly state: "out-of-date" | "missing" | "not-included" | "unconfigured";
       readonly file: RepoPath;
+      readonly detail?: string;
     };
 
 export type ForfeitureElsewhere = {

@@ -33,7 +33,7 @@ export const createProjectionPlan = (
   const rules = gatheredOutcomes({
     outcomes: request.bindings.map((binding) =>
       listedOutcome({
-        outcome: readProjectedRule({ installRoot: request.installRoot, binding }),
+        outcome: readProjectedRule({ binding }),
       }),
     ),
   });

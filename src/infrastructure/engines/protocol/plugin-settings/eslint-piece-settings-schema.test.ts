@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
-import { eslintPieceSettingsSchema, ruleOptionsOf } from "./eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "./eslint-piece-settings-schema.ts";
 
 const settings = {
   pluginNamespace: "hone",
@@ -80,25 +80,5 @@ describe("eslintPieceSettingsSchema", () => {
     expect(eslintPieceSettingsSchema.safeParse({ ...settings, pluginNamespace: 14 })).toMatchObject(
       { success: false, error: { issues: [{ path: ["pluginNamespace"] }] } },
     );
-  });
-});
-
-describe("ruleOptionsOf", () => {
-  it("uses the latest options the requested edition reaches", () => {
-    const piece = eslintPieceSettingsSchema.parse({
-      ...settings,
-      options: ["base"],
-      optionsByEdition: { "2": ["edition-two"], "10": ["edition-ten"] },
-    });
-    expect(ruleOptionsOf({ settings: piece, edition: editionOf("2") })).toEqual(["edition-two"]);
-    expect(ruleOptionsOf({ settings: piece, edition: editionOf("9") })).toEqual(["edition-two"]);
-    expect(ruleOptionsOf({ settings: piece, edition: editionOf("11") })).toEqual(["edition-ten"]);
-    expect(ruleOptionsOf({ settings: piece, edition: editionOf("1") })).toEqual(["base"]);
-  });
-
-  it("refuses a per-edition options key that is not an edition", () => {
-    expect(
-      eslintPieceSettingsSchema.safeParse({ ...settings, optionsByEdition: { zero: [] } }).success,
-    ).toBe(false);
   });
 });

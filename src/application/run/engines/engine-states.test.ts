@@ -94,20 +94,28 @@ describe("engineUnmeasuredOf", () => {
   });
 
   it("names the engine a run left out of effect because the team's configuration does not include its projection", () => {
-    expect(
-      engineUnmeasuredOf({
-        catalogue: REPORT_CATALOGUE,
-        runs: [runWith({ mechanism: ESLINT, projection: "not-included" })],
-        tracked: TRACKED,
-        selected: [],
-      }),
-    ).toEqual([
+    const unmeasured = engineUnmeasuredOf({
+      catalogue: REPORT_CATALOGUE,
+      runs: [
+        {
+          ...runWith({ mechanism: ESLINT, projection: "not-included" }),
+          projection: "not-included",
+          projectionFile: repoPathOf("hone.eslint.mjs"),
+          projectionDetail: "the projected rules must come last",
+        },
+      ],
+      tracked: TRACKED,
+      selected: [],
+    });
+
+    expect(unmeasured).toEqual([
       {
         kind: "engine-not-run",
         engine: ESLINT_ENGINE,
         projection: "not-included",
         file: repoPathOf("hone.eslint.mjs"),
         nestedConfigurations: [],
+        detail: "the projected rules must come last",
       },
     ]);
   });

@@ -11,10 +11,6 @@
     },
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
-    },
-    {
-      "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "src/infrastructure/engines/walker/assertion-outside-a-test-body/assertion-site/assertion-site.ts"
     },
     {

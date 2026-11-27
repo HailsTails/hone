@@ -7,10 +7,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/walker/answer-set-in-a-hook/hook-answer/hook-answers.test.ts"
     },
     {

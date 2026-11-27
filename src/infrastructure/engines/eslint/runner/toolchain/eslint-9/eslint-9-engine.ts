@@ -6,10 +6,8 @@ import { z } from "zod";
 import type { ModuleLoaderPort } from "../../../../../../application/ports/host/module-loader-port.ts";
 import type { SourceCase } from "../../../../../../domain/rule-set/rule-set-types.ts";
 import type { RunnerClause } from "../../../../../../domain/runner/runner-module-types.ts";
-import {
-  eslintPieceSettingsSchema,
-  ruleOptionsOf,
-} from "../../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "../../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { ruleOptionsOf } from "../../../../protocol/plugin-settings/rule-options.ts";
 import {
   type LoadedEslintPlugin,
   eslintPluginModuleSchema,

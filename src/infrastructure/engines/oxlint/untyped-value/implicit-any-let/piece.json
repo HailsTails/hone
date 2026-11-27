@@ -5,7 +5,8 @@
     "keyword": "let"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "implicit-any-let",
+    "pluginNamespace": "hone-untyped-value-explicit-any",
+    "module": "oxlint-plugin.ts"
+  }
 }

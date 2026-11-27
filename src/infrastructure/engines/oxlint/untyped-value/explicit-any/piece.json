@@ -6,6 +6,5 @@
   },
   "settings": {
     "rule": "typescript/no-explicit-any"
-  },
-  "examplesFrom": "eslint"
+  }
 }

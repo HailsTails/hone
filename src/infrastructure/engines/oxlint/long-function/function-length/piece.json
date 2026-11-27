@@ -5,7 +5,10 @@
     "keyword": "function"
   },
   "settings": {
-    "plugin": "eslint"
+    "rule": "function-length"
   },
-  "examplesFrom": "eslint"
+  "implementation": {
+    "symptom": "tangled-function",
+    "check": "cognitive-complexity"
+  }
 }

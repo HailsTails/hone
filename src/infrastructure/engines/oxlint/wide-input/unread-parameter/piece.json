@@ -4,7 +4,8 @@
     "kind": "file"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "unread-parameter",
+    "pluginNamespace": "hone-wide-input-unread-parameter",
+    "module": "oxlint-plugin.ts"
+  }
 }

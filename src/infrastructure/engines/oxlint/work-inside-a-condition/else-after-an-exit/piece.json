@@ -5,7 +5,8 @@
     "keyword": "else"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "useless-else",
+    "pluginNamespace": "hone-work-inside-a-condition-else-after-an-exit",
+    "module": "oxlint-plugin.ts"
+  }
 }

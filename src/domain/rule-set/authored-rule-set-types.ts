@@ -1,6 +1,5 @@
 import type { AnchorKind } from "../finding/anchor.ts";
 import type { ReadonlyJsonValue } from "../settings/json-values/json-value.ts";
-import type { EngineId } from "./identifier-types.ts";
 
 export type ClauseExceptions = "allowed" | "refused";
 
@@ -35,7 +34,6 @@ export type AuthoredPieceDeclaration =
       readonly exceptions?: ClauseExceptions;
       readonly checkSettings?: ClauseSettingDeclarations;
       readonly anchor: AnchorKind;
-      readonly examplesFrom?: EngineId | undefined;
       readonly settings: PieceSettings;
       readonly forms?: { readonly [form: string]: ImplementingCheck };
       readonly editions?: readonly string[] | undefined;

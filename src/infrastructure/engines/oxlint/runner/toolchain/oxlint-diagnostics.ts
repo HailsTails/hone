@@ -65,8 +65,17 @@ export const runOxlintCommand = (request: {
   return stdout;
 };
 
-export const readOxlintDiagnostics = (text: string): z.output<typeof outputSchema> =>
-  outputSchema.parse(JSON.parse(text));
+export const readOxlintDiagnostics = (text: string): z.output<typeof outputSchema> => {
+  let document: unknown;
+  try {
+    document = JSON.parse(text);
+  } catch (error) {
+    throw new Error(text.trim().slice(0, 2000) || "Oxlint returned no diagnostic output", {
+      cause: error,
+    });
+  }
+  return outputSchema.parse(document);
+};
 
 export const runOxlintProcess = (
   request: OxlintInvocation & {

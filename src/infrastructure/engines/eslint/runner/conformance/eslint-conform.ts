@@ -17,8 +17,8 @@ import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import {
   type EslintPieceSettings,
   eslintPieceSettingsSchema,
-  ruleOptionsOf,
 } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
 import {
   eslintPluginModuleSchema,
   type LoadedEslintPlugin,

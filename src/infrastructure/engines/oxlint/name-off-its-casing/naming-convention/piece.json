@@ -5,8 +5,9 @@
     "keyword": "identifier"
   },
   "settings": {
-    "plugin": "eslint",
-    "module": "naming-plugin.ts"
-  },
-  "examplesFrom": "eslint"
+    "rule": "naming-convention",
+    "module": "naming-plugin.ts",
+    "pluginNamespace": "hone-name-off-its-casing-naming-convention",
+    "peer": "typescript-eslint"
+  }
 }

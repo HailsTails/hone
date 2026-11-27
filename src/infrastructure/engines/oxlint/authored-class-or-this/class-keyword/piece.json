@@ -5,7 +5,8 @@
     "keyword": "class"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "no-class-authoring",
+    "pluginNamespace": "hone-authored-class-or-this-class-keyword",
+    "module": "oxlint-plugin.ts"
+  }
 }

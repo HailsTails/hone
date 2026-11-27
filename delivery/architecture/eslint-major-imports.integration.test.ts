@@ -9,14 +9,6 @@ import { readRepositoryImports } from "./source-imports.ts";
 const ESLINT_MAJOR_IMPORTS = [
   {
     boundary: "no ESLint major",
-    file: "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts",
-    specifier: "eslint",
-    kind: "import",
-    form: "type-only",
-    names: ["ESLint", "Rule"],
-  },
-  {
-    boundary: "no ESLint major",
     file: "src/infrastructure/engines/eslint/runner/pieces/native-rules.ts",
     specifier: "eslint/use-at-your-own-risk",
     kind: "import",

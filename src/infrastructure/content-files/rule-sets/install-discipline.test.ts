@@ -20,8 +20,8 @@ const AUDIT_PIECE_PATH =
 const ESLINT_PIECE_PATH =
   "/install/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json";
 
-const AUDIT_CASES_PATH =
-  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-keyword.examples.json";
+const SHARED_CASES_PATH =
+  "/install/src/infrastructure/content-files/rule-sets/check-examples/authored-class-or-this/class-keyword.examples.json";
 
 const NAMES_TEXT = `{
   "version": 1,
@@ -122,27 +122,31 @@ describe("readInstallDiscipline", () => {
     expect(exists).not.toHaveBeenCalled();
   });
 
-  it("assembles each mechanical clause from the names map, the pieces that run it and the cases beside one of them, and each judgement clause as reviewed", () => {
+  it("assembles a mechanical clause from the names map, its pieces, and their shared cases", () => {
     const exists = vi
       .fn<FileTextPort["exists"]>()
       .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent")
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
-      .mockReturnValueOnce("absent");
+      .mockReturnValueOnce("absent")
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("present");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: AUDIT_PIECE_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: ESLINT_PIECE_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: CASES_TEXT });
-    expect(
-      readInstallDiscipline({
-        fileText: fileTextOf({ exists, read }),
-        path: PATH,
-        installRoot: INSTALL_ROOT,
-        discipline: CD_14,
-      }),
-    ).toEqual(CD_14_DISCIPLINE);
+
+    const discipline = readInstallDiscipline({
+      fileText: fileTextOf({ exists, read }),
+      path: PATH,
+      installRoot: INSTALL_ROOT,
+      discipline: CD_14,
+    });
+
+    expect(discipline).toEqual(CD_14_DISCIPLINE);
     expect(exists).not.toHaveBeenCalledWith({
       path: "/install/src/infrastructure/engines/oxlint/authored-class-or-this/class-keyword/piece.json",
     });
@@ -150,7 +154,7 @@ describe("readInstallDiscipline", () => {
       [{ path: NAMES_PATH }],
       [{ path: AUDIT_PIECE_PATH }],
       [{ path: ESLINT_PIECE_PATH }],
-      [{ path: AUDIT_CASES_PATH }],
+      [{ path: SHARED_CASES_PATH }],
     ]);
   });
 
@@ -179,24 +183,24 @@ describe("readInstallDiscipline", () => {
     });
   });
 
-  it("refuses a mechanical clause whose cases sit beside no piece that runs it", () => {
+  it("refuses a mechanical clause with no cases", () => {
     const exists = vi
       .fn<FileTextPort["exists"]>()
       .mockReturnValueOnce("present")
-      .mockReturnValueOnce("absent")
-      .mockReturnValueOnce("absent");
+      .mockReturnValue("absent");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: AUDIT_PIECE_TEXT });
-    expect(
-      readInstallDiscipline({
-        fileText: fileTextOf({ exists, read }),
-        path: PATH,
-        installRoot: INSTALL_ROOT,
-        discipline: CD_14,
-      }),
-    ).toEqual({
+
+    const discipline = readInstallDiscipline({
+      fileText: fileTextOf({ exists, read }),
+      path: PATH,
+      installRoot: INSTALL_ROOT,
+      discipline: CD_14,
+    });
+
+    expect(discipline).toEqual({
       outcome: "failed",
       error: {
         kind: "rule-set-invalid",
@@ -211,24 +215,27 @@ describe("readInstallDiscipline", () => {
       .fn<FileTextPort["exists"]>()
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("absent")
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent")
       .mockReturnValueOnce("present");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: AUDIT_PIECE_TEXT })
       .mockReturnValueOnce({ outcome: "ok", value: MALFORMED_CASES_TEXT });
-    expect(
-      readInstallDiscipline({
-        fileText: fileTextOf({ exists, read }),
-        path: PATH,
-        installRoot: INSTALL_ROOT,
-        discipline: CD_14,
-      }),
-    ).toEqual({
+
+    const discipline = readInstallDiscipline({
+      fileText: fileTextOf({ exists, read }),
+      path: PATH,
+      installRoot: INSTALL_ROOT,
+      discipline: CD_14,
+    });
+
+    expect(discipline).toEqual({
       outcome: "failed",
       error: {
         kind: "rule-set-invalid",
-        path: AUDIT_CASES_PATH,
+        path: SHARED_CASES_PATH,
         detail:
           "✖ a mechanical clause has no flag case\n  → at flag\n✖ a mechanical clause has no allow case\n  → at allow",
       },

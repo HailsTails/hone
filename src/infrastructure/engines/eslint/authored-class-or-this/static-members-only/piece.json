@@ -1,15 +1,7 @@
 {
   "version": 2,
   "settings": {
-    "rule": "no-extraneous-class",
-    "options": [
-      {
-        "allowConstructorOnly": true,
-        "allowEmpty": true,
-        "allowStaticOnly": false,
-        "allowWithDecorator": true
-      }
-    ]
+    "rule": "no-extraneous-class"
   },
   "implementation": {
     "symptom": "authored-class-or-this",

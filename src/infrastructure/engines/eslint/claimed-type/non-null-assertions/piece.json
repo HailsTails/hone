@@ -7,16 +7,6 @@
   "settings": {
     "pluginNamespace": "hone-cd2",
     "pluginModule": "eslint-plugin.ts",
-    "rule": "no-restricted-syntax",
-    "options": [
-      {
-        "selector": "TSNonNullExpression",
-        "message": "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead."
-      },
-      {
-        "selector": "[definite=true]",
-        "message": "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead."
-      }
-    ]
+    "rule": "no-restricted-syntax"
   }
 }

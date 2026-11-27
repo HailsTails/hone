@@ -42,6 +42,45 @@ const BINDINGS = [
 ] satisfies readonly CheckBinding[];
 
 describe("createOxlintRunner", () => {
+  it("supplies the reason an unconfigured scope could not be measured", async () => {
+    const file = repoPathOf("src/value.ts");
+    const runner = createOxlintRunner({
+      lint: vi.fn<RunOxlint>(),
+      configured: vi.fn<typeof runConfiguredOxlint>(),
+      readToolchain: vi.fn<typeof readOxlintToolchain>(),
+      fileText: {
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+        read: vi.fn<FileTextPort["read"]>(),
+      },
+    });
+
+    const report = await runner.run({
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: INSTALL_ROOT,
+      files: [file],
+      trackedPaths: [file],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: DEFAULT_TEST_FILES,
+      bindings: BINDINGS,
+    });
+
+    expect(report).toMatchObject({
+      outcome: "ok",
+      value: {
+        projection: "none",
+        slices: [
+          {
+            file: "hone.oxlint.json",
+            state: "unconfigured",
+            detail: expect.stringContaining("the repository root has no tracked Oxlint config"),
+          },
+        ],
+      },
+    });
+  });
+
   it("maps Oxlint sites to named source cases by index", async () => {
     const fileName = repoPathOf("src/value.ts");
     const binding: CheckBinding = {
@@ -111,7 +150,12 @@ describe("createOxlintRunner", () => {
       ruleSet: TOOL_RULE_SET,
       anchor: { kind: "keyword", keyword: "skip" },
       pieceRoot: "/hone/skipped-tests",
-      settings: { plugin: "eslint" },
+      settings: {
+        rule: "skipped-tests",
+        pluginNamespace: "hone-test-switched-off-focused-tests",
+        module: "oxlint-plugin.ts",
+        optionsByEdition: { "2": ["conditional-and-todo"] },
+      },
       checkSettings: {},
       edition: editionOf("2"),
     };
@@ -128,7 +172,7 @@ describe("createOxlintRunner", () => {
           kind: "plugin",
           id: "hone-test-switched-off-focused-tests/skipped-tests",
           namespace: "hone-test-switched-off-focused-tests",
-          module: expect.stringMatching(/focused-tests[/\\]eslint-plugin\.ts$/u),
+          module: expect.stringMatching(/skipped-tests[/\\]oxlint-plugin\.ts$/u),
           options: ["conditional-and-todo"],
         },
       ],

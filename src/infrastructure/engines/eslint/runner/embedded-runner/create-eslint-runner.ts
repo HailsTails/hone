@@ -29,7 +29,7 @@ import type {
   EmbeddedRunner,
   EmbeddedRunRequest,
 } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { ruleOptionsOf } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
 import { mappedOutcome } from "../checks-outcomes.ts";
 import type { ChecksRunnerPorts, EslintPlatformPorts } from "../checks-runner/checks-ports.ts";
 import type { ConfigLookup } from "../config-roots/config-lookup.ts";

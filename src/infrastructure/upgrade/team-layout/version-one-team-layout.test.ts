@@ -4,7 +4,10 @@ import type {
   DirectoryEntry,
   DirectoryPort,
 } from "../../../application/ports/file-system/directory-port.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type {
+  FileReadResult,
+  FileTextPort,
+} from "../../../application/ports/file-system/file-text-port.ts";
 import type { VersionOneTeamClause } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -47,7 +50,7 @@ const NAMES = NAMES_WITH(
 
 const HELPER = "export const scratch = /\\.scratch\\./;\n";
 
-const FILES: Readonly<Record<string, ReturnType<FileTextPort["read"]>>> = {
+const FILES: Readonly<Record<string, FileReadResult>> = {
   "/repo/acme/rules/ACME-1/discipline.json": { outcome: "ok", value: DISCIPLINE },
   "/repo/acme/mechanisms/audit/ACME-1/piece.json": { outcome: "ok", value: PIECE },
   "/repo/acme/mechanisms/audit/ACME-1/scratch.ts": { outcome: "ok", value: MODULE },
@@ -80,7 +83,7 @@ const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
 };
 
 const sourcesListing = (request: {
-  readonly files: Readonly<Record<string, ReturnType<FileTextPort["read"]>>>;
+  readonly files: Readonly<Record<string, FileReadResult>>;
   readonly extraPresent?: Readonly<Record<string, "present">>;
   readonly listings: Readonly<Record<string, readonly DirectoryEntry[]>>;
 }) => {
@@ -103,7 +106,7 @@ const sourcesListing = (request: {
     return presence;
   };
   const read: FileTextPort["read"] = ({ path }) => {
-    const missing: ReturnType<FileTextPort["read"]> = {
+    const missing: FileReadResult = {
       outcome: "failed",
       error: { kind: "unreadable", path, detail: "ENOENT" },
     };
@@ -127,7 +130,7 @@ const sourcesListing = (request: {
 };
 
 const sourcesHolding = (
-  files: Readonly<Record<string, ReturnType<FileTextPort["read"]>>>,
+  files: Readonly<Record<string, FileReadResult>>,
   extraPresent?: Readonly<Record<string, "present">>,
 ) => sourcesListing({ files, listings: {}, extraPresent });
 

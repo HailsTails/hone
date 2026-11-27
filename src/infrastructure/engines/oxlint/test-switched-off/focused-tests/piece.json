@@ -5,7 +5,8 @@
     "keyword": "only"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "focused-tests",
+    "pluginNamespace": "hone-test-switched-off-focused-tests",
+    "module": "oxlint-plugin.ts"
+  }
 }

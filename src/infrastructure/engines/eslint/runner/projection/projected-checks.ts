@@ -13,10 +13,8 @@ import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import {
-  eslintPieceSettingsSchema,
-  ruleOptionsOf,
-} from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { ruleOptionsOf } from "../../../protocol/plugin-settings/rule-options.ts";
 import {
   CHECKS_PLUGIN_NAMESPACE,
   checkRuleIdOf,

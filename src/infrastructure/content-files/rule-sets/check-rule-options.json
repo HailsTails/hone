@@ -1,0 +1,210 @@
+{
+  "positional-parameters#parameter-count": {
+    "options": [
+      {
+        "max": 2,
+        "countVoidThis": true
+      }
+    ]
+  },
+  "rebinding#parameter-reassignment": {
+    "options": [
+      {
+        "props": false
+      }
+    ]
+  },
+  "name-off-its-casing#naming-convention": {
+    "options": [
+      {
+        "selector": [
+          "objectLiteralProperty",
+          "objectLiteralMethod",
+          "typeProperty",
+          "typeMethod",
+          "classProperty",
+          "classMethod",
+          "accessor",
+          "enumMember"
+        ],
+        "modifiers": ["requiresQuotes"],
+        "format": null
+      },
+      {
+        "selector": ["variable", "function", "parameter"],
+        "modifiers": ["unused"],
+        "format": null,
+        "filter": {
+          "regex": "^_",
+          "match": true
+        }
+      },
+      {
+        "selector": ["variable", "parameter"],
+        "modifiers": ["destructured"],
+        "format": null
+      },
+      {
+        "selector": "import",
+        "format": null
+      },
+      {
+        "selector": ["classProperty", "classMethod", "accessor", "parameterProperty"],
+        "modifiers": ["override"],
+        "format": null
+      },
+      {
+        "selector": "variable",
+        "modifiers": ["const"],
+        "format": null,
+        "custom": {
+          "regex": "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*|[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
+          "match": true
+        }
+      },
+      {
+        "selector": "variable",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "function",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "function",
+        "modifiers": ["global"],
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "parameter",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "typeLike",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "enumMember",
+        "format": null,
+        "custom": {
+          "regex": "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)$",
+          "match": true
+        }
+      },
+      {
+        "selector": ["classProperty", "classMethod", "accessor", "parameterProperty"],
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": ["classProperty", "accessor"],
+        "modifiers": ["static"],
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "objectLiteralProperty",
+        "format": null,
+        "custom": {
+          "regex": "^(?:[a-z0-9][A-Za-z0-9]*)$",
+          "match": true
+        }
+      },
+      {
+        "selector": "objectLiteralMethod",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "typeProperty",
+        "format": null,
+        "custom": {
+          "regex": "^(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
+          "match": true
+        }
+      },
+      {
+        "selector": "typeMethod",
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "import",
+        "modifiers": ["default"],
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
+          "match": true
+        }
+      },
+      {
+        "selector": "import",
+        "modifiers": ["namespace"],
+        "format": null,
+        "custom": {
+          "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+          "match": true
+        }
+      }
+    ]
+  },
+  "authored-class-or-this#static-members-only": {
+    "options": [
+      {
+        "allowConstructorOnly": true,
+        "allowEmpty": true,
+        "allowStaticOnly": false,
+        "allowWithDecorator": true
+      }
+    ]
+  },
+  "claimed-type#non-null-assertions": {
+    "options": [
+      {
+        "selector": "TSNonNullExpression",
+        "message": "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead."
+      },
+      {
+        "selector": "[definite=true]",
+        "message": "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead."
+      }
+    ]
+  },
+  "test-switched-off#skipped-tests": {
+    "optionsByEdition": {
+      "2": ["conditional-and-todo"]
+    }
+  }
+}

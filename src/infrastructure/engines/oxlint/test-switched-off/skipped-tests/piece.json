@@ -6,7 +6,10 @@
   },
   "editions": ["1", "2"],
   "settings": {
-    "plugin": "eslint"
+    "rule": "skipped-tests"
   },
-  "examplesFrom": "eslint"
+  "implementation": {
+    "symptom": "test-switched-off",
+    "check": "focused-tests"
+  }
 }

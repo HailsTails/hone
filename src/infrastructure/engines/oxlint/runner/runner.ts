@@ -23,6 +23,20 @@ const path = createDefaultPathPort({});
 const DISABLE_CONFIGURATION =
   "src/infrastructure/engines/oxlint/runner/toolchain/disable-inspection.json";
 
+const createProjectionDetail = (request: Pick<ScopeObservation, "file" | "state">) => {
+  const { file, state } = request;
+  const separator = file.lastIndexOf("/");
+  const folder = separator === -1 ? "" : file.slice(0, separator);
+  if (state === "unconfigured") {
+    return `${folder || "the repository root"} has no tracked Oxlint config; add and track one, or exclude files outside your intended scope and remove any obsolete projection`;
+  }
+  if (state === "not-included") {
+    const location = folder === "" ? "for the files under check" : `in ${folder}`;
+    return `extend ./${file.slice(separator + 1)} from the Oxlint configuration ${location}, after any configuration that changes the selected rules`;
+  }
+  return undefined;
+};
+
 const createReport = (request: {
   readonly observations: readonly ScopeObservation[];
 }): NamedChecksRunReport => {
@@ -32,13 +46,16 @@ const createReport = (request: {
     root === undefined || root.state === "unconfigured"
       ? { projection: "none" as const }
       : { projection: root.state, projectionFile: root.file };
+  const projectionDetail =
+    root?.state === "not-included" ? createProjectionDetail(root) : undefined;
   return {
     ...projection,
-    slices: request.observations.flatMap(({ file, state }): NamedChecksRunReport["slices"] =>
-      state === "current" || (file === rootFile && state !== "unconfigured")
-        ? []
-        : [{ file, state }],
-    ),
+    ...(projectionDetail === undefined ? {} : { projectionDetail }),
+    slices: request.observations.flatMap(({ file, state }): NamedChecksRunReport["slices"] => {
+      if (state === "current" || (file === rootFile && state !== "unconfigured")) return [];
+      const detail = createProjectionDetail({ file, state });
+      return [detail === undefined ? { file, state } : { file, state, detail }];
+    }),
     nestedConfigurations: [],
     unprojectedFolders: [],
     misnamedRuleIds: [],
@@ -102,7 +119,7 @@ const project: NamedChecksRunner["project"] = (request) => {
 const createConform =
   (ports: Pick<OxlintRunnerPorts, "lint" | "readToolchain">): NamedChecksRunner["conform"] =>
   async ({ binding, cases }) => {
-    const rule = readRule({ installRoot, binding });
+    const rule = readRule({ binding });
     if (rule.outcome === "failed") return rule;
     const workingDirectory = path.resolve({ path: "." });
     if (workingDirectory.outcome === "failed") {

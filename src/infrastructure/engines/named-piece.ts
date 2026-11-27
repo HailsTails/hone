@@ -11,13 +11,18 @@ import {
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { AuthoredPieceDeclaration } from "../../domain/rule-set/authored-rule-set-types.ts";
-import { ENGINE_IDS, type EngineId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
+import checkRuleOptions from "../content-files/rule-sets/check-rule-options.json" with { type: "json" };
 import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
 import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
+
+const sharedRuleOptions = z
+  .record(z.string(), z.record(z.string(), z.json()))
+  .parse(checkRuleOptions);
 
 const catalogueNameSchema = z.string().refine(isCatalogueName);
 
@@ -42,7 +47,6 @@ const checkDeclaration = {
 const implementationSchema = z.strictObject({
   ...checkDeclaration,
   anchor: anchorKindSchema,
-  examplesFrom: z.enum(ENGINE_IDS).optional(),
   settings: z.record(z.string(), z.json()),
   forms: z.record(z.string(), namedPieceImplementationSchema).default({}),
   editions: legacyPieceEntry.editions,
@@ -175,6 +179,30 @@ const sharedPieceAt = (
     : { outcome: "ok", value: shared.value };
 };
 
+const resolveExamplesPath = (
+  request: NamedPieceRequest & { readonly exampleOwner: CheckNames },
+): string => {
+  const { exampleOwner, fileText, installRoot, path, ruleSetRoot } = request;
+  const file = `${exampleOwner.check}.examples.json`;
+  const local = path.join({
+    segments: [...namedPieceFolderSegmentsOf({ ...request, ...exampleOwner }), file],
+  });
+  if (ruleSetRoot !== installRoot || fileText.exists({ path: local }) === "present") return local;
+  const shared = path.join({
+    segments: [
+      installRoot,
+      "src",
+      "infrastructure",
+      "content-files",
+      "rule-sets",
+      "check-examples",
+      exampleOwner.symptom,
+      file,
+    ],
+  });
+  return fileText.exists({ path: shared }) === "present" ? shared : local;
+};
+
 export const readNamedPiece = (
   request: NamedPieceRequest,
 ): Result<NamedPiece, VersionTwoLoadFailure> => {
@@ -192,30 +220,22 @@ export const readNamedPiece = (
   const owner = shared.value;
   const exampleOwner =
     "examples" in piece && piece.examples === "with-implementation" ? implementation : localCheck;
+  const sharedOptions =
+    request.ruleSetRoot === request.installRoot && request.mechanism !== "walker"
+      ? sharedRuleOptions[checkAddressOfNames(localCheck)]
+      : undefined;
   return {
     outcome: "ok",
     value: {
       anchor: piece.anchor ?? owner.anchor,
       exceptions: piece.exceptions,
-      settings: { ...owner.settings, ...piece.settings },
+      settings: { ...sharedOptions, ...owner.settings, ...piece.settings },
       declarations: piece.checkSettings,
       editions: piece.editions ?? owner.editions,
       forms: owner.forms,
       declarationPath,
       exampleOwner,
-      examplesPath: request.path.join({
-        segments: [
-          ...namedPieceFolderSegmentsOf({
-            ...request,
-            ...exampleOwner,
-            mechanism:
-              "examplesFrom" in piece
-                ? (piece.examplesFrom ?? request.mechanism)
-                : request.mechanism,
-          }),
-          `${exampleOwner.check}.examples.json`,
-        ],
-      }),
+      examplesPath: resolveExamplesPath({ ...request, exampleOwner }),
       pieceRoot: request.path.join({
         segments: namedPieceFolderSegmentsOf({ ...request, ...implementation }),
       }),

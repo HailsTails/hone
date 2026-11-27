@@ -5,7 +5,8 @@
     "keyword": "function"
   },
   "settings": {
-    "plugin": "eslint"
-  },
-  "examplesFrom": "eslint"
+    "rule": "cognitive-complexity",
+    "pluginNamespace": "hone-tangled-function-cognitive-complexity",
+    "module": "oxlint-plugin.ts"
+  }
 }

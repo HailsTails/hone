@@ -105,6 +105,9 @@ const notRunOf = (request: {
           projection: "not-included",
           file: request.run.projectionFile,
           nestedConfigurations,
+          ...(request.run.projectionDetail === undefined
+            ? {}
+            : { detail: request.run.projectionDetail }),
         },
       ];
     case "none":
@@ -160,7 +163,7 @@ const problemOf = (request: {
     ...request.run.slices.map((problem): RunProjectionProblem =>
       problem.state === "left-over"
         ? { ...problem, scope: "file", engine }
-        : { scope: "slice", engine, state: problem.state, file: problem.file },
+        : { ...problem, scope: "slice", engine },
     ),
   ];
 };

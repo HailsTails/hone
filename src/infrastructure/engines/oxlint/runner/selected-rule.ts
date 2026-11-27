@@ -1,20 +1,18 @@
 import { z } from "zod";
 
 import { moduleFileForm } from "../../../../application/ports/host/module-extension.ts";
-import { checkNamesOf } from "../../../../domain/language-layer/check-address-text.ts";
 import { isRepoPath } from "../../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { ReadonlyJsonValue } from "../../../../domain/settings/json-values/json-value.ts";
-import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { readNamedPiece } from "../../named-piece.ts";
 import {
-  eslintPieceSettingsSchema,
+  optionsByEditionSchema,
   ruleOptionsOf,
-} from "../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+  ruleOptionsSchema,
+} from "../../protocol/plugin-settings/rule-options.ts";
 
 const OXLINT_RULES = [
   "typescript/no-explicit-any",
@@ -24,19 +22,25 @@ const OXLINT_RULES = [
 
 type OxlintRule = (typeof OXLINT_RULES)[number];
 
+const optionFields = {
+  options: ruleOptionsSchema.optional(),
+  optionsByEdition: optionsByEditionSchema.optional(),
+};
+
 const settingsSchema = z.union([
-  z.strictObject({ rule: z.enum(OXLINT_RULES) }),
+  z.strictObject({ rule: z.enum(OXLINT_RULES), ...optionFields }),
   z.strictObject({
-    plugin: z.literal("eslint"),
+    pluginNamespace: z.string().regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/),
+    rule: z.string().min(1),
     module: z
       .string()
-      .refine((module) => isRepoPath(module) && moduleFileForm({ text: module }) === "module-file")
-      .optional(),
+      .refine((module) => isRepoPath(module) && moduleFileForm({ text: module }) === "module-file"),
+    peer: z.literal("typescript-eslint").optional(),
+    ...optionFields,
   }),
 ]);
 
 const path = createDefaultPathPort({});
-const fileText = createDefaultFileTextPort({});
 
 const createPieceFailure = (request: {
   readonly pieceRoot: string;
@@ -66,90 +70,30 @@ export const listPeerFolders = (rules: readonly SelectedOxlintRule[]): readonly 
     rule.kind === "plugin" && rule.peerFolder !== undefined ? [rule.peerFolder] : [],
   );
 
-type PluginSettings = Extract<z.output<typeof settingsSchema>, { readonly plugin: "eslint" }>;
-
-const NATIVE_CHECKS: Readonly<Record<OxlintRule, string>> = {
-  "typescript/no-explicit-any": "untyped-value#explicit-any",
-  "eslint/max-params": "positional-parameters#parameter-count",
-  "eslint/no-param-reassign": "rebinding#parameter-reassignment",
-};
-
-const readEslintRule = (request: {
-  readonly address: string;
-  readonly installRoot: string;
-  readonly binding: CheckBinding;
-}) => {
-  const { binding, installRoot } = request;
-  const names = checkNamesOf({ text: request.address });
-  if (names === undefined) {
-    return createPieceFailure({
-      pieceRoot: binding.pieceRoot,
-      detail: "Expected a built-in Hone check",
-    });
-  }
-  const piece = readNamedPiece({
-    ...names,
-    fileText,
-    path,
-    installRoot,
-    ruleSetRoot: installRoot,
-    mechanism: "eslint",
-  });
-  if (piece.outcome === "failed") {
-    return createPieceFailure({
-      pieceRoot: binding.pieceRoot,
-      detail: `Cannot read the matching ESLint piece: ${piece.error.kind}`,
-    });
-  }
-  const parsed = eslintPieceSettingsSchema.safeParse(piece.value.settings);
-  return parsed.success
-    ? { outcome: "ok" as const, value: { settings: parsed.data, pieceRoot: piece.value.pieceRoot } }
-    : createPieceFailure({
-        pieceRoot: piece.value.pieceRoot,
-        detail: z.prettifyError(parsed.error),
-      });
-};
-
-const readNativeRule = (request: {
-  readonly id: OxlintRule;
-  readonly installRoot: string;
+export const readRule = (request: {
   readonly binding: CheckBinding;
 }): Result<SelectedOxlintRule, RunnerFailure> => {
-  const rule = readEslintRule({ ...request, address: NATIVE_CHECKS[request.id] });
-  if (rule.outcome === "failed") return rule;
-  const options = ruleOptionsOf({
-    settings: rule.value.settings,
-    edition: request.binding.edition,
-  });
-  return { outcome: "ok", value: { kind: "native", id: request.id, options } };
-};
-
-const PEER_RULES: ReadonlySet<string> = new Set([
-  "no-class-authoring",
-  "no-extraneous-class",
-  "no-restricted-syntax",
-  "naming-convention",
-  "implicit-any-let",
-]);
-
-const readPluginRule = (request: {
-  readonly installRoot: string;
-  readonly binding: CheckBinding;
-  readonly settings: PluginSettings;
-}): Result<SelectedOxlintRule, RunnerFailure> => {
-  const { binding, settings } = request;
+  const { binding } = request;
+  const parsed = settingsSchema.safeParse(binding.settings);
+  if (!parsed.success) {
+    return createPieceFailure({
+      pieceRoot: binding.pieceRoot,
+      detail: z.prettifyError(parsed.error),
+    });
+  }
+  const settings = parsed.data;
+  const options = ruleOptionsOf({ settings, edition: binding.edition });
+  if (!("pluginNamespace" in settings)) {
+    return { outcome: "ok", value: { kind: "native", id: settings.rule, options } };
+  }
   if (binding.ruleSet !== TOOL_RULE_SET) {
     return createPieceFailure({
       pieceRoot: binding.pieceRoot,
       detail: "Expected a built-in Hone check",
     });
   }
-  const rule = readEslintRule({ ...request, address: binding.address });
-  if (rule.outcome === "failed") return rule;
-  const { pieceRoot, settings: configured } = rule.value;
-  const options = ruleOptionsOf({ settings: configured, edition: binding.edition });
   if (
-    settings.module !== undefined &&
+    settings.rule === "naming-convention" &&
     options.some((option) => typeof option === "object" && option !== null && "types" in option)
   ) {
     return createPieceFailure({
@@ -157,38 +101,16 @@ const readPluginRule = (request: {
       detail: "Oxlint naming rules require options without type filters",
     });
   }
-  const owner = pieceRoot.replaceAll("\\", "/").split("/").slice(-2);
-  const namespace = `hone-${owner.join("-")}`;
+  const namespace = settings.pluginNamespace;
   return {
     outcome: "ok",
     value: {
       kind: "plugin",
       namespace,
-      id: `${namespace}/${configured.rule}`,
-      module: path.join({
-        segments:
-          settings.module === undefined
-            ? [pieceRoot, configured.pluginModule]
-            : [binding.pieceRoot, settings.module],
-      }),
-      ...(PEER_RULES.has(configured.rule) ? { peerFolder: pieceRoot } : {}),
+      id: `${namespace}/${settings.rule}`,
+      module: path.join({ segments: [binding.pieceRoot, settings.module] }),
+      ...(settings.peer === undefined ? {} : { peerFolder: binding.pieceRoot }),
       options,
     },
   };
-};
-
-export const readRule = (request: {
-  readonly installRoot: string;
-  readonly binding: CheckBinding;
-}): Result<SelectedOxlintRule, RunnerFailure> => {
-  const settings = settingsSchema.safeParse(request.binding.settings);
-  if (!settings.success) {
-    return createPieceFailure({
-      pieceRoot: request.binding.pieceRoot,
-      detail: z.prettifyError(settings.error),
-    });
-  }
-  return "rule" in settings.data
-    ? readNativeRule({ ...request, id: settings.data.rule })
-    : readPluginRule({ ...request, settings: settings.data });
 };

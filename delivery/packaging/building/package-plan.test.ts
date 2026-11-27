@@ -118,7 +118,7 @@ describe("packagePlanOf", () => {
         pieces: [
           {
             path: declaration,
-            text: '{"version":2,"settings":{"plugin":"eslint","module":"plugin.ts"}}',
+            text: '{"version":2,"settings":{"rule":"naming-convention","pluginNamespace":"hone-naming","module":"plugin.ts"}}',
           },
         ],
       }),

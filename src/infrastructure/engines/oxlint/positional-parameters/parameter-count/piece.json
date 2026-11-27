@@ -6,6 +6,5 @@
   },
   "settings": {
     "rule": "eslint/max-params"
-  },
-  "examplesFrom": "eslint"
+  }
 }

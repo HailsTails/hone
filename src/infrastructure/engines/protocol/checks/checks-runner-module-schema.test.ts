@@ -301,13 +301,24 @@ describe("namedChecksRunResultSchema", () => {
       ...REPORT,
       projection: "not-included",
       projectionFile: "hone.eslint.mjs",
+      projectionDetail: "include the projected rules last",
+      slices: [
+        { file: "pkg/hone.eslint.mjs", state: "unconfigured", detail: "add a configuration" },
+      ],
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
-    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toMatchObject({
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed).toMatchObject({
       success: true,
       data: {
-        value: { nestedConfigurations: ["pkg"], unprojectedFolders: report.unprojectedFolders },
+        value: {
+          projectionDetail: "include the projected rules last",
+          slices: report.slices,
+          nestedConfigurations: ["pkg"],
+          unprojectedFolders: report.unprojectedFolders,
+        },
       },
     });
     expect(
