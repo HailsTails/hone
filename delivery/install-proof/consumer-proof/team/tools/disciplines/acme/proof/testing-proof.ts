@@ -23,8 +23,23 @@ const ACME: TeamRuleSetUnderTest = { name: "acme", root: "tools/disciplines/acme
 export const typedExamples: readonly Examples[] = [consoleExamples, scratchExamples];
 export const typedConsoleSettings: EslintPieceSettings = consolePiece.settings;
 
+const sameValue = (actual: unknown, expected: unknown): boolean => {
+  if (Object.is(actual, expected)) return true;
+  if (
+    typeof actual !== "object" || actual === null ||
+    typeof expected !== "object" || expected === null ||
+    Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected)
+  ) return false;
+
+  const fields = Reflect.ownKeys(expected);
+  return Reflect.ownKeys(actual).length === fields.length && fields.every((field) =>
+    Object.hasOwn(actual, field) &&
+    sameValue(Reflect.get(actual, field), Reflect.get(expected, field)),
+  );
+};
+
 const provedEqual = (request: { readonly proof: string; readonly actual: unknown; readonly expected: unknown }): void => {
-  if (JSON.stringify(request.actual) !== JSON.stringify(request.expected)) {
+  if (!sameValue(request.actual, request.expected)) {
     throw new Error(`${request.proof}: expected ${JSON.stringify(request.expected)}, but got ${JSON.stringify(request.actual)}`);
   }
 };
