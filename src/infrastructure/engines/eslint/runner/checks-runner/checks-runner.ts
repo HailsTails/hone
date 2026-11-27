@@ -146,7 +146,13 @@ const NO_PROJECTION_REACH: Pick<
   nestedConfigurations: [],
   unprojectedFolders: [],
 };
-const NO_FINDINGS = { hits: [], nativeExceptions: [], measured: [], misnamedRuleIds: [] };
+const NO_FINDINGS = {
+  hits: [],
+  nativeExceptions: [],
+  measured: [],
+  inapplicable: [],
+  misnamedRuleIds: [],
+};
 
 const reportAs = (request: {
   readonly projection: ChecksRunProjection;
@@ -705,6 +711,7 @@ const lintedReport = async (
             ...tracked.value,
           ],
           measured: findings.value.flatMap((found) => found.measured),
+          inapplicable: [],
           ...NO_PROJECTION_REACH,
           ...reportProjection(request.status),
           slices: request.status.slices,

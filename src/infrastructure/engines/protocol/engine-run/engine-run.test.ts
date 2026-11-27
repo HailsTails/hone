@@ -189,6 +189,7 @@ describe("createNamedEnginePort", () => {
           hits: [],
           nativeExceptions: [],
           measured: [{ check: BINDING.address, file: CONFIG }],
+          inapplicable: [],
           projection: "none",
           slices: [],
           nestedConfigurations: [],
@@ -227,6 +228,7 @@ describe("createNamedEnginePort", () => {
           hits: [],
           nativeExceptions: [],
           measured: [],
+          inapplicable: [],
           projection: "none",
           slices: [{ file: "packages/example/disciplines.eslint.mjs", state: "not-applied" }],
           nestedConfigurations: [],
@@ -268,6 +270,7 @@ describe("createNamedEnginePort", () => {
       hits: [],
       nativeExceptions: [],
       measured: [{ check: "leftover-debugging#debug-statement", file: FILE_A }],
+      inapplicable: [],
       projection: "none",
       slices: [],
       nestedConfigurations: [],
@@ -320,6 +323,7 @@ describe("createNamedEnginePort", () => {
           ],
           nativeExceptions: [],
           measured: [],
+          inapplicable: [],
           projection: "none",
           slices: [],
           nestedConfigurations: [],
@@ -419,21 +423,19 @@ describe("createNamedEnginePort", () => {
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
 
-  it("keeps the declared ESLint scope when inapplicability is omitted or empty", async () => {
+  it("keeps the declared ESLint scope when no check is inapplicable", async () => {
     const report: NamedChecksRunReport = {
       projection: "current",
       slices: [],
       measured: [],
+      inapplicable: [],
       hits: [],
       nativeExceptions: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
       misnamedRuleIds: [],
     };
-    const run = vi
-      .fn<RunnerCall>()
-      .mockResolvedValueOnce({ outcome: "ok", value: report })
-      .mockResolvedValueOnce({ outcome: "ok", value: { ...report, inapplicable: [] } });
+    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
       outcome: "ok",
       value: { namedChecksRunner: { ...namedRunner(), run } },
@@ -445,15 +447,12 @@ describe("createNamedEnginePort", () => {
     });
     assert(engine.outcome === "ok");
 
-    const omitted = await engine.value.run(REQUEST);
-    const empty = await engine.value.run(REQUEST);
+    const result = await engine.value.run(REQUEST);
 
-    const expected = {
+    expect(result).toMatchObject({
       outcome: "ok",
       value: { coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] } },
-    };
-    expect(omitted).toMatchObject(expected);
-    expect(empty).toMatchObject(expected);
+    });
   });
 
   it("passes the required projection kind only into the named ESLint runner request", async () => {
@@ -507,7 +506,7 @@ const UPGRADE_PROJECTION: CheckedVersionOneProjection = {
   rules: new Map(),
 };
 
-const UPGRADE_REPORT: NamedChecksRunReport = {
+const UPGRADE_REPORT = {
   hits: [],
   nativeExceptions: [],
   measured: [],
@@ -517,13 +516,13 @@ const UPGRADE_REPORT: NamedChecksRunReport = {
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
-};
+} satisfies Omit<NamedChecksRunReport, "inapplicable">;
 
 describe("measureVersionOneProjectionOver", () => {
   it("uses an engine’s declared upgrade export and returns the inspected slice separately from the named report", async () => {
     const upgradeExport = vi.fn().mockResolvedValue({
       outcome: "ok",
-      value: { report: UPGRADE_REPORT, unappliedSlices: [UPGRADE_SLICE] },
+      value: { report: { ...UPGRADE_REPORT, inapplicable: [] }, unappliedSlices: [UPGRADE_SLICE] },
     });
     const run = vi.fn<RunnerCall>();
     const runner = {
@@ -611,7 +610,9 @@ describe("measureVersionOneProjectionOver", () => {
       unprojectedFolders: [],
       misnamedRuleIds: [],
     };
-    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
+    const run = vi
+      .fn<RunnerCall>()
+      .mockResolvedValue({ outcome: "ok", value: { ...report, inapplicable: [] } });
     const runner = {
       fileScope: "tracked",
       projectedKinds: [],

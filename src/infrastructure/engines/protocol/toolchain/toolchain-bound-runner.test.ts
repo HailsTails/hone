@@ -206,6 +206,7 @@ const CHECKS_REPORT: NamedChecksRunReport = {
   hits: [],
   nativeExceptions: [],
   measured: [],
+  inapplicable: [],
   projection: "current",
   slices: [],
   nestedConfigurations: [],

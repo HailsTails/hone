@@ -24,7 +24,7 @@ export type ChecksRunProjection =
     };
 
 export type NamedChecksRunReport = ChecksRunProjection & {
-  readonly inapplicable?: readonly CheckMeasurement[] | undefined;
+  readonly inapplicable: readonly CheckMeasurement[];
 } & Omit<
     NamedEngineRun,
     "mechanism" | "coverableKinds" | "comparedOutputs" | "coverage" | keyof ChecksRunProjection

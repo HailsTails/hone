@@ -119,7 +119,7 @@ describe("runEnginesMeasurement", () => {
       replied: [
         [
           {
-            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
           },
         ],
       ],
@@ -339,7 +339,7 @@ describe("decodeMeasuredRuns", () => {
     expect(vi.mocked(reply.write).mock.calls).toEqual([
       [
         {
-          text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]}},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+          text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]},"comparedOutputs":[]},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
         },
       ],
     ]);
@@ -350,7 +350,7 @@ describe("decodeMeasuredRuns", () => {
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]}},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]},"comparedOutputs":[]},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
     });
 
     expect(runs).toEqual({
@@ -411,7 +411,7 @@ describe("decodeMeasuredRuns", () => {
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":[],"report":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":[],"report":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}},"comparedOutputs":[]}]}',
     });
 
     expect(runs).toEqual({

@@ -13,8 +13,8 @@ import { parsedJson } from "../../../content-files/parsed-json.ts";
 import { engineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import {
-  decodeNamedChecksReport,
-  namedChecksRunReportSchema,
+  decodeUnscopedChecksReport,
+  unscopedChecksRunReportSchema,
 } from "../checks/checks-runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
@@ -54,8 +54,8 @@ export const isCheckedTreeSchemaEqual: Equal<
 const engineReplySchema = z.strictObject({
   mechanism: engineIdSchema,
   coverableKinds: z.array(nativeExceptionKindSchema).readonly(),
-  report: namedChecksRunReportSchema,
-  comparedOutputs: z.array(repoPathSchema).readonly().optional(),
+  report: unscopedChecksRunReportSchema,
+  comparedOutputs: z.array(repoPathSchema).readonly(),
 });
 
 const measurementReplySchema = z.discriminatedUnion("outcome", [
@@ -88,7 +88,7 @@ const mapRunToEngineReply = (request: {
     coverableKinds,
     report:
       report.projection === "current-with-file" ? { ...report, projection: "current" } : report,
-    ...(comparedOutputs.length === 0 ? {} : { comparedOutputs }),
+    comparedOutputs,
   };
 };
 
@@ -167,16 +167,13 @@ const mapReplyToRuns = (reply: MeasurementReply): MeasuredRuns =>
     ? { outcome: "failed", error: reply.failure }
     : {
         outcome: "ok",
-        value: reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => {
-          const { inapplicable: _inapplicable, ...observations } = decodeNamedChecksReport(report);
-          return {
-            ...observations,
-            mechanism,
-            coverableKinds,
-            coverage: { kind: "scope-unavailable" },
-            comparedOutputs: comparedOutputs ?? [],
-          };
-        }),
+        value: reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
+          ...decodeUnscopedChecksReport(report),
+          mechanism,
+          coverableKinds,
+          coverage: { kind: "scope-unavailable" },
+          comparedOutputs,
+        })),
       };
 
 export const decodeMeasuredRuns = (request: {

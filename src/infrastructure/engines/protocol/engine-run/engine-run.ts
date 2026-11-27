@@ -30,7 +30,7 @@ import {
 } from "../../../../domain/runner/runner-failure.ts";
 import {
   checksProjectResultSchema,
-  decodeNamedChecksReport,
+  decodeUnscopedChecksReport,
   measurementResultSchema,
   namedChecksRunReportSchema,
   namedChecksRunResultSchema,
@@ -107,10 +107,14 @@ const verifiedNamedRun = (request: {
   readonly report: z.output<typeof namedChecksRunReportSchema>;
 }): NamedOutcome<NamedEngineRun> => {
   const { call, requested, report } = request;
+  const { inapplicable: reportedInapplicable, ...reportWithoutScope } = report;
   const files = filesInScope(call.runner.fileScope, requested);
   const checked = checkedObservations({
     requested: { ...requested, files },
-    report: decodeNamedChecksReport(report),
+    report: {
+      ...decodeUnscopedChecksReport(reportWithoutScope),
+      inapplicable: reportedInapplicable,
+    },
   });
   if (checked.outcome === "failed") {
     return runnerFailed({ mechanism: call.mechanism, failure: checked.error });

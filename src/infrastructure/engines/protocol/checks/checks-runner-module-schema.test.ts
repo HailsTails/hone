@@ -27,6 +27,7 @@ const REPORT = {
     },
   ],
   measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
+  inapplicable: [],
   projection: "current",
   slices: [{ file: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
   nestedConfigurations: [],
