@@ -7,10 +7,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts"
     },
     {
@@ -36,10 +32,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.ts"
     },
     {
       "answers": "long-function#function-length",
