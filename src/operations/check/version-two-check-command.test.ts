@@ -75,7 +75,12 @@ const createEmptyLedgerStages = (request: {
   }),
   records: () => ({
     outcome: "ok",
-    value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+    value: {
+      records: [],
+      refused: [],
+      notes: [],
+      base: { measured: "yes", held: [], placements: [] },
+    },
   }),
   tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
   engines: async () => ({ outcome: "ok", value: [] }),

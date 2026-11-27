@@ -30,7 +30,7 @@ export const computeTouchedSet = (request: ChangeMeasurement): TouchedSet => {
   const changed = request.git.changedSince({
     repoRoot: request.repoRoot,
     baseRevision: request.baseRevision,
-    ...(request.baseScope === undefined ? {} : { baseScope: request.baseScope }),
+    baseScope: request.baseScope,
   });
   if (changed.outcome === "failed") {
     return {

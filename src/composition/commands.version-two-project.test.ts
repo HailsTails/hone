@@ -343,7 +343,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", held: [], placements: [] },
 };
 
 const stagesProjecting = (request: {

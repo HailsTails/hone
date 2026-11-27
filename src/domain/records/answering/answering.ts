@@ -397,7 +397,7 @@ const assessFindingCounts = (
   const { base } = request.comparison;
   const debtFindings = filterFindingsForDebtComparison({
     ...request,
-    landing: base.measured === "yes" ? (base.placements ?? []) : [],
+    landing: base.measured === "yes" ? base.placements : [],
   });
   if (debtFindings.outcome === "failed") return debtFindings;
   return {

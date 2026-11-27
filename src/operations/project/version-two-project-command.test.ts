@@ -64,7 +64,12 @@ const loadProjectionStages = (catalogue: VersionTwoStages["catalogue"]): Version
   }),
   records: () => ({
     outcome: "ok",
-    value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+    value: {
+      records: [],
+      refused: [],
+      notes: [],
+      base: { measured: "yes", held: [], placements: [] },
+    },
   }),
   tree: () => ({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
   projections: vi.fn<VersionTwoStages["projections"]>().mockResolvedValue({

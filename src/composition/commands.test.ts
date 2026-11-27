@@ -506,7 +506,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", held: [], placements: [] },
 };
 
 const HELD_DEBT: PlacedRecord = {
@@ -744,7 +744,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
           value: {
             ...NO_RECORDS,
             records: [HELD_DEBT],
-            base: { measured: "yes", held: [HELD_DEBT.record] },
+            base: { measured: "yes", held: [HELD_DEBT.record], placements: [HELD_DEBT] },
           },
         }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({

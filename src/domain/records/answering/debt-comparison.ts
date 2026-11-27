@@ -47,7 +47,7 @@ type Comparing = DebtComparisonEvidence &
   Pick<RecordsReading, "records"> & {
     readonly touched: TouchedSet;
     readonly findings: readonly CheckMeasurement[];
-    readonly debtFindings?: readonly CheckMeasurement[];
+    readonly debtFindings: readonly CheckMeasurement[];
   };
 
 type CountedPlace = CheckMeasurement & { readonly findings: number | undefined };
@@ -128,7 +128,7 @@ const compareMeasuredDebt = (
   const measured = new Set(request.measured.map(mapPairToKey));
   const inapplicable = new Set(request.inapplicable.map(mapPairToKey));
   const found = new Set(request.findings.map(mapPairToKey));
-  const observed = Map.groupBy(request.debtFindings ?? request.findings, mapPairToKey);
+  const observed = Map.groupBy(request.debtFindings, mapPairToKey);
   const suppressed = new Set(exceptionPlaces.map(mapPairToKey));
   const suppressedChecks = new Set(
     request.exceptions.flatMap((exception) => ("file" in exception ? [] : [exception.check])),

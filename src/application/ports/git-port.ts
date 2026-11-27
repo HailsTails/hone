@@ -19,7 +19,7 @@ export type GitContentQuery = {
 export type GitChangeQuery = {
   readonly repoRoot: AbsolutePath;
   readonly baseRevision: string;
-  readonly baseScope?: "pinned-ancestor";
+  readonly baseScope: "merge-base" | "pinned-ancestor";
 };
 
 export type GitPort = {

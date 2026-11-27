@@ -71,7 +71,7 @@ describe("recordsUnmeasuredOf", () => {
     expect(
       recordsUnmeasuredOf({
         records: [STATED_DEBT],
-        base: { measured: "yes", held: [] },
+        base: { measured: "yes", held: [], placements: [] },
         touched: { measured: "no", base: { state: "not-given" } },
       }),
     ).toEqual([{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }]);
@@ -122,7 +122,7 @@ describe("recordsUnmeasuredOf", () => {
     expect(
       recordsUnmeasuredOf({
         records: [STATED_DEBT, CARRIED_LOCATION],
-        base: { measured: "yes", held: [] },
+        base: { measured: "yes", held: [], placements: [] },
         touched: { measured: "elsewhere" },
       }),
     ).toEqual([]);
@@ -171,7 +171,7 @@ describe("carriedJudgementOf", () => {
     expect(
       carriedJudgementOf({
         records: [CARRIED_LOCATION],
-        base: { measured: "yes", held: [] },
+        base: { measured: "yes", held: [], placements: [] },
         touched: ELSEWHERE,
       }),
     ).toEqual({ judgement: "judged" });

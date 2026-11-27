@@ -152,7 +152,7 @@ export type CarriedListing = {
 type HeldBaseRecords = { readonly held: readonly HoneRecord[] };
 
 export type BaseMeasurement =
-  | (HeldBaseRecords & { readonly measured: "yes"; readonly placements?: readonly PlacedRecord[] })
+  | (HeldBaseRecords & { readonly measured: "yes"; readonly placements: readonly PlacedRecord[] })
   | (HeldBaseRecords & { readonly measured: "partial" })
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 

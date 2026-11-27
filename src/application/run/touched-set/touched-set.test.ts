@@ -38,6 +38,7 @@ const fakeGit = (changedSince: GitPort["changedSince"]): GitPort => ({
 describe("computeTouchedSet", () => {
   it("measures the de-duplicated changed paths when a base revision is given", () => {
     const touched = computeTouchedSet({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "abc123",
       git: fakeGit(okPaths),
@@ -50,6 +51,7 @@ describe("computeTouchedSet", () => {
     const changedSince = vi.fn<GitPort["changedSince"]>().mockReturnValue(okPaths());
 
     computeTouchedSet({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "abc123",
       git: fakeGit(changedSince),
@@ -58,11 +60,13 @@ describe("computeTouchedSet", () => {
     expect(changedSince).toHaveBeenCalledWith({
       repoRoot: "/repo",
       baseRevision: "abc123",
+      baseScope: "merge-base",
     });
   });
 
   it("is unmeasured with no-base-revision when no base revision is given", () => {
     const touched = computeTouchedSet({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: undefined,
       git: fakeGit(okPaths),
@@ -75,6 +79,7 @@ describe("computeTouchedSet", () => {
     const changedSince = vi.fn<GitPort["changedSince"]>().mockReturnValue(okPaths());
 
     computeTouchedSet({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: undefined,
       git: fakeGit(changedSince),
@@ -85,6 +90,7 @@ describe("computeTouchedSet", () => {
 
   it("is unmeasured with the base git failed on, carrying git's own message, when git fails", () => {
     const touched = computeTouchedSet({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "abc123",
       git: fakeGit(failed),

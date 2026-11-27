@@ -240,7 +240,7 @@ const readLandingHead = (request: GitContext & GitChangeQuery): Result<string, G
 const changedPaths = (
   request: GitContext & GitChangeQuery,
 ): Result<readonly RepoPath[], GitFailure> => {
-  if (request.baseScope !== "pinned-ancestor") {
+  if (request.baseScope === "merge-base") {
     return diffChangedPaths({
       ...request,
       committedRange: `${request.baseRevision}...HEAD`,

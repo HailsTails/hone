@@ -409,7 +409,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", held: [], placements: [] },
 };
 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
@@ -867,7 +867,7 @@ describe("namedRunReportOf, findings and records", () => {
           records: [carried],
           refused: [refused],
           notes: [],
-          base: { measured: "yes", held: [] },
+          base: { measured: "yes", held: [], placements: [] },
         },
       }),
     ).toMatchObject({

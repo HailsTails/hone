@@ -101,7 +101,7 @@ const stagesHolding = (request: {
       records: request.records,
       refused: [],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", held: [], placements: [] },
     },
   }),
   tree: vi

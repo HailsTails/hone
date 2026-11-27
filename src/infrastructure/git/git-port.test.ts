@@ -231,7 +231,11 @@ describe("createGitPort changedSince", () => {
   it("diffs the base range with --end-of-options before it", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    gitOver(spawn).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(spawn).toHaveBeenNthCalledWith(
       1,
@@ -244,7 +248,11 @@ describe("createGitPort changedSince", () => {
   it("diffs the worktree against HEAD second", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    gitOver(spawn).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(spawn).toHaveBeenNthCalledWith(
       2,
@@ -260,6 +268,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "a.ts\0z.ts\0untracked.ts\0" });
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -285,6 +294,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce(EXITED_EMPTY);
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -298,7 +308,11 @@ describe("createGitPort changedSince", () => {
         .fn<GitSpawn>()
         .mockReturnValueOnce(EXITED_NOT_A_REPOSITORY)
         .mockReturnValueOnce(EXITED_EMPTY),
-    ).changedSince({ repoRoot: REPO_ROOT, baseRevision: "no-such-revision" });
+    ).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "no-such-revision",
+    });
 
     expect(changedListing).toMatchObject({
       outcome: "failed",
@@ -314,6 +328,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce(ERRORED_ON_BUFFER);
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -337,6 +352,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "new.ts\0../outside.ts\0" });
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });

@@ -116,7 +116,7 @@ const DEBT_ON_A: RecordsReading = {
   ],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", held: [], placements: [] },
 };
 
 const UNUSED_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>() };

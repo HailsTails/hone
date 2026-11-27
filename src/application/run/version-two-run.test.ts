@@ -330,7 +330,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", held: [], placements: [] },
 };
 
 const HIT: CheckHit = {
@@ -485,7 +485,7 @@ describe("versionTwoRunOver", () => {
     const onDisk: RecordsReading = {
       ...RECORDS,
       records: [debtAtBase],
-      base: { measured: "yes", held: [debtAtBase.record] },
+      base: { measured: "yes", held: [debtAtBase.record], placements: [debtAtBase] },
     };
     const stages = stagesGiving({
       records: vi

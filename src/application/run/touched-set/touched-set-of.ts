@@ -42,6 +42,6 @@ export const touchedSetOf = (request: {
     baseRevision: request.baseRevision,
     git: request.git,
     renamed: request.renamed,
-    ...(forfeiture === "no-new-findings" ? { baseScope: "pinned-ancestor" } : {}),
+    baseScope: forfeiture === "no-new-findings" ? "pinned-ancestor" : "merge-base",
   });
 };
