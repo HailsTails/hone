@@ -38,5 +38,9 @@ export const computeTouchedSet = (request: ChangeMeasurement): TouchedSet => {
       base: baseRevisionAvailabilityOf({ revision: request.baseRevision, failure: changed.error }),
     };
   }
-  return { measured: "yes", paths: new Set(changed.value) };
+  return {
+    measured: "yes",
+    paths: new Set(changed.value),
+    ...(request.baseScope === "pinned-ancestor" ? { landingRevision: request.baseRevision } : {}),
+  };
 };

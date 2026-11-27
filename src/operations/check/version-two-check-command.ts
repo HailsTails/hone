@@ -10,10 +10,7 @@ import type { VersionTwoReportOutput } from "../../domain/settings/report-output
 
 export type VersionTwoCheckInput = {
   readonly stages: VersionTwoStages;
-  readonly arguments: Pick<
-    CheckArguments<VersionTwoReportOutput>,
-    "forfeiture" | "reportOutput" | "compareDebtAt"
-  >;
+  readonly arguments: Pick<CheckArguments<VersionTwoReportOutput>, "forfeiture" | "reportOutput">;
 };
 
 export const versionTwoCheckOf = (
@@ -21,14 +18,5 @@ export const versionTwoCheckOf = (
 ): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
   versionTwoRunOver({
     stages: request.stages,
-    arguments: {
-      forfeiture:
-        request.arguments.compareDebtAt === undefined ? request.arguments.forfeiture : "this-run",
-      reportOutput: request.arguments.reportOutput,
-      measuring:
-        request.arguments.compareDebtAt === undefined ? "when-debt-held" : "landing-comparison",
-      ...(request.arguments.compareDebtAt === undefined
-        ? {}
-        : { compareDebtAt: request.arguments.compareDebtAt }),
-    },
+    arguments: { ...request.arguments, measuring: "when-debt-held" },
   });

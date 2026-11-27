@@ -3,7 +3,11 @@ import type { RenamedPaths } from "./renamed-path.ts";
 import type { RepoPath } from "./repo-path-types.ts";
 
 export type TouchedSet =
-  | { readonly measured: "yes"; readonly paths: ReadonlySet<RepoPath> }
+  | {
+      readonly measured: "yes";
+      readonly paths: ReadonlySet<RepoPath>;
+      readonly landingRevision?: string;
+    }
   | { readonly measured: "no"; readonly base: BaseRevisionAvailability }
   | { readonly measured: "elsewhere" };
 
@@ -18,7 +22,7 @@ export const withoutPureMoves = (request: {
 }): TouchedSet =>
   request.touched.measured === "yes"
     ? {
-        measured: "yes",
+        ...request.touched,
         paths: new Set(
           [...request.touched.paths].filter(
             (path) => request.renamed.get(path)?.content !== "unchanged",

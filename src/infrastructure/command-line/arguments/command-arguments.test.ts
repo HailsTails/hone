@@ -485,7 +485,7 @@ it("takes a full landing commit only for the checked comparison", () => {
 
   expect(pinned).toMatchObject({
     outcome: "ok",
-    value: { baseRevision: revision, compareDebtAt: revision },
+    value: { baseRevision: revision, forfeiture: "no-new-findings" },
   });
   expect(mutable).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
   expect(pruning).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });

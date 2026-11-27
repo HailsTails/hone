@@ -2,11 +2,11 @@ import type { PlacedRecord } from "../../../domain/records/hone-records/hone-rec
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RenamedSinceBase } from "../../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
-import type { Assessment } from "../../../domain/settings/assessment.ts";
+import type { Assessment, CheckForfeiture } from "../../../domain/settings/assessment.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import { touchedSetUnder } from "./forfeiture-touched-set.ts";
 
-export type TouchedMeasuring = "when-debt-held" | "always" | "landing-comparison";
+export type TouchedMeasuring = "when-debt-held" | "always";
 
 const NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
@@ -24,7 +24,7 @@ const measurementOf = (request: {
     : "not-needed";
 
 export const touchedSetOf = (request: {
-  readonly assessment: Assessment;
+  readonly assessment: Assessment<CheckForfeiture>;
   readonly measuring: TouchedMeasuring;
   readonly records: readonly PlacedRecord[];
   readonly repoRoot: AbsolutePath;
@@ -32,15 +32,16 @@ export const touchedSetOf = (request: {
   readonly git: Pick<GitPort, "changedSince">;
   readonly renamed: RenamedSinceBase;
 }): TouchedSet => {
-  if (request.assessment.forfeiture !== "elsewhere" && measurementOf(request) === "not-needed") {
+  const { forfeiture } = request.assessment;
+  if (forfeiture === "this-run" && measurementOf(request) === "not-needed") {
     return NOTHING_TOUCHED;
   }
   return touchedSetUnder({
-    forfeiture: request.assessment.forfeiture,
+    forfeiture,
     repoRoot: request.repoRoot,
     baseRevision: request.baseRevision,
     git: request.git,
     renamed: request.renamed,
-    ...(request.measuring === "landing-comparison" ? { baseScope: "pinned-ancestor" } : {}),
+    ...(forfeiture === "no-new-findings" ? { baseScope: "pinned-ancestor" } : {}),
   });
 };

@@ -187,7 +187,8 @@ const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
 const renderDebtComparison = ({ report, output }: RunReportRequest): string => {
   if (report.debtComparison === undefined || output === "verdict-only") return "";
   const { revision, issues } = report.debtComparison;
-  const heading = `debt comparison (${issues.length}) against ${revision}\n`;
+  const landing = revision === undefined ? "" : ` against ${revision}`;
+  const heading = `debt comparison (${issues.length})${landing}\n`;
   return output === "counts"
     ? heading
     : `${heading}${issues.map((issue) => `${mapDebtIssueToLine(issue)}\n`).join("")}`;

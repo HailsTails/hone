@@ -141,5 +141,5 @@ it("passes the pinned-ancestor requirement through to change measurement", () =>
     baseRevision: "pinned",
     baseScope: "pinned-ancestor",
   });
-  expect(touched).toEqual({ measured: "yes", paths: new Set([A, B]) });
+  expect(touched).toEqual({ measured: "yes", paths: new Set([A, B]), landingRevision: "pinned" });
 });

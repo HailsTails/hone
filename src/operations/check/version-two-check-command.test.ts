@@ -88,19 +88,15 @@ it("measures change for an explicitly requested comparison even when no debt is 
     .mockReturnValue({ measured: "yes", paths: new Set() });
   const stages = createEmptyLedgerStages({ touched });
 
-  const run = await versionTwoCheckOf({
+  await versionTwoCheckOf({
     stages,
-    arguments: { forfeiture: undefined, reportOutput: undefined, compareDebtAt: "pinned" },
+    arguments: { forfeiture: "no-new-findings", reportOutput: undefined },
   });
 
   expect(touched).toHaveBeenCalledWith(
     expect.objectContaining({
-      assessment: { forfeiture: "this-run" },
-      measuring: "landing-comparison",
+      assessment: { forfeiture: "no-new-findings" },
+      measuring: "when-debt-held",
     }),
   );
-  expect(run).toMatchObject({
-    outcome: "ok",
-    value: { report: { debtComparison: { revision: "pinned" } } },
-  });
 });

@@ -2198,7 +2198,15 @@ it("retains touched debt when a finding comparison judges it", () => {
     touched: FILE_A_TOUCHED,
     runs: [],
     measurements: { runs: [], tracked: [], excluded: [] },
-    retainTouchedDebt: true,
+    forfeiture: "no-new-findings",
+    comparison: {
+      base: { measured: "yes", held: [DEBT_ON_CLASS_IN_A.record] },
+      ruleSets: ["hone"],
+      scope: [],
+      measured: [],
+      exceptions: [],
+      projection: "current",
+    },
   } satisfies Parameters<typeof answerFindings>[0];
 
   const answered = answerFindings(request);

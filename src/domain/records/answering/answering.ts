@@ -12,6 +12,7 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { Result } from "../../result.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { CheckNativeException } from "../../runner/check-observations.ts";
+import type { ForfeitureAssessment } from "../../settings/assessment.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
   type MeasurementIndex,
@@ -19,6 +20,11 @@ import {
   measurementOf,
   type RunMeasurements,
 } from "../measurement/measured-at.ts";
+import {
+  compareDebt,
+  type DebtComparison,
+  type DebtComparisonEvidence,
+} from "./debt-comparison.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import {
   createResolvedSite,
@@ -68,8 +74,10 @@ export type AnsweringRequest = Catalogued & {
   readonly touched: TouchedSet;
   readonly runs: readonly NamedGovernedRun[];
   readonly measurements: RunMeasurements;
-  readonly retainTouchedDebt?: true;
-};
+} & (
+    | { readonly forfeiture?: ForfeitureAssessment }
+    | { readonly forfeiture: "no-new-findings"; readonly comparison: DebtComparisonEvidence }
+  );
 
 export type Answering = {
   readonly findings: readonly CheckFinding[];
@@ -79,6 +87,7 @@ export type Answering = {
   readonly forfeited: readonly PlacedRecord[];
   readonly paid: readonly PaidDebt[];
   readonly unrecorded: readonly AttributedCheckException[];
+  readonly debtComparison?: DebtComparison;
 };
 
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
@@ -381,9 +390,33 @@ const heldExceptions = (request: {
       : [],
   );
 
+const assessFindingCounts = (
+  request: AnsweringRequest & { readonly answered: readonly AnsweredFinding[] },
+): Result<Pick<Answering, "debtComparison">, SymptomUnheld> => {
+  if (request.forfeiture !== "no-new-findings") return { outcome: "ok", value: {} };
+  const { base } = request.comparison;
+  const debtFindings = filterFindingsForDebtComparison({
+    ...request,
+    landing: base.measured === "yes" ? (base.placements ?? []) : [],
+  });
+  if (debtFindings.outcome === "failed") return debtFindings;
+  return {
+    outcome: "ok",
+    value: {
+      debtComparison: compareDebt({
+        ...request.comparison,
+        records: request.records,
+        touched: request.touched,
+        findings: request.findings.map(({ finding }) => finding),
+        debtFindings: debtFindings.value,
+      }),
+    },
+  };
+};
+
 export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> => {
   const { catalogue, content } = request;
-  const forfeited = request.retainTouchedDebt === true ? [] : forfeitedRecords(request);
+  const forfeited = request.forfeiture === "no-new-findings" ? [] : forfeitedRecords(request);
   const forfeit = new Set(forfeited);
   const inForce = request.records.filter((placed) => !forfeit.has(placed));
   const byPlace = recordsByPlaceOf({ records: inForce });
@@ -414,11 +447,14 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
     measurements: measurementIndexOf({ measurements: request.measurements }),
   });
   if (stale.outcome === "failed") return stale;
+  const answered = judged.filter((entry) => entry.by.length > 0);
+  const comparison = assessFindingCounts({ ...request, answered });
+  if (comparison.outcome === "failed") return comparison;
   return {
     outcome: "ok",
     value: {
       findings: judged.flatMap((entry) => (entry.by.length === 0 ? [entry.finding] : [])),
-      answered: judged.filter((entry) => entry.by.length > 0),
+      answered,
       held: heldExceptions({ natives: natives.value }),
       stale: stale.value,
       forfeited,
@@ -426,6 +462,7 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
       unrecorded: natives.value.flatMap((native) =>
         native.holders.length === 0 ? [native.exception] : [],
       ),
+      ...comparison.value,
     },
   };
 };

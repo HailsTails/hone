@@ -1,5 +1,8 @@
 import type { ExitCode } from "../../../application/ports/host/process-port.ts";
-import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
+import {
+  CHECK_FORFEITURE_ASSESSMENTS,
+  FORFEITURE_ASSESSMENTS,
+} from "../../../domain/settings/assessment.ts";
 import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 import { PRUNE_DEBT_SUBCOMMAND, RECORD_DEBT_SUBCOMMAND } from "./subcommand-names.ts";
 
@@ -109,8 +112,6 @@ export const FORFEITURE_OPTION: CommandOption = {
   summary:
     "assess file carve-out decay in this run or leave it to another, over forfeiture in hone.config.json; this-run when neither is set",
 };
-
-export const CHECK_FORFEITURE_ASSESSMENTS = [...FORFEITURE_ASSESSMENTS, "no-new-findings"] as const;
 
 export const CHECK_FORFEITURE_OPTION: CommandOption = {
   ...FORFEITURE_OPTION,

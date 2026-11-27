@@ -1,8 +1,11 @@
 import type { CheckAddressText } from "../../language-layer/check-address-text.ts";
 import { checkAddressOf } from "../../language-layer/check-address.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { OwnedName } from "../../rule-set/rule-set-identity.ts";
 import type { CheckMeasurement, CheckNativeException } from "../../runner/check-observations.ts";
+import { SETTINGS_FILE_NAME } from "../../settings/settings-file.ts";
 import type { Debt, RecordsReading } from "../hone-records/hone-record.ts";
 
 type ComparisonScope =
@@ -27,24 +30,25 @@ export type DebtComparisonIssue =
     });
 
 export type DebtComparison = {
-  readonly revision: string;
+  readonly revision: string | undefined;
   readonly issues: readonly DebtComparisonIssue[];
 };
 
-type Comparing = Pick<RecordsReading, "base" | "records"> & {
-  readonly revision: string;
-  readonly touched: TouchedSet;
-  readonly selected: readonly CheckAddressText[];
+export type DebtComparisonEvidence = Pick<RecordsReading, "base"> & {
+  readonly ruleSets: readonly OwnedName["ruleSet"][];
   readonly scope: readonly CheckMeasurement[];
-  readonly findings: readonly CheckMeasurement[];
-  readonly debtFindings?: readonly CheckMeasurement[];
   readonly inapplicable?: readonly CheckMeasurement[];
   readonly measured: readonly CheckMeasurement[];
   readonly exceptions: readonly CheckNativeException[];
   readonly projection: "current" | "unmeasured";
-  readonly settings: "unchanged" | "changed";
-  readonly checks: "shipped" | "external";
 };
+
+type Comparing = DebtComparisonEvidence &
+  Pick<RecordsReading, "records"> & {
+    readonly touched: TouchedSet;
+    readonly findings: readonly CheckMeasurement[];
+    readonly debtFindings?: readonly CheckMeasurement[];
+  };
 
 type CountedPlace = CheckMeasurement & { readonly findings: number | undefined };
 
@@ -156,15 +160,23 @@ const compareMeasuredDebt = (
 };
 
 export const compareDebt = (request: Comparing): DebtComparison => {
-  const { base, revision, touched } = request;
-  const issues: DebtComparisonIssue[] = [];
-  if (base.measured !== "yes" || touched.measured !== "yes")
+  const { base, touched } = request;
+  if (touched.measured !== "yes" || touched.landingRevision === undefined) {
+    const revision =
+      touched.measured === "no" && touched.base.state === "git-failed"
+        ? touched.base.revision
+        : undefined;
     return { revision, issues: [{ kind: "base-unavailable" }] };
+  }
+  const revision = touched.landingRevision;
+  if (base.measured !== "yes") return { revision, issues: [{ kind: "base-unavailable" }] };
+  const issues: DebtComparisonIssue[] = [];
   if (base.incomplete === true) issues.push({ kind: "base-refused" });
-  if (request.settings === "changed") issues.push({ kind: "settings-changed" });
+  if (touched.paths.has(repoPathOf(SETTINGS_FILE_NAME))) issues.push({ kind: "settings-changed" });
   if (request.projection === "unmeasured") issues.push({ kind: "projection-unmeasured" });
-  if (request.selected.length === 0) issues.push({ kind: "no-checks" });
-  if (request.checks === "external") issues.push({ kind: "external-checks" });
+  if (request.ruleSets.length === 0) issues.push({ kind: "no-checks" });
+  if (request.ruleSets.some((ruleSet) => typeof ruleSet === "object"))
+    issues.push({ kind: "external-checks" });
   return {
     revision,
     issues: issues.length === 0 ? compareMeasuredDebt({ ...request, base }) : issues,

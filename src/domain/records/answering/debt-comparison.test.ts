@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 
 import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { CheckMeasurement } from "../../runner/check-observations.ts";
 import type { Debt } from "../hone-records/hone-record.ts";
 import { compareDebt } from "./debt-comparison.ts";
@@ -24,16 +25,13 @@ const DEBT: Debt = {
 const MEASURED_INPUT: Parameters<typeof compareDebt>[0] = {
   base: { measured: "yes", held: [DEBT] },
   records: [{ place: { file: LEDGER, index: 0 }, record: DEBT }],
-  revision: "pinned",
-  touched: { measured: "yes", paths: new Set([ORDER]) },
-  selected: [ORDER_LOOP.check],
+  touched: { measured: "yes", paths: new Set([ORDER]), landingRevision: "pinned" },
+  ruleSets: ["hone"],
   scope: [ORDER_LOOP, RECEIPT_LOOP],
   findings: [ORDER_LOOP, ORDER_LOOP],
   measured: [ORDER_LOOP, RECEIPT_LOOP],
   exceptions: [],
   projection: "current",
-  checks: "shipped",
-  settings: "unchanged",
 };
 
 it("holds the same number of findings with no anchor identity", () => {
@@ -144,21 +142,26 @@ it("refuses whole-check suppression even when the file check was inapplicable", 
   ]);
 });
 
-it("refuses to compare when the rules are unknown or the active settings changed", () => {
-  const request: Parameters<typeof compareDebt>[0] = {
+it("refuses measured changes without proof of the pinned landing", () => {
+  const compared = compareDebt({
     ...MEASURED_INPUT,
-    selected: [],
-    settings: "changed",
-    checks: "external",
-  };
+    touched: { measured: "yes", paths: new Set([ORDER]) },
+  });
+  expect(compared.issues).toEqual([{ kind: "base-unavailable" }]);
+});
 
-  const compared = compareDebt(request);
+it("refuses an external rule set or changed settings", () => {
+  const compared = compareDebt({
+    ...MEASURED_INPUT,
+    touched: {
+      measured: "yes",
+      paths: new Set([repoPathOf("hone.config.json")]),
+      landingRevision: "pinned",
+    },
+    ruleSets: [{ name: ruleSetNameOf("acme") }],
+  });
 
-  expect(compared.issues).toEqual([
-    { kind: "settings-changed" },
-    { kind: "no-checks" },
-    { kind: "external-checks" },
-  ]);
+  expect(compared.issues).toEqual([{ kind: "settings-changed" }, { kind: "external-checks" }]);
 });
 
 it("requires landing debt to be check-specific", () => {

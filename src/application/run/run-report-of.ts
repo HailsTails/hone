@@ -15,10 +15,9 @@ import type {
 import {
   type Answering,
   answerFindings,
-  filterFindingsForDebtComparison,
   type RaisedFinding,
 } from "../../domain/records/answering/answering.ts";
-import { compareDebt } from "../../domain/records/answering/debt-comparison.ts";
+import type { DebtComparisonEvidence } from "../../domain/records/answering/debt-comparison.ts";
 import type { PartyReport } from "../../domain/records/answering/record-reach.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { carriedListingOf } from "../../domain/records/hone-records/record-listings.ts";
@@ -37,6 +36,7 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
+import type { Assessment, CheckForfeiture } from "../../domain/settings/assessment.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { typescriptFilesOf } from "./checked-tree-of.ts";
@@ -140,9 +140,8 @@ const reportAfterAnswering = (
   request: ReportInputs & {
     readonly answering: Answering;
     readonly status: ReportStatus;
-    readonly compareDebt?: RunReportRequest["compareDebt"];
     readonly runs: readonly NamedEngineRun[];
-    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+    readonly unmeasured: RunReport["unmeasured"];
   },
 ): Result<RunReport, SymptomUnheld> => {
   const { answering, catalogue, content, records, runs } = request;
@@ -163,21 +162,8 @@ const reportAfterAnswering = (
     misnamed: runs.flatMap((run) => run.misnamedRuleIds),
     paid: answering.paid,
     refused: records.refused,
-    unmeasured: [
-      ...recordsUnmeasuredOf({
-        records: records.records,
-        base: records.base,
-        touched: request.touched,
-      }).filter(
-        ({ kind }) => request.compareDebt === undefined || kind !== "forfeiture-unmeasured",
-      ),
-      ...engineUnmeasuredOf({
-        catalogue,
-        runs,
-        selected: request.selected,
-        tracked: request.tracked,
-      }),
-    ],
+    unmeasured: request.unmeasured,
+    ...(answering.debtComparison === undefined ? {} : { debtComparison: answering.debtComparison }),
     assessment: assessmentOf(request),
     "settings-notes": request.notes,
     "record-notes": records.notes,
@@ -189,10 +175,7 @@ const reportAfterAnswering = (
 
 export type RunReportRequest = ReportInputs & {
   readonly selection: NamedSettingsReading["selection"];
-  readonly compareDebt?: Pick<
-    Parameters<typeof compareDebt>[0],
-    "revision" | "checks" | "settings"
-  >;
+  readonly assessment: Assessment<CheckForfeiture>;
   readonly runs: readonly NamedEngineRun[];
 };
 
@@ -215,45 +198,28 @@ const mapSelectionToComparisonScope = (
   );
 };
 
-const compareReportedDebt = (
+const createComparisonEvidence = (
   request: RunReportRequest & {
-    readonly compareDebt: NonNullable<RunReportRequest["compareDebt"]>;
-    readonly report: RunReport;
-    readonly answering: Answering;
+    readonly status: ReportStatus;
+    readonly unmeasured: RunReport["unmeasured"];
     readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
-    readonly findings: readonly RaisedFinding[];
     readonly measurements: RunMeasurements;
   },
-): Result<RunReport, SymptomUnheld> => {
-  const { records, selected, findings, answering, runs, measurements, report } = request;
-  const debtFindings = filterFindingsForDebtComparison({
-    ...request,
-    findings,
-    answered: answering.answered,
-    landing: records.base.measured === "yes" ? (records.base.placements ?? []) : [],
-  });
-  if (debtFindings.outcome === "failed") return debtFindings;
-  const debtComparison = compareDebt({
-    ...request.compareDebt,
-    ...records,
-    touched: request.touched,
-    selected: selected.map(({ address }) => address),
-    scope: mapSelectionToComparisonScope({ ...request, selected }),
-    findings: findings.map(({ finding }) => finding),
-    debtFindings: debtFindings.value,
-    inapplicable: runs.flatMap(({ inapplicable }) => inapplicable ?? []),
-    measured: measurements.runs.flatMap(({ measured, selected: addresses }) => {
-      const chosen = new Set(addresses);
-      return measured.filter(({ check }) => chosen.has(check));
-    }),
-    exceptions: runs.flatMap(({ nativeExceptions }) => nativeExceptions),
-    projection:
-      report["projection-problems"].length === 0 && report.unmeasured.length === 0
-        ? "current"
-        : "unmeasured",
-  });
-  return { outcome: "ok", value: { ...report, debtComparison } };
-};
+): DebtComparisonEvidence => ({
+  base: request.records.base,
+  ruleSets: request.selection.selected.map(({ binding }) => binding.ruleSet),
+  scope: mapSelectionToComparisonScope(request),
+  inapplicable: request.runs.flatMap(({ inapplicable }) => inapplicable ?? []),
+  measured: request.measurements.runs.flatMap(({ measured, selected }) => {
+    const chosen = new Set(selected);
+    return measured.filter(({ check }) => chosen.has(check));
+  }),
+  exceptions: request.runs.flatMap(({ nativeExceptions }) => nativeExceptions),
+  projection:
+    request.status["projection-problems"].length === 0 && request.unmeasured.length === 0
+      ? "current"
+      : "unmeasured",
+});
 
 export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, SymptomUnheld> => {
   const { catalogue, records, runs, selection } = request;
@@ -278,23 +244,33 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
     }),
   );
   const measurements = runMeasurementsOf({ ...request, selected });
+  const { forfeiture } = request.assessment;
+  const unmeasured = [
+    ...recordsUnmeasuredOf({
+      records: records.records,
+      base: records.base,
+      touched: request.touched,
+    }).filter(({ kind }) => forfeiture !== "no-new-findings" || kind !== "forfeiture-unmeasured"),
+    ...engineUnmeasuredOf({ ...request, selected }),
+  ];
   const answering = answerFindings({
     ...request,
     records: records.records,
     findings,
     measurements,
-    ...(request.compareDebt === undefined ? {} : { retainTouchedDebt: true }),
+    ...(forfeiture === "no-new-findings"
+      ? {
+          forfeiture,
+          comparison: createComparisonEvidence({
+            ...request,
+            status,
+            unmeasured,
+            selected,
+            measurements,
+          }),
+        }
+      : { forfeiture }),
   });
   if (answering.outcome === "failed") return answering;
-  const report = reportAfterAnswering({ ...request, selected, answering: answering.value, status });
-  if (report.outcome === "failed" || request.compareDebt === undefined) return report;
-  return compareReportedDebt({
-    ...request,
-    compareDebt: request.compareDebt,
-    report: report.value,
-    answering: answering.value,
-    selected,
-    findings,
-    measurements,
-  });
+  return reportAfterAnswering({ ...request, answering: answering.value, status, unmeasured });
 };

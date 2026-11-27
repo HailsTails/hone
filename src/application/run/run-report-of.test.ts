@@ -415,6 +415,7 @@ const NO_RECORDS: RecordsReading = {
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const REQUEST: RunReportRequest = {
+  assessment: { forfeiture: "this-run" },
   available: [],
   catalogue: REPORT_CATALOGUE,
   selection: { selected: [], notAdopted: [], notRun: [], excluded: [], eslintConfigRoots: [] },
@@ -1090,10 +1091,11 @@ describe("namedRunReportOf, the selection and the settings", () => {
   });
 });
 
-it("adds landing comparison evidence only when requested", () => {
+it("reports unavailable landing records in the no-new-findings assessment", () => {
   const request: RunReportRequest = {
     ...REQUEST,
-    compareDebt: { revision: "pinned", checks: "shipped", settings: "unchanged" },
+    assessment: { forfeiture: "no-new-findings" },
+    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
   };
 
@@ -1125,17 +1127,13 @@ it("counts a finding held only by the proposal and accepts one answered by landi
     },
   };
   const run = { ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }), measured: [CAST_HIT] };
-  const compareDebt: RunReportRequest["compareDebt"] = {
-    revision: "pinned",
-    settings: "unchanged",
-    checks: "shipped",
-  };
-  const request = {
+  const request: RunReportRequest = {
     ...REQUEST,
+    assessment: { forfeiture: "no-new-findings" },
+    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A],
     selection: SELECTS_CAST,
     runs: [run],
-    compareDebt,
   };
 
   const fromHead = namedRunReportOf({
@@ -1175,16 +1173,12 @@ it("refuses unmeasured files in the engine's verified scope and stale projection
     inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
     comparedOutputs: [output],
   };
-  const compareDebt: RunReportRequest["compareDebt"] = {
-    revision: "pinned",
-    settings: "unchanged",
-    checks: "shipped",
-  };
-  const request = {
+  const request: RunReportRequest = {
     ...REQUEST,
+    assessment: { forfeiture: "no-new-findings" },
+    touched: { measured: "yes", paths: new Set(), landingRevision: "pinned" },
     tracked: [FILE_A, FILE_B, config, output],
     selection: SELECTS_CAST,
-    compareDebt,
   };
 
   const unknown = namedRunReportOf({ ...request, runs: [run] });

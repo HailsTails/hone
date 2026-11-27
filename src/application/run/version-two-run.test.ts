@@ -681,6 +681,7 @@ describe("measureEngines", () => {
         catalogue: REPORT_CATALOGUE,
         settings: SETTINGS,
         records: RECORDS,
+        assessment: SETTINGS.runSettings.assessment,
         tree: { tracked: [FILE_A], declaredConfigRoots: [] },
         checks: STAGE_CHECKS,
         content: {
@@ -737,13 +738,15 @@ describe("settledCatalogueOf", () => {
   });
 });
 
-it("carries the requested landing comparison revision into the finished report", async () => {
-  const argumentsForComparison = { ...NO_ARGUMENTS, compareDebtAt: "pinned" };
-  const stages = stagesGiving({});
+it("requests applicability and reports the verified landing for no-new-findings", async () => {
+  const touched = vi
+    .fn<VersionTwoStages["touched"]>()
+    .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
+  const stages = stagesGiving({ touched });
 
   const run = await versionTwoRunOver({
     stages,
-    arguments: argumentsForComparison,
+    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
   });
 
   expect(run).toMatchObject({
@@ -759,12 +762,13 @@ it("refuses to compare against settings changed by the proposal", async () => {
   const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
     measured: "yes",
     paths: new Set([repoPathOf("hone.config.json")]),
+    landingRevision: "pinned",
   });
   const stages = stagesGiving({ touched });
 
   const run = await versionTwoRunOver({
     stages,
-    arguments: { ...NO_ARGUMENTS, compareDebtAt: "pinned" },
+    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
   });
 
   expect(run).toMatchObject({
@@ -809,9 +813,12 @@ it("refuses comparison for an externally supplied selected check", async () => {
     value: [{ ...RUN, measured: [HIT] }],
   });
 
+  const touched = vi
+    .fn<VersionTwoStages["touched"]>()
+    .mockReturnValue({ measured: "yes", paths: new Set(), landingRevision: "pinned" });
   const run = await versionTwoRunOver({
-    stages: stagesGiving({ settings, engines }),
-    arguments: { ...NO_ARGUMENTS, compareDebtAt: "pinned" },
+    stages: stagesGiving({ settings, engines, touched }),
+    arguments: { ...NO_ARGUMENTS, forfeiture: "no-new-findings" },
   });
 
   expect(run).toMatchObject({

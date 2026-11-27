@@ -175,8 +175,8 @@ it("requires a pinned ancestor for the landing comparison even with an empty led
   const git = gitChanging({ files: [FILE_A] });
 
   const touched = touchedSetOf({
-    assessment: { forfeiture: "this-run" },
-    measuring: "landing-comparison",
+    assessment: { forfeiture: "no-new-findings" },
+    measuring: "when-debt-held",
     records: [],
     repoRoot: REPO,
     baseRevision: "pinned",
@@ -189,5 +189,9 @@ it("requires a pinned ancestor for the landing comparison even with an empty led
     baseRevision: "pinned",
     baseScope: "pinned-ancestor",
   });
-  expect(touched).toEqual({ measured: "yes", paths: new Set([FILE_A]) });
+  expect(touched).toEqual({
+    measured: "yes",
+    paths: new Set([FILE_A]),
+    landingRevision: "pinned",
+  });
 });

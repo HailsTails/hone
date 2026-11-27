@@ -11,13 +11,15 @@ import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
-import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
-import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
+import {
+  type Assessment,
+  assessmentInEffect,
+  type CheckForfeiture,
+} from "../../domain/settings/assessment.ts";
 import {
   type VersionTwoReportOutput,
   reportOutputInEffect,
 } from "../../domain/settings/report-output.ts";
-import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
@@ -67,7 +69,7 @@ export type VersionTwoStages = {
   ) => Promise<Result<readonly ProjectionEntry[], RunLoadFailure>>;
   readonly renamed: () => RenamedSinceBase;
   readonly touched: (request: {
-    readonly assessment: Assessment;
+    readonly assessment: Assessment<CheckForfeiture>;
     readonly measuring: TouchedMeasuring;
     readonly records: RecordsReading;
     readonly renamed: RenamedSinceBase;
@@ -75,10 +77,9 @@ export type VersionTwoStages = {
 };
 
 export type VersionTwoRequest = {
-  readonly forfeiture: ForfeitureAssessment | undefined;
+  readonly forfeiture: CheckForfeiture | undefined;
   readonly reportOutput: VersionTwoReportOutput | undefined;
   readonly measuring: TouchedMeasuring;
-  readonly compareDebtAt?: string;
 };
 
 type ReadStageInputs = {
@@ -135,12 +136,13 @@ export const versionTwoInputsOf = (request: {
 export type MeasuredEngines = Omit<EngineStageRequest, keyof ReadStageInputs> &
   ReadStageInputs & {
     readonly content: RuleContent;
+    readonly assessment: Assessment<CheckForfeiture>;
     readonly runs: readonly NamedEngineRun[];
   };
 
 export const measureEngines = async (request: {
   readonly stages: VersionTwoStages;
-  readonly includeApplicability?: true;
+  readonly forfeiture?: CheckForfeiture | undefined;
 }): Promise<Result<MeasuredEngines, RunLoadFailure>> => {
   const inputs = versionTwoInputsOf(request);
   if (inputs.outcome === "failed") {
@@ -151,15 +153,22 @@ export const measureEngines = async (request: {
     return tree;
   }
   const { content, ...stageInputs } = inputs.value;
+  const assessment = assessmentInEffect({
+    requested: { forfeiture: request.forfeiture },
+    configured: stageInputs.settings.runSettings.assessment,
+  });
   const measuring: EngineStageRequest = {
     ...stageInputs,
     tree: tree.value,
-    ...(request.includeApplicability === true ? { includeApplicability: true } : {}),
+    ...(assessment.forfeiture === "no-new-findings" ? { includeApplicability: true } : {}),
   };
   const runs = await request.stages.engines(measuring);
   return runs.outcome === "failed"
     ? runs
-    : { outcome: "ok", value: { ...stageInputs, tree: tree.value, content, runs: runs.value } };
+    : {
+        outcome: "ok",
+        value: { ...stageInputs, tree: tree.value, content, assessment, runs: runs.value },
+      };
 };
 
 type RecordsAfterRenames = {
@@ -170,8 +179,8 @@ type RecordsAfterRenames = {
 
 const createRecordsAfterRenames = (request: {
   readonly stages: Pick<VersionTwoStages, "renamed" | "touched">;
-  readonly arguments: VersionTwoRequest;
-  readonly settings: NamedSettingsReading;
+  readonly assessment: Assessment<CheckForfeiture>;
+  readonly measuring: TouchedMeasuring;
   readonly records: RecordsReading;
 }): RecordsAfterRenames => {
   const { records } = request;
@@ -186,11 +195,8 @@ const createRecordsAfterRenames = (request: {
       : [];
   const followed = readingFollowingRenames({ reading: records, renamed, moved });
   const touched = request.stages.touched({
-    assessment: assessmentInEffect({
-      requested: { forfeiture: request.arguments.forfeiture },
-      configured: request.settings.runSettings.assessment,
-    }),
-    measuring: request.arguments.measuring,
+    assessment: request.assessment,
+    measuring: request.measuring,
     records: followed,
     renamed,
   });
@@ -202,14 +208,19 @@ export const versionTwoRunOver = async (request: {
   readonly arguments: VersionTwoRequest;
 }): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
   const measured = await measureEngines({
-    ...request,
-    ...(request.arguments.compareDebtAt === undefined ? {} : { includeApplicability: true }),
+    stages: request.stages,
+    forfeiture: request.arguments.forfeiture,
   });
   if (measured.outcome === "failed") {
     return measured;
   }
-  const { catalogue, settings, records, content, tree, runs } = measured.value;
-  const { moved, followed, touched } = createRecordsAfterRenames({ ...request, settings, records });
+  const { catalogue, settings, records, content, tree, assessment, runs } = measured.value;
+  const { moved, followed, touched } = createRecordsAfterRenames({
+    stages: request.stages,
+    measuring: request.arguments.measuring,
+    assessment,
+    records,
+  });
   const report = namedRunReportOf({
     catalogue,
     content,
@@ -221,23 +232,7 @@ export const versionTwoRunOver = async (request: {
     runs,
     tracked: tree.tracked,
     available: settings.available,
-    ...(request.arguments.compareDebtAt === undefined
-      ? {}
-      : {
-          compareDebt: {
-            revision: request.arguments.compareDebtAt,
-            settings:
-              touched.measured === "yes" &&
-              [...touched.paths].some((file) => file === SETTINGS_FILE_NAME)
-                ? "changed"
-                : "unchanged",
-            checks: settings.selection.selected.some(
-              ({ binding }) => typeof binding.ruleSet === "object",
-            )
-              ? "external"
-              : "shipped",
-          },
-        }),
+    assessment,
   });
   if (report.outcome === "failed") {
     return report;
