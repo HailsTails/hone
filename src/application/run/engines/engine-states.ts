@@ -201,6 +201,7 @@ const refreshableProblemOf = (request: {
         case "out-of-date":
         case "missing":
           return problem;
+        case "not-applied":
         case "unconfigured":
           return undefined;
       }

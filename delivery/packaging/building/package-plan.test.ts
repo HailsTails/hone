@@ -108,6 +108,29 @@ describe("packagePlanOf", () => {
     });
   });
 
+  it("exports Oxlint plugin modules for adopter configurations", () => {
+    const declaration = "src/infrastructure/engines/oxlint/naming/name-format/piece.json";
+    const module = "src/infrastructure/engines/oxlint/naming/name-format/plugin.ts";
+
+    expect(
+      packagePlanOf({
+        sourcePaths: [declaration, module],
+        pieces: [
+          {
+            path: declaration,
+            text: '{"version":2,"settings":{"plugin":"eslint","module":"plugin.ts"}}',
+          },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        entryPoints: expect.arrayContaining([module]),
+        exported: ["src/infrastructure/engines/oxlint/naming/name-format/plugin.js"],
+      },
+    });
+  });
+
   const plan = packagePlanOf({ sourcePaths: SOURCE_PATHS, pieces: [AUDIT_PIECE, ESLINT_PIECE] });
 
   it("builds the one command, each public entry, each runner and each piece module a shipped piece names, once each", () => {

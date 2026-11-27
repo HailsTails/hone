@@ -2,9 +2,16 @@ import { runOxlintProcess, type Diagnostic, type OxlintInvocation } from "./oxli
 
 const disableMarker = /(?:oxlint|eslint)-disable/u;
 
+export type DisableDirective = {
+  readonly fileName: string;
+  readonly line: number;
+  readonly text: string;
+};
+
 const removeDisableDirective = (request: {
   readonly diagnostic: Diagnostic;
   readonly sources: ReadonlyMap<string, Buffer>;
+  readonly observe?: ((directive: DisableDirective) => void) | undefined;
 }): void => {
   const { diagnostic } = request;
   const filename = diagnostic.filename.replaceAll("\\", "/");
@@ -21,6 +28,7 @@ const removeDisableDirective = (request: {
   const marker = disableMarker.exec(comment);
   if (marker === null) throw new Error(`${filename}: Oxlint reported an unknown directive`);
   const offset = span.offset + Buffer.byteLength(comment.slice(0, marker.index));
+  request.observe?.({ fileName: filename, line: span.line, text: comment });
   source.fill(32, offset, offset + marker[0].length);
 };
 
@@ -28,6 +36,7 @@ export const removeDisableDirectives = (
   request: OxlintInvocation & {
     readonly sources: ReadonlyMap<string, Buffer>;
     readonly run?: typeof runOxlintProcess;
+    readonly observe?: ((directive: DisableDirective) => void) | undefined;
   },
 ): "changed" | "unchanged" => {
   if (![...request.sources.values()].some((source) => disableMarker.test(source.toString())))

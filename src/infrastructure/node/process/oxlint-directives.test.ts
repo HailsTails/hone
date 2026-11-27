@@ -15,14 +15,21 @@ describe("removeDisableDirectives", () => {
       },
     ]);
 
+    const observe = vi.fn();
     const changed = removeDisableDirectives({
       cli: "/oxlint",
       folder: absoluteRootOf("/repo"),
       files: ["sources/0/value.ts"],
       sources: new Map([["sources/0/value.ts", source]]),
       run,
+      observe,
     });
 
+    expect(observe).toHaveBeenCalledWith({
+      fileName: "sources/0/value.ts",
+      line: 1,
+      text: "// oxlint-disable",
+    });
     expect(changed).toBe("changed");
     expect(source.toString()).toBe("//               \nconst value = 1;");
   });

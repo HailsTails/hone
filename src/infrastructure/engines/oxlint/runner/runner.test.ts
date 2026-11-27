@@ -7,8 +7,15 @@ import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { DEFAULT_TEST_FILES } from "../../../../domain/settings/test-files.ts";
+import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
+import type { runConfiguredOxlint } from "../../../node/process/configured-oxlint.ts";
 import type { RunOxlint } from "../../../node/process/oxlint-port.ts";
 import { createOxlintRunner } from "./runner.ts";
+
+const INSTALL_ROOT = absolutePathSchema.parse(
+  createDefaultPathPort({}).join({ segments: [import.meta.dirname, "../../../../.."] }),
+);
 
 const BINDINGS = [
   {
@@ -57,7 +64,11 @@ describe("createOxlintRunner", () => {
 
     const report = await createOxlintRunner({
       lint,
-      fileText: { read: vi.fn<FileTextPort["read"]>() },
+      configured: vi.fn<typeof runConfiguredOxlint>(),
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>(),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      },
     }).conform({ binding, cases });
 
     expect(lint).toHaveBeenCalledWith({
@@ -77,7 +88,14 @@ describe("createOxlintRunner", () => {
 
   it("passes a shared lint rule and its requested edition to Oxlint", async () => {
     const lint = vi.fn<RunOxlint>().mockResolvedValue({ outcome: "ok", value: [] });
-    const runner = createOxlintRunner({ lint, fileText: { read: vi.fn<FileTextPort["read"]>() } });
+    const runner = createOxlintRunner({
+      lint,
+      configured: vi.fn<typeof runConfiguredOxlint>(),
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>(),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      },
+    });
     const binding: CheckBinding = {
       address: "test-switched-off#skipped-tests",
       engine: "oxlint",
@@ -109,24 +127,31 @@ describe("createOxlintRunner", () => {
     });
   });
 
-  it("attributes batched findings by rule and measures every selected check on the file", async () => {
+  it("requires the generated projection before checking the configured files", async () => {
     const file = repoPathOf("src/value.ts");
     const root = absoluteRootOf("/repo");
-    const source = "function change(a: any, b: number, c: number) {}";
-    const lint = vi.fn<RunOxlint>().mockResolvedValue({
-      outcome: "ok",
-      value: [{ rule: "typescript/no-explicit-any", index: 0, line: 1, column: 20 }],
+    const configured = vi.fn<typeof runConfiguredOxlint>();
+    const runner = createOxlintRunner({
+      lint: vi.fn<RunOxlint>(),
+      configured,
+      fileText: {
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+        read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+          outcome: "failed",
+          error: {
+            kind: "unreadable",
+            path: "/repo/hone.oxlint.json",
+            detail: "Missing projection",
+          },
+        }),
+      },
     });
-    const fileText = {
-      read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: source }),
-    };
-    const runner = createOxlintRunner({ lint, fileText });
 
     const report = await runner.run({
       repoRoot: root,
-      installRoot: root,
+      installRoot: INSTALL_ROOT,
       files: [file],
-      trackedPaths: [file],
+      trackedPaths: [repoPathOf(".oxlintrc.json"), file],
       answered: [],
       declaredConfigRoots: [],
       declaredConfigLookup: undefined,
@@ -134,32 +159,10 @@ describe("createOxlintRunner", () => {
       bindings: BINDINGS,
     });
 
-    expect(lint).toHaveBeenCalledWith({
-      resolveFrom: root,
-      nativeOptions: new Map([
-        ["typescript/no-explicit-any", []],
-        ["eslint/max-params", [{ max: 2, countVoidThis: true }]],
-      ]),
-      rules: ["typescript/no-explicit-any", "eslint/max-params"],
-      sources: [{ fileName: file, source }],
-    });
+    expect(configured).not.toHaveBeenCalled();
     expect(report).toMatchObject({
       outcome: "ok",
-      value: {
-        projection: "none",
-        hits: [
-          {
-            check: "untyped-value#explicit-any",
-            file,
-            anchor: { line: 1, column: 20 },
-            snippet: source,
-          },
-        ],
-        measured: [
-          { check: "untyped-value#explicit-any", file },
-          { check: "positional-parameters#parameter-count", file },
-        ],
-      },
+      value: { projection: "missing", projectionFile: "hone.oxlint.json", hits: [] },
     });
   });
 });

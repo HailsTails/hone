@@ -65,7 +65,7 @@ export type DocumentAuthor = "release" | "maintainer";
 export const documentAuthorOf = (request: { readonly path: string }): DocumentAuthor =>
   RELEASE_WRITTEN_DOCUMENTS.has(request.path) ? "release" : "maintainer";
 
-const PACKAGE_IMPORTED_MECHANISMS: ReadonlySet<string> = new Set(["eslint"]);
+const PACKAGE_IMPORTED_MECHANISMS: ReadonlySet<string> = new Set(["eslint", "oxlint"]);
 
 export const TEST_FOLDERS: ReadonlySet<string> = new Set([
   "tests",

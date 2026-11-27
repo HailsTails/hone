@@ -48,32 +48,47 @@ export type OxlintInvocation = {
   readonly files: readonly string[];
 };
 
+export const runOxlintCommand = (request: {
+  readonly cli: string;
+  readonly folder: AbsolutePath;
+  readonly arguments: readonly string[];
+}): string => {
+  const executed = execution.run({
+    arguments: [request.cli, ...request.arguments],
+    cwd: request.folder,
+  });
+  if (executed.outcome === "failed") throw new Error(executed.error.detail);
+  const { status, stdout, stderr } = executed.value;
+  if (status !== 0 && status !== 1) {
+    throw new Error(stderr.trim() || stdout.trim() || `Oxlint exited with status ${status}`);
+  }
+  return stdout;
+};
+
+export const readOxlintDiagnostics = (text: string): z.output<typeof outputSchema> =>
+  outputSchema.parse(JSON.parse(text));
+
 export const runOxlintProcess = (
   request: OxlintInvocation & {
     readonly options: readonly string[];
     readonly rules: number;
   },
 ): readonly Diagnostic[] => {
-  const executed = execution.run({
-    arguments: [
-      request.cli,
-      "--format=json",
-      "--config=.oxlintrc.json",
-      "--no-ignore",
-      "--disable-nested-config",
-      "--threads=1",
-      ...request.options,
-      "--",
-      "sources",
-    ],
-    cwd: request.folder,
-  });
-  if (executed.outcome === "failed") throw new Error(executed.error.detail);
-  const { status, stdout, stderr } = executed.value;
-  if ((status !== 0 && status !== 1) || !stdout.trimStart().startsWith("{")) {
-    throw new Error(stderr.trim() || stdout.trim() || `Oxlint exited with status ${status}`);
-  }
-  const output = outputSchema.parse(JSON.parse(stdout));
+  const output = readOxlintDiagnostics(
+    runOxlintCommand({
+      ...request,
+      arguments: [
+        "--format=json",
+        "--config=.oxlintrc.json",
+        "--no-ignore",
+        "--disable-nested-config",
+        "--threads=1",
+        ...request.options,
+        "--",
+        "sources",
+      ],
+    }),
+  );
   if (output.number_of_files !== request.files.length || output.number_of_rules !== request.rules) {
     throw new Error("Oxlint did not measure the requested files and rules");
   }

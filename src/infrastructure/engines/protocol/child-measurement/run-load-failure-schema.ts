@@ -43,7 +43,7 @@ const projectionProblemSchema = z.union([
   z.strictObject({
     scope: z.literal("slice"),
     engine: engineSchema,
-    state: z.enum(["out-of-date", "missing", "unconfigured"]),
+    state: z.enum(["out-of-date", "missing", "not-applied", "unconfigured"]),
     file: repoPathSchema,
   }),
   z.strictObject({

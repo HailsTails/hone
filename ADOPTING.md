@@ -195,7 +195,9 @@ Commit the projection, every slice and the configs. Hone's check reads this conf
 
 Install Oxlint in the repository root with `pnpm add -D oxlint@^1.95.0`. Set the mechanism to `"oxlint"` under `checks` in `hone.config.json` for any of Hone’s built-in ESLint checks. The checks beyond `untyped-value#explicit-any`, `positional-parameters#parameter-count` and `rebinding#parameter-reassignment` run through Oxlint’s JavaScript plugin support. Some shared rule modules load the `eslint`, `@typescript-eslint/parser`, and `@typescript-eslint/eslint-plugin` peer packages. Install compatible versions of those peers when enabling the full set.
 
-Hone runs these checks on its selected TypeScript files using Oxlint. Hone applies its own records and runs independently of your Oxlint configuration, ignore files and inline disables. Hone removes its temporary lint workspace from the repository root after each run. The Oxlint mechanism requires no projection.
+Run `hone project` and commit every `hone.oxlint.json` it writes. Add `"./hone.oxlint.json"` to `extends` in the existing JSON or JSONC Oxlint configuration beside each projection. In an auto-discovered `oxlint.config.ts` or `oxlint.config.mts`, import the projection as JSON and include the resulting object in `extends`. Hone uses Oxlint’s standard config filenames for discovery. Keep using your existing Oxlint commands.
+
+Hone projects its selected TypeScript checks and recorded exceptions into the root and package configurations. `hone check` uses Oxlint with those configurations and reports missing, stale, or ineffective projections. Track each configuration that governs the selected files and rerun `hone project` when the selection or records change.
 
 ## 5. Run the check
 

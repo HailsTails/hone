@@ -65,7 +65,7 @@ export type RunProjectionProblem =
   | {
       readonly scope: "slice";
       readonly engine: Engine;
-      readonly state: "out-of-date" | "missing" | "unconfigured";
+      readonly state: "out-of-date" | "missing" | "not-applied" | "unconfigured";
       readonly file: RepoPath;
     };
 

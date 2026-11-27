@@ -11,7 +11,7 @@ import {
 } from "../file-system/file-system-port.ts";
 import { createDefaultPathPort } from "../path-port.ts";
 import { runOxlintProcess, mapDiagnosticsToSites, type OxlintSite } from "./oxlint-diagnostics.ts";
-import { removeDisableDirectives } from "./oxlint-directives.ts";
+import { removeDisableDirectives, type DisableDirective } from "./oxlint-directives.ts";
 import { readOxlintToolchain } from "./oxlint-toolchain.ts";
 
 export type { OxlintSite } from "./oxlint-diagnostics.ts";
@@ -42,6 +42,9 @@ export type RunOxlint = (request: {
   readonly rules: readonly OxlintRule[];
   readonly nativeOptions?: ReadonlyMap<OxlintRule, readonly ReadonlyJsonValue[]>;
   readonly pluginRules?: readonly OxlintPluginRule[];
+  readonly observeDisable?: (
+    directive: Omit<DisableDirective, "fileName"> & { readonly index: number },
+  ) => void;
   readonly sources: readonly { readonly fileName: string; readonly source: string }[];
 }) => Promise<Result<readonly OxlintSite[], RunnerFailure>>;
 
@@ -92,7 +95,14 @@ const runInWorkspace = (
   sources.forEach((source, file) =>
     write({ folder: request.folder, file, contents: source.toString() }),
   );
-  if (removeDisableDirectives({ ...invocation, sources }) === "changed") {
+  const changed = removeDisableDirectives({
+    ...invocation,
+    sources,
+    observe: ({ fileName, line, text }) =>
+      request.observeDisable?.({ index: files.indexOf(fileName), line, text }),
+  });
+  if (request.rules.length === 0 && !request.pluginRules?.length) return [];
+  if (changed === "changed") {
     sources.forEach((source, file) =>
       write({ folder: request.folder, file, contents: source.toString() }),
     );
@@ -137,7 +147,12 @@ const runWithOxlint = (
 };
 
 export const runOxlint: RunOxlint = (request) => {
-  if (request.sources.length === 0 || (request.rules.length === 0 && !request.pluginRules?.length))
+  if (
+    request.sources.length === 0 ||
+    (request.rules.length === 0 &&
+      !request.pluginRules?.length &&
+      request.observeDisable === undefined)
+  )
     return Promise.resolve({ outcome: "ok", value: [] });
   const toolchain = readOxlintToolchain({
     folder: request.resolveFrom,
