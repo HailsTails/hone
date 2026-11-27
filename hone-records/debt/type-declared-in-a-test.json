@@ -135,10 +135,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/throw-or-catch-in-a-test/throw-statement/throws-in-tests.test.ts"
     },
     {
