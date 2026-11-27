@@ -1,8 +1,11 @@
+import type { RuleTester } from "oxlint/plugins-dev";
+
 import { readNamingRule } from "../../runner/naming-rule.ts";
 
 const rule = await readNamingRule({ moduleUrl: import.meta.url });
 
-type NamingContext = { readonly sourceCode: object };
+type OxlintRule = Extract<Parameters<RuleTester["run"]>[1], { readonly create: unknown }>;
+type NamingContext = Pick<Parameters<OxlintRule["create"]>[0], "sourceCode">;
 
 export default {
   meta: { name: "hone-oxlint-naming", version: "0.0.0-local" },
