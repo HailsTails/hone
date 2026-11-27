@@ -67,14 +67,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/hone-records-folder/reading/record-resolution.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/hone-records-folder/reading/records-reading.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/discipline-exceptions-folder/found-tree-records-source.test.ts"
     },
     {
