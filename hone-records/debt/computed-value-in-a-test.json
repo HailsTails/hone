@@ -99,10 +99,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/runner.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/runner/pieces/node-built-in-import.test.ts"
     }
   ]

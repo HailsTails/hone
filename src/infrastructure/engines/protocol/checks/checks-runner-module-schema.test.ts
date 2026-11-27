@@ -272,6 +272,14 @@ describe("namedChecksRunResultSchema", () => {
     );
   });
 
+  it("refuses a root file when there is no root projection", () => {
+    const report = { ...REPORT, projection: "none", projectionFile: "hone.oxlint.json" };
+
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects a report that leaves out the misnamed rule ids", () => {
     const { misnamedRuleIds: _left, ...withoutMisnamed } = REPORT;
     expect(

@@ -34,6 +34,7 @@ describe("readRule", () => {
     const selected = readRule({
       binding: {
         address: "test-switched-off#skipped-tests",
+        checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
         engine: "oxlint",
         ruleSet: TOOL_RULE_SET,
         anchor: { kind: "keyword", keyword: "skip" },
@@ -42,7 +43,6 @@ describe("readRule", () => {
           rule: "skipped-tests",
           pluginNamespace: "hone-test-switched-off-focused-tests",
           module: "oxlint-plugin.ts",
-          optionsByEdition: { "2": ["conditional-and-todo"] },
         },
         checkSettings: {},
         edition: editionOf("2"),

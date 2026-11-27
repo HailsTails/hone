@@ -1,5 +1,5 @@
 import type { CheckAddressText } from "../language-layer/check-address-text.ts";
-import type { RuleSetIdentity } from "./clause-address-types.ts";
+import type { RuleSetIdentity, ToolRuleSet } from "./clause-address-types.ts";
 import { TOOL_RULE_SET } from "./clause-address.ts";
 import { editionOf } from "./edition-of.ts";
 import { editionReaches } from "./edition-reach.ts";
@@ -121,19 +121,31 @@ const fixedOptions: Readonly<Partial<Record<CheckAddressText, HoneCheckOptions>>
   },
 };
 
-export const bindHoneCheckOptions = (request: {
+export type CheckOptionBinding =
+  | {
+      readonly ruleSet: ToolRuleSet;
+      readonly checkOptions: HoneCheckOptions | { readonly kind: "none" };
+    }
+  | {
+      readonly ruleSet: Exclude<RuleSetIdentity, ToolRuleSet>;
+      readonly checkOptions: { readonly kind: "piece" };
+    };
+
+export const resolveCheckOptions = (request: {
   readonly ruleSet: RuleSetIdentity;
   readonly address: CheckAddressText;
   readonly edition: Edition;
-}): { readonly checkOptions: HoneCheckOptions } | Record<string, never> => {
-  if (request.ruleSet !== TOOL_RULE_SET) return {};
+}): CheckOptionBinding => {
+  const { ruleSet } = request;
+  if (ruleSet !== TOOL_RULE_SET) {
+    return { ruleSet, checkOptions: { kind: "piece" } };
+  }
   if (request.address === "test-switched-off#skipped-tests") {
     const coverage =
       editionReaches({ edition: request.edition, introducedIn: editionOf("2") }) === "reached"
         ? "including-conditional-and-todo"
         : "skips-and-fixmes";
-    return { checkOptions: { kind: "skipped-tests", coverage } };
+    return { ruleSet, checkOptions: { kind: "skipped-tests", coverage } };
   }
-  const checkOptions = fixedOptions[request.address];
-  return checkOptions === undefined ? {} : { checkOptions };
+  return { ruleSet, checkOptions: fixedOptions[request.address] ?? { kind: "none" } };
 };

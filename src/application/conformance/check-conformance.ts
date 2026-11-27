@@ -3,7 +3,6 @@ import { checkNamesOf } from "../../domain/language-layer/check-address-text.ts"
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
-import { bindHoneCheckOptions } from "../../domain/rule-set/check-options.ts";
 import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { teamRuleSetOf } from "../../domain/rule-set/rule-set-identity.ts";
@@ -107,7 +106,13 @@ export const checkUnderTestOf = (
   }
   const { ruleSet, check, engine } = request;
   const { piece, examples } = read.value;
-  const binding = createCheckBinding({ check, ruleSet: read.value.ruleSet, engine, piece });
+  const binding = createCheckBinding({
+    check,
+    ruleSet: read.value.ruleSet,
+    engine,
+    piece,
+    edition: piece.editions.default,
+  });
   return {
     outcome: "ok",
     value: {
@@ -144,17 +149,18 @@ export const checkConformanceOf = async (
     };
   }
   const { piece, examples, ruleSet } = read.value;
-  const binding = createCheckBinding({ check: request.check, ruleSet, engine: mechanism, piece });
   const conformed = gatheredOutcomes({
     outcomes: await Promise.all(
-      casesByEdition({ cases: examples, defaultEdition: binding.edition }).map(
+      casesByEdition({ cases: examples, defaultEdition: piece.editions.default }).map(
         ({ edition, cases }) =>
           request.enginePort.conform({
-            binding: {
-              ...binding,
+            binding: createCheckBinding({
+              check: request.check,
+              ruleSet,
+              engine: mechanism,
+              piece,
               edition,
-              ...bindHoneCheckOptions({ ruleSet, address: request.check, edition }),
-            },
+            }),
             cases,
             runner: runner.value,
           }),

@@ -44,7 +44,8 @@ export type NamedEslintRunRequest = NamedEngineRunRequest & {
 };
 
 export type NamedEngineProjection =
-  | { readonly projection: "none" | "current"; readonly projectionFile?: RepoPath }
+  | { readonly projection: "none" }
+  | { readonly projection: "current"; readonly projectionFile?: RepoPath }
   | {
       readonly projection: Exclude<ProjectionState, "current" | "not-included">;
       readonly projectionFile: RepoPath;

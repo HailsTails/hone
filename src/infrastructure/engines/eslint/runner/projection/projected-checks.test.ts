@@ -99,6 +99,7 @@ const PARAMETER_COUNT_BINDING: CheckBinding = {
 };
 
 const SKIPPED_TESTS_BINDING: CheckBinding = {
+  checkOptions: { kind: "skipped-tests", coverage: "skips-and-fixmes" },
   address: "test-switched-off#skipped-tests",
   ruleSet: TOOL_RULE_SET,
   engine: ESLINT,
@@ -167,14 +168,14 @@ describe("projectedNamedChecksOf", () => {
   });
 
   it("projects the options that belong to the selected ESLint edition", () => {
-    const binding = {
+    const binding: CheckBinding = {
       ...SKIPPED_TESTS_BINDING,
       edition: editionOf("2"),
+      checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
       settings: {
         pluginNamespace: "hone-cd27",
         pluginModule: "cd27/cd27.eslint-plugin.ts",
         rule: "skipped-tests",
-        optionsByEdition: { "2": ["conditional-and-todo"] },
       },
     };
     expect(projectedNamedChecksOf({ checks: PLUGIN_CHECKS, bindings: [binding] })).toEqual({
@@ -207,7 +208,15 @@ describe("projectedNamedChecksOf", () => {
     expect(
       projectedNamedChecksOf({
         checks: PLUGIN_CHECKS,
-        bindings: [{ ...WALKER_BINDING, engine: ESLINT, settings: SKIPPED_TESTS_BINDING.settings }],
+        bindings: [
+          {
+            ...WALKER_BINDING,
+            ruleSet: TOOL_RULE_SET,
+            engine: ESLINT,
+            checkOptions: { kind: "none" },
+            settings: SKIPPED_TESTS_BINDING.settings,
+          },
+        ],
       }),
     ).toEqual({
       outcome: "failed",
@@ -223,6 +232,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             settings: { pluginNamespace: "hone", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -242,6 +252,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             pieceRoot: "/repo/team",
             settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
           },
@@ -264,6 +275,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -283,9 +295,15 @@ describe("projectedNamedChecksOf", () => {
             address: "test-switched-off#skipped-tests",
             engine: "eslint",
             ruleSet: { name: ruleSetNameOf("team") },
+            checkOptions: { kind: "piece" },
             anchor: { kind: "file" },
             pieceRoot: "/repo/team",
-            settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
+            settings: {
+              pluginNamespace: "team",
+              pluginModule: "plugin.ts",
+              rule: "no-skips",
+              options: [{ allowed: ["warn"] }],
+            },
             checkSettings: {},
             edition: editionOf("1"),
           },
@@ -299,7 +317,7 @@ describe("projectedNamedChecksOf", () => {
           symptom: "test-switched-off",
           check: "skipped-tests",
           ruleId: "team/no-skips",
-          options: [],
+          options: [{ allowed: ["warn"] }],
           plugin: { namespace: "team", module: "plugin.ts", pieceRoot: "/repo/team" },
         },
       ],
@@ -326,6 +344,7 @@ describe("projectedNamedChecksOf", () => {
             address: "leftover-debugging#debug-call",
             ruleSet: TOOL_RULE_SET,
             engine: "eslint",
+            checkOptions: { kind: "none" },
             anchor: { kind: "file" },
             pieceRoot: "/install/pieces/leftover-debugging",
             settings: {
@@ -347,7 +366,7 @@ describe("projectedNamedChecksOf", () => {
           symptom: "leftover-debugging",
           check: "debug-call",
           ruleId: "hone/leftover-debugging#debug-call",
-          options: [{ allowed: ["warn"] }],
+          options: [],
         },
       ],
     });

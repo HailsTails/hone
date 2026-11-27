@@ -102,6 +102,9 @@ export const readRule = (request: {
   readonly binding: CheckBinding;
 }): Result<SelectedOxlintRule, RunnerFailure> => {
   const { binding } = request;
+  if (binding.engine !== "oxlint") {
+    return createPieceFailure({ pieceRoot: binding.pieceRoot, detail: "Expected an Oxlint check" });
+  }
   const parsed = settingsSchema.safeParse(binding.settings);
   if (!parsed.success) {
     return createPieceFailure({
@@ -110,10 +113,13 @@ export const readRule = (request: {
     });
   }
   const settings = parsed.data;
+  const { checkOptions } = binding;
   const options =
-    binding.checkOptions === undefined
-      ? ruleOptionsOf({ settings, edition: binding.edition })
-      : createArguments(binding.checkOptions);
+    checkOptions.kind === "none"
+      ? []
+      : checkOptions.kind === "piece"
+        ? ruleOptionsOf({ settings, edition: binding.edition })
+        : createArguments(checkOptions);
   if (!("pluginNamespace" in settings)) {
     return { outcome: "ok", value: { kind: "native", id: settings.rule, options } };
   }

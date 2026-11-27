@@ -26,6 +26,7 @@ const BINDINGS = [
     checkSettings: {},
     edition: editionOf("1"),
     address: "untyped-value#explicit-any",
+    checkOptions: { kind: "none" },
     anchor: { kind: "keyword", keyword: "any" },
     settings: { rule: "typescript/no-explicit-any" },
   },
@@ -36,6 +37,7 @@ const BINDINGS = [
     checkSettings: {},
     edition: editionOf("1"),
     address: "positional-parameters#parameter-count",
+    checkOptions: { kind: "parameter-count", maximumSlots: 2, voidReceiver: "count" },
     anchor: { kind: "keyword", keyword: "function" },
     settings: { rule: "eslint/max-params" },
   },
@@ -88,6 +90,7 @@ describe("createOxlintRunner", () => {
     const fileName = repoPathOf("src/value.ts");
     const binding: CheckBinding = {
       address: "untyped-value#explicit-any",
+      checkOptions: { kind: "none" },
       ruleSet: TOOL_RULE_SET,
       engine: "oxlint",
       anchor: { kind: "keyword", keyword: "any" },
@@ -149,6 +152,7 @@ describe("createOxlintRunner", () => {
     });
     const binding: CheckBinding = {
       address: "test-switched-off#skipped-tests",
+      checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
       engine: "oxlint",
       ruleSet: TOOL_RULE_SET,
       anchor: { kind: "keyword", keyword: "skip" },
@@ -157,7 +161,6 @@ describe("createOxlintRunner", () => {
         rule: "skipped-tests",
         pluginNamespace: "hone-test-switched-off-focused-tests",
         module: "oxlint-plugin.ts",
-        optionsByEdition: { "2": ["conditional-and-todo"] },
       },
       checkSettings: {},
       edition: editionOf("2"),

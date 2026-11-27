@@ -1,5 +1,6 @@
 import {
-  bindHoneCheckOptions,
+  resolveCheckOptions,
+  type CheckOptionBinding,
   type HoneCheckOptions,
   nonNullAssertionMessage,
 } from "../../../../../domain/rule-set/check-options.ts";
@@ -38,11 +39,12 @@ const eslintArguments = (options: HoneCheckOptions): RuleOptions => {
 export const readEslintCheckOptions = (request: {
   readonly settings: EslintPieceSettings;
   readonly edition: Edition;
-  readonly checkOptions: HoneCheckOptions | undefined;
-}): RuleOptions =>
-  request.checkOptions === undefined
-    ? ruleOptionsOf(request)
-    : eslintArguments(request.checkOptions);
+  readonly checkOptions: CheckOptionBinding["checkOptions"];
+}): RuleOptions => {
+  const { checkOptions } = request;
+  if (checkOptions.kind === "none") return [];
+  return checkOptions.kind === "piece" ? ruleOptionsOf(request) : eslintArguments(checkOptions);
+};
 
 export const readLegacyEslintCheckOptions = (request: {
   readonly address: ClauseAddress;
@@ -50,13 +52,11 @@ export const readLegacyEslintCheckOptions = (request: {
   readonly edition: Edition;
 }): RuleOptions => {
   const named = request.settings.authoredCheck;
-  const checkOptions =
-    named === undefined
-      ? undefined
-      : bindHoneCheckOptions({
-          address: named,
-          ruleSet: request.address.ruleSet,
-          edition: request.edition,
-        }).checkOptions;
+  if (named === undefined) return ruleOptionsOf(request);
+  const { checkOptions } = resolveCheckOptions({
+    address: named,
+    ruleSet: request.address.ruleSet,
+    edition: request.edition,
+  });
   return readEslintCheckOptions({ ...request, checkOptions });
 };

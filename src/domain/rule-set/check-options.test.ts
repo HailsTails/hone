@@ -1,27 +1,29 @@
 import { describe, expect, it } from "vitest";
 
-import { bindHoneCheckOptions } from "./check-options.ts";
+import { resolveCheckOptions } from "./check-options.ts";
 import { TOOL_RULE_SET } from "./clause-address.ts";
 import { editionOf } from "./edition-of.ts";
 import { ruleSetNameOf } from "./rule-set-name-of.ts";
 
-describe("bindHoneCheckOptions", () => {
+describe("resolveCheckOptions", () => {
   it("selects skipped-test coverage by edition", () => {
-    const early = bindHoneCheckOptions({
+    const early = resolveCheckOptions({
       ruleSet: TOOL_RULE_SET,
       address: "test-switched-off#skipped-tests",
       edition: editionOf("1"),
     });
-    const later = bindHoneCheckOptions({
+    const later = resolveCheckOptions({
       ruleSet: TOOL_RULE_SET,
       address: "test-switched-off#skipped-tests",
       edition: editionOf("12"),
     });
 
     expect(early).toEqual({
+      ruleSet: TOOL_RULE_SET,
       checkOptions: { kind: "skipped-tests", coverage: "skips-and-fixmes" },
     });
     expect(later).toEqual({
+      ruleSet: TOOL_RULE_SET,
       checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
     });
   });
@@ -29,12 +31,12 @@ describe("bindHoneCheckOptions", () => {
   it("leaves a team rule set's own parameter-count check to that rule set", () => {
     const ruleSet = { name: ruleSetNameOf("team") };
 
-    const options = bindHoneCheckOptions({
+    const options = resolveCheckOptions({
       ruleSet,
       address: "positional-parameters#parameter-count",
       edition: editionOf("1"),
     });
 
-    expect(options).toEqual({});
+    expect(options).toEqual({ ruleSet, checkOptions: { kind: "piece" } });
   });
 });

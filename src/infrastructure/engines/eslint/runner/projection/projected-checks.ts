@@ -11,7 +11,7 @@ import type { CheckAddress } from "../../../../../domain/language-layer/symptom-
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import type { CheckBinding, LintCheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import { eslintPieceSettingsSchema } from "../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
 import {
@@ -39,7 +39,7 @@ const projectedRuleOf = (request: {
   readonly ruleSet: CheckBinding["ruleSet"];
   readonly settings: z.output<typeof eslintPieceSettingsSchema>;
   readonly edition: CheckBinding["edition"];
-  readonly checkOptions: CheckBinding["checkOptions"];
+  readonly checkOptions: LintCheckBinding["checkOptions"];
 }): ProjectedCheck => ({
   ruleSet: request.ruleSet,
   symptom: request.check.symptom.name,
@@ -59,7 +59,7 @@ export const projectedNamedChecksOf = (request: {
   );
   return gatheredOutcomes({
     outcomes: request.bindings
-      .filter(({ engine }) => engine === ESLINT_MECHANISM)
+      .filter((binding): binding is LintCheckBinding => binding.engine === ESLINT_MECHANISM)
       .map((binding): Result<readonly ProjectedCheck[], ProjectionFailure> => {
         const settings = eslintPieceSettingsSchema.safeParse(binding.settings);
         if (!settings.success) {

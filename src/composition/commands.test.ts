@@ -1090,6 +1090,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
               address: "claimed-type#cast-expressions",
               ruleSet: TOOL_RULE_SET,
               engine: ESLINT,
+              checkOptions: { kind: "none" },
               pieceRoot: "/install/cast",
               settings: {},
               checkSettings: {},

@@ -7,8 +7,7 @@ import {
 } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { bindHoneCheckOptions } from "../../../../../domain/rule-set/check-options.ts";
-import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import { bindCheck, type CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
@@ -88,21 +87,17 @@ const readPiece = createCheckPieceSource({
 const bindPiece = (request: {
   readonly address: CheckAddressText;
   readonly piece: CheckPiece;
-}): CheckBinding => ({
-  address: request.address,
-  ruleSet: "hone",
-  engine: ESLINT,
-  anchor: request.piece.anchor,
-  pieceRoot: request.piece.pieceRoot,
-  settings: request.piece.settings,
-  checkSettings: {},
-  edition: request.piece.editions.default,
-  ...bindHoneCheckOptions({
+}): CheckBinding =>
+  bindCheck({
     address: request.address,
     ruleSet: "hone",
+    engine: ESLINT,
+    anchor: request.piece.anchor,
+    pieceRoot: request.piece.pieceRoot,
+    settings: request.piece.settings,
+    checkSettings: {},
     edition: request.piece.editions.default,
-  }),
-});
+  });
 
 const directory = createDefaultDirectoryPort({});
 

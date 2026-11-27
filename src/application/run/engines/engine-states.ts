@@ -91,7 +91,6 @@ const notRunOf = (request: {
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   const { nestedConfigurations, measured } = request.run;
-  const { projectionFile } = request.run;
   switch (request.run.projection) {
     case "missing":
       return [
@@ -111,7 +110,8 @@ const notRunOf = (request: {
     case "none":
       return [];
     case "current":
-    case "out-of-date":
+    case "out-of-date": {
+      const { projectionFile } = request.run;
       if (
         projectionFile !== undefined &&
         measured.length === 0 &&
@@ -134,6 +134,7 @@ const notRunOf = (request: {
         tracked: request.tracked,
         comparedOutputs: request.run.comparedOutputs ?? [],
       });
+    }
   }
 };
 

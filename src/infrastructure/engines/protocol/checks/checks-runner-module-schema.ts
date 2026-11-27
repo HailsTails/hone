@@ -107,9 +107,10 @@ const checksReportSchema = z.strictObject({
 });
 
 export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
+  checksReportSchema.extend({ projection: z.literal("none") }).readonly(),
   checksReportSchema
     .extend({
-      projection: z.enum(["none", "current"]),
+      projection: z.literal("current"),
       projectionFile: repoPathSchema.optional(),
     })
     .readonly(),

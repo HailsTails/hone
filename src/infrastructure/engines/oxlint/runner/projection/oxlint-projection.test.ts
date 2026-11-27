@@ -25,6 +25,7 @@ describe("createOxlintProjection", () => {
           binding: {
             ruleSet: TOOL_RULE_SET,
             engine: "oxlint",
+            checkOptions: { kind: "none" },
             address: "untyped-value#explicit-any",
             pieceRoot: "/install/explicit-any",
             anchor: { kind: "keyword", keyword: "any" },

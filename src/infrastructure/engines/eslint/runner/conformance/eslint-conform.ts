@@ -138,14 +138,16 @@ const lintedSourceCases = (request: {
   });
 };
 
+export type LoadConfiguredPlugin = (request: {
+  readonly configured: ConfiguredClause;
+}) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
+
 export const conformedCases = (request: {
   readonly clause: RunnerClause;
   readonly cases: readonly SourceCase[];
   readonly path: PathPort;
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
-  readonly loadedPlugin: (request: {
-    readonly configured: ConfiguredClause;
-  }) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
+  readonly loadedPlugin: LoadConfiguredPlugin;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const configured = configuredClause({ clause: request.clause, path: request.path });
   if (configured.outcome === "failed") {
@@ -180,6 +182,9 @@ export const conformedNamedCases = async (request: {
   readonly modules: ModuleLoaderPort;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const { binding } = request;
+  if (binding.engine !== "eslint") {
+    return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: "Expected an ESLint check" });
+  }
   const settings = eslintPieceSettingsSchema.safeParse(binding.settings);
   if (!settings.success) {
     return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: z.prettifyError(settings.error) });

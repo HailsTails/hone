@@ -8,6 +8,7 @@ const ANY: CheckBinding = {
   address: "untyped-value#explicit-any",
   ruleSet: "hone",
   engine: "eslint",
+  checkOptions: { kind: "none" },
   edition: editionOf("1"),
   settings: {},
   pieceRoot: "/repo/untyped-value/explicit-any",

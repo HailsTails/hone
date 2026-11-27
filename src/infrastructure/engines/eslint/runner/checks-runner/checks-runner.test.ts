@@ -167,6 +167,7 @@ const CLASS_BINDINGS: NamedEslintRunRequest["bindings"] = [
     address: "authored-class-or-this#class-keyword",
     ruleSet: TOOL_RULE_SET,
     engine: "eslint",
+    checkOptions: { kind: "none" },
     pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
     settings: ESLINT_CD_14_PIECE.settings,
     anchor: { kind: "keyword", keyword: "class" },
