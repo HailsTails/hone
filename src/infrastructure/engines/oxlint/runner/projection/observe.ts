@@ -1,6 +1,7 @@
 import type { NamedEngineRunRequest } from "../../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
+import { isAbsolutePath } from "../../../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type {
@@ -9,7 +10,6 @@ import type {
   CheckNativeException,
 } from "../../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type {
   ConfiguredOxlintResult,
@@ -37,7 +37,6 @@ type ScopeRequest = Pick<NamedEngineRunRequest, "repoRoot"> & {
   readonly fileText: Pick<FileTextPort, "read">;
   readonly resolveCli: () => Result<string, RunnerFailure>;
   readonly disableConfiguration: string;
-  readonly governanceLoader: string;
   readonly configured: typeof runConfiguredOxlint;
 };
 
@@ -134,14 +133,21 @@ const observeIncluded = (
   if (read.outcome === "failed") return read;
   const toolchain = request.resolveCli();
   if (toolchain.outcome === "failed") return toolchain;
+  const folder = path.join({ segments: [request.repoRoot, scope.folder] });
+  if (!isAbsolutePath(folder)) {
+    return {
+      outcome: "failed",
+      error: { kind: "tool-failed", detail: `Expected an absolute path: ${folder}` },
+    };
+  }
   const observed = request.configured({
     cli: toolchain.value,
     disableConfiguration: request.disableConfiguration,
-    governanceLoader: request.governanceLoader,
-    folder: absolutePathSchema.parse(path.join({ segments: [request.repoRoot, scope.folder] })),
+    repoRoot: request.repoRoot,
+    folder,
     config: request.config.slice(request.config.lastIndexOf("/") + 1),
     projection: scope.file.slice(scope.file.lastIndexOf("/") + 1),
-    rules: [...new Set(rules.map(({ rule }) => rule.id))],
+    rules: rules.map(({ rule }) => rule),
     sources: read.value,
   });
   if (observed.outcome === "failed") return observed;

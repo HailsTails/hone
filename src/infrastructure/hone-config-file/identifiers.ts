@@ -2,11 +2,12 @@ import { z } from "zod";
 
 import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import type {
-  ClauseId,
-  DisciplineId,
-  EngineId,
-  RuleSetName,
+import {
+  ENGINE_IDS,
+  type ClauseId,
+  type DisciplineId,
+  type EngineId,
+  type RuleSetName,
 } from "../../domain/rule-set/identifier-types.ts";
 import { isClauseId, isDisciplineId, isRuleSetName } from "../../domain/rule-set/identifiers.ts";
 import { brandedTextSchema } from "../content-files/branded-schema.ts";
@@ -33,7 +34,7 @@ export const clauseIdSchema = brandedTextSchema({
   isBranded: isClauseId,
   refusal: NOT_AN_IDENTIFIER,
 });
-export const engineIdSchema = z.enum(["walker", "eslint", "oxlint"]);
+export const engineIdSchema = z.enum(ENGINE_IDS);
 
 export const versionOneEngineIdSchema = z.union([
   engineIdSchema.exclude(["oxlint"]),

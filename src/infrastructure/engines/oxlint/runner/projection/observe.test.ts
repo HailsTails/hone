@@ -26,7 +26,6 @@ describe("observeProjection", () => {
       },
       resolveCli: vi.fn(),
       disableConfiguration: "/install/disable-inspection.json",
-      governanceLoader: "file:///install/governance-config.process.js",
       configured,
     });
 

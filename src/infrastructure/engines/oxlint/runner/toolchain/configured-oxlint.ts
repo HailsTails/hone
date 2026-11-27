@@ -5,6 +5,11 @@ import type { AbsolutePath } from "../../../../../domain/repository/absolute-pat
 import type { Result } from "../../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ReadonlyJsonValue } from "../../../../../domain/settings/json-values/json-value.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-system-port.ts";
+import { withTemporaryDirectory } from "../../../../node/file-system/temporary-directory-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import type { SelectedOxlintRule } from "../selected-rule.ts";
+import { createMeasurementConfiguration } from "./measurement-configuration.ts";
 import {
   mapDiagnosticsToSites,
   readOxlintDiagnostics,
@@ -17,11 +22,13 @@ import {
   type DisableDirective,
 } from "./oxlint-directives.ts";
 
-const configSchema = z.looseObject({
-  jsPlugins: z.array(z.object({ name: z.string(), specifier: z.string() })).nullish(),
+const configSchema = z.object({
+  jsPlugins: z
+    .array(z.union([z.string(), z.object({ name: z.string(), specifier: z.string() })]))
+    .nullish(),
   overrides: z
     .array(
-      z.looseObject({
+      z.object({
         files: z.array(z.string()),
         rules: z
           .record(z.string(), z.json())
@@ -33,6 +40,8 @@ const configSchema = z.looseObject({
 });
 
 type EffectiveConfig = z.output<typeof configSchema>;
+const path = createDefaultPathPort({});
+const text = createDefaultFileTextPort({});
 
 const printConfiguration = (request: {
   readonly cli: string;
@@ -64,6 +73,7 @@ export const readEffectiveChecks = (request: {
   readonly namespaces: ReadonlySet<string>;
 }) => ({
   plugins: (request.config.jsPlugins ?? [])
+    .filter((plugin) => typeof plugin !== "string")
     .filter(({ name }) => request.namespaces.has(name))
     .toSorted((left, right) => left.name.localeCompare(right.name, "en")),
   overrides: (request.config.overrides ?? []).flatMap(({ files, rules }) => {
@@ -72,59 +82,14 @@ export const readEffectiveChecks = (request: {
   }),
 });
 
-export const removeProjectedOffSwitches = (request: {
-  readonly config: EffectiveConfig;
-  readonly ids: ReadonlySet<string>;
-  readonly projectedOverrides: number;
-}): EffectiveConfig => {
-  const overrides = request.config.overrides ?? [];
-  const recorded = new Set(
-    overrides
-      .filter(({ rules }) => Object.keys(rules).some((id) => request.ids.has(id)))
-      .slice(-request.projectedOverrides)
-      .slice(1),
-  );
-  return {
-    ...request.config,
-    overrides: overrides.map((entry) =>
-      recorded.has(entry)
-        ? {
-            ...entry,
-            rules: Object.fromEntries(
-              Object.entries(entry.rules).filter(([id]) => !request.ids.has(id)),
-            ),
-          }
-        : entry,
-    ),
-  };
-};
-
-type LintConfiguration = {
-  readonly config: string;
-  readonly loader?: string;
-  readonly input?: string;
-};
-
-const createGovernanceConfiguration = (request: {
-  readonly loader: string;
-  readonly input: EffectiveConfig;
-}): LintConfiguration => {
-  // Oxlint resolves globs and plugins from the config path. The loader supplies
-  // that scoped module from stdin so checking requires no checkout writes.
-  const config = `.hone-oxlint-governance-${crypto.randomUUID()}.mjs`;
-  const loader = new URL(request.loader);
-  loader.searchParams.set("configuration", config);
-  return { config, loader: loader.href, input: JSON.stringify(request.input) };
-};
-
-const readConfiguration = (request: {
+const readProjectionState = (request: {
   readonly cli: string;
   readonly folder: AbsolutePath;
   readonly config: string;
   readonly projection: string;
   readonly rules: readonly string[];
-  readonly governanceLoader: string;
-}): LintConfiguration | undefined => {
+  readonly namespaces: ReadonlySet<string>;
+}): "not-included" | "with-off-switches" | "included" => {
   const projected = printConfiguration({ ...request, config: request.projection });
   const active = printConfiguration(request);
   const ids = new Set(
@@ -132,9 +97,8 @@ const readConfiguration = (request: {
       rule.startsWith("eslint/") ? [rule, rule.slice("eslint/".length)] : [rule],
     ),
   );
-  const namespaces = new Set((projected.jsPlugins ?? []).map(({ name }) => name));
-  const required = readEffectiveChecks({ config: projected, ids, namespaces });
-  const configured = readEffectiveChecks({ config: active, ids, namespaces });
+  const required = readEffectiveChecks({ config: projected, ids, namespaces: request.namespaces });
+  const configured = readEffectiveChecks({ config: active, ids, namespaces: request.namespaces });
   const preservesOverrides =
     JSON.stringify(configured.overrides.slice(-required.overrides.length)) ===
     JSON.stringify(required.overrides);
@@ -142,17 +106,8 @@ const readConfiguration = (request: {
     !preservesOverrides ||
     JSON.stringify(configured.plugins) !== JSON.stringify(required.plugins)
   )
-    return undefined;
-  return required.overrides.length < 2
-    ? { config: request.config }
-    : createGovernanceConfiguration({
-        loader: request.governanceLoader,
-        input: removeProjectedOffSwitches({
-          config: active,
-          ids,
-          projectedOverrides: required.overrides.length,
-        }),
-      });
+    return "not-included";
+  return required.overrides.length > 1 ? "with-off-switches" : "included";
 };
 
 type ConfiguredSource = { readonly fileName: string; readonly source: string };
@@ -166,7 +121,7 @@ type ConfiguredRequest = {
   readonly disableConfiguration: string;
 };
 
-type BatchRequest = ConfiguredRequest & { readonly lint: LintConfiguration };
+type BatchRequest = ConfiguredRequest & { readonly measurementConfig?: string };
 
 type BatchObservation = {
   readonly linted: readonly string[];
@@ -210,11 +165,11 @@ const runBatch = (request: BatchRequest): BatchObservation => {
   const output = readOxlintDiagnostics(
     runOxlintCommand({
       ...request,
-      ...request.lint,
       arguments: [
         "--config",
-        request.lint.config,
+        request.measurementConfig ?? request.config,
         ...scopeArguments,
+        ...(request.measurementConfig === undefined ? [] : ["--no-ignore"]),
         "--format=json",
         "--threads=1",
         "--",
@@ -224,6 +179,8 @@ const runBatch = (request: BatchRequest): BatchObservation => {
   );
   if (output.number_of_files !== linted.length)
     throw new Error("Oxlint did not lint the files listed by its configuration");
+  if (request.measurementConfig !== undefined && output.number_of_rules !== request.rules.length)
+    throw new Error("Oxlint did not measure the selected Hone rules");
   const codes = new Set(request.rules.map((rule) => rule.replace("/", "(") + ")"));
   const diagnostics = output.diagnostics.filter(
     ({ code }) => code === undefined || codes.has(code),
@@ -263,16 +220,36 @@ export type ConfiguredOxlintResult =
   | ({ readonly state: "included" } & BatchObservation);
 
 export const runConfiguredOxlint = (
-  request: ConfiguredRequest & {
+  request: Omit<ConfiguredRequest, "rules"> & {
+    readonly repoRoot: AbsolutePath;
     readonly projection: string;
-    readonly governanceLoader: string;
+    readonly rules: readonly SelectedOxlintRule[];
   },
 ): Result<ConfiguredOxlintResult, RunnerFailure> => {
   try {
-    const lint = readConfiguration(request);
-    return lint === undefined
-      ? { outcome: "ok", value: { state: "not-included" } }
-      : { outcome: "ok", value: { state: "included", ...runBatches({ ...request, lint }) } };
+    const rules = [...new Set(request.rules.map(({ id }) => id))];
+    const namespaces = new Set(
+      request.rules.flatMap((rule) => (rule.kind === "plugin" ? [rule.namespace] : [])),
+    );
+    const batch = { ...request, rules };
+    const state = readProjectionState({ ...batch, namespaces });
+    if (state === "not-included") return { outcome: "ok", value: { state } };
+    const observed =
+      state === "included"
+        ? runBatches(batch)
+        : withTemporaryDirectory({
+            outside: request.repoRoot,
+            use: (folder) => {
+              const measurementConfig = path.join({ segments: [folder, ".oxlintrc.json"] });
+              const written = text.write({
+                path: measurementConfig,
+                text: JSON.stringify(createMeasurementConfiguration(request.rules)),
+              });
+              if (written.outcome === "failed") throw new Error(written.error.detail);
+              return runBatches({ ...batch, measurementConfig });
+            },
+          });
+    return { outcome: "ok", value: { state: "included", ...observed } };
   } catch (thrown) {
     return {
       outcome: "failed",

@@ -7,7 +7,6 @@ import type {
   RunnerFailure,
   UnavailablePeer,
 } from "../../../../../domain/runner/runner-failure.ts";
-import { parsedJson } from "../../../../content-files/parsed-json.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createPackageManifestPort } from "../../../../node/modules/package-manifest-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
@@ -44,6 +43,16 @@ type ManifestPorts = {
 
 export type OxlintToolchain = Result<string, RunnerFailure>;
 
+const readVersion = (text: string): string => {
+  const invalid = "invalid package manifest";
+  try {
+    const version = versionSchema.safeParse(JSON.parse(text));
+    return version.success ? version.data.version : invalid;
+  } catch {
+    return invalid;
+  }
+};
+
 const readManifest = (
   request: ManifestPorts & {
     readonly folder: string;
@@ -60,9 +69,7 @@ const readManifest = (
   const contents = request.text.read({ path: manifest.value });
   if (contents.outcome === "failed")
     return { outcome: "failed", error: createUnavailable(requirement, contents.error.detail) };
-  const document = parsedJson({ text: contents.value });
-  const version = versionSchema.safeParse(document.outcome === "ok" ? document.value : undefined);
-  const found = version.success ? version.data.version : "invalid package manifest";
+  const found = readVersion(contents.value);
   return versionSupport({ requirement, version: found }) === "supported"
     ? { outcome: "ok", value: manifest.value }
     : { outcome: "failed", error: createUnavailable(requirement, found) };

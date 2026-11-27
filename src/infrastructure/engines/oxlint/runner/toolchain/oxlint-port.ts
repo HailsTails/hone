@@ -1,8 +1,8 @@
 import { failureDetailOf } from "../../../../../domain/failure-detail.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import { isAbsolutePath } from "../../../../../domain/repository/absolute-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import {
   createDefaultDirectoryPort,
@@ -10,6 +10,7 @@ import {
 } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { SelectedOxlintRule } from "../selected-rule.ts";
+import { createMeasurementConfiguration } from "./measurement-configuration.ts";
 import { runOxlintProcess, mapDiagnosticsToSites, type OxlintSite } from "./oxlint-diagnostics.ts";
 import { createSourcesWithoutDisables } from "./oxlint-directives.ts";
 
@@ -39,18 +40,19 @@ const write = (request: {
   if (written.outcome === "failed") throw new Error(written.error.detail);
 };
 
-const createDirectory = (folder: AbsolutePath): void => {
+const createDirectory = (folder: string): AbsolutePath => {
+  if (!isAbsolutePath(folder)) throw new Error(`Expected an absolute path: ${folder}`);
   const created = directories.create({ path: folder });
   if (created.outcome === "failed") throw new Error(created.error.detail);
+  return folder;
 };
 
 type OxlintRequest = Parameters<RunOxlint>[0];
 
 const conformInWorkspace = (request: OxlintRequest): readonly OxlintSite[] => {
-  const folder = absolutePathSchema.parse(
+  const folder = createDirectory(
     path.join({ segments: [request.resolveFrom, `.hone-oxlint-${crypto.randomUUID()}`] }),
   );
-  createDirectory(folder);
   try {
     write({ folder, file: CONFIGURATION, contents: JSON.stringify({ categories: CATEGORIES }) });
     return runInWorkspace({ ...request, folder });
@@ -73,11 +75,9 @@ const runInWorkspace = (
   const invocation = { cli: request.cli, folder: request.folder, files };
   files.forEach((file) =>
     createDirectory(
-      absolutePathSchema.parse(
-        path.directoryOf({
-          path: path.join({ segments: [request.folder, file] }),
-        }),
-      ),
+      path.directoryOf({
+        path: path.join({ segments: [request.folder, file] }),
+      }),
     ),
   );
   sources.forEach((source, file) =>
@@ -87,20 +87,12 @@ const runInWorkspace = (
   withDisablesRemoved.forEach((source, file) =>
     write({ folder: request.folder, file, contents: source.toString() }),
   );
-  const rules = Object.fromEntries(
-    request.rules.map(({ id, options }) => [id, ["error", ...options]]),
-  );
-  const pluginsByNamespace = new Map(
-    request.rules
-      .filter((rule) => rule.kind === "plugin")
-      .map(({ namespace, module }) => [namespace, module]),
-  );
-  const jsPlugins = [...pluginsByNamespace].map(([name, specifier]) => ({ name, specifier }));
+  const measurement = createMeasurementConfiguration(request.rules);
   write({
     ...configuration,
-    contents: JSON.stringify({ categories: CATEGORIES, rules, jsPlugins }),
+    contents: JSON.stringify(measurement),
   });
-  const selected = Object.keys(rules);
+  const selected = Object.keys(measurement.rules);
   const diagnostics = runOxlintProcess({ ...invocation, options: [], rules: selected.length });
   return mapDiagnosticsToSites({ ...request, diagnostics, files, rules: selected });
 };

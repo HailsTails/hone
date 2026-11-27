@@ -11,11 +11,10 @@ import {
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { AuthoredPieceDeclaration } from "../../domain/rule-set/authored-rule-set-types.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import { ENGINE_IDS, type EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
-import { engineIdSchema } from "../hone-config-file/identifiers.ts";
 import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
@@ -43,7 +42,7 @@ const checkDeclaration = {
 const implementationSchema = z.strictObject({
   ...checkDeclaration,
   anchor: anchorKindSchema,
-  examplesFrom: engineIdSchema.optional(),
+  examplesFrom: z.enum(ENGINE_IDS).optional(),
   settings: z.record(z.string(), z.json()),
   forms: z.record(z.string(), namedPieceImplementationSchema).default({}),
   editions: legacyPieceEntry.editions,

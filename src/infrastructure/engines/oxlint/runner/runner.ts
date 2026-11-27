@@ -1,6 +1,5 @@
 import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
-import { moduleExtensionOf } from "../../../../application/ports/host/module-extension.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../domain/gathered-outcomes.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { installRootOfRunnerEntry } from "../../../node/modules/package-location-port.ts";
@@ -23,10 +22,6 @@ const installRoot = installRootOfRunnerEntry({ entryFile: import.meta.filename }
 const path = createDefaultPathPort({});
 const DISABLE_CONFIGURATION =
   "src/infrastructure/engines/oxlint/runner/toolchain/disable-inspection.json";
-const governanceLoader = new URL(
-  `./toolchain/governance-config.process${moduleExtensionOf({ moduleUrl: import.meta.url })}`,
-  import.meta.url,
-).href;
 
 const createReport = (request: {
   readonly observations: readonly ScopeObservation[];
@@ -88,7 +83,6 @@ const createRun =
             rules,
             resolveCli,
             disableConfiguration,
-            governanceLoader,
             repoRoot: request.repoRoot,
           }),
         }),
