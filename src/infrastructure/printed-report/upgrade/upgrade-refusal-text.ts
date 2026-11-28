@@ -82,23 +82,17 @@ const removedByVersionOneLinesOf = (request: Placed): readonly string[] =>
         ),
       ];
 
-const unrestoredLinesOf = (
-  request: Placed & { readonly unrestored: readonly Unrestored[] },
-): readonly string[] => {
-  const removed = removedByVersionOneLinesOf(request);
-  if (removed.length === 0 && request.unrestored.length === 0) {
-    return [NOTHING_CHANGED];
-  }
-  return [
-    ...removed,
-    ...(request.unrestored.length === 0
-      ? []
-      : [
-          "These files could not be put back; put them right by hand:",
-          ...request.unrestored.map((unrestored) => unrestoredLineOf({ unrestored })),
-        ]),
-  ];
-};
+type RefusalChanges = Placed & { readonly unrestored: readonly Unrestored[] };
+
+const remainingChangesLines = (request: RefusalChanges): readonly string[] => [
+  ...removedByVersionOneLinesOf(request),
+  ...(request.unrestored.length === 0
+    ? []
+    : [
+        "These files could not be put back; put them right by hand:",
+        ...request.unrestored.map((unrestored) => unrestoredLineOf({ unrestored })),
+      ]),
+];
 
 const folderTextOf = (request: { readonly folder: string }): string =>
   request.folder === "" ? "the repository root" : request.folder;
@@ -382,50 +376,38 @@ type VersionOneRunRefusal = Extract<
 
 const mapVersionOneRunRefusalToLines = (request: {
   readonly failure: VersionOneRunRefusal;
-  readonly placement: RepositoryPlacement;
 }): ProofLines => {
-  const { failure, placement } = request;
+  const { failure } = request;
   switch (failure.kind) {
     case "oracle-failed":
       return {
         code: 1,
-        lines: [
-          oracleLineOf({ failure: failure.failure }),
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
-        ],
+        lines: [oracleLineOf({ failure: failure.failure })],
       };
     case "plan-refused":
       return {
         code: 1,
-        lines: [
-          ...planLinesOf({ refusal: failure.refusal }),
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
-        ],
+        lines: [...planLinesOf({ refusal: failure.refusal })],
       };
     case "version-one-run-failed":
       return {
         code: 1,
         lines: [
           `version 1's run failed (${failure.failure.detail}). Fix what it names, then run the upgrade again.`,
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
     case "version-one-uncovered":
       return {
         code: 1,
-        lines: [
-          uncoveredLineOf({ clauses: failure.clauses }),
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
-        ],
+        lines: [uncoveredLineOf({ clauses: failure.clauses })],
       };
   }
 };
 
 const mapVersionOneWriteRefusalToLines = (request: {
   readonly failure: Exclude<ProofRefusal, VersionTwoRefusal | VersionOneRunRefusal>;
-  readonly placement: RepositoryPlacement;
 }): ProofLines => {
-  const { failure, placement } = request;
+  const { failure } = request;
   switch (failure.kind) {
     case "version-one-project-failed":
       return {
@@ -438,67 +420,49 @@ const mapVersionOneWriteRefusalToLines = (request: {
     case "unplaceable-path":
       return {
         code: 1,
-        lines: [
-          `${failure.file} cannot be placed in the repository. ${FAULT_IN_HONE}`,
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
-        ],
+        lines: [`${failure.file} cannot be placed in the repository. ${FAULT_IN_HONE}`],
       };
     case "removal-refused":
       return {
         code: 1,
         lines: [
           `the version 1 records file ${failure.failure.path} is outside ${failure.failure.root}. ${FAULT_IN_HONE}`,
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
     case "write-refused":
       return {
         code: 1,
-        lines: [
-          writeLineOf({ failure: failure.refusal.failure }),
-          ...unrestoredLinesOf({ ...failure, placement, unrestored: failure.refusal.unrestored }),
-        ],
+        lines: [writeLineOf({ failure: failure.failure })],
       };
   }
 };
 
 const mapVersionTwoRefusalToLines = (request: {
   readonly failure: VersionTwoRefusal;
-  readonly placement: RepositoryPlacement;
 }): ProofLines => {
-  const { failure, placement } = request;
+  const { failure } = request;
   switch (failure.kind) {
     case "team-layout-unreadable":
       return {
         code: 1,
         lines: [
           `the rule set the upgrade wrote from your names file cannot be read (${loadFailureDetail({ failure: failure.failure })}). Correct what it names in the names file, then run the upgrade again.`,
-          ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
     case "version-two-run-failed":
       return {
         code: 1,
-        lines: [
-          `version 2's run failed (${failure.failure.detail}). ${FAULT_IN_HONE}`,
-          ...unrestoredLinesOf({ ...failure, placement }),
-        ],
+        lines: [`version 2's run failed (${failure.failure.detail}). ${FAULT_IN_HONE}`],
       };
     case "directives-name-no-check":
       return {
         code: 1,
-        lines: [
-          ...directiveLinesOf({ directives: failure.directives }),
-          ...unrestoredLinesOf({ ...failure, placement }),
-        ],
+        lines: [...directiveLinesOf({ directives: failure.directives })],
       };
     case "smoothing-failed":
       return {
         code: 1,
-        lines: [
-          ...mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure }),
-          ...unrestoredLinesOf({ ...failure, placement }),
-        ],
+        lines: [...mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure })],
       };
     case "check-failed":
       return {
@@ -507,7 +471,6 @@ const mapVersionTwoRefusalToLines = (request: {
           "version 2's check fails on the upgraded repository:",
           ...failure.failing.map((line) => `  ${line}`),
           "Fix what it reports, then run the upgrade again.",
-          ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
     case "removal-failed":
@@ -522,11 +485,8 @@ const mapVersionTwoRefusalToLines = (request: {
   }
 };
 
-const proofLinesOf = (request: {
-  readonly failure: ProofRefusal;
-  readonly placement: RepositoryPlacement;
-}): ProofLines => {
-  const { failure, placement } = request;
+const proofLinesOf = (request: { readonly failure: ProofRefusal }): ProofLines => {
+  const { failure } = request;
   switch (failure.kind) {
     case "team-layout-unreadable":
     case "version-two-run-failed":
@@ -534,14 +494,14 @@ const proofLinesOf = (request: {
     case "smoothing-failed":
     case "check-failed":
     case "removal-failed":
-      return mapVersionTwoRefusalToLines({ failure, placement });
+      return mapVersionTwoRefusalToLines({ failure });
     case "oracle-failed":
     case "plan-refused":
     case "version-one-run-failed":
     case "version-one-uncovered":
-      return mapVersionOneRunRefusalToLines({ failure, placement });
+      return mapVersionOneRunRefusalToLines({ failure });
     default:
-      return mapVersionOneWriteRefusalToLines({ failure, placement });
+      return mapVersionOneWriteRefusalToLines({ failure });
   }
 };
 
@@ -556,9 +516,17 @@ export const upgradeFailureOutcomeOf = (request: {
       text: `${["upgrade refused:", ...readFailureLinesOf({ failure }), NOTHING_CHANGED].join("\n")}\n`,
     };
   }
-  const proof = proofLinesOf({ failure, placement });
+  const proof = proofLinesOf({ failure });
+  const remaining =
+    failure.kind === "removal-failed" ? [] : remainingChangesLines({ ...failure, placement });
+  const effects =
+    remaining.length === 0 &&
+    failure.kind !== "removal-failed" &&
+    failure.kind !== "version-one-project-failed"
+      ? [NOTHING_CHANGED]
+      : remaining;
   return {
     code: proof.code,
-    text: `${[proof.code === 3 ? "upgrade incomplete:" : "upgrade refused:", ...proof.lines].join("\n")}\n`,
+    text: `${[proof.code === 3 ? "upgrade incomplete:" : "upgrade refused:", ...proof.lines, ...effects].join("\n")}\n`,
   };
 };

@@ -3,12 +3,12 @@ import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
-import type { ProofRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
+import type { ProofRefusal } from "../../ports/upgrade/proof-outcome.ts";
 import {
   type PlannedFile,
   type ProofQueries,
   type ProofWrites,
-  rolledBackWrites,
+  restoredAfterRefusal,
   writtenProofFiles,
 } from "../proof-writes/proof-writes.ts";
 import { projectionWithVersionTwoPlugins } from "./version-one-plugin-specifiers.ts";
@@ -29,7 +29,12 @@ const plannedPatchOf = (
   if (!isAbsolutePath(path)) {
     return {
       outcome: "failed",
-      error: { kind: "unplaceable-path", file: request.file, removedByVersionOne: [] },
+      error: {
+        kind: "unplaceable-path",
+        file: request.file,
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     };
   }
   if (request.queries.fileText.exists({ path }) === "absent") {
@@ -49,6 +54,7 @@ const plannedPatchOf = (
             detail: read.error.detail,
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
     };
@@ -88,7 +94,7 @@ export const patchedProjectionsOf = (
   return written.outcome === "failed"
     ? {
         outcome: "failed",
-        error: { kind: "write-refused", refusal: written.error, removedByVersionOne: [] },
+        error: { kind: "write-refused", ...written.error, removedByVersionOne: [] },
       }
     : written;
 };
@@ -104,43 +110,6 @@ const filesVersionOneRemoved = (request: {
     const path = request.queries.path.join({ segments: [request.repoRoot, file] });
     return isAbsolutePath(path) ? [path] : [];
   });
-};
-
-const withUnrestored = (request: {
-  readonly refusal: ProofRefusal;
-  readonly unrestored: readonly Unrestored[];
-}): ProofRefusal => {
-  const { refusal, unrestored } = request;
-  switch (refusal.kind) {
-    case "team-layout-unreadable":
-    case "version-two-run-failed":
-    case "directives-name-no-check":
-    case "smoothing-failed":
-    case "check-failed":
-      return { ...refusal, unrestored: [...refusal.unrestored, ...unrestored] };
-    case "write-refused":
-      return {
-        ...refusal,
-        refusal: {
-          ...refusal.refusal,
-          unrestored: [...refusal.refusal.unrestored, ...unrestored],
-        },
-      };
-    default:
-      return refusal;
-  }
-};
-
-export const restoredAfterRefusal = (request: {
-  readonly effects: Pick<ProofEffects, "undo">;
-  readonly writes: ProofWrites;
-  readonly refusal: ProofRefusal;
-}): ProofRefusal => {
-  if (request.refusal.kind === "removal-failed") {
-    return request.refusal;
-  }
-  const unrestored = rolledBackWrites({ effects: request.effects, writes: request.writes });
-  return withUnrestored({ refusal: request.refusal, unrestored });
 };
 
 export const restoredOriginalProjections = (request: {

@@ -877,7 +877,12 @@ describe("upgradeProof", () => {
         outcome: "ok",
         value: { ...VERSION_ONE_PASSING.value, uncovered: [LOOPS_CLAUSE] },
       },
-      error: { kind: "version-one-uncovered", clauses: [LOOPS_CLAUSE], removedByVersionOne: [] },
+      error: {
+        kind: "version-one-uncovered",
+        clauses: [LOOPS_CLAUSE],
+        unrestored: [],
+        removedByVersionOne: [],
+      },
       versionOneRuns: [[]],
     },
     {
@@ -887,6 +892,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "version-one-run-failed",
         failure: { kind: "run-failed", detail: "no selection" },
+        unrestored: [],
         removedByVersionOne: [],
       },
       versionOneRuns: [[]],
@@ -901,6 +907,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "oracle-failed",
         failure: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
+        unrestored: [],
         removedByVersionOne: [],
       },
       versionOneRuns: [],
@@ -919,6 +926,7 @@ describe("upgradeProof", () => {
           clause: "CD-15#loops",
           file: repoPathOf("src/a.ts"),
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       versionOneRuns: [],
@@ -1085,7 +1093,8 @@ describe("upgradeProof", () => {
       outcome: "failed",
       error: {
         kind: "write-refused",
-        refusal: { failure: { kind: "path-already-exists", path: SETTINGS_PATH }, unrestored: [] },
+        failure: { kind: "path-already-exists", path: SETTINGS_PATH },
+        unrestored: [],
         removedByVersionOne: [],
       },
     });
@@ -1547,6 +1556,7 @@ describe("upgradeProof", () => {
           path: "/repo/tools/x.json",
           root: "/repo/discipline-exceptions",
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
     });
@@ -1615,6 +1625,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "plan-refused",
         refusal: { kind: "team-config-refused", refusal: NO_IMPORTER },
+        unrestored: [],
         removedByVersionOne: [],
       },
     },
@@ -1631,6 +1642,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "plan-refused",
         refusal: { kind: "team-config-refused", refusal: NO_IMPORTER },
+        unrestored: [],
         removedByVersionOne: ["old/disciplines.eslint.mjs"],
       },
     },
@@ -1650,6 +1662,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "plan-refused",
         refusal: { kind: "slice-left-in-place", files: ["stale/disciplines.eslint.mjs"] },
+        unrestored: [],
         removedByVersionOne: ["old/disciplines.eslint.mjs"],
       },
     },
@@ -1660,7 +1673,12 @@ describe("upgradeProof", () => {
         removed: [],
         outcome: { outcome: "failed", error: { kind: "project-failed", detail: "disk full" } },
       },
-      error: { kind: "version-one-project-failed", detail: "disk full", removedByVersionOne: [] },
+      error: {
+        kind: "version-one-project-failed",
+        detail: "disk full",
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     },
   ] as const)(
     "refuses, writing nothing and naming any slice version 1 removed, when $name",
@@ -1725,6 +1743,7 @@ describe("upgradeProof", () => {
       error: {
         kind: "unplaceable-path",
         file: "old/disciplines.eslint.mjs",
+        unrestored: [],
         removedByVersionOne: ["old/disciplines.eslint.mjs"],
       },
     });
@@ -1775,6 +1794,7 @@ describe("upgradeProof", () => {
             folder: "packages/a",
           },
         },
+        unrestored: [],
         removedByVersionOne: ["old/disciplines.eslint.mjs"],
       },
     });
@@ -1808,7 +1828,8 @@ describe("upgradeProof", () => {
       outcome: "failed",
       error: {
         kind: "write-refused",
-        refusal: { failure: { kind: "path-already-exists", path: SETTINGS_PATH }, unrestored: [] },
+        failure: { kind: "path-already-exists", path: SETTINGS_PATH },
+        unrestored: [],
         removedByVersionOne: ["old/disciplines.eslint.mjs"],
       },
     });

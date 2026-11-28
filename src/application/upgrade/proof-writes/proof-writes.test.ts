@@ -10,6 +10,7 @@ import {
   type ProofWrites,
   proofWriteEffectsOf,
   proofWritesAppliedOf,
+  restoredAfterRefusal,
   rolledBackWrites,
   writtenProofFiles,
 } from "./proof-writes.ts";
@@ -332,6 +333,84 @@ describe("rolledBackWrites", () => {
         },
       ],
     ]);
+  });
+});
+
+const RESTORE_FILE = absoluteRootOf("/repo/acme/rules/principles/acme.md");
+
+describe("restoredAfterRefusal", () => {
+  it("undoes each write it is given and returns the refusal with what it could not restore", () => {
+    const undo = vi
+      .fn<ProofEffects["undo"]>()
+      .mockReturnValueOnce([{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }]);
+
+    expect(
+      restoredAfterRefusal({
+        effects: { undo },
+        writes: [{ kind: "file-created", path: RESTORE_FILE }],
+        refusal: {
+          kind: "check-failed",
+          failing: ["findings (1)"],
+          unrestored: [],
+          removedByVersionOne: [],
+        },
+      }),
+    ).toEqual({
+      kind: "check-failed",
+      failing: ["findings (1)"],
+      unrestored: [{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }],
+      removedByVersionOne: [],
+    });
+    expect(undo.mock.calls).toEqual([[{ writes: [{ kind: "file-created", path: RESTORE_FILE }] }]]);
+  });
+
+  it("adds what it could not restore to a smoothing step's refusal", () => {
+    const undo = vi
+      .fn<ProofEffects["undo"]>()
+      .mockReturnValueOnce([{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }]);
+    const refusal = {
+      kind: "smoothing-failed",
+      step: "prune-debt",
+      failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+      unrestored: [],
+      removedByVersionOne: [],
+    } as const;
+
+    const restored = restoredAfterRefusal({
+      effects: { undo },
+      writes: [{ kind: "file-created", path: RESTORE_FILE }],
+      refusal,
+    });
+
+    expect(restored).toEqual({
+      ...refusal,
+      unrestored: [{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }],
+    });
+  });
+
+  it("restores nothing after a removal failed, since the proof had already passed", () => {
+    const undo = vi.fn<ProofEffects["undo"]>();
+    const refusal = {
+      kind: "removal-failed",
+      failure: {
+        kind: "unremovable",
+        path: RESTORE_FILE,
+        detail: "EBUSY",
+        removed: { files: [], folders: [] },
+      },
+      remaining: [],
+      written: [],
+      replaced: [],
+    } as const;
+
+    expect(
+      restoredAfterRefusal({
+        effects: { undo },
+        writes: [{ kind: "file-created", path: RESTORE_FILE }],
+        refusal,
+      }),
+    ).toEqual(refusal);
+    expect(undo).not.toHaveBeenCalled();
   });
 });
 

@@ -3,7 +3,7 @@ import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ProofEffect } from "../../ports/upgrade/proof-effect.ts";
-import type { ProofRefusal } from "../../ports/upgrade/proof-outcome.ts";
+import type { ProofRefusal, ProofWriteFailure } from "../../ports/upgrade/proof-outcome.ts";
 import type { ChangedFile, SmoothingChanges } from "../../ports/upgrade/smoothing-commands.ts";
 import { type ProofQueries, proofWriteEffectsOf } from "../proof-writes/proof-writes.ts";
 
@@ -23,7 +23,7 @@ type Planning = {
 
 const unplaceable = (request: { readonly file: RepoPath }): Result<never, ProofRefusal> => ({
   outcome: "failed",
-  error: { kind: "unplaceable-path", file: request.file, removedByVersionOne: [] },
+  error: { kind: "unplaceable-path", file: request.file, unrestored: [], removedByVersionOne: [] },
 });
 
 const placeChange = <Change>(
@@ -54,12 +54,13 @@ const placeEvery = <Change>(
 };
 
 const writeRefused = (request: {
-  readonly failure: Extract<ProofRefusal, { readonly kind: "write-refused" }>["refusal"]["failure"];
+  readonly failure: ProofWriteFailure;
 }): Result<never, ProofRefusal> => ({
   outcome: "failed",
   error: {
     kind: "write-refused",
-    refusal: { failure: request.failure, unrestored: [] },
+    failure: request.failure,
+    unrestored: [],
     removedByVersionOne: [],
   },
 });

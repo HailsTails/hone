@@ -11,6 +11,7 @@ import type {
   StoppedEffect,
 } from "../../ports/upgrade/proof-effect.ts";
 import type {
+  ProofRefusal,
   ProofWrite,
   ProofWriteFailure,
   ProofWriteRefusal,
@@ -212,6 +213,18 @@ export const rolledBackWrites = (request: {
   readonly effects: Pick<ProofEffects, "undo">;
   readonly writes: ProofWrites;
 }): readonly Unrestored[] => request.effects.undo({ writes: request.writes.toReversed() });
+
+export const restoredAfterRefusal = (request: {
+  readonly effects: Pick<ProofEffects, "undo">;
+  readonly writes: ProofWrites;
+  readonly refusal: ProofRefusal;
+}): ProofRefusal => {
+  if (request.refusal.kind === "removal-failed") {
+    return request.refusal;
+  }
+  const unrestored = rolledBackWrites({ effects: request.effects, writes: request.writes });
+  return { ...request.refusal, unrestored: [...request.refusal.unrestored, ...unrestored] };
+};
 
 export const writtenProofFiles = (request: {
   readonly queries: ProofWriteQueries;

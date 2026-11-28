@@ -340,10 +340,8 @@ describe("runSmoothing", () => {
         outcome: "failed",
         error: {
           kind: "write-refused",
-          refusal: {
-            failure: { kind: "unwritable", path: debtPath, detail: "EPERM" },
-            unrestored: [],
-          },
+          failure: { kind: "unwritable", path: debtPath, detail: "EPERM" },
+          unrestored: [],
           removedByVersionOne: [],
         },
       },

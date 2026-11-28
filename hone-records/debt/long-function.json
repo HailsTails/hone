@@ -59,10 +59,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/application/upgrade/smoothing/smoothing-effects.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/node/process/execution-port.test.ts"
     }
   ]
