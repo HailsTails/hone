@@ -1,7 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
-import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import type { Result } from "../../src/domain/result.ts";
+import { everyOk } from "../../src/domain/settings/every-ok.ts";
 import {
   projectCommandOf,
   pruneCommandOf,
@@ -9,74 +10,11 @@ import {
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import type { StepRun } from "../install-proof/install-proof-plan.ts";
 import {
   createDefaultCommandRunPort,
   createDefaultScratchFilesPort,
-  type ScratchFilesPort,
 } from "../install-proof/install-proof-ports.ts";
-
-type ScratchRepositories = {
-  readonly repositoryWith: (request: {
-    readonly files: Readonly<Record<string, string>>;
-  }) => AbsolutePath;
-  readonly removeAll: () => void;
-};
-
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-  readonly scratch: ScratchFilesPort;
-}): ScratchRepositories => {
-  const made: AbsolutePath[] = [];
-  return {
-    repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(
-        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
-      );
-      const directory = request.scratch.makeDirectory({ path: folder });
-      if (directory.outcome !== "ok") {
-        throw new Error(
-          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
-        );
-      }
-      made.push(folder);
-      Object.entries(repository.files).forEach(([name, text]) => {
-        request.fileText.write({ path: `${folder}/${name}`, text });
-      });
-      return folder;
-    },
-    removeAll: () => {
-      made.forEach((folder) => {
-        request.scratch.removeTree({ path: folder });
-      });
-    },
-  };
-};
-
-const repositoryWithSubfolder = (request: {
-  readonly repositories: ScratchRepositories;
-  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
-  readonly fileText: Pick<FileTextPort, "write">;
-  readonly files: Readonly<Record<string, string>>;
-  readonly subfolder: string;
-  readonly subfolderFiles: Readonly<Record<string, string>>;
-}): AbsolutePath => {
-  const repo = request.repositories.repositoryWith({ files: request.files });
-  const folder = `${repo}/${request.subfolder}`;
-  const made = request.scratch.makeDirectory({ path: folder });
-  if (made.outcome !== "ok") {
-    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
-  }
-  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
-    const written = request.fileText.write({ path: `${folder}/${name}`, text });
-    if (written.outcome !== "ok") {
-      throw new Error(
-        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
-      );
-    }
-  });
-  return repo;
-};
 
 const INSTALL_ROOT = absolutePathSchema.parse(
   createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }),
@@ -90,14 +28,16 @@ const fileText = createDefaultFileTextPort({});
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({
-  parent: `${INSTALL_ROOT}/artefacts`,
-  fileText,
-  scratch,
-});
+const INHERITED_REPO = absolutePathSchema.parse(`${INSTALL_ROOT}/artefacts/native-debt-inherited`);
+
+const EXCLUDED_REPO = absolutePathSchema.parse(`${INSTALL_ROOT}/artefacts/native-debt-excluded`);
+
+const HIDDEN_REPO = absolutePathSchema.parse(`${INSTALL_ROOT}/artefacts/native-debt-hidden`);
 
 afterAll(() => {
-  repositories.removeAll();
+  scratch.removeTree({ path: INHERITED_REPO });
+  scratch.removeTree({ path: EXCLUDED_REPO });
+  scratch.removeTree({ path: HIDDEN_REPO });
 });
 
 const commands = createDefaultCommandRunPort({});
@@ -152,69 +92,68 @@ const GIT_IDENTITY = [
   "commit.gpgsign=false",
 ];
 
-type Printed = { readonly text: string; readonly code: number };
+const GIT_INIT = ["init", "-q"];
 
-const git = (request: { readonly repo: string; readonly arguments: readonly string[] }): void => {
-  const run = commands.run({
+const GIT_ADD = ["add", "."];
+
+const GIT_COMMIT = ["commit", "-q", "-m", "commit"];
+
+const DONE = { outcome: "ok", value: null } satisfies Result<null, never>;
+
+const WRITTEN = { outcome: "ok", value: undefined } satisfies Result<void, never>;
+
+const SUCCEEDED = { outcome: "exited", exitCode: 0 } satisfies Partial<StepRun>;
+
+const runGit = (request: {
+  readonly repo: AbsolutePath;
+  readonly arguments: readonly string[];
+}): StepRun =>
+  commands.run({
     command: "git",
-    arguments: [...GIT_IDENTITY, ...request.arguments],
+    arguments: [
+      "--git-dir",
+      `${request.repo}/.git`,
+      "--work-tree",
+      request.repo,
+      ...GIT_IDENTITY,
+      ...request.arguments,
+    ],
     directory: request.repo,
   });
-  assert(run.outcome === "exited", "a git step in the scratch repository ran to an exit");
-  assert(run.exitCode === 0, "a git step in the scratch repository succeeded");
-};
 
-const toolIn = (request: {
-  readonly repo: string;
+const runHone = (request: {
+  readonly repo: AbsolutePath;
   readonly subcommand: string;
   readonly options: readonly string[];
-}): Printed => {
-  const run = commands.run({
+}): StepRun =>
+  commands.run({
     command: "node",
     arguments: [TOOL_COMMAND_FILE, request.subcommand, "--repo", request.repo, ...request.options],
     directory: request.repo,
   });
-  assert(run.outcome === "exited", "the tool command ran to an exit");
-  return { text: run.output, code: run.exitCode };
-};
-
-const trackEverything = (request: { readonly repo: string }): void => {
-  git({ repo: request.repo, arguments: ["add", "."] });
-};
-
-const commitEverything = (request: { readonly repo: string }): void => {
-  trackEverything(request);
-  git({ repo: request.repo, arguments: ["commit", "-q", "-m", "commit"] });
-};
 
 const writeIn = (request: {
-  readonly repo: string;
+  readonly repo: AbsolutePath;
   readonly file: string;
   readonly text: string;
-}): void => {
-  const written = fileText.write({ path: `${request.repo}/${request.file}`, text: request.text });
-  assert(written.outcome === "ok", "the scratch file is written");
-};
+}) => fileText.write({ path: `${request.repo}/${request.file}`, text: request.text });
 
-const inheritingRepository = (): string => {
-  const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
-    files: { "hone.config.json": CONFIG, "eslint.config.mjs": ESLINT_CONFIG_WITH_OVERRIDE },
-    subfolder: "src",
-    subfolderFiles: {
-      "kept.ts": CLASS_SOURCE,
-      "disabled.ts": INLINE_DISABLE_SOURCE,
-      "directive.ts": TYPE_DIRECTIVE_SOURCE,
-      "legacy-clean.ts": CLEAN_LEGACY_SOURCE,
-      "legacy-class.ts": CLASS_LEGACY_SOURCE,
-    },
+const writeFiles = (request: {
+  readonly repo: AbsolutePath;
+  readonly files: readonly { readonly file: string; readonly text: string }[];
+}) =>
+  everyOk({
+    entries: request.files,
+    resolve: (file) => writeIn({ repo: request.repo, ...file }),
   });
-  git({ repo, arguments: ["init", "-q"] });
-  trackEverything({ repo });
-  return repo;
-};
+
+const exited = (exitCode: number, output: string): StepRun => ({
+  outcome: "exited",
+  exitCode,
+  output,
+});
+
+const AT_HEAD = ["--base-revision", "HEAD"];
 
 const FORFEITURE_ELSEWHERE = ["--forfeiture", "elsewhere"];
 
@@ -222,27 +161,21 @@ const PATH = createDefaultPathPort({});
 
 const ENTRY_URL = new URL("../../src/hone.ts", import.meta.url).href;
 
-const pruneCommandIn = (request: { readonly repo: string }): string => {
-  const command = pruneCommandOf({
+const pruneCommandIn = (request: { readonly repo: AbsolutePath }) =>
+  pruneCommandOf({
     path: PATH,
     moduleUrl: ENTRY_URL,
-    repoRoot: absolutePathSchema.parse(request.repo),
+    repoRoot: request.repo,
     baseRevision: undefined,
     forfeiture: "elsewhere",
   });
-  assert(command.outcome === "ok", "the prune command is made");
-  return command.value;
-};
 
-const projectCommandIn = (request: { readonly repo: string }): string => {
-  const command = projectCommandOf({
+const projectCommandIn = (request: { readonly repo: AbsolutePath }) =>
+  projectCommandOf({
     path: PATH,
     moduleUrl: ENTRY_URL,
-    repoRoot: absolutePathSchema.parse(request.repo),
+    repoRoot: request.repo,
   });
-  assert(command.outcome === "ok", "the project command is made");
-  return command.value;
-};
 
 const NOT_ADOPTED =
   "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#cast-to-any\nclaimed-type#non-null-assertions\n";
@@ -267,15 +200,32 @@ ${CLASS_SYMPTOM}verdict: fail (partial assessment)
 const OVERRIDE_DETAIL =
   "an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it";
 
+const INHERITED_FILES = [
+  { file: "hone.config.json", text: CONFIG },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_WITH_OVERRIDE },
+  { file: "src/kept.ts", text: CLASS_SOURCE },
+  { file: "src/disabled.ts", text: INLINE_DISABLE_SOURCE },
+  { file: "src/directive.ts", text: TYPE_DIRECTIVE_SOURCE },
+  { file: "src/legacy-clean.ts", text: CLEAN_LEGACY_SOURCE },
+  { file: "src/legacy-class.ts", text: CLASS_LEGACY_SOURCE },
+];
+
+const PAID_FILES = [
+  { file: "src/kept.ts", text: FIXED_CLASS_SOURCE },
+  { file: "src/disabled.ts", text: FIXED_DISABLE_SOURCE },
+  { file: "src/directive.ts", text: FIXED_DIRECTIVE_SOURCE },
+  { file: "src/legacy-class.ts", text: FIXED_CLASS_LEGACY_SOURCE },
+];
+
 const recordedText = (request: {
-  readonly repo: string;
+  readonly projectCommand: string;
 }): string => `claimed-type#unlisted-cast-site recorded src/directive.ts
 authored-class-or-this#class-keyword recorded src/disabled.ts
 authored-class-or-this#class-keyword recorded src/kept.ts
 authored-class-or-this#class-keyword recorded src/legacy-class.ts
 authored-class-or-this#class-keyword unrecordable src/legacy-class.ts: ${OVERRIDE_DETAIL}
 authored-class-or-this#class-keyword unrecordable src/legacy-clean.ts: ${OVERRIDE_DETAIL}
-run ${projectCommandIn({ repo: request.repo })} to put the recorded debt into effect
+run ${request.projectCommand} to put the recorded debt into effect
 `;
 
 const ADOPTED_TEXT = `${NOT_ADOPTED}answered (2)
@@ -288,15 +238,15 @@ verdict: pass
 `;
 
 const stale = (request: {
-  readonly repo: string;
+  readonly pruneCommand: string;
   readonly check: string;
   readonly file: string;
 }): string =>
-  `${request.check} debt ${request.file}; nothing it holds is found: run ${pruneCommandIn({ repo: request.repo })} to remove it\n`;
+  `${request.check} debt ${request.file}; nothing it holds is found: run ${request.pruneCommand} to remove it\n`;
 
-const paidText = (request: { readonly repo: string }): string =>
+const paidText = (request: { readonly pruneCommand: string }): string =>
   `${NOT_ADOPTED}stale (4)
-${stale({ repo: request.repo, check: "authored-class-or-this#class-keyword", file: "src/disabled.ts" })}${stale({ repo: request.repo, check: "authored-class-or-this#class-keyword", file: "src/kept.ts" })}${stale({ repo: request.repo, check: "authored-class-or-this#class-keyword", file: "src/legacy-class.ts" })}${stale({ repo: request.repo, check: "claimed-type#unlisted-cast-site", file: "src/directive.ts" })}assessment (1)
+${stale({ pruneCommand: request.pruneCommand, check: "authored-class-or-this#class-keyword", file: "src/disabled.ts" })}${stale({ pruneCommand: request.pruneCommand, check: "authored-class-or-this#class-keyword", file: "src/kept.ts" })}${stale({ pruneCommand: request.pruneCommand, check: "authored-class-or-this#class-keyword", file: "src/legacy-class.ts" })}${stale({ pruneCommand: request.pruneCommand, check: "claimed-type#unlisted-cast-site", file: "src/directive.ts" })}assessment (1)
 forfeiture elsewhere: 4 debt records not checked for forfeiture in this run
 verdict: fail (partial assessment)
 `;
@@ -311,34 +261,53 @@ describe("hone record-debt over a repository that inherits a finding, an inline 
   it(
     "goes red, records the debt each needs, and goes green with a base revision once projected; paying it makes the debt prunable",
     () => {
-      const repo = inheritingRepository();
-      toolIn({ repo, subcommand: "project", options: [] });
-      commitEverything({ repo });
-      const inherited = toolIn({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
-      const recorded = toolIn({
-        repo,
-        subcommand: "record-debt",
-        options: ["--base-revision", "HEAD"],
-      });
-      writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
-      const projected = toolIn({ repo, subcommand: "project", options: [] });
-      trackEverything({ repo });
-      const adopted = toolIn({ repo, subcommand: "check", options: ["--base-revision", "HEAD"] });
-      commitEverything({ repo });
-      writeIn({ repo, file: "src/kept.ts", text: FIXED_CLASS_SOURCE });
-      writeIn({ repo, file: "src/disabled.ts", text: FIXED_DISABLE_SOURCE });
-      writeIn({ repo, file: "src/directive.ts", text: FIXED_DIRECTIVE_SOURCE });
-      writeIn({ repo, file: "src/legacy-class.ts", text: FIXED_CLASS_LEGACY_SOURCE });
-      trackEverything({ repo });
-      const paid = toolIn({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
-      const pruned = toolIn({ repo, subcommand: "prune-debt", options: FORFEITURE_ELSEWHERE });
+      const repo = INHERITED_REPO;
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: INHERITED_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
+
+      const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
+      const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
+      const configuration = writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
+      assert.include(configuration, WRITTEN, `write ${repo}/eslint.config.mjs`);
+      const projected = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      const adopted = runHone({ repo, subcommand: "check", options: AT_HEAD });
+
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage debt at ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit debt at ${repo}`);
+      const fixed = writeFiles({ repo, files: PAID_FILES });
+      assert.include(fixed, { outcome: "ok" }, `write fixes under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixes at ${repo}`);
+      const paid = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
+      const pruned = runHone({ repo, subcommand: "prune-debt", options: FORFEITURE_ELSEWHERE });
+      const project = projectCommandIn({ repo });
+      const prune = pruneCommandIn({ repo });
+
+      assert(project.outcome === "ok", "the project command is made");
+      assert(prune.outcome === "ok", "the prune command is made");
       expect({ inherited, recorded, projected, adopted, paid, pruned }).toEqual({
-        inherited: { text: INHERITED_TEXT, code: 1 },
-        recorded: { text: recordedText({ repo }), code: 0 },
-        projected: { text: "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n", code: 0 },
-        adopted: { text: ADOPTED_TEXT, code: 0 },
-        paid: { text: paidText({ repo }), code: 1 },
-        pruned: { text: PRUNED_TEXT, code: 0 },
+        inherited: exited(1, INHERITED_TEXT),
+        recorded: exited(0, recordedText({ projectCommand: project.value })),
+        projected: exited(0, "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n"),
+        adopted: exited(0, ADOPTED_TEXT),
+        paid: exited(1, paidText({ pruneCommand: prune.value })),
+        pruned: exited(0, PRUNED_TEXT),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
@@ -352,23 +321,13 @@ export default [...hone, { ignores: ["src/ignored.ts"] }];
 const SUPPRESSIONS = `{ "src/suppressed.ts": { "hone/authored-class-or-this#class-keyword": { "count": 1 } } }
 `;
 
-const hidingRepository = (): string => {
-  const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
-    files: {
-      "hone.config.json": CONFIG,
-      "eslint.config.mjs": ESLINT_CONFIG_IGNORING,
-      "eslint-suppressions.json": SUPPRESSIONS,
-    },
-    subfolder: "src",
-    subfolderFiles: { "ignored.ts": CLASS_SOURCE, "suppressed.ts": CLASS_SOURCE },
-  });
-  git({ repo, arguments: ["init", "-q"] });
-  trackEverything({ repo });
-  return repo;
-};
+const HIDDEN_FILES = [
+  { file: "hone.config.json", text: CONFIG },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING },
+  { file: "eslint-suppressions.json", text: SUPPRESSIONS },
+  { file: "src/ignored.ts", text: CLASS_SOURCE },
+  { file: "src/suppressed.ts", text: CLASS_SOURCE },
+];
 
 const HIDDEN_FINDINGS = `authored-class-or-this#class-keyword eslint src/ignored.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 authored-class-or-this#class-keyword eslint src/suppressed.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
@@ -397,12 +356,12 @@ const SUPPRESSION_DETAIL =
   "an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file";
 
 const hiddenRecordedText = (request: {
-  readonly repo: string;
+  readonly projectCommand: string;
 }): string => `authored-class-or-this#class-keyword recorded src/ignored.ts
 authored-class-or-this#class-keyword unrecordable src/ignored.ts: ${IGNORE_DETAIL}
 authored-class-or-this#class-keyword recorded src/suppressed.ts
 authored-class-or-this#class-keyword unrecordable src/suppressed.ts: ${SUPPRESSION_DETAIL}
-run ${projectCommandIn({ repo: request.repo })} to put the recorded debt into effect
+run ${request.projectCommand} to put the recorded debt into effect
 `;
 
 const STILL_HIDDEN_TEXT = `${NOT_ADOPTED}answered (2)
@@ -435,27 +394,6 @@ const ESLINT_CONFIG_IGNORING_VENDORED = `import hone from "./hone.eslint.mjs";
 export default [...hone, { ignores: ["src/ignored.ts", "src/vendor-*.ts"] }];
 `;
 
-const excludingRepository = (): string => {
-  const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
-    files: {
-      "hone.config.json": CONFIG_EXCLUDING_SOME_IGNORED,
-      "eslint.config.mjs": ESLINT_CONFIG_IGNORING_VENDORED,
-    },
-    subfolder: "src",
-    subfolderFiles: {
-      "ignored.ts": CLASS_SOURCE,
-      "vendor-a.ts": CLASS_SOURCE,
-      "vendor-b.ts": CLASS_SOURCE,
-    },
-  });
-  git({ repo, arguments: ["init", "-q"] });
-  trackEverything({ repo });
-  return repo;
-};
-
 const EXCLUDED_CHECK_TEXT = `excluded (2)
 src/ignored.ts
 src/vendor-a.ts
@@ -471,29 +409,49 @@ symptoms (1)
 ${CLASS_SYMPTOM}verdict: fail
 `;
 
+const EXCLUDED_FILES = [
+  { file: "hone.config.json", text: CONFIG_EXCLUDING_SOME_IGNORED },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING_VENDORED },
+  { file: "src/ignored.ts", text: CLASS_SOURCE },
+  { file: "src/vendor-a.ts", text: CLASS_SOURCE },
+  { file: "src/vendor-b.ts", text: CLASS_SOURCE },
+];
+
 const excludedRecordedText = (request: {
-  readonly repo: string;
+  readonly projectCommand: string;
 }): string => `authored-class-or-this#class-keyword recorded src/vendor-b.ts
 authored-class-or-this#class-keyword unrecordable src/vendor-b.ts: ${IGNORE_DETAIL}
-run ${projectCommandIn({ repo: request.repo })} to put the recorded debt into effect
+run ${request.projectCommand} to put the recorded debt into effect
 `;
 
 describe("hone over a repository whose ESLint configuration ignores files that Hone's exclude lists only in part, run as the real tool command", () => {
   it(
     "prints no ignore line for an excluded file, and the line naming both routes for an ignored file that is not excluded",
     () => {
-      const repo = excludingRepository();
-      toolIn({ repo, subcommand: "project", options: [] });
-      commitEverything({ repo });
-      const checked = toolIn({ repo, subcommand: "check", options: [] });
-      const recorded = toolIn({
-        repo,
-        subcommand: "record-debt",
-        options: ["--base-revision", "HEAD"],
-      });
+      const repo = EXCLUDED_REPO;
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: EXCLUDED_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
+
+      const checked = runHone({ repo, subcommand: "check", options: [] });
+      const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
+      const project = projectCommandIn({ repo });
+
+      assert(project.outcome === "ok", "the project command is made");
       expect({ checked, recorded }).toEqual({
-        checked: { text: EXCLUDED_CHECK_TEXT, code: 1 },
-        recorded: { text: excludedRecordedText({ repo }), code: 0 },
+        checked: exited(1, EXCLUDED_CHECK_TEXT),
+        recorded: exited(0, excludedRecordedText({ projectCommand: project.value })),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
@@ -504,34 +462,52 @@ describe("hone record-debt over a repository whose ESLint configuration ignores 
   it(
     "records the findings Hone's own run finds there, and goes green once the ignore and the entry are removed",
     () => {
-      const repo = hidingRepository();
-      toolIn({ repo, subcommand: "project", options: [] });
-      commitEverything({ repo });
-      const inherited = toolIn({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
-      const recorded = toolIn({
-        repo,
-        subcommand: "record-debt",
-        options: ["--base-revision", "HEAD"],
-      });
-      const projected = toolIn({ repo, subcommand: "project", options: [] });
-      trackEverything({ repo });
-      const stillHidden = toolIn({
-        repo,
-        subcommand: "check",
-        options: ["--base-revision", "HEAD"],
-      });
-      writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
-      git({ repo, arguments: ["rm", "-q", "-f", "eslint-suppressions.json"] });
-      const reprojected = toolIn({ repo, subcommand: "project", options: [] });
-      trackEverything({ repo });
-      const adopted = toolIn({ repo, subcommand: "check", options: ["--base-revision", "HEAD"] });
+      const repo = HIDDEN_REPO;
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: HIDDEN_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
+
+      const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
+      const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
+      const projected = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      const stillHidden = runHone({ repo, subcommand: "check", options: AT_HEAD });
+      const configuration = writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
+      assert.include(configuration, WRITTEN, `write ${repo}/eslint.config.mjs`);
+      const removed = runGit({ repo, arguments: ["rm", "-q", "-f", "eslint-suppressions.json"] });
+      assert.include(removed, SUCCEEDED, `remove ${repo}/eslint-suppressions.json`);
+      const reprojected = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      const adopted = runHone({ repo, subcommand: "check", options: AT_HEAD });
+      const project = projectCommandIn({ repo });
+
+      assert(project.outcome === "ok", "the project command is made");
       expect({ inherited, recorded, projected, stillHidden, reprojected, adopted }).toEqual({
-        inherited: { text: HIDDEN_INHERITED_TEXT, code: 1 },
-        recorded: { text: hiddenRecordedText({ repo }), code: 0 },
-        projected: { text: "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n", code: 0 },
-        stillHidden: { text: STILL_HIDDEN_TEXT, code: 1 },
-        reprojected: { text: "hone.eslint.mjs unchanged\nhone.eslint.d.mts unchanged\n", code: 0 },
-        adopted: { text: HIDDEN_ADOPTED_TEXT, code: 0 },
+        inherited: exited(1, HIDDEN_INHERITED_TEXT),
+        recorded: exited(0, hiddenRecordedText({ projectCommand: project.value })),
+        projected: exited(0, "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n"),
+        stillHidden: exited(1, STILL_HIDDEN_TEXT),
+        reprojected: exited(0, "hone.eslint.mjs unchanged\nhone.eslint.d.mts unchanged\n"),
+        adopted: exited(0, HIDDEN_ADOPTED_TEXT),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,

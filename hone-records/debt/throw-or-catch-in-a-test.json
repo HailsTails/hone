@@ -7,10 +7,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     }
   ]

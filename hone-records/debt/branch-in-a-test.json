@@ -59,10 +59,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/shipped-content/eslint-conformance.test.ts"
     },
     {

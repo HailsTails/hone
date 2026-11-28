@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "process-global-used-in-place#direct-global-use",
-      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
