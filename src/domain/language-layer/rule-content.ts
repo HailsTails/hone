@@ -28,12 +28,16 @@ export type RuleContentChecks = {
   readonly check: (address: CheckAddress) => Result<CheckContent, CheckUnheld>;
 };
 
-const indexSymptoms = (catalogues: SymptomCatalogues["catalogues"]): RuleContent["symptoms"] =>
+const createCatalogueIndex = <Catalogue, Content>(request: {
+  readonly catalogues: readonly Catalogue[];
+  readonly contents: (catalogue: Catalogue) => readonly Content[];
+  readonly address: (content: Content) => string;
+}): ReadonlyMap<string, Content> =>
   new Map(
-    catalogues.flatMap((catalogue) =>
-      catalogue.symptoms.map((symptom): readonly [string, Symptom] => [
-        ownedNameText(symptom),
-        symptom,
+    request.catalogues.flatMap((catalogue) =>
+      request.contents(catalogue).map((content): readonly [string, Content] => [
+        request.address(content),
+        content,
       ]),
     ),
   );
@@ -41,14 +45,11 @@ const indexSymptoms = (catalogues: SymptomCatalogues["catalogues"]): RuleContent
 const createCheckLookup = (
   catalogues: readonly CatalogueWithChecks[],
 ): RuleContentChecks["check"] => {
-  const checks = new Map(
-    catalogues.flatMap((catalogue) =>
-      catalogue.checks.map((check): readonly [string, CheckContent] => [
-        qualifiedCheckAddressOf({ check }),
-        check,
-      ]),
-    ),
-  );
+  const checks = createCatalogueIndex({
+    catalogues,
+    contents: ({ checks }) => checks,
+    address: (check) => qualifiedCheckAddressOf({ check }),
+  });
   return (address) => {
     const check = checks.get(qualifiedCheckAddressOf({ check: address }));
     return check === undefined
@@ -62,12 +63,15 @@ export function createRuleContent(request: SymptomCatalogues): RuleContent;
 export function createRuleContent(
   request: CatalogueContents | SymptomCatalogues,
 ): RuleContent | (RuleContent & RuleContentChecks) {
+  const catalogues = "catalogueContents" in request ? request.catalogueContents : request.catalogues;
+  const symptoms = createCatalogueIndex({
+    catalogues,
+    contents: ({ symptoms }) => symptoms,
+    address: ownedNameText,
+  });
   return "catalogueContents" in request
-    ? {
-        symptoms: indexSymptoms(request.catalogueContents),
-        check: createCheckLookup(request.catalogueContents),
-      }
-    : { symptoms: indexSymptoms(request.catalogues) };
+    ? { symptoms, check: createCheckLookup(request.catalogueContents) }
+    : { symptoms };
 }
 
 export const mapAddressToSymptom = <Field extends keyof Symptom>(request: {
