@@ -6,6 +6,8 @@ export type TemporaryDirectoryCreationFailure = {
   readonly detail: string;
 };
 
-export type CreateTemporaryDirectoryOutside = (request: {
-  readonly outside: AbsolutePath;
-}) => Result<AbsolutePath, TemporaryDirectoryCreationFailure>;
+export type TemporaryDirectoryPort = {
+  readonly write: (request: {
+    readonly outside: AbsolutePath;
+  }) => Result<AbsolutePath, TemporaryDirectoryCreationFailure>;
+};

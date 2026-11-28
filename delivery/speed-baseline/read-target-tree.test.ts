@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CreateTemporaryDirectoryOutside } from "../../src/application/ports/file-system/temporary-directory-port.ts";
+import type { TemporaryDirectoryPort } from "../../src/application/ports/file-system/temporary-directory-port.ts";
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 import type { DirectoryRemovalPort } from "./directory-removal-port.ts";
 import { readTargetTree } from "./read-target-tree.ts";
@@ -8,7 +8,7 @@ import type { TargetTreePort } from "./target-tree-port.ts";
 
 describe("readTargetTree", () => {
   it("allocates a directory outside the target, reads its tree, and removes that directory", () => {
-    const createIndexDirectory = vi.fn<CreateTemporaryDirectoryOutside>().mockReturnValue({
+    const createIndexDirectory = vi.fn<TemporaryDirectoryPort["write"]>().mockReturnValue({
       outcome: "ok",
       value: absoluteRootOf("/tmp/hone-w12"),
     });
@@ -20,7 +20,11 @@ describe("readTargetTree", () => {
       .mockReturnValue({ outcome: "ok", value: null });
 
     const target = readTargetTree({
-      ports: { createIndexDirectory, trees: { read }, directories: { remove } },
+      ports: {
+        indexDirectories: { write: createIndexDirectory },
+        trees: { read },
+        directories: { remove },
+      },
       repo: absoluteRootOf("/work/large-repo"),
     });
 
@@ -38,7 +42,7 @@ describe("readTargetTree", () => {
   });
 
   it("reports the directory when a tree read and its directory cleanup both fail", () => {
-    const createIndexDirectory = vi.fn<CreateTemporaryDirectoryOutside>().mockReturnValue({
+    const createIndexDirectory = vi.fn<TemporaryDirectoryPort["write"]>().mockReturnValue({
       outcome: "ok",
       value: absoluteRootOf("/tmp/hone-w12"),
     });
@@ -59,7 +63,11 @@ describe("readTargetTree", () => {
     });
 
     const target = readTargetTree({
-      ports: { createIndexDirectory, trees: { read }, directories: { remove } },
+      ports: {
+        indexDirectories: { write: createIndexDirectory },
+        trees: { read },
+        directories: { remove },
+      },
       repo: absoluteRootOf("/work/large-repo"),
     });
 
@@ -82,7 +90,7 @@ describe("readTargetTree", () => {
   });
 
   it("reads no tree and removes nothing when allocation fails", () => {
-    const createIndexDirectory = vi.fn<CreateTemporaryDirectoryOutside>().mockReturnValue({
+    const createIndexDirectory = vi.fn<TemporaryDirectoryPort["write"]>().mockReturnValue({
       outcome: "failed",
       error: { kind: "temporary-directory-uncreatable", detail: "temporary root unavailable" },
     });
@@ -90,7 +98,11 @@ describe("readTargetTree", () => {
     const remove = vi.fn<DirectoryRemovalPort["remove"]>();
 
     const target = readTargetTree({
-      ports: { createIndexDirectory, trees: { read }, directories: { remove } },
+      ports: {
+        indexDirectories: { write: createIndexDirectory },
+        trees: { read },
+        directories: { remove },
+      },
       repo: absoluteRootOf("/work/large-repo"),
     });
 

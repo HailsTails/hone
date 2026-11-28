@@ -1,9 +1,14 @@
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 
-import type { CreateTemporaryDirectoryOutside } from "../../../application/ports/file-system/temporary-directory-port.ts";
+import type {
+  TemporaryDirectoryCreationFailure,
+  TemporaryDirectoryPort,
+} from "../../../application/ports/file-system/temporary-directory-port.ts";
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
+import type { Result } from "../../../domain/result.ts";
 import { createDefaultPathPort } from "../path-port.ts";
 
 const path = createDefaultPathPort({});
@@ -21,19 +26,24 @@ const allocateTemporaryDirectory = (request: { readonly outside: AbsolutePath })
   return mkdtempSync(path.join({ segments: [temporaryRoot, "hone-"] }));
 };
 
-export const createTemporaryDirectoryOutside: CreateTemporaryDirectoryOutside = (request) => {
-  try {
-    const folder = allocateTemporaryDirectory(request);
-    const resolved = path.resolve({ path: folder });
-    if (resolved.outcome === "ok") return resolved;
-    rmSync(folder, { recursive: true, force: true });
-    throw new Error(`${folder} is not a usable absolute path`);
-  } catch (thrown) {
-    return {
-      outcome: "failed",
-      error: { kind: "temporary-directory-uncreatable", detail: failureDetailOf({ thrown }) },
-    };
-  }
+const refuseTemporaryDirectory = (
+  detail: string,
+): Result<never, TemporaryDirectoryCreationFailure> => ({
+  outcome: "failed",
+  error: { kind: "temporary-directory-uncreatable", detail },
+});
+
+export const temporaryDirectoryPort: TemporaryDirectoryPort = {
+  write: (request) => {
+    try {
+      const folder = allocateTemporaryDirectory(request);
+      if (isAbsolutePath(folder)) return { outcome: "ok", value: folder };
+      rmSync(folder, { recursive: true, force: true });
+      return refuseTemporaryDirectory(`${folder} is not a usable absolute path`);
+    } catch (thrown) {
+      return refuseTemporaryDirectory(failureDetailOf({ thrown }));
+    }
+  },
 };
 
 export const withTemporaryDirectory = <Value>(request: {

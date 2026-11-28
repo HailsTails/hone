@@ -3,8 +3,9 @@ import { assert, describe, expect, it, onTestFinished, vi } from "vitest";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultGitExecutionPort } from "../../src/infrastructure/git/git-port.ts";
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
+import { temporaryDirectoryPort } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 import { createDirectoryRemovalPort } from "./directory-removal-adapter.ts";
@@ -49,45 +50,7 @@ const directories = createDirectoryRemovalPort({ tree: createDefaultDirectoryTre
 const copies = createTargetCopyPort({ git, path });
 
 describe("readTargetTree, through real git", () => {
-  it("keeps a live private index and the former fixed index through another read", () => {
-    const made = scratch.createTemporaryDirectory({ prefix: "hone-speed-" });
-    assert(made.outcome === "ok");
-    const repo = absolutePathSchema.parse(made.value);
-    onTestFinished(() => {
-      scratch.removeTree({ path: repo });
-    });
-    git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
-    git.run({ arguments: EMPTY_COMMIT, cwd: repo });
-    const existingIndex = path.join({ segments: [repo, ".git", "hone-speed-baseline-index"] });
-    fileText.write({ path: existingIndex, text: "another run's index" });
-    const existingFolder = createTemporaryDirectoryOutside({ outside: repo });
-    assert(existingFolder.outcome === "ok");
-    onTestFinished(() => {
-      directories.remove({ directory: existingFolder.value });
-    });
-    const trees = createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort });
-    const existingTree = trees.read({ repo, indexDirectory: existingFolder.value });
-    const ports = { createIndexDirectory: createTemporaryDirectoryOutside, directories, trees };
-    const allocate = vi.spyOn(ports, "createIndexDirectory");
-
-    const target = readTargetTree({ ports, repo });
-
-    const [allocated] = allocate.mock.results;
-    assert(allocated.type === "return");
-    assert(allocated.value.outcome === "ok");
-    expect(target).toEqual({ tree: existingTree, leftovers: [] });
-    expect(target.tree.outcome).toBe("ok");
-    expect(fileText.exists({ path: allocated.value.value })).toBe("absent");
-    expect(
-      fileText.exists({ path: path.join({ segments: [existingFolder.value, "index"] }) }),
-    ).toBe("present");
-    expect(fileText.read({ path: existingIndex })).toEqual({
-      outcome: "ok",
-      value: "another run's index",
-    });
-  });
-
-  it("removes the directory and reports no leftover when HEAD has no tree", () => {
+  it("keeps snapshot index files out of a repository with split-index enabled", () => {
     const made = scratch.createTemporaryDirectory({ prefix: "hone-speed-" });
     assert(made.outcome === "ok");
     const repo = absolutePathSchema.parse(made.value);
@@ -96,24 +59,36 @@ describe("readTargetTree, through real git", () => {
     });
     const initialized = git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
     expect(initialized).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    const committed = git.run({
+      arguments: ["-c", "core.splitIndex=false", ...EMPTY_COMMIT],
+      cwd: repo,
+    });
+    expect(committed).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    const configured = git.run({
+      arguments: ["config", "--local", "core.splitIndex", "true"],
+      cwd: repo,
+    });
+    expect(configured).toMatchObject({ outcome: "ok", value: { status: 0 } });
     const ports = {
-      createIndexDirectory: createTemporaryDirectoryOutside,
+      indexDirectories: temporaryDirectoryPort,
       directories,
       trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
     };
-    const allocate = vi.spyOn(ports, "createIndexDirectory");
+    const gitDirectory = absolutePathSchema.parse(path.join({ segments: [repo, ".git"] }));
 
-    const target = readTargetTree({ ports, repo });
+    const snapshot = readTargetTree({ ports, repo });
+    const entries = createDefaultDirectoryPort({}).list({ path: gitDirectory });
 
-    const [allocated] = allocate.mock.results;
-    assert(allocated.type === "return");
-    assert(allocated.value.outcome === "ok");
-    expect(target.tree).toMatchObject({
-      outcome: "failed",
-      error: { side: "target", failure: { kind: "target-tree-unread" } },
+    expect(snapshot).toEqual({
+      tree: { outcome: "ok", value: expect.any(String) },
+      leftovers: [],
     });
-    expect(fileText.exists({ path: allocated.value.value })).toBe("absent");
-    expect(target.leftovers).toEqual([]);
+    expect(entries.outcome).toBe("ok");
+    expect(entries).not.toMatchObject({
+      value: expect.arrayContaining([
+        expect.objectContaining({ name: expect.stringMatching(/^sharedindex\./) }),
+      ]),
+    });
   });
 });
 

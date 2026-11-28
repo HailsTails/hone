@@ -5,7 +5,7 @@ import {
   createDefaultDirectoryPort,
   createDefaultFileTextPort,
 } from "../../src/infrastructure/node/file-system/file-system-port.ts";
-import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
+import { temporaryDirectoryPort } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createPackageManifestPort } from "../../src/infrastructure/node/modules/package-manifest-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultExecutionPort } from "../../src/infrastructure/node/process/execution-port.ts";
@@ -71,7 +71,7 @@ const ports: SpeedBaselinePorts = {
   dependencies: createHoneDependenciesPort(pnpm),
   packages: createHonePackagePort({ ...pnpm, path }),
   copies: createTargetCopyPort({ git, path }),
-  createIndexDirectory: createTemporaryDirectoryOutside,
+  indexDirectories: temporaryDirectoryPort,
   trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
   lockfiles: createLockfilesPort({ directories }),
   installers: {

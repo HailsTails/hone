@@ -3,10 +3,7 @@ import { assert, expect, it, onTestFinished } from "vitest";
 import { createDefaultPathPort } from "../path-port.ts";
 import { createDefaultDirectoryTreePort } from "./directory-tree-port.ts";
 import { createDefaultFileTextPort } from "./file-system-port.ts";
-import {
-  createTemporaryDirectoryOutside,
-  withTemporaryDirectory,
-} from "./temporary-directory-port.ts";
+import { temporaryDirectoryPort, withTemporaryDirectory } from "./temporary-directory-port.ts";
 
 it("leaves an allocated directory for its caller to remove", () => {
   const root = createDefaultPathPort({}).resolve({ path: import.meta.dirname });
@@ -14,7 +11,7 @@ it("leaves an allocated directory for its caller to remove", () => {
   const text = createDefaultFileTextPort({});
   const directories = createDefaultDirectoryTreePort({});
 
-  const allocated = createTemporaryDirectoryOutside({ outside: root.value });
+  const allocated = temporaryDirectoryPort.write({ outside: root.value });
 
   assert(allocated.outcome === "ok");
   onTestFinished(() => {
