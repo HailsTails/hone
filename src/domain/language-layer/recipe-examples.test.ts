@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import { findExampleFaults, listExamplesOfForm } from "./recipe-examples.ts";
+import { createRuleContent } from "./rule-content.ts";
 import type { Case, CheckContent, Principle, Recipe, Rule, Symptom } from "./symptom-catalogue.ts";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
@@ -76,15 +77,21 @@ describe("findExampleFaults", () => {
         { kind: "rule", rule: STRAIGHT_THROUGH_TESTS },
         { kind: "rule", rule: WRITTEN_OUT_ANSWERS },
       ],
-      symptoms: [
-        {
-          ...REBINDING,
-          mayIndicate: [
-            { case: KEEPS_STATE, points: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }] },
-          ],
-        },
-      ],
-      checks: [TEST_BODY],
+      content: createRuleContent({
+        catalogueContents: [
+          {
+            symptoms: [
+              {
+                ...REBINDING,
+                mayIndicate: [
+                  { case: KEEPS_STATE, points: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }] },
+                ],
+              },
+            ],
+            checks: [TEST_BODY],
+          },
+        ],
+      }),
     });
 
     expect(found).toEqual([]);
@@ -97,15 +104,21 @@ describe("findExampleFaults", () => {
         { kind: "rule", rule: STRAIGHT_THROUGH_TESTS },
         { kind: "principle", principle: NO_HIDDEN_EFFECTS },
       ],
-      symptoms: [
-        {
-          ...REBINDING,
-          mayIndicate: [
-            { case: KEEPS_STATE, points: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }] },
-          ],
-        },
-      ],
-      checks: [TEST_BODY],
+      content: createRuleContent({
+        catalogueContents: [
+          {
+            symptoms: [
+              {
+                ...REBINDING,
+                mayIndicate: [
+                  { case: KEEPS_STATE, points: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }] },
+                ],
+              },
+            ],
+            checks: [TEST_BODY],
+          },
+        ],
+      }),
     });
 
     expect(found).toEqual([
@@ -120,12 +133,23 @@ describe("findExampleFaults", () => {
     ]);
   });
 
-  it("faults an example answering a check no catalogue holds", () => {
+  it("faults an example when only another rule set owns the check name", () => {
     const found = findExampleFaults({
       recipe: STUB,
       serves: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }],
-      symptoms: [REBINDING],
-      checks: [],
+      content: createRuleContent({
+        catalogueContents: [
+          {
+            symptoms: [REBINDING],
+            checks: [
+              {
+                ...TEST_BODY,
+                symptom: { ...TEST_BODY.symptom, ruleSet: { name: ruleSetNameOf("acme") } },
+              },
+            ],
+          },
+        ],
+      }),
     });
 
     expect(found).toEqual([
@@ -148,8 +172,7 @@ describe("findExampleFaults", () => {
         reason: { text: "It has no body.", standing: "accepted" },
       },
       serves: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }],
-      symptoms: [],
-      checks: [],
+      content: createRuleContent({ catalogueContents: [] }),
     });
 
     expect(found).toEqual([]);

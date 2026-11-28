@@ -27,6 +27,7 @@ import {
   type RecipeFault,
   type ServingRecipe,
 } from "../../../domain/language-layer/recipe-reach.ts";
+import { createRuleContent } from "../../../domain/language-layer/rule-content.ts";
 import {
   type Case,
   type CatalogueContent,
@@ -870,6 +871,7 @@ const listExampleFaults = (request: {
   readonly checks: readonly CheckContent[];
 }): readonly string[] => {
   const { symptoms, checks, pointable, ruleSet } = request;
+  const content = createRuleContent({ catalogueContents: [{ symptoms, checks }] });
   return request.file.recipes.flatMap((wire) => {
     const serves = resolveServes({ wire, pointable });
     return serves.outcome === "failed"
@@ -877,8 +879,7 @@ const listExampleFaults = (request: {
       : findExampleFaults({
           recipe: recipeOf({ wire, ruleSet }),
           serves: serves.value,
-          symptoms,
-          checks,
+          content,
         }).map((fault) => mapExampleFaultToText({ fault }));
   });
 };

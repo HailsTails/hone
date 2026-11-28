@@ -1,14 +1,13 @@
 import { sameOwnedName } from "../rule-set/rule-set-identity.ts";
 import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
 import { mapSymptomToReach, type Reach } from "./recipe-reach.ts";
+import { mapAddressToSymptom, type RuleContent, type RuleContentChecks } from "./rule-content.ts";
 import {
   type CheckAddress,
-  type CheckContent,
   type Pointed,
   pointedNameOf,
   type Recipe,
   type RecipeExample,
-  type Symptom,
 } from "./symptom-catalogue.ts";
 
 type AnsweringExample = {
@@ -30,8 +29,7 @@ export type ExampleAddress = { readonly recipe: Recipe; readonly anchor: string 
 type CheckedExamples = {
   readonly recipe: Recipe;
   readonly serves: readonly Pointed[];
-  readonly symptoms: readonly Pick<Symptom, "ruleSet" | "name" | "mayIndicate">[];
-  readonly checks: readonly CheckContent[];
+  readonly content: RuleContent<"mayIndicate"> & RuleContentChecks;
 };
 
 const compareCheckAddresses = (request: {
@@ -51,22 +49,18 @@ const findCheckFaults = (
     anchor: request.anchor,
     check: checkAddressTextOf({ check }),
   };
-  const held = request.checks.find(
-    (candidate) => compareCheckAddresses({ left: candidate, right: check }) === "same",
-  );
-  const symptom = request.symptoms.find(
-    (candidate) => sameOwnedName({ left: candidate, right: check.symptom }) === "same",
-  );
-  if (held === undefined || symptom === undefined) {
+  const held = request.content.check(check);
+  const symptom = mapAddressToSymptom({ content: request.content, symptom: check.symptom });
+  if (held.outcome === "failed" || symptom.outcome === "failed") {
     return [{ kind: "check-unheld", ...answering }];
   }
-  return mapSymptomToReach({ symptom, serves }) === "reached"
+  return mapSymptomToReach({ symptom: symptom.value, serves }) === "reached"
     ? []
     : [
         {
           kind: "recipe-not-indicated",
           ...answering,
-          symptom: symptom.name,
+          symptom: check.symptom.name,
           serves: serves.map((point) => pointedNameOf({ point })),
         },
       ];
