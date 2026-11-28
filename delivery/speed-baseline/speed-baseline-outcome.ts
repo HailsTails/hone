@@ -1,4 +1,3 @@
-import type { TemporaryDirectoryCreationFailure } from "../../src/application/ports/file-system/temporary-directory-port.ts";
 import type { PackageManifestUnresolved } from "../../src/application/ports/host/package-manifest-port.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -27,7 +26,6 @@ import type { TemporaryFolderFailure } from "./temporary-folder-port.ts";
 export type Leftover = BaselineRemovalFailure | TargetCopyRemovalFailure | DirectoryRemovalFailure;
 
 export type PreparationFailure =
-  | TemporaryDirectoryCreationFailure
   | PackageManifestUnresolved
   | HoneInstallFailure
   | BaselineCheckoutFailure

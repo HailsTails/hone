@@ -21,6 +21,9 @@ describe("prepareSample", () => {
     const treesWrite = vi
       .fn<TargetTreePort["write"]>()
       .mockReturnValue({ outcome: "ok", value: null });
+    const writeTemporaryFolder = vi
+      .fn<TemporaryFolderPort["write"]>()
+      .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head/samples/2/.tmp") });
 
     const prepared = prepareSample({
       ports: {
@@ -34,11 +37,7 @@ describe("prepareSample", () => {
             .fn<PackageManifestPort["locateManifestFrom"]>()
             .mockReturnValue({ outcome: "ok", value: install.resolvedHone }),
         },
-        temporaryFolders: {
-          write: vi
-            .fn<TemporaryFolderPort["write"]>()
-            .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/head/samples/2/.tmp") }),
-        },
+        temporaryFolders: { write: writeTemporaryFolder },
         clock: {
           read: vi.fn<ClockPort["read"]>().mockReturnValueOnce(0).mockReturnValueOnce(2_000),
         },
@@ -61,6 +60,10 @@ describe("prepareSample", () => {
         [{ repo: "/work/large-repo", place: { kind: "sample", side: "head", sampleIndex: 2 } }],
       ],
       written: [[{ copy: "/work/head/samples/2", tree: "4b825dc6" }]],
+    });
+    expect(writeTemporaryFolder).toHaveBeenCalledWith({
+      place: "sample",
+      copy: "/work/head/samples/2",
     });
   });
 

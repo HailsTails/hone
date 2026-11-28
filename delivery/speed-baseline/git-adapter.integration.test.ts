@@ -5,7 +5,7 @@ import { createDefaultGitExecutionPort } from "../../src/infrastructure/git/git-
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { temporaryDirectoryPort } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
+import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 import { createDirectoryRemovalPort } from "./directory-removal-adapter.ts";
@@ -19,6 +19,7 @@ import type { HonePackagePort } from "./hone-package-port.ts";
 import { readTargetTree } from "./read-target-tree.ts";
 import { removeTargetCopy } from "./remove-sample.ts";
 import { removeSpeedSides } from "./speed-baseline-cleanup.ts";
+import { createTemporaryFolderPort } from "./temporary-folder-adapter.ts";
 import { writeTarballs } from "./write-tarballs.ts";
 
 const EMPTY_COMMIT = [
@@ -50,39 +51,54 @@ const directories = createDirectoryRemovalPort({ tree: createDefaultDirectoryTre
 const copies = createTargetCopyPort({ git, path });
 
 describe("readTargetTree, through real git", () => {
-  it("keeps snapshot index files out of a repository with split-index enabled", () => {
+  it("snapshots a working-tree change while preserving the repository's index with split-index enabled", () => {
     const made = scratch.createTemporaryDirectory({ prefix: "hone-speed-" });
     assert(made.outcome === "ok");
     const repo = absolutePathSchema.parse(made.value);
     onTestFinished(() => {
       scratch.removeTree({ path: repo });
     });
-    const initialized = git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
-    expect(initialized).toMatchObject({ outcome: "ok", value: { status: 0 } });
-    const committed = git.run({
-      arguments: ["-c", "core.splitIndex=false", ...EMPTY_COMMIT],
+    const source = path.join({ segments: [repo, "working.txt"] });
+    git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
+    fileText.write({ path: source, text: "base" });
+    git.run({
+      arguments: ["-c", "core.splitIndex=false", "add", "--force", "working.txt"],
       cwd: repo,
     });
-    expect(committed).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    git.run({ arguments: ["-c", "core.splitIndex=false", ...EMPTY_COMMIT], cwd: repo });
     const configured = git.run({
       arguments: ["config", "--local", "core.splitIndex", "true"],
       cwd: repo,
     });
     expect(configured).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    fileText.write({ path: source, text: "changed" });
+    const hostDirectories = createDefaultDirectoryPort({});
+    const hashIndex = () =>
+      git.run({ arguments: ["hash-object", "--no-filters", ".git/index"], cwd: repo });
+    const previous = hashIndex();
     const ports = {
-      indexDirectories: temporaryDirectoryPort,
+      temporaryFolders: createTemporaryFolderPort({
+        path,
+        directories: hostDirectories,
+        allocateOutside: createTemporaryDirectoryOutside,
+      }),
       directories,
       trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
     };
-    const gitDirectory = absolutePathSchema.parse(path.join({ segments: [repo, ".git"] }));
 
     const snapshot = readTargetTree({ ports, repo });
-    const entries = createDefaultDirectoryPort({}).list({ path: gitDirectory });
 
-    expect(snapshot).toEqual({
-      tree: { outcome: "ok", value: expect.any(String) },
-      leftovers: [],
+    assert(snapshot.tree.outcome === "ok");
+    const contents = git.run({
+      arguments: ["show", `${snapshot.tree.value}:working.txt`],
+      cwd: repo,
     });
+    const gitDirectory = absolutePathSchema.parse(path.join({ segments: [repo, ".git"] }));
+    const entries = hostDirectories.list({ path: gitDirectory });
+    expect(contents).toMatchObject({ outcome: "ok", value: { status: 0, stdout: "changed" } });
+    expect(previous).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    expect(hashIndex()).toEqual(previous);
+    expect(snapshot.leftovers).toEqual([]);
     expect(entries.outcome).toBe("ok");
     expect(entries).not.toMatchObject({
       value: expect.arrayContaining([

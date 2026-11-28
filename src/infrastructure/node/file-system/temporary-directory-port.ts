@@ -1,10 +1,6 @@
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 
-import type {
-  TemporaryDirectoryCreationFailure,
-  TemporaryDirectoryPort,
-} from "../../../application/ports/file-system/temporary-directory-port.ts";
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
@@ -26,24 +22,17 @@ const allocateTemporaryDirectory = (request: { readonly outside: AbsolutePath })
   return mkdtempSync(path.join({ segments: [temporaryRoot, "hone-"] }));
 };
 
-const refuseTemporaryDirectory = (
-  detail: string,
-): Result<never, TemporaryDirectoryCreationFailure> => ({
-  outcome: "failed",
-  error: { kind: "temporary-directory-uncreatable", detail },
-});
-
-export const temporaryDirectoryPort: TemporaryDirectoryPort = {
-  write: (request) => {
-    try {
-      const folder = allocateTemporaryDirectory(request);
-      if (isAbsolutePath(folder)) return { outcome: "ok", value: folder };
-      rmSync(folder, { recursive: true, force: true });
-      return refuseTemporaryDirectory(`${folder} is not a usable absolute path`);
-    } catch (thrown) {
-      return refuseTemporaryDirectory(failureDetailOf({ thrown }));
-    }
-  },
+export const createTemporaryDirectoryOutside = (request: {
+  readonly outside: AbsolutePath;
+}): Result<AbsolutePath, { readonly detail: string }> => {
+  try {
+    const folder = allocateTemporaryDirectory(request);
+    if (isAbsolutePath(folder)) return { outcome: "ok", value: folder };
+    rmSync(folder, { recursive: true, force: true });
+    return { outcome: "failed", error: { detail: `${folder} is not a usable absolute path` } };
+  } catch (thrown) {
+    return { outcome: "failed", error: { detail: failureDetailOf({ thrown }) } };
+  }
 };
 
 export const withTemporaryDirectory = <Value>(request: {

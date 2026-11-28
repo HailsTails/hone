@@ -10,13 +10,13 @@ export type TargetTree = {
 };
 
 export const readTargetTree = (request: {
-  readonly ports: Pick<SpeedBaselinePorts, "indexDirectories" | "directories"> & {
+  readonly ports: Pick<SpeedBaselinePorts, "temporaryFolders" | "directories"> & {
     readonly trees: Pick<TargetTreePort, "read">;
   };
   readonly repo: AbsolutePath;
 }): TargetTree => {
   const { ports, repo } = request;
-  const directory = ports.indexDirectories.write({ outside: repo });
+  const directory = ports.temporaryFolders.write({ place: "target-index", outside: repo });
   if (directory.outcome === "failed") {
     return {
       tree: { outcome: "failed", error: { side: "target", failure: directory.error } },

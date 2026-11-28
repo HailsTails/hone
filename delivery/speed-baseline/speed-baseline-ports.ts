@@ -1,4 +1,3 @@
-import type { TemporaryDirectoryPort } from "../../src/application/ports/file-system/temporary-directory-port.ts";
 import type { PackageManifestPort } from "../../src/application/ports/host/package-manifest-port.ts";
 import type { BaselineCheckoutPort } from "./baseline-checkout-port.ts";
 import type { ClockPort } from "./clock-port.ts";
@@ -21,7 +20,6 @@ export type SpeedBaselinePorts = {
   readonly dependencies: HoneDependenciesPort;
   readonly packages: HonePackagePort;
   readonly copies: TargetCopyPort;
-  readonly indexDirectories: TemporaryDirectoryPort;
   readonly trees: TargetTreePort;
   readonly lockfiles: LockfilesPort;
   readonly installers: Readonly<Record<TargetPackageManager, TargetInstallPort>>;

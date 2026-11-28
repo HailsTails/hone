@@ -5,7 +5,7 @@ import {
   createDefaultDirectoryPort,
   createDefaultFileTextPort,
 } from "../../src/infrastructure/node/file-system/file-system-port.ts";
-import { temporaryDirectoryPort } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
+import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createPackageManifestPort } from "../../src/infrastructure/node/modules/package-manifest-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultExecutionPort } from "../../src/infrastructure/node/process/execution-port.ts";
@@ -71,7 +71,6 @@ const ports: SpeedBaselinePorts = {
   dependencies: createHoneDependenciesPort(pnpm),
   packages: createHonePackagePort({ ...pnpm, path }),
   copies: createTargetCopyPort({ git, path }),
-  indexDirectories: temporaryDirectoryPort,
   trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
   lockfiles: createLockfilesPort({ directories }),
   installers: {
@@ -79,7 +78,11 @@ const ports: SpeedBaselinePorts = {
     pnpm: createPnpmTargetInstallPort(pnpm),
   },
   installedCommands: createInstalledCommandPort({ path, fileText: createDefaultFileTextPort({}) }),
-  temporaryFolders: createTemporaryFolderPort({ path, directories }),
+  temporaryFolders: createTemporaryFolderPort({
+    path,
+    directories,
+    allocateOutside: createTemporaryDirectoryOutside,
+  }),
   directories: createDirectoryRemovalPort({ tree: createDefaultDirectoryTreePort({}) }),
   resolutions: createPackageManifestPort({ path }),
   checks: createHoneCheckPort({

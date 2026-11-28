@@ -103,7 +103,10 @@ describe("mapSpeedBaselineOutcomeToReport", () => {
       kind: "unprepared",
       refusal: {
         side: "target",
-        failure: { kind: "temporary-directory-uncreatable", detail: "temporary root unavailable" },
+        failure: {
+          kind: "target-index-directory-uncreatable",
+          detail: "temporary root unavailable",
+        },
       },
       leftovers: [],
     };

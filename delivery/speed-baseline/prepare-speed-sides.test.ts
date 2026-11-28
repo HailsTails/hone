@@ -222,7 +222,7 @@ describe("prepareSpeedSides", () => {
             error: {
               side: "target",
               failure: {
-                kind: "temporary-directory-uncreatable",
+                kind: "target-index-directory-uncreatable",
                 detail: "temporary root unavailable",
               },
             },
@@ -252,7 +252,7 @@ describe("prepareSpeedSides", () => {
           error: {
             side: "target",
             failure: {
-              kind: "temporary-directory-uncreatable",
+              kind: "target-index-directory-uncreatable",
               detail: "temporary root unavailable",
             },
           },

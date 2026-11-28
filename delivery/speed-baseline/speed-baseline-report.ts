@@ -1,4 +1,3 @@
-import type { TemporaryDirectoryCreationFailure } from "../../src/application/ports/file-system/temporary-directory-port.ts";
 import type { PackageManifestUnresolved } from "../../src/application/ports/host/package-manifest-port.ts";
 import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
 import type { BaselineCheckoutFailure, BaselineRemovalFailure } from "./baseline-checkout-port.ts";
@@ -76,12 +75,10 @@ const mapCopyFailureToText = (request: {
 };
 
 const mapTreeFailureToText = (request: {
-  readonly failure: TemporaryDirectoryCreationFailure | TargetTreeFailure | TargetTreeWriteFailure;
+  readonly failure: TargetTreeFailure | TargetTreeWriteFailure;
 }): string => {
   const { failure } = request;
   switch (failure.kind) {
-    case "temporary-directory-uncreatable":
-      return `the target's temporary index directory could not be created: ${failure.detail}`;
     case "target-tree-unread":
       return `the target's working state could not be written as a tree: ${mapCommandFailureToText(failure)}`;
     case "target-tree-unwritten":
@@ -135,7 +132,7 @@ const mapSampleFailureToText = (request: {
   readonly failure:
     | PackageManifestUnresolved
     | HoneInstallFailure
-    | TemporaryFolderFailure
+    | Exclude<TemporaryFolderFailure, { readonly kind: "target-index-directory-uncreatable" }>
     | DirectoryRemovalFailure;
 }): string => {
   const { failure } = request;
@@ -166,7 +163,8 @@ const mapPreparationFailureToText = (request: {
     case "target-copy-unresolved":
     case "target-copy-unremoved":
       return mapCopyFailureToText({ failure });
-    case "temporary-directory-uncreatable":
+    case "target-index-directory-uncreatable":
+      return `the target's temporary index directory could not be created: ${failure.detail}`;
     case "target-tree-unread":
     case "target-tree-unwritten":
       return mapTreeFailureToText({ failure });
