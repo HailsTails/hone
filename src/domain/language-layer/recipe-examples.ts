@@ -1,14 +1,12 @@
-import { sameOwnedName } from "../rule-set/rule-set-identity.ts";
 import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
-import { mapSymptomToReach, type Reach } from "./recipe-reach.ts";
+import { qualifiedCheckAddressOf } from "./check-address.ts";
+import { mapSymptomToReach } from "./recipe-reach.ts";
+import { type CheckMembership, mapAddressToSymptom, type RuleContent } from "./rule-content.ts";
 import {
   type CheckAddress,
-  type CheckContent,
   type Pointed,
   pointedNameOf,
   type Recipe,
-  type RecipeExample,
-  type Symptom,
 } from "./symptom-catalogue.ts";
 
 type AnsweringExample = {
@@ -30,17 +28,9 @@ export type ExampleAddress = { readonly recipe: Recipe; readonly anchor: string 
 type CheckedExamples = {
   readonly recipe: Recipe;
   readonly serves: readonly Pointed[];
-  readonly symptoms: readonly Pick<Symptom, "ruleSet" | "name" | "mayIndicate">[];
-  readonly checks: readonly CheckContent[];
+  readonly content: RuleContent<"mayIndicate">;
+  readonly checks: CheckMembership;
 };
-
-const compareCheckAddresses = (request: {
-  readonly left: CheckAddress;
-  readonly right: CheckAddress;
-}): "same" | "different" =>
-  request.left.name === request.right.name
-    ? sameOwnedName({ left: request.left.symptom, right: request.right.symptom })
-    : "different";
 
 const findCheckFaults = (
   request: CheckedExamples & { readonly anchor: string; readonly check: CheckAddress },
@@ -51,22 +41,17 @@ const findCheckFaults = (
     anchor: request.anchor,
     check: checkAddressTextOf({ check }),
   };
-  const held = request.checks.find(
-    (candidate) => compareCheckAddresses({ left: candidate, right: check }) === "same",
-  );
-  const symptom = request.symptoms.find(
-    (candidate) => sameOwnedName({ left: candidate, right: check.symptom }) === "same",
-  );
-  if (held === undefined || symptom === undefined) {
+  const symptom = mapAddressToSymptom({ content: request.content, symptom: check.symptom });
+  if (!request.checks.hasCheck(check) || symptom.outcome === "failed") {
     return [{ kind: "check-unheld", ...answering }];
   }
-  return mapSymptomToReach({ symptom, serves }) === "reached"
+  return mapSymptomToReach({ symptom: symptom.value, serves }) === "reached"
     ? []
     : [
         {
           kind: "recipe-not-indicated",
           ...answering,
-          symptom: symptom.name,
+          symptom: check.symptom.name,
           serves: serves.map((point) => pointedNameOf({ point })),
         },
       ];
@@ -77,26 +62,20 @@ export const findExampleFaults = (request: CheckedExamples): readonly ExampleFau
     answers.flatMap(({ check }) => findCheckFaults({ ...request, anchor, check })),
   );
 
-const mapExampleToReach = (request: {
-  readonly example: RecipeExample;
-  readonly check: CheckAddress;
-  readonly form: string;
-}): Reach =>
-  request.example.answers.some(
-    (answer) =>
-      answer.form === request.form &&
-      compareCheckAddresses({ left: answer.check, right: request.check }) === "same",
-  )
-    ? "reached"
-    : "not-reached";
-
 export const listExamplesOfForm = (request: {
   readonly recipes: readonly Recipe[];
   readonly check: CheckAddress;
   readonly form: string;
-}): readonly ExampleAddress[] =>
-  request.recipes.flatMap((recipe) =>
+}): readonly ExampleAddress[] => {
+  const address = qualifiedCheckAddressOf(request);
+  return request.recipes.flatMap((recipe) =>
     (recipe.examples ?? [])
-      .filter((example) => mapExampleToReach({ ...request, example }) === "reached")
+      .filter(({ answers }) =>
+        answers.some(
+          ({ check, form }) =>
+            form === request.form && qualifiedCheckAddressOf({ check }) === address,
+        ),
+      )
       .map(({ anchor }) => ({ recipe, anchor })),
   );
+};

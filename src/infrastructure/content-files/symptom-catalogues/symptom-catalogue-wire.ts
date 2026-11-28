@@ -28,6 +28,10 @@ import {
   type ServingRecipe,
 } from "../../../domain/language-layer/recipe-reach.ts";
 import {
+  createCheckMembership,
+  createRuleContent,
+} from "../../../domain/language-layer/rule-content.ts";
+import {
   type Case,
   type CatalogueContent,
   type CataloguedClause,
@@ -870,6 +874,8 @@ const listExampleFaults = (request: {
   readonly checks: readonly CheckContent[];
 }): readonly string[] => {
   const { symptoms, checks, pointable, ruleSet } = request;
+  const content = createRuleContent({ catalogues: [{ symptoms }] });
+  const membership = createCheckMembership({ catalogues: [{ checks }] });
   return request.file.recipes.flatMap((wire) => {
     const serves = resolveServes({ wire, pointable });
     return serves.outcome === "failed"
@@ -877,8 +883,8 @@ const listExampleFaults = (request: {
       : findExampleFaults({
           recipe: recipeOf({ wire, ruleSet }),
           serves: serves.value,
-          symptoms,
-          checks,
+          content,
+          checks: membership,
         }).map((fault) => mapExampleFaultToText({ fault }));
   });
 };

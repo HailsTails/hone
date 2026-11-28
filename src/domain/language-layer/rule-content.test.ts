@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
-import { createRuleContent, mapAddressToSymptom } from "./rule-content.ts";
+import { createCheckMembership, createRuleContent, mapAddressToSymptom } from "./rule-content.ts";
+import type { CheckAddress } from "./symptom-catalogue.ts";
 
 describe("mapAddressToSymptom", () => {
   it("gives the symptom a catalogue holds at the address", () => {
@@ -114,5 +115,24 @@ describe("mapAddressToSymptom", () => {
         correctUses: [],
       },
     });
+  });
+});
+
+describe("createCheckMembership", () => {
+  it("distinguishes the same local address under different rule-set owners", () => {
+    const tool: CheckAddress = {
+      name: "loops",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+    };
+    const team: CheckAddress = {
+      name: "loops",
+      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "loop-keyword" },
+    };
+    const membership = createCheckMembership({ catalogues: [{ checks: [tool] }] });
+
+    const inTool = membership.hasCheck(tool);
+    const inTeam = membership.hasCheck(team);
+
+    expect([inTool, inTeam]).toEqual([true, false]);
   });
 });
