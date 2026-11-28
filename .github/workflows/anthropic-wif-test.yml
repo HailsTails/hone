@@ -1,15 +1,13 @@
 name: Claude WIF smoke check
 
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/anthropic-wif-test.yml]
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   exchange:
-    if: github.repository == 'HailsTails/hone' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.repository == 'HailsTails/hone' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
