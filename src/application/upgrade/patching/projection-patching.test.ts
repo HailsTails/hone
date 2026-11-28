@@ -6,11 +6,8 @@ import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
-import {
-  patchedProjectionsOf,
-  restoredAfterRefusal,
-  restoredOriginalProjections,
-} from "./projection-patching.ts";
+import type { ProofRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
+import { patchedProjectionsOf, restoredOriginalProjections } from "./projection-patching.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -35,6 +32,7 @@ const CREATED = absoluteRootOf("/repo/acme/rules/principles/acme.md");
 const UNPLACEABLE = {
   kind: "unplaceable-path",
   file: PROJECTION,
+  unrestored: [],
   removedByVersionOne: [],
 } as const;
 
@@ -152,6 +150,7 @@ describe("patchedProjectionsOf", () => {
           kind: "team-config-refused",
           refusal: { kind: "config-candidate-unreadable", file: PROJECTION, detail: "ENOENT" },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
     });
@@ -160,27 +159,33 @@ describe("patchedProjectionsOf", () => {
 });
 
 describe("restoredOriginalProjections", () => {
-  it("puts the original bytes of the projection back when the upgrade refuses", () => {
-    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce([]);
+  it("retains an oracle refusal and the projection it could not restore", () => {
+    const unrestored = [
+      { written: "file-replaced", path: PROJECTION_PATH, detail: "EBUSY" },
+    ] satisfies readonly Unrestored[];
+    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce(unrestored);
+    const refusal = {
+      kind: "oracle-failed",
+      failure: { kind: "version-one-run-failed", detail: "runner failed" },
+      unrestored: [],
+      removedByVersionOne: [],
+    } satisfies ProofRefusal;
 
-    expect(
-      restoredOriginalProjections({
-        queries: {
-          path: {
-            join: vi.fn<PathPort["join"]>(),
-            relative: vi.fn<PathPort["relative"]>(),
-            directoryOf: vi.fn<PathPort["directoryOf"]>(),
-          },
+    const restored = restoredOriginalProjections({
+      queries: {
+        path: {
+          join: vi.fn<PathPort["join"]>(),
+          relative: vi.fn<PathPort["relative"]>(),
+          directoryOf: vi.fn<PathPort["directoryOf"]>(),
         },
-        effects: { undo },
-        repoRoot: REPO,
-        writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
-        refusal: UNPLACEABLE,
-      }),
-    ).toEqual(UNPLACEABLE);
-    expect(undo.mock.calls).toEqual([
-      [{ writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }] }],
-    ]);
+      },
+      effects: { undo },
+      repoRoot: REPO,
+      writes: [{ kind: "file-replaced", path: PROJECTION_PATH, original: ORIGINAL }],
+      refusal,
+    });
+
+    expect(restored).toEqual({ ...refusal, unrestored });
   });
 
   it("deletes what version 1's own project created, then puts back its rewrite, then the original bytes, newest first", () => {
@@ -238,81 +243,5 @@ describe("restoredOriginalProjections", () => {
 
     expect(restored).toEqual(refusal);
     expect(undo.mock.calls).toEqual([[{ writes: [] }]]);
-  });
-});
-
-describe("restoredAfterRefusal", () => {
-  it("undoes each write it is given and returns the refusal with what it could not restore", () => {
-    const undo = vi
-      .fn<ProofEffects["undo"]>()
-      .mockReturnValueOnce([{ written: "file-created", path: CREATED, detail: "EBUSY" }]);
-
-    expect(
-      restoredAfterRefusal({
-        effects: { undo },
-        writes: [{ kind: "file-created", path: CREATED }],
-        refusal: {
-          kind: "check-failed",
-          failing: ["findings (1)"],
-          unrestored: [],
-          removedByVersionOne: [],
-        },
-      }),
-    ).toEqual({
-      kind: "check-failed",
-      failing: ["findings (1)"],
-      unrestored: [{ written: "file-created", path: CREATED, detail: "EBUSY" }],
-      removedByVersionOne: [],
-    });
-    expect(undo.mock.calls).toEqual([[{ writes: [{ kind: "file-created", path: CREATED }] }]]);
-  });
-
-  it("adds what it could not restore to a smoothing step's refusal", () => {
-    const undo = vi
-      .fn<ProofEffects["undo"]>()
-      .mockReturnValueOnce([{ written: "file-created", path: CREATED, detail: "EBUSY" }]);
-    const refusal = {
-      kind: "smoothing-failed",
-      step: "prune-debt",
-      failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
-      unrestored: [],
-      removedByVersionOne: [],
-    } as const;
-
-    const restored = restoredAfterRefusal({
-      effects: { undo },
-      writes: [{ kind: "file-created", path: CREATED }],
-      refusal,
-    });
-
-    expect(restored).toEqual({
-      ...refusal,
-      unrestored: [{ written: "file-created", path: CREATED, detail: "EBUSY" }],
-    });
-  });
-
-  it("restores nothing after a removal failed, since the proof had already passed", () => {
-    const undo = vi.fn<ProofEffects["undo"]>();
-    const refusal = {
-      kind: "removal-failed",
-      failure: {
-        kind: "unremovable",
-        path: CREATED,
-        detail: "EBUSY",
-        removed: { files: [], folders: [] },
-      },
-      remaining: [],
-      written: [],
-      replaced: [],
-    } as const;
-
-    expect(
-      restoredAfterRefusal({
-        effects: { undo },
-        writes: [{ kind: "file-created", path: CREATED }],
-        refusal,
-      }),
-    ).toEqual(refusal);
-    expect(undo).not.toHaveBeenCalled();
   });
 });

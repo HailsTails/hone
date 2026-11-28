@@ -372,6 +372,7 @@ describe("upgradeOf", () => {
               },
             ],
           },
+          unrestored: [],
           removedByVersionOne: [],
         },
       },
@@ -434,6 +435,7 @@ describe("upgradeOf", () => {
         error: {
           kind: "unplaceable-path",
           file: repoPathOf("package.json"),
+          unrestored: [],
           removedByVersionOne: [],
         },
       });
@@ -454,6 +456,7 @@ describe("upgradeOf", () => {
           failure: {
             kind: "unplaceable-path",
             file: "package.json",
+            unrestored: [],
             removedByVersionOne: [],
           },
         },
@@ -473,6 +476,7 @@ describe("upgradeOf", () => {
       error: {
         kind: "oracle-failed",
         failure: { kind: "version-one-run-failed", detail: "x" },
+        unrestored: [],
         removedByVersionOne: [],
       },
     } as const;
@@ -577,7 +581,12 @@ describe("upgradeOf", () => {
       .mockReturnValue({ inspect: vi.fn(), prepare: vi.fn() });
     const proofOf = vi.fn<UpgradeInput["proofOf"]>().mockResolvedValue({
       outcome: "failed",
-      error: { kind: "unplaceable-path", file: repoPathOf("a"), removedByVersionOne: [] },
+      error: {
+        kind: "unplaceable-path",
+        file: repoPathOf("a"),
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     });
     await upgradeOf(
       inputWith({

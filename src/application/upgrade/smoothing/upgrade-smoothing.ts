@@ -13,8 +13,8 @@ import type {
 import {
   type ProofQueries,
   type ProofWrites,
+  restoredAfterRefusal,
   proofWritesAppliedOf,
-  rolledBackWrites,
 } from "../proof-writes/proof-writes.ts";
 import { mapChangesToEffects, type SmoothingEffects } from "./smoothing-effects.ts";
 
@@ -141,25 +141,7 @@ const refusedAfter = (
     readonly refusal: ProofRefusal;
   },
 ): Result<never, ProofRefusal> => {
-  const unrestored = rolledBackWrites({ effects: request.effects, writes: request.writes });
-  const { refusal } = request;
-  switch (refusal.kind) {
-    case "write-refused":
-      return {
-        outcome: "failed",
-        error: {
-          ...refusal,
-          refusal: {
-            ...refusal.refusal,
-            unrestored: [...refusal.refusal.unrestored, ...unrestored],
-          },
-        },
-      };
-    case "smoothing-failed":
-      return { outcome: "failed", error: { ...refusal, unrestored } };
-    default:
-      return { outcome: "failed", error: refusal };
-  }
+  return { outcome: "failed", error: restoredAfterRefusal(request) };
 };
 
 const appliedStep = (
@@ -185,7 +167,8 @@ const appliedStep = (
       writes: [...state.writes, ...applied.attempted],
       refusal: {
         kind: "write-refused",
-        refusal: { failure: applied.failure, unrestored: [] },
+        failure: applied.failure,
+        unrestored: [],
         removedByVersionOne: [],
       },
     });

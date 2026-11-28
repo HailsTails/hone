@@ -172,6 +172,7 @@ describe("provenWithTeamLayout", () => {
           error: {
             kind: "unplaceable-path",
             file: repoPathOf("hone.config.json"),
+            unrestored: [],
             removedByVersionOne: [],
           },
         }),
@@ -183,6 +184,7 @@ describe("provenWithTeamLayout", () => {
         failure: {
           kind: "unplaceable-path",
           file: repoPathOf("hone.config.json"),
+          unrestored: [],
           removedByVersionOne: [],
         },
       },
@@ -220,7 +222,8 @@ describe("provenWithTeamLayout", () => {
         stopped: "refused",
         failure: {
           kind: "write-refused",
-          refusal: { failure: { kind: "path-already-exists", path: WRITTEN }, unrestored: [] },
+          failure: { kind: "path-already-exists", path: WRITTEN },
+          unrestored: [],
           removedByVersionOne: [],
         },
       },

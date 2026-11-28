@@ -85,55 +85,31 @@ export type AfterWriting = {
   readonly replaced: readonly RepoPath[];
 };
 
-type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[] };
-
-export type ProofRefusal =
-  | ({ readonly kind: "oracle-failed"; readonly failure: OracleFailure } & AfterVersionOneProject)
-  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-run-failed";
-      readonly failure: ProofRunFailure;
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-uncovered";
-      readonly clauses: readonly ClauseAddress[];
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-project-failed";
-      readonly detail: string;
-    } & AfterVersionOneProject)
-  | ({ readonly kind: "unplaceable-path"; readonly file: RepoPath } & AfterVersionOneProject)
-  | ({ readonly kind: "removal-refused"; readonly failure: OutsideRoot } & AfterVersionOneProject)
-  | ({
-      readonly kind: "write-refused";
-      readonly refusal: ProofWriteRefusal;
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "team-layout-unreadable";
-      readonly failure: LoadFailure;
-      readonly unrestored: readonly Unrestored[];
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-two-run-failed";
-      readonly failure: ProofRunFailure;
-      readonly unrestored: readonly Unrestored[];
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "directives-name-no-check";
-      readonly directives: readonly MisnamedRuleId[];
-      readonly unrestored: readonly Unrestored[];
-    } & AfterVersionOneProject)
-  | ({
+export type ProofRefusalBeforeRemoval = (
+  | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
+  | { readonly kind: "plan-refused"; readonly refusal: PlanRefusal }
+  | { readonly kind: "version-one-run-failed"; readonly failure: ProofRunFailure }
+  | { readonly kind: "version-one-uncovered"; readonly clauses: readonly ClauseAddress[] }
+  | { readonly kind: "version-one-project-failed"; readonly detail: string }
+  | { readonly kind: "unplaceable-path"; readonly file: RepoPath }
+  | { readonly kind: "removal-refused"; readonly failure: OutsideRoot }
+  | { readonly kind: "write-refused"; readonly failure: ProofWriteFailure }
+  | { readonly kind: "team-layout-unreadable"; readonly failure: LoadFailure }
+  | { readonly kind: "version-two-run-failed"; readonly failure: ProofRunFailure }
+  | { readonly kind: "directives-name-no-check"; readonly directives: readonly MisnamedRuleId[] }
+  | {
       readonly kind: "smoothing-failed";
       readonly step: SmoothingStep;
       readonly failure: SmoothingFailure;
-      readonly unrestored: readonly Unrestored[];
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "check-failed";
-      readonly failing: readonly string[];
-      readonly unrestored: readonly Unrestored[];
-    } & AfterVersionOneProject)
+    }
+  | { readonly kind: "check-failed"; readonly failing: readonly string[] }
+) & {
+  readonly removedByVersionOne: readonly RepoPath[];
+  readonly unrestored: readonly Unrestored[];
+};
+
+export type ProofRefusal =
+  | ProofRefusalBeforeRemoval
   | ({
       readonly kind: "removal-failed";
       readonly failure: RemovalFailure;

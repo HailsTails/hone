@@ -8,30 +8,23 @@ import type { PathPort } from "../../ports/host/path-port.ts";
 import { mapChangesToEffects } from "./smoothing-effects.ts";
 
 describe("mapChangesToEffects", () => {
-  it("creates a new file with its missing folder, replaces a changed file keeping its original, leaves an unchanged file alone, and removes a file keeping its text", () => {
-    const read = vi
-      .fn<FileTextPort["read"]>()
-      .mockReturnValueOnce({ outcome: "ok", value: "old projection" })
-      .mockReturnValueOnce({ outcome: "ok", value: "same declaration" })
-      .mockReturnValueOnce({ outcome: "ok", value: "pruned records" });
-    const changes = {
-      write: [
-        { file: repoPathOf("hone-records/debt/loop-keyword.json"), text: "debt" },
-        { file: repoPathOf("hone.eslint.mjs"), text: "new projection" },
-        { file: repoPathOf("hone.eslint.d.mts"), text: "same declaration" },
-      ],
-      remove: [repoPathOf("hone-records/debt/rebinding.json")],
-    };
+  it("plans file creation after its parent and keeps the text of a removed file", () => {
+    const created = repoPathOf("hone-records/debt/loop-keyword.json");
+    const removed = repoPathOf("hone-records/debt/rebinding.json");
+    const createdPath = absoluteRootOf("/repo/hone-records/debt/loop-keyword.json");
+    const removedPath = absoluteRootOf("/repo/hone-records/debt/rebinding.json");
+    const folder = absoluteRootOf("/repo/hone-records/debt");
 
     const planned = mapChangesToEffects({
       queries: {
-        fileText: { read, exists: vi.fn<FileTextPort["exists"]>() },
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: "pruned" }),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
         entryKind: {
           kindOf: vi
             .fn<EntryKindPort["kindOf"]>()
             .mockReturnValueOnce("absent")
-            .mockReturnValueOnce("file")
-            .mockReturnValueOnce("file")
             .mockReturnValueOnce("absent")
             .mockReturnValueOnce("absent")
             .mockReturnValueOnce("directory"),
@@ -39,46 +32,82 @@ describe("mapChangesToEffects", () => {
         path: {
           join: vi
             .fn<PathPort["join"]>()
-            .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
-            .mockReturnValueOnce("/repo/hone.eslint.mjs")
-            .mockReturnValueOnce("/repo/hone.eslint.d.mts")
-            .mockReturnValueOnce("/repo/hone-records/debt/rebinding.json"),
+            .mockReturnValueOnce(createdPath)
+            .mockReturnValueOnce(removedPath),
           relative: vi.fn<PathPort["relative"]>(),
           directoryOf: vi
             .fn<PathPort["directoryOf"]>()
-            .mockReturnValueOnce("/repo/hone-records/debt")
+            .mockReturnValueOnce(folder)
             .mockReturnValueOnce("/repo/hone-records"),
         },
       },
       repoRoot: absoluteRootOf("/repo"),
-      changes,
+      changes: { write: [{ file: created, text: "debt" }], remove: [removed] },
     });
 
     expect(planned).toEqual({
       outcome: "ok",
       value: {
         effects: [
-          { kind: "create-directory", path: absoluteRootOf("/repo/hone-records/debt") },
-          {
-            kind: "create-file",
-            path: absoluteRootOf("/repo/hone-records/debt/loop-keyword.json"),
-            text: "debt",
-          },
+          { kind: "create-directory", path: folder },
+          { kind: "create-file", path: createdPath, text: "debt" },
+          { kind: "remove-restorable-file", path: removedPath, original: "pruned" },
+        ],
+        created: [created],
+        changed: [],
+        removed: [removed],
+      },
+    });
+  });
+
+  it("keeps the original text of a replacement and skips an unchanged file", () => {
+    const projection = repoPathOf("hone.eslint.mjs");
+    const projectionPath = absoluteRootOf("/repo/hone.eslint.mjs");
+    const declaration = repoPathOf("hone.eslint.d.mts");
+
+    const planned = mapChangesToEffects({
+      queries: {
+        fileText: {
+          read: vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce({ outcome: "ok", value: "old projection" })
+            .mockReturnValueOnce({ outcome: "ok", value: "same declaration" }),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
+        entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("file") },
+        path: {
+          join: vi
+            .fn<PathPort["join"]>()
+            .mockReturnValueOnce(projectionPath)
+            .mockReturnValueOnce("/repo/hone.eslint.d.mts"),
+          relative: vi.fn<PathPort["relative"]>(),
+          directoryOf: vi.fn<PathPort["directoryOf"]>(),
+        },
+      },
+      repoRoot: absoluteRootOf("/repo"),
+      changes: {
+        write: [
+          { file: projection, text: "new projection" },
+          { file: declaration, text: "same declaration" },
+        ],
+        remove: [],
+      },
+    });
+
+    expect(planned).toEqual({
+      outcome: "ok",
+      value: {
+        effects: [
           {
             kind: "replace-file",
-            path: absoluteRootOf("/repo/hone.eslint.mjs"),
+            path: projectionPath,
             text: "new projection",
             original: "old projection",
           },
-          {
-            kind: "remove-restorable-file",
-            path: absoluteRootOf("/repo/hone-records/debt/rebinding.json"),
-            original: "pruned records",
-          },
         ],
-        created: [repoPathOf("hone-records/debt/loop-keyword.json")],
-        changed: [repoPathOf("hone.eslint.mjs")],
-        removed: [repoPathOf("hone-records/debt/rebinding.json")],
+        created: [],
+        changed: [projection],
+        removed: [],
       },
     });
   });
@@ -116,14 +145,12 @@ describe("mapChangesToEffects", () => {
       outcome: "failed",
       error: {
         kind: "write-refused",
-        refusal: {
-          failure: {
-            kind: "removed-file-unreadable",
-            path: absoluteRootOf("/repo/hone-records/debt/rebinding.json"),
-            detail: "EACCES",
-          },
-          unrestored: [],
+        failure: {
+          kind: "removed-file-unreadable",
+          path: absoluteRootOf("/repo/hone-records/debt/rebinding.json"),
+          detail: "EACCES",
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
     });
@@ -156,6 +183,7 @@ describe("mapChangesToEffects", () => {
         error: {
           kind: "unplaceable-path",
           file: repoPathOf("hone.eslint.mjs"),
+          unrestored: [],
           removedByVersionOne: [],
         },
       },

@@ -35,6 +35,41 @@ const PLACEMENT = {
 };
 
 describe("upgradeFailureOutcomeOf", () => {
+  it("reports the original refusal and the file that still needs restoration", () => {
+    const failure = {
+      kind: "oracle-failed",
+      failure: { kind: "version-one-run-failed", detail: "runner failed" },
+      removedByVersionOne: [],
+      unrestored: [{ written: "file-replaced", path: OLD_FILE, detail: "EBUSY" }],
+    } satisfies UpgradeFailure;
+
+    const outcome = upgradeFailureOutcomeOf({ failure, placement: PLACEMENT });
+
+    expect(outcome.code).toBe(1);
+    expect(outcome.text).toContain(failure.failure.detail);
+    expect(outcome.text).toContain(OLD_FILE);
+    expect(outcome.text).toContain("EBUSY");
+    expect(outcome.text).not.toContain("Nothing was changed.");
+  });
+
+  it("reports a known failed restoration when the v1 project also fails", () => {
+    const failure = {
+      kind: "version-one-project-failed",
+      detail: "disk full",
+      removedByVersionOne: [],
+      unrestored: [{ written: "file-replaced", path: OLD_FILE, detail: "EBUSY" }],
+    } satisfies UpgradeFailure;
+
+    const outcome = upgradeFailureOutcomeOf({ failure, placement: PLACEMENT });
+
+    expect(outcome.code).toBe(1);
+    expect(outcome.text).toContain(failure.detail);
+    expect(outcome.text).toContain("may have changed files");
+    expect(outcome.text).toContain(OLD_FILE);
+    expect(outcome.text).toContain("EBUSY");
+    expect(outcome.text).not.toContain("Nothing was changed.");
+  });
+
   it.each<Row>([
     {
       name: "the version 1 run cannot be made for the oracle",
@@ -44,6 +79,7 @@ describe("upgradeFailureOutcomeOf", () => {
           kind: "version-one-run-failed",
           detail: "eslint not run: its projection is missing",
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -60,6 +96,7 @@ describe("upgradeFailureOutcomeOf", () => {
           clause: "CD-14#class-syntax",
           file: repoPathOf("src/a.ts"),
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -75,6 +112,7 @@ describe("upgradeFailureOutcomeOf", () => {
           kind: "projection-failed",
           failure: { kind: "unknown-check", check: "names#names" },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -95,6 +133,7 @@ describe("upgradeFailureOutcomeOf", () => {
             folder: "packages/a",
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -114,6 +153,7 @@ describe("upgradeFailureOutcomeOf", () => {
             folder: "packages/a",
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -133,6 +173,7 @@ describe("upgradeFailureOutcomeOf", () => {
             folder: "",
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -151,6 +192,7 @@ describe("upgradeFailureOutcomeOf", () => {
             repoPathOf("older/disciplines.eslint.mjs"),
           ],
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -169,6 +211,7 @@ describe("upgradeFailureOutcomeOf", () => {
             projection: repoPathOf("disciplines.eslint.mjs"),
           },
         },
+        unrestored: [],
         removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
       },
       outcome: {
@@ -185,6 +228,7 @@ describe("upgradeFailureOutcomeOf", () => {
           file: repoPathOf("disciplines.eslint.mjs"),
           state: "not-included",
         },
+        unrestored: [],
         removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
       },
       outcome: {
@@ -201,6 +245,7 @@ describe("upgradeFailureOutcomeOf", () => {
           file: repoPathOf("packages/a/disciplines.eslint.mjs"),
           state: "unconfigured",
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -217,6 +262,7 @@ describe("upgradeFailureOutcomeOf", () => {
           file: repoPathOf("packages/a/disciplines.eslint.mjs"),
           state: "not-applied",
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -233,6 +279,7 @@ describe("upgradeFailureOutcomeOf", () => {
           clause: "CD-27#test-body-logic",
           file: repoPathOf("src/a.ts"),
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -255,6 +302,7 @@ Nothing was changed.
             projection: repoPathOf("packages/a/disciplines.eslint.mjs"),
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -270,6 +318,7 @@ Nothing was changed.
           kind: "config-import-refused",
           refusal: { kind: "projection-named-elsewhere", file: repoPathOf("eslint.config.mjs") },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -285,6 +334,7 @@ Nothing was changed.
           kind: "reach-beyond-entries",
           records: [{ symptom: "loop-keyword#loops", file: "src/b.ts" }],
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -303,6 +353,7 @@ Nothing was changed.
             projection: repoPathOf("packages/a/disciplines.eslint.mjs"),
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -312,7 +363,12 @@ Nothing was changed.
     },
     {
       name: "version 1's own project fails",
-      failure: { kind: "version-one-project-failed", detail: "disk full", removedByVersionOne: [] },
+      failure: {
+        kind: "version-one-project-failed",
+        detail: "disk full",
+        unrestored: [],
+        removedByVersionOne: [],
+      },
       outcome: {
         code: 1,
         text: "upgrade refused:\nversion 1's own project failed (disk full). Fix what it names, then run the upgrade again.\nversion 1's own project may have changed files before it failed; check version control for what it changed.\n",
@@ -334,6 +390,7 @@ Nothing was changed.
             clause: clauseIdOf("claimed-members"),
           },
         ],
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -346,6 +403,7 @@ Nothing was changed.
       failure: {
         kind: "version-one-run-failed",
         failure: { kind: "run-failed", detail: "disciplines.json is malformed" },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -418,10 +476,8 @@ Nothing was changed.
       name: "a records file a smoothing step removes cannot be read",
       failure: {
         kind: "write-refused",
-        refusal: {
-          failure: { kind: "removed-file-unreadable", path: SETTINGS, detail: "EACCES" },
-          unrestored: [],
-        },
+        failure: { kind: "removed-file-unreadable", path: SETTINGS, detail: "EACCES" },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -434,6 +490,7 @@ Nothing was changed.
       failure: {
         kind: "unplaceable-path",
         file: repoPathOf("old/disciplines.eslint.mjs"),
+        unrestored: [],
         removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
       },
       outcome: {
@@ -458,7 +515,8 @@ Nothing was changed.
       name: "a version 2 file already exists",
       failure: {
         kind: "write-refused",
-        refusal: { failure: { kind: "path-already-exists", path: SETTINGS }, unrestored: [] },
+        failure: { kind: "path-already-exists", path: SETTINGS },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -470,10 +528,8 @@ Nothing was changed.
       name: "a file cannot be removed",
       failure: {
         kind: "write-refused",
-        refusal: {
-          failure: { kind: "unremovable", path: OLD_FILE, detail: "EBUSY" },
-          unrestored: [],
-        },
+        failure: { kind: "unremovable", path: OLD_FILE, detail: "EBUSY" },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -638,6 +694,7 @@ Nothing was changed.
             },
           ],
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -669,6 +726,7 @@ Nothing was changed.
             ],
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -689,6 +747,7 @@ Nothing was changed.
             line: 4,
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {
@@ -709,6 +768,7 @@ Nothing was changed.
             line: 2,
           },
         },
+        unrestored: [],
         removedByVersionOne: [],
       },
       outcome: {

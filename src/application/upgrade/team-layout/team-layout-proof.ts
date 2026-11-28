@@ -5,10 +5,10 @@ import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
 import type { ProofCarriedOver, ProofRefusal } from "../../ports/upgrade/proof-outcome.ts";
 import type { UpgradeStop } from "../../ports/upgrade/upgrade-stop.ts";
-import { restoredAfterRefusal } from "../patching/projection-patching.ts";
 import {
   type ProofQueries,
   type ProofWrites,
+  restoredAfterRefusal,
   rolledBackWrites,
   writtenProofFiles,
 } from "../proof-writes/proof-writes.ts";
@@ -49,7 +49,7 @@ const writtenLayoutOf = (request: TeamLayoutProofRequest): Result<ProofWrites, P
   return written.outcome === "failed"
     ? {
         outcome: "failed",
-        error: { kind: "write-refused", refusal: written.error, removedByVersionOne: [] },
+        error: { kind: "write-refused", ...written.error, removedByVersionOne: [] },
       }
     : written;
 };

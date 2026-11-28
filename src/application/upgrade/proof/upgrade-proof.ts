@@ -86,6 +86,7 @@ type Placed = {
 const unplaceable = (request: { readonly file: RepoPath }): ProofRefusal => ({
   kind: "unplaceable-path",
   file: request.file,
+  unrestored: [],
   removedByVersionOne: [],
 });
 
@@ -245,11 +246,12 @@ const projectionsRefusalOf = (request: { readonly refusal: ProjectionsRefusal })
       return {
         kind: "version-one-project-failed",
         detail: refusal.detail,
+        unrestored: [],
         removedByVersionOne: [],
       };
     case "team-config-refused":
     case "slice-left-in-place":
-      return { kind: "plan-refused", refusal, removedByVersionOne: [] };
+      return { kind: "plan-refused", refusal, unrestored: [], removedByVersionOne: [] };
   }
 };
 
@@ -420,7 +422,7 @@ const writtenAndChecked = async (
   if (writes.outcome === "failed") {
     return {
       outcome: "failed",
-      error: { kind: "write-refused", refusal: writes.error, removedByVersionOne: [] },
+      error: { kind: "write-refused", ...writes.error, removedByVersionOne: [] },
     };
   }
   const written: UpgradeProofRequest & Written = { ...request, writes: writes.value };
@@ -445,7 +447,12 @@ const afterProjecting = async (
   if (replacements.outcome === "failed") {
     return {
       outcome: "failed",
-      error: { kind: "plan-refused", refusal: replacements.error, removedByVersionOne: [] },
+      error: {
+        kind: "plan-refused",
+        refusal: replacements.error,
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     };
   }
   const placed = placedOf({ ...request, replacements: replacements.value });
@@ -456,7 +463,7 @@ const afterProjecting = async (
   if (outside !== undefined) {
     return {
       outcome: "failed",
-      error: { kind: "removal-refused", failure: outside, removedByVersionOne: [] },
+      error: { kind: "removal-refused", failure: outside, unrestored: [], removedByVersionOne: [] },
     };
   }
   return writtenAndChecked({ ...request, placed: placed.value });
@@ -484,7 +491,12 @@ const provenOver = async (
   if (answered.outcome === "failed") {
     return {
       outcome: "failed",
-      error: { kind: "oracle-failed", failure: answered.error, removedByVersionOne: [] },
+      error: {
+        kind: "oracle-failed",
+        failure: answered.error,
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     };
   }
   const plan = await upgradePlanOf({
@@ -497,14 +509,19 @@ const provenOver = async (
   if (plan.outcome === "failed") {
     return {
       outcome: "failed",
-      error: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] },
+      error: { kind: "plan-refused", refusal: plan.error, unrestored: [], removedByVersionOne: [] },
     };
   }
   const before = await request.runs.versionOne();
   if (before.outcome === "failed") {
     return {
       outcome: "failed",
-      error: { kind: "version-one-run-failed", failure: before.error, removedByVersionOne: [] },
+      error: {
+        kind: "version-one-run-failed",
+        failure: before.error,
+        unrestored: [],
+        removedByVersionOne: [],
+      },
     };
   }
   if (before.value.uncovered.length > 0) {
@@ -513,6 +530,7 @@ const provenOver = async (
       error: {
         kind: "version-one-uncovered",
         clauses: before.value.uncovered,
+        unrestored: [],
         removedByVersionOne: [],
       },
     };

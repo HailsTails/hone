@@ -433,7 +433,12 @@ const teamLayoutPlanFor = async (
         outcome: "failed",
         error: {
           stopped: "refused",
-          failure: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] },
+          failure: {
+            kind: "plan-refused",
+            refusal: plan.error,
+            unrestored: [],
+            removedByVersionOne: [],
+          },
         },
       }
     : plan;
