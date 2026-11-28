@@ -2,17 +2,17 @@
 
 A record is how a person, or the tool for legacy debt, answers a symptom at a place. "That's why checks have authorised locations and disables. They are imperfect and allow for the correct usage of each thing that is by default a symptom of not thinking it through." A record is more work than the fix.
 
-Today's record formats are listed [beside the kinds](#todays-formats-and-the-kinds).
+The [record formats](#record-formats) show how Hone stores each kind.
 
 ## The kinds
 
-Four kinds cover everything. They are the model Hone's records take on with 2.0, which is not released yet: Deviation and Dependency record have no format today, and the others are written today in the formats [beside the kinds](#todays-formats-and-the-kinds), which say what each still lacks.
+Hone has four record kinds.
 
 ### Authorised location
 
 - **Answers:** A symptom whose correct use a case makes right at one place. Each symptom's correct uses are on [the symptoms page](typescript/symptoms.md).
 - **States:** The symptom and check; the site; for Outside import past a boundary, the outside party; the case that makes it correct here and the rule or principle that case owes; a why-chain whose root, if it changed, would remove the need; an owner. It is refused on a symptom with no authorised-location correct use. Otherwise what it lacks is [noted](#what-is-noted-never-refused), and a note changes no verdict. A why that only restates the symptom is [refused](#what-is-refused).
-- **Scope:** One symptom at one site: a file, or a span within it.
+- **Scope:** One check of one symptom in one file.
 - **Stale or paid when:** Stale when the symptom is no longer at the site. A vendored edit is also re-tested when the vendored version moves. A person removes it.
 - **Industry name:** suppression with justification, as .NET's `SuppressMessage` justification does.
 
@@ -46,13 +46,13 @@ Only the tool, and only debt, for findings the base revision already held ("reco
 
 ### Merged into the kinds, or not a kind
 
-- **Site-level record for one symptom:** merged. Every kind names a symptom, not a whole clause, so a record can say "this symptom, here".
+- **Site-level record for one symptom:** debt and authorised locations name the symptom and file they answer.
 - **Conformist:** a Conformist statement is the root of an authorised location's why-chain.
 - **Drift record:** merged into Authorised location, on the symptom Edit inside vendored code. Its case: "justified as additional drift as impossible to apply as an extension instead". It states when it should be dropped.
 - **Inline suppression:** not a kind. It is where a record shows at the site. An inline disable or a tool directive is held only by a record of its symptom at that site.
 - **Tracked pointer:** not a record. It is an allowed annotation.
 - **Safety opt-in:** outside the cases. It is not in this model.
-- **Clause-wide carve-out:** not a record. A rule a codebase does not want everywhere is not adopted: "Yes opting out means this codebase is not beholden to the rule flat out. Which is any tech leads choice to make for a codebase."
+- **A check the repository does not adopt.** List it as `"not-adopted"` in `hone.config.json`.
 
 ## What is not a record
 
@@ -81,22 +81,21 @@ This is a list of what each record must contain. It is not a ladder of exception
 
 ## What is noted, never refused
 
-An authorised location answers a check that is wrong at that place, so the form accepts it for any symptom with an authorised-location correct use: "while authorised location in spirit isn't supposed to be allowed. It's mechanically always allowed as our checks for symptoms is never assumed perfect." In the model, what it lacks is a note beside it. A note changes no verdict; review rules on it.
+An authorised location answers a check that is wrong at that place, so the form accepts it for any symptom with an authorised-location correct use: "while authorised location in spirit isn't supposed to be allowed. It's mechanically always allowed as our checks for symptoms is never assumed perfect." Hone lists unrecognised catalogue names beside the record. A note changes no verdict; review rules on it.
 
-- **A case that is missing, or not in the [case list](cases.md).** A thought-through use names its case. Whether the case is true is left to review. Today's tool does not read a case name.
+- **An unrecognised case or `owes` name.** Hone notes a name absent from the catalogue. Whether the named case applies is left to review.
+
 ## The cost side
 
-**What holds today:**
-- An authorised location costs a five-step why-chain with a root check and an owner, or only its reason while `fileExceptionWhyChains` is `"optional"`.
+**What the check and the record require**
+
+- An authorised location needs a case, what the case owes, and a five-step why-chain with a root cause and an owner.
 - Debt is visible in every report, fails the run when it forfeits on touch, and fails when stale.
 - An unrecorded inline disable fails the run.
 - The diff of the records is the review.
 - Hotfixes do not block on debt: forfeiture can be assessed elsewhere ("blocking a hot fix on debt is not suitable practice").
-
-**What the model adds:**
-- A thought-through record names its case and the rule owed. It no longer answers only "why this file".
 - A deviation must engage the recipe's own reason.
-- Records are per symptom, so a record cannot quietly hold a new form of a clause, and paying one symptom is visible.
+- Debt and authorised locations are recorded by symptom, so paying debt for one symptom is visible.
 - Records are counted per symptom and cause. That makes friction measurable ("Always look for what friction is trying to tell us"), without a new step.
 
 **What an agent gets when it cannot fix:** two honest exits, debt (visible, and it forfeits) or a thought-through record (it costs the reasoning). Neither is "give up and ask": "telling agents to give up and ask me has in experience made them just never even try and increased my workload".
@@ -114,16 +113,15 @@ Which kind answers each symptom is on [the symptoms page](typescript/symptoms.md
 | A throw at the edge | Authorised location |
 | Any other method in place of a recipe | Deviation |
 
-## Today's formats and the kinds
+## Record formats
 
-Records today are written in these formats. Each answers one of the kinds.
+Each file under `hone-records/` is a document with `"version": 2` and a `records` array.
 
-| Today | Kind | What differs from the kind |
+| Kind | File under `hone-records/` | Fields |
 |---|---|---|
-| `authorised-location` (clause, file, reason, whyChain) | Authorised location, one per outside party for Outside import past a boundary | Names a clause, not a symptom. The site is a file. It does not name the case, the rule owed or the outside party. |
-| `file-carve-out` (clause, file, optional reason) | Debt | Names a clause, not a symptom. One record on the test-logic clause covers up to four symptoms. |
-| `clause-wide-carve-out` | Debt, one record for each check and file | Names a whole clause and no file. It keeps the clause running, with its why-chain. |
-| `provenance` (imported) | The same kind, imported | Nothing. |
-| Legacy why-chains | The kind of the record that holds them | Accepted while unchanged against the base. |
-| Inline disables and `@ts-*` directives | Held by a record of their symptom | The record names the clause, not the symptom. |
-| — | Deviation, Dependency record | No format yet. |
+| Authorised location | `authorised-locations/<symptom>.json` | `answers` (`<symptom>#<check>`), `file`, `case`, `owes` and `whyChain`. Include `outsideParty` when the correct use binds one. |
+| Debt | `debt/<symptom>.json` | `answers` (`<symptom>` or `<symptom>#<check>`), `file` and optional `note` and `findings` fields. The count, if present, is a positive integer. |
+| Deviation | `deviations/<recipe>.json` | `recipe`, `file`, `recipeReason`, `reasonFails`, `evidence` and `ruleHolds`. |
+| Dependency record | `dependency-records.json` | `dependency`, `nativeWay`, `whyNotEnough` and an optional `peerRisk`. |
+
+For team rules, place records that answer their checks under `hone-records/<ruleSet>/`. Upgraded records can carry their original entry in `carried`. See [Moving from version 1 to version 2](../MIGRATING.md#20-moving-from-version-1-to-version-2).

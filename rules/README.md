@@ -36,9 +36,7 @@ Two tests for a rule:
 
 ## Names, not numbers
 
-Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Each check's mechanics are on its own page under its symptom.
-
-[Every CD](numbers.md#every-numbered-discipline) lists each numbered discipline with its title, clauses, files checked and review lens.
+Rules, principles, cases, recipes, symptoms and checks use hyphenated names. Each check has a page under its symptom. The [version 1 crosswalk](numbers.md) maps the old numbers to current names.
 
 ## Words used the same way everywhere
 
@@ -57,18 +55,18 @@ Rules, principles, cases, recipes and symptoms are named, not numbered. A name's
 | [principles.md](principles.md) | The principles, each with what must hold, what it protects, its reason to change and where a breach sits |
 | [cases.md](cases.md) | The cases under each principle, the whys each owes, and what to do |
 | [rules.md](rules.md) | The named rules |
-| [records.md](records.md) | The record kinds, and today's record formats beside them |
+| [records.md](records.md) | The record kinds and their formats |
 | [sources.md](sources.md) | The sources behind each principle, rule, recipe and record kind |
 | [typescript/recipes.md](typescript/recipes.md) | The recipes for TypeScript |
 | [typescript/symptoms.md](typescript/symptoms.md) | The symptoms in TypeScript, and how near today's checks come |
 | [typescript/checks.md](typescript/checks.md) | Each check, its margin and its settings |
-| [numbers.md](numbers.md) | Every CD number and its new names |
+| [numbers.md](numbers.md) | The version 1 crosswalk |
 
 ## Selecting checks
 
-Adopters select clauses in `disciplines.json`. Selecting one clause adopts its discipline, so every mechanical clause of an adopted discipline must be selected, each through one of its checks, or listed as `"not-run"` or `"not-adopted"`; the check reports the rest as uncovered. Review clauses are judgement clauses: they cannot be selected and are applied in review with the discipline's review lens, as [ADOPTING.md](../ADOPTING.md#9-apply-the-judgement-rules) describes.
+In `hone.config.json`, list each check you adopt under `checks` using its address and the engine that runs it. Use `"not-run"` for an adopted check whose engine should stay off and `"not-adopted"` for a check the repository does not adopt. Apply [judgement rules](../ADOPTING.md#9-apply-the-judgement-rules) in review.
 
-Exceptions are recorded in `discipline-exceptions.json`; see [the package README](../README.md#hone-records). [The spirit of the rules](SPIRIT.md) explains what the friction is for.
+Records live in [`hone-records/`](../README.md#hone-records). [The spirit of the rules](SPIRIT.md) explains what the friction is for.
 
 ## Principles
 
@@ -224,7 +222,7 @@ Where the thing seen is correct use, a [record](records.md) covers it. The recor
 - **history:** needs the change history;
 - **person:** only a person sees it.
 
-**Check today** is how near today's checks come, from the [checks page](typescript/checks.md): reuse, partial, review (only a review clause covers it), new (nothing covers it), or only review (a person sees it).
+**Check today** is how near today's checks come, from the [checks page](typescript/checks.md): reuse, partial, review (only review covers it), new (nothing covers it), or only review (a person sees it).
 
 Outside dependency: what was called a package. An internal package is our own code.
 
@@ -240,7 +238,7 @@ So the symptom states exactly what is seen; a check aims at it and states its ma
 
 Correct use at an authorised location is never margin: "it flagging the one allowed location is not a fault. It's what authorised locations are for".
 
-Today's checks are addressed by clause. [Every CD](numbers.md#every-mechanical-clause) gives the symptom each mechanical clause sees.
+Use `<symptom>#<check>` for a Hone check and `<ruleSet>/<symptom>#<check>` for a team check. The [checks page](typescript/checks.md) lists Hone's addresses.
 
 Outside dependency: what was called a package. An internal package is our own code. Telling an outside dependency from an internal package needs the workspace layout, which is files and config Hone can read.
 
@@ -248,9 +246,9 @@ Outside dependency: what was called a package. An internal package is our own co
 - **Reports:** *seen* (where the symptom is), or *seen → breach* (it could also name the breach, given what follows the arrow).
 - **Needs:** syntax, types, graph (imports between files), app (the app's structure), files (config, names, build output), history, person.
 - **Today:**
-  - *reuse:* a clause is enough for a first cut.
+  - *reuse:* an existing check is enough for a first cut.
   - *partial:* every check of the symptom states what it misses.
-  - *review:* only a review clause covers it today.
+  - *review:* only review covers it today.
   - *new:* nothing covers it today.
 - **Margin:** what it flags that is not the symptom / what it misses. "Review owes" names what only a person sees.
 - **Settings traced to:** each threshold or setting, and the rule or recipe sentence behind it. *Nothing* means no sentence says so.
@@ -265,17 +263,22 @@ Until a check can name the breach, a finding names the rules the symptom points 
 
 ## Checks: The test-body checks
 
-Six checks run together on `CD-27#test-body-logic`: [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
+List all six test-body checks together under `checks` in `hone.config.json`. The group includes [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
 
 - They read test files only: `.ts` and `.tsx` files that `testFiles` in `hone.config.json` names. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped. Helper files that tests import are not checked.
 - None flags loops, which [loop-statement](typescript/symptoms/loop-keyword/loop-statement.md) covers, or `throw`, which [throw-statement](typescript/symptoms/throw-or-catch-in-a-test/throw-statement.md) covers.
 - None flags element access such as `calls[0]`, calls to free functions, a method called through a computed key, such as `rows["map"]`, or text built with a template literal.
 
-They have two editions. Edition 1 runs by default. Edition 2 adds what each check lists under edition 2, and becomes the default in the next major release. To run it now, set `edition`, `"1"` or `"2"`; without it the clause runs edition 1, or the latest edition when `checkEditions` in `disciplines.json` is `"latest"`:
+The checks have two editions. Edition 1 runs by default. Edition 2 adds what each check lists on its page. In `hone.config.json`, use `checkSettings` to pin an edition for each check you want to change. Setting `checkEditions` to `"latest"` runs the latest edition of every listed check without its own pin.
 
 ```jsonc
-"clauseSettings": {
-  "CD-27#test-body-logic": { "edition": "2" }
+"checkSettings": {
+  "branch-in-a-test#test-body": { "edition": "2" },
+  "throw-or-catch-in-a-test#try-block": { "edition": "2" },
+  "rebinding#test-body": { "edition": "2" },
+  "computed-value-in-a-test#test-body": { "edition": "2" },
+  "text-past-its-reader#test-body": { "edition": "2" },
+  "double-with-a-body#logic-in-a-passed-function": { "edition": "2" }
 }
 ```
 
@@ -305,7 +308,7 @@ A default that quietly narrows a rule, which no codebase chose, still fails.
 | `max-params: 2` | a recorded compromise of the check; its miss is margin |
 | `exclude` | scope chosen by the codebase |
 | Edition defaults | "Edition defaults would be for backwards compatability since we went npm." An existing adopter keeps the behaviour it installed. |
-| `confinedPackages` empty by default | "packages is empty because we can't define the universe and if we just said imports at all we would catch internal packages." Seeing every outside dependency needs a way to tell it from an internal package; until then the list is the adopter's to fill. |
+| `confinedOutsideDependencies` empty by default | "packages is empty because we can't define the universe and if we just said imports at all we would catch internal packages." Seeing every outside dependency needs a way to tell it from an internal package; until then the list is the adopter's to fill. |
 | `__tests__` skipped by default | "probably because of noise level and the fact I don't adopt that folder practice deliberately at all." |
 | Which files are test files | "Spec is also just not a naming practice I use." Then: "It honestly should be config for user to declare file naming structure so we can match their conventions." `testFiles` in `hone.config.json` declares it. |
 | Generated folders skipped (`node_modules`, `dist` and the like) | not code of ours |
@@ -332,6 +335,6 @@ What it must not be able to do:
 - **Switch a rule off for a folder.** That is a record: an authorised location with its why, or debt.
 - **Change what a rule means.** For example, a looser line limit, a wider parameter count or a narrower test-file definition for a folder.
 
-So a setting never deselects a clause and never carries debt.
+A setting never deselects a check or carries debt.
 
 `exclude` is different again. It is scope, outside the model. It needs no rule sentence and no record.

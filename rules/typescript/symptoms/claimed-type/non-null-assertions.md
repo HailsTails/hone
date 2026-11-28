@@ -16,7 +16,7 @@ Needs ESLint adopted through the projection.
 - `[definite=true]` flags every definite assignment assertion: `let total!: number` and a class field `balance!: number`.
 - Each finding sits on the line where the asserted expression or the declared name starts.
 - Allowed: logical not `!ready`, `!==`, an optional property `total?: number`, `??` fallbacks, and an initialised binding.
-- There are no settings. No `audit` mechanism checks this clause, so a repository without ESLint lists it as `"not-run"`, and review owes it.
+- There are no settings. The check runs on ESLint or Oxlint. If neither engine is available, list the check as `"not-run"` and apply the rule in review.
 
 ## Example
 ```ts

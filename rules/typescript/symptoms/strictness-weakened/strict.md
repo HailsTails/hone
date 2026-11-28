@@ -15,7 +15,7 @@ Each strictness-weakened check has two editions. Edition 1 runs by default. Edit
 
 Edition 1:
 - `tsconfig.json` files, named exactly, at any depth. `tsconfig.base.json` and other names are not read. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
-- For each selected clause, the matching option present in that file's `compilerOptions`. Presence is enough: `true` is flagged as well as `false`.
+- The matching option when it is present in the file's `compilerOptions`. Presence is enough: `true` is flagged as well as `false`.
 - Options in `extends`-ed files are not seen. A file that cannot be parsed, or whose root or `compilerOptions` is not an object, fails the run.
 
 Edition 2 also flags, for each selected option a `tsconfig.json` does not set itself, an option its resolved configuration leaves off:
@@ -27,11 +27,11 @@ Edition 2 also flags, for each selected option a `tsconfig.json` does not set it
 - A `tsconfig.json` from which TypeScript would compile no file is not judged on what it resolves to, since its options apply to no file. After resolving the chain, TypeScript has no `files` entry, and no `include` entry that names a path outright or a folder or pattern it would search. Examples: an empty `files` list, its own or inherited, with no `include`, such as the solution-style root with only `references` that `npm create vite` writes; an empty `include`; an `exclude` of every file. Any non-empty `include` that names a file or a folder is still judged, such as `"include": ["vite.config.ts"]` or `["src"]`, and so is a config that sets neither `files` nor `include`, since TypeScript then includes every file. An option a skipped file sets itself is still flagged, as in edition 1. The configs it references are not judged through it; only files named `tsconfig.json` are read.
 
 ## Settings
-- `edition`: the edition this clause runs, `"1"` or `"2"`. Without it, the clause runs edition 1, or the latest edition when `checkEditions` in `disciplines.json` is `"latest"`.
+In `hone.config.json`, set `edition` to `"1"` or `"2"` for this check. Without a pin, the check runs edition 1, or the latest edition when `checkEditions` is `"latest"`.
 
 ```jsonc
-"clauseSettings": {
-  "CD-3#strict": { "edition": "2" }
+"checkSettings": {
+  "strictness-weakened#strict": { "edition": "2" }
 }
 ```
 

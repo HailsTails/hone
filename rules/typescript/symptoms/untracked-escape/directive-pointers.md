@@ -18,15 +18,15 @@ TODOs, linter directives and `@ts-expect-error` without a tracker.
 - Ordinary explanatory comments and JSDoc are not flagged; keeping them out is left to review.
 
 ## Settings
-`trackerPatterns` narrows which tracked references count, for example to your own tracker's format. Each entry is a regular expression, as JavaScript source text, tested against each tracked reference with its parentheses; a reference counts when any entry matches. The test is an unanchored search unless the pattern anchors itself with `^` and `$`. The default, `["^\\(\\S+\\)$"]`, lets every tracked reference count.
+In `hone.config.json`, `trackerPatterns` narrows which tracked references count, for example to your own tracker's format. Each entry is a regular expression, as JavaScript source text, tested against each tracked reference with its parentheses; a reference counts when any entry matches. The test is an unanchored search unless the pattern anchors itself with `^` and `$`. The default, `["^\\(\\S+\\)$"]`, lets every tracked reference count.
 
 ```jsonc
-"clauseSettings": {
-  "CD-5#comments-directives": { "trackerPatterns": ["^\\(spec-\\d+\\)$", "^\\(#\\d+\\)$"] }
+"checkSettings": {
+  "untracked-escape#directive-pointers": { "trackerPatterns": ["^\\(spec-\\d+\\)$", "^\\(#\\d+\\)$"] }
 }
 ```
 
-The patterns only narrow: a reference must still be a parenthesised token with no spaces that contains a digit, so a pattern such as `.*` cannot make `(legacy)` count. The same measure applies to TODO, where the reference must come right after `TODO`. Each entry must be a non-empty string that compiles as a regular expression; otherwise the check stops with a piece-invalid failure naming the clause and the entry.
+The patterns only narrow: a reference must still be a parenthesised token with no spaces that contains a digit, so a pattern such as `.*` cannot make `(legacy)` count. The same measure applies to TODO, where the reference must come right after `TODO`. Each entry must be a non-empty string that compiles as a regular expression; otherwise the check stops with a piece-invalid failure naming the check and the entry.
 
 ## Example
 ```ts
@@ -38,4 +38,4 @@ const first = items[0]!;
 ```ts
 const first = items[0];
 ```
-Remove the need for the directive. If it must stay, add a tracked reference to the work that removes it: `// biome-ignore lint/style/noNonNullAssertion: until items is typed as non-empty (#42)`. The reference satisfies this clause only. A directive that escapes a selected clause, such as an `eslint-disable` naming a selected rule or a `@ts-expect-error` under [unlisted-cast-site](../claimed-type/unlisted-cast-site.md), still needs a file record on that clause, and that record does not satisfy this clause.
+Remove the need for the directive. If it must stay, add a tracked reference to the work that removes it: `// biome-ignore lint/style/noNonNullAssertion: until items is typed as non-empty (#42)`. The reference satisfies `directive-pointers`. A directive that escapes a selected check, such as an `eslint-disable` naming a selected rule or a `@ts-expect-error` under [unlisted-cast-site](../claimed-type/unlisted-cast-site.md), also needs a record for the escaped check and file.
