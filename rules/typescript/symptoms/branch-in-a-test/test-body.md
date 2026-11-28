@@ -7,7 +7,7 @@
 }
 ```
 
-Branches in a test file. These run with the other [test-body checks](../../../README.md#checks-the-test-body-checks), which share their scope, editions and settings.
+Branches in a test file. See the other [test-body checks](../../../README.md#checks-the-test-body-checks).
 
 ## Flags
 

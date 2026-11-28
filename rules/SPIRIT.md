@@ -12,7 +12,7 @@ A finding is rarely about the line it names. It is a signal about the design aro
 
 Take this chain, in order.
 
-1. **Measure.** Count the sites for the failing clause. Group them by folder, by the value or dependency involved, and by who wrote them when.
+1. **Measure.** Count the sites for the failing check. Group them by folder, by the value or dependency involved, and by who wrote them when.
 2. **Ask what each group points at.** Read the symptom's "May indicate" and "Breach usually sits" lines on [the symptoms page](typescript/symptoms.md) and match each group against them. Most groups share one cause.
 3. **Then decide.** Name the cause, where it lives, the forward goal, and the first step that unlocks it. Fix the cause and the sites go with it.
 
@@ -20,19 +20,19 @@ Exclusions and settings are not the first move. Reaching for one before step 2 h
 
 ## Debt, not noise
 
-On first adoption of an existing codebase, a high count is debt made visible. It is not evidence the rule is wrong for the codebase. The useful response is an assessment for each high-count clause: which cause applies here, where, the forward goal, and the steps toward it, written down where the next person to hit the red check will read it ([ADOPTING step 5a](../ADOPTING.md#5a-write-the-assessment)). A file carve-out holds that debt at rest while the steps are taken. Touching the file pays it: the debt [is forfeited](records.md#debt) once the file is touched.
+On first adoption of an existing codebase, a high count is debt made visible. It is not evidence the rule is wrong for the codebase. Write an [assessment](../ADOPTING.md#5a-write-the-assessment) for each check with a high count. It names the cause, where it applies, the goal and the steps toward it. Debt records hold those findings while the steps are taken. Touching the file [forfeits the debt](records.md#debt).
 
 ## Boundaries are where exceptions belong
 
 Some code has to touch the outside: a library, the runtime, raw input. Those places are boundaries. A clean boundary is the cheap, authorised place for what the rules forbid elsewhere: one file, recorded once, small enough to read whole. The rest of the code then needs no escape. If an exception keeps wanting to spread, the boundary is in the wrong place or does not exist yet.
 
-## Not adopted, not run, carved out, escaped
+## Not adopted, not run, held as debt, escaped
 
-A clause can be in one of three declared states. A fourth thing is the hole.
+When a check cannot run clean, declare how the repository will treat it.
 
 1. **Not adopted.** The rule does not apply to this codebase. A tech lead declares that, in the open.
-2. **Adopted, mechanism not run.** The rule binds, but its mechanical check is not a true measure of the rule's intent in this codebase, or cannot work here for a technical reason. The check is set aside; the intent is not. It is still owed, through review.
-3. **Clause-wide carve-out.** The rule binds and its check is sound. There is debt the codebase cannot address right now, recorded with its why-chain and an owner who will pay it down.
+2. **Adopted, engine not run.** The rule binds, but its mechanical check is not a true measure of the rule's intent in this codebase, or cannot work here for a technical reason. The check is set aside; the intent is not. It is still owed, through review.
+3. **Held as debt.** The rule binds and the check still runs. Record existing findings as debt file by file and use the assessment to say how the repository will pay it down.
 4. **An escape at a site.** The rule is adopted, its check is sound, and one place steps around it. That keeps the rule's name and loses its effect. It is the hole that justifies not thinking the design through.
 
 Choose 1, 2 or 3 deliberately, with reasons. Do not do 4.
