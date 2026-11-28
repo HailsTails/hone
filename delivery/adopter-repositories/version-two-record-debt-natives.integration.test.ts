@@ -1,6 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import type { Result } from "../../src/domain/result.ts";
+import { everyOk } from "../../src/domain/settings/every-ok.ts";
 import {
   projectCommandOf,
   pruneCommandOf,
@@ -96,11 +98,11 @@ const GIT_ADD = ["add", "."];
 
 const GIT_COMMIT = ["commit", "-q", "-m", "commit"];
 
-const DONE = { outcome: "ok", value: null };
+const DONE = { outcome: "ok", value: null } satisfies Result<null, never>;
 
-const WRITTEN = { outcome: "ok", value: undefined };
+const WRITTEN = { outcome: "ok", value: undefined } satisfies Result<void, never>;
 
-const SUCCEEDED = { outcome: "exited", exitCode: 0 };
+const SUCCEEDED = { outcome: "exited", exitCode: 0 } satisfies Partial<StepRun>;
 
 const runGit = (request: {
   readonly repo: AbsolutePath;
@@ -136,14 +138,20 @@ const writeIn = (request: {
   readonly text: string;
 }) => fileText.write({ path: `${request.repo}/${request.file}`, text: request.text });
 
-const createProjectedBase = ({ repo }: { readonly repo: AbsolutePath }): readonly StepRun[] => [
-  runGit({ repo, arguments: GIT_ADD }),
-  runHone({ repo, subcommand: "project", options: [] }),
-  runGit({ repo, arguments: GIT_ADD }),
-  runGit({ repo, arguments: GIT_COMMIT }),
-];
+const writeFiles = (request: {
+  readonly repo: AbsolutePath;
+  readonly files: readonly { readonly file: string; readonly text: string }[];
+}) =>
+  everyOk({
+    entries: request.files,
+    resolve: (file) => writeIn({ repo: request.repo, ...file }),
+  });
 
-const BASE_CREATED = [SUCCEEDED, SUCCEEDED, SUCCEEDED, SUCCEEDED];
+const exited = (exitCode: number, output: string): StepRun => ({
+  outcome: "exited",
+  exitCode,
+  output,
+});
 
 const AT_HEAD = ["--base-revision", "HEAD"];
 
@@ -192,28 +200,21 @@ ${CLASS_SYMPTOM}verdict: fail (partial assessment)
 const OVERRIDE_DETAIL =
   "an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it";
 
-const writeInheritedFiles = ({ repo }: { readonly repo: AbsolutePath }) => [
-  scratch.removeTree({ path: repo }),
-  scratch.makeDirectory({ path: `${repo}/src` }),
-  writeIn({ repo, file: "hone.config.json", text: CONFIG }),
-  writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG_WITH_OVERRIDE }),
-  writeIn({ repo, file: "src/kept.ts", text: CLASS_SOURCE }),
-  writeIn({ repo, file: "src/disabled.ts", text: INLINE_DISABLE_SOURCE }),
-  writeIn({ repo, file: "src/directive.ts", text: TYPE_DIRECTIVE_SOURCE }),
-  writeIn({ repo, file: "src/legacy-clean.ts", text: CLEAN_LEGACY_SOURCE }),
-  writeIn({ repo, file: "src/legacy-class.ts", text: CLASS_LEGACY_SOURCE }),
+const INHERITED_FILES = [
+  { file: "hone.config.json", text: CONFIG },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_WITH_OVERRIDE },
+  { file: "src/kept.ts", text: CLASS_SOURCE },
+  { file: "src/disabled.ts", text: INLINE_DISABLE_SOURCE },
+  { file: "src/directive.ts", text: TYPE_DIRECTIVE_SOURCE },
+  { file: "src/legacy-clean.ts", text: CLEAN_LEGACY_SOURCE },
+  { file: "src/legacy-class.ts", text: CLASS_LEGACY_SOURCE },
 ];
 
-const INHERITED_FILES_WRITTEN = [
-  DONE,
-  DONE,
-  WRITTEN,
-  WRITTEN,
-  WRITTEN,
-  WRITTEN,
-  WRITTEN,
-  WRITTEN,
-  WRITTEN,
+const PAID_FILES = [
+  { file: "src/kept.ts", text: FIXED_CLASS_SOURCE },
+  { file: "src/disabled.ts", text: FIXED_DISABLE_SOURCE },
+  { file: "src/directive.ts", text: FIXED_DIRECTIVE_SOURCE },
+  { file: "src/legacy-class.ts", text: FIXED_CLASS_LEGACY_SOURCE },
 ];
 
 const recordedText = (request: {
@@ -261,26 +262,38 @@ describe("hone record-debt over a repository that inherits a finding, an inline 
     "goes red, records the debt each needs, and goes green with a base revision once projected; paying it makes the debt prunable",
     () => {
       const repo = INHERITED_REPO;
-      expect(writeInheritedFiles({ repo })).toMatchObject(INHERITED_FILES_WRITTEN);
-      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
-      expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: INHERITED_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
 
       const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
       const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
-      expect(writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG })).toEqual(WRITTEN);
+      const configuration = writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
+      assert.include(configuration, WRITTEN, `write ${repo}/eslint.config.mjs`);
       const projected = runHone({ repo, subcommand: "project", options: [] });
-      expect(runGit({ repo, arguments: GIT_ADD })).toMatchObject(SUCCEEDED);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
       const adopted = runHone({ repo, subcommand: "check", options: AT_HEAD });
 
-      expect([
-        runGit({ repo, arguments: GIT_ADD }),
-        runGit({ repo, arguments: GIT_COMMIT }),
-        writeIn({ repo, file: "src/kept.ts", text: FIXED_CLASS_SOURCE }),
-        writeIn({ repo, file: "src/disabled.ts", text: FIXED_DISABLE_SOURCE }),
-        writeIn({ repo, file: "src/directive.ts", text: FIXED_DIRECTIVE_SOURCE }),
-        writeIn({ repo, file: "src/legacy-class.ts", text: FIXED_CLASS_LEGACY_SOURCE }),
-        runGit({ repo, arguments: GIT_ADD }),
-      ]).toMatchObject([SUCCEEDED, SUCCEEDED, WRITTEN, WRITTEN, WRITTEN, WRITTEN, SUCCEEDED]);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage debt at ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit debt at ${repo}`);
+      const fixed = writeFiles({ repo, files: PAID_FILES });
+      assert.include(fixed, { outcome: "ok" }, `write fixes under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixes at ${repo}`);
       const paid = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
       const pruned = runHone({ repo, subcommand: "prune-debt", options: FORFEITURE_ELSEWHERE });
       const project = projectCommandIn({ repo });
@@ -289,20 +302,12 @@ describe("hone record-debt over a repository that inherits a finding, an inline 
       assert(project.outcome === "ok", "the project command is made");
       assert(prune.outcome === "ok", "the prune command is made");
       expect({ inherited, recorded, projected, adopted, paid, pruned }).toEqual({
-        inherited: { outcome: "exited", output: INHERITED_TEXT, exitCode: 1 },
-        recorded: {
-          outcome: "exited",
-          output: recordedText({ projectCommand: project.value }),
-          exitCode: 0,
-        },
-        projected: {
-          outcome: "exited",
-          output: "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n",
-          exitCode: 0,
-        },
-        adopted: { outcome: "exited", output: ADOPTED_TEXT, exitCode: 0 },
-        paid: { outcome: "exited", output: paidText({ pruneCommand: prune.value }), exitCode: 1 },
-        pruned: { outcome: "exited", output: PRUNED_TEXT, exitCode: 0 },
+        inherited: exited(1, INHERITED_TEXT),
+        recorded: exited(0, recordedText({ projectCommand: project.value })),
+        projected: exited(0, "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n"),
+        adopted: exited(0, ADOPTED_TEXT),
+        paid: exited(1, paidText({ pruneCommand: prune.value })),
+        pruned: exited(0, PRUNED_TEXT),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
@@ -316,17 +321,13 @@ export default [...hone, { ignores: ["src/ignored.ts"] }];
 const SUPPRESSIONS = `{ "src/suppressed.ts": { "hone/authored-class-or-this#class-keyword": { "count": 1 } } }
 `;
 
-const writeHiddenFiles = ({ repo }: { readonly repo: AbsolutePath }) => [
-  scratch.removeTree({ path: repo }),
-  scratch.makeDirectory({ path: `${repo}/src` }),
-  writeIn({ repo, file: "hone.config.json", text: CONFIG }),
-  writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING }),
-  writeIn({ repo, file: "eslint-suppressions.json", text: SUPPRESSIONS }),
-  writeIn({ repo, file: "src/ignored.ts", text: CLASS_SOURCE }),
-  writeIn({ repo, file: "src/suppressed.ts", text: CLASS_SOURCE }),
+const HIDDEN_FILES = [
+  { file: "hone.config.json", text: CONFIG },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING },
+  { file: "eslint-suppressions.json", text: SUPPRESSIONS },
+  { file: "src/ignored.ts", text: CLASS_SOURCE },
+  { file: "src/suppressed.ts", text: CLASS_SOURCE },
 ];
-
-const HIDDEN_FILES_WRITTEN = [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN];
 
 const HIDDEN_FINDINGS = `authored-class-or-this#class-keyword eslint src/ignored.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 authored-class-or-this#class-keyword eslint src/suppressed.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
@@ -408,17 +409,13 @@ symptoms (1)
 ${CLASS_SYMPTOM}verdict: fail
 `;
 
-const writeExcludedFiles = ({ repo }: { readonly repo: AbsolutePath }) => [
-  scratch.removeTree({ path: repo }),
-  scratch.makeDirectory({ path: `${repo}/src` }),
-  writeIn({ repo, file: "hone.config.json", text: CONFIG_EXCLUDING_SOME_IGNORED }),
-  writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING_VENDORED }),
-  writeIn({ repo, file: "src/ignored.ts", text: CLASS_SOURCE }),
-  writeIn({ repo, file: "src/vendor-a.ts", text: CLASS_SOURCE }),
-  writeIn({ repo, file: "src/vendor-b.ts", text: CLASS_SOURCE }),
+const EXCLUDED_FILES = [
+  { file: "hone.config.json", text: CONFIG_EXCLUDING_SOME_IGNORED },
+  { file: "eslint.config.mjs", text: ESLINT_CONFIG_IGNORING_VENDORED },
+  { file: "src/ignored.ts", text: CLASS_SOURCE },
+  { file: "src/vendor-a.ts", text: CLASS_SOURCE },
+  { file: "src/vendor-b.ts", text: CLASS_SOURCE },
 ];
-
-const EXCLUDED_FILES_WRITTEN = [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, WRITTEN];
 
 const excludedRecordedText = (request: {
   readonly projectCommand: string;
@@ -432,9 +429,20 @@ describe("hone over a repository whose ESLint configuration ignores files that H
     "prints no ignore line for an excluded file, and the line naming both routes for an ignored file that is not excluded",
     () => {
       const repo = EXCLUDED_REPO;
-      expect(writeExcludedFiles({ repo })).toMatchObject(EXCLUDED_FILES_WRITTEN);
-      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
-      expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: EXCLUDED_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
 
       const checked = runHone({ repo, subcommand: "check", options: [] });
       const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
@@ -442,12 +450,8 @@ describe("hone over a repository whose ESLint configuration ignores files that H
 
       assert(project.outcome === "ok", "the project command is made");
       expect({ checked, recorded }).toEqual({
-        checked: { outcome: "exited", output: EXCLUDED_CHECK_TEXT, exitCode: 1 },
-        recorded: {
-          outcome: "exited",
-          output: excludedRecordedText({ projectCommand: project.value }),
-          exitCode: 0,
-        },
+        checked: exited(1, EXCLUDED_CHECK_TEXT),
+        recorded: exited(0, excludedRecordedText({ projectCommand: project.value })),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
@@ -459,44 +463,51 @@ describe("hone record-debt over a repository whose ESLint configuration ignores 
     "records the findings Hone's own run finds there, and goes green once the ignore and the entry are removed",
     () => {
       const repo = HIDDEN_REPO;
-      expect(writeHiddenFiles({ repo })).toMatchObject(HIDDEN_FILES_WRITTEN);
-      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
-      expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
+      assert.include(scratch.removeTree({ path: repo }), DONE, `remove scratch repo ${repo}`);
+      assert.include(scratch.makeDirectory({ path: `${repo}/src` }), DONE, `create ${repo}/src`);
+      const written = writeFiles({ repo, files: HIDDEN_FILES });
+      assert.include(written, { outcome: "ok" }, `write fixture files under ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_INIT }), SUCCEEDED, `git init ${repo}`);
+      assert.include(runGit({ repo, arguments: GIT_ADD }), SUCCEEDED, `stage fixture at ${repo}`);
+      const baseProjection = runHone({ repo, subcommand: "project", options: [] });
+      assert.include(baseProjection, SUCCEEDED, `project fixture at ${repo}`);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
+      assert.include(runGit({ repo, arguments: GIT_COMMIT }), SUCCEEDED, `commit base at ${repo}`);
 
       const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
       const recorded = runHone({ repo, subcommand: "record-debt", options: AT_HEAD });
       const projected = runHone({ repo, subcommand: "project", options: [] });
-      expect(runGit({ repo, arguments: GIT_ADD })).toMatchObject(SUCCEEDED);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
       const stillHidden = runHone({ repo, subcommand: "check", options: AT_HEAD });
-      expect([
-        writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG }),
-        runGit({ repo, arguments: ["rm", "-q", "-f", "eslint-suppressions.json"] }),
-      ]).toMatchObject([WRITTEN, SUCCEEDED]);
+      const configuration = writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
+      assert.include(configuration, WRITTEN, `write ${repo}/eslint.config.mjs`);
+      const removed = runGit({ repo, arguments: ["rm", "-q", "-f", "eslint-suppressions.json"] });
+      assert.include(removed, SUCCEEDED, `remove ${repo}/eslint-suppressions.json`);
       const reprojected = runHone({ repo, subcommand: "project", options: [] });
-      expect(runGit({ repo, arguments: GIT_ADD })).toMatchObject(SUCCEEDED);
+      assert.include(
+        runGit({ repo, arguments: GIT_ADD }),
+        SUCCEEDED,
+        `stage projection at ${repo}`,
+      );
       const adopted = runHone({ repo, subcommand: "check", options: AT_HEAD });
       const project = projectCommandIn({ repo });
 
       assert(project.outcome === "ok", "the project command is made");
       expect({ inherited, recorded, projected, stillHidden, reprojected, adopted }).toEqual({
-        inherited: { outcome: "exited", output: HIDDEN_INHERITED_TEXT, exitCode: 1 },
-        recorded: {
-          outcome: "exited",
-          output: hiddenRecordedText({ projectCommand: project.value }),
-          exitCode: 0,
-        },
-        projected: {
-          outcome: "exited",
-          output: "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n",
-          exitCode: 0,
-        },
-        stillHidden: { outcome: "exited", output: STILL_HIDDEN_TEXT, exitCode: 1 },
-        reprojected: {
-          outcome: "exited",
-          output: "hone.eslint.mjs unchanged\nhone.eslint.d.mts unchanged\n",
-          exitCode: 0,
-        },
-        adopted: { outcome: "exited", output: HIDDEN_ADOPTED_TEXT, exitCode: 0 },
+        inherited: exited(1, HIDDEN_INHERITED_TEXT),
+        recorded: exited(0, hiddenRecordedText({ projectCommand: project.value })),
+        projected: exited(0, "hone.eslint.mjs written\nhone.eslint.d.mts unchanged\n"),
+        stillHidden: exited(1, STILL_HIDDEN_TEXT),
+        reprojected: exited(0, "hone.eslint.mjs unchanged\nhone.eslint.d.mts unchanged\n"),
+        adopted: exited(0, HIDDEN_ADOPTED_TEXT),
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
