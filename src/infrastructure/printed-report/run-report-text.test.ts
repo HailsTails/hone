@@ -567,6 +567,7 @@ const rendered = (request: {
     catalogue: REPORT_CATALOGUE,
     content: CONTENT,
     symptomPage: SYMPTOM_PAGE,
+    showPage: ({ target }) => target,
     projectCommand: PROJECT_COMMAND,
     pruneCommand: PRUNE_COMMAND,
   });
@@ -580,6 +581,7 @@ describe("mapRunReportToFailingLines", () => {
       catalogue: REPORT_CATALOGUE,
       content: CONTENT,
       symptomPage: SYMPTOM_PAGE,
+      showPage: ({ target }) => target,
       projectCommand: PROJECT_COMMAND,
       pruneCommand: PRUNE_COMMAND,
     });
@@ -612,6 +614,7 @@ describe("mapRunReportToFailingLines", () => {
       catalogue: REPORT_CATALOGUE,
       content: CONTENT,
       symptomPage: SYMPTOM_PAGE,
+      showPage: ({ target }) => target,
       projectCommand: PROJECT_COMMAND,
       pruneCommand: PRUNE_COMMAND,
     });
@@ -712,6 +715,7 @@ describe("renderRunSectionsText", () => {
         catalogue: REPORT_CATALOGUE,
         content: CONTENT,
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,
       }),
@@ -726,6 +730,7 @@ describe("renderRunSectionsText", () => {
         catalogue: REPORT_CATALOGUE,
         content: CONTENT,
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,
       }),

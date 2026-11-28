@@ -1,3 +1,4 @@
+import type { ShownPathOf } from "../../../application/ports/installation/shown-path-of.ts";
 import {
   type CheckSite,
   checkSiteText,
@@ -46,6 +47,7 @@ export type NotedContent = RuleContent<"name" | "sourceFile" | "mayIndicate"> & 
 const symptomNote = (request: {
   readonly site: CheckSite;
   readonly symptomPage: string;
+  readonly showPage: ShownPathOf;
   readonly content: NotedContent;
 }): string => {
   if (request.site.sited !== "check") return "";
@@ -55,26 +57,37 @@ const symptomNote = (request: {
   });
   if (found.outcome === "failed") return ` ${symptomUnheldText({ failure: found.error })}`;
   const symptom = found.value;
-  const source = symptomSourceOf({ symptom, page: request.symptomPage });
+  const source = symptomSourceOf({
+    symptom,
+    page: request.symptomPage,
+    showPage: request.showPage,
+  });
   const indicated = indicatedNamesOf({ symptom }).join(", ");
   return ` symptom: ${symptom.name} (${source}) may indicate: ${indicated}`;
 };
 
 const RECIPE_PAGE_EXTENSION = ".md";
 
-const mapExampleToText = (request: { readonly example: ExampleAddress }): string => {
+const mapExampleToText = (request: {
+  readonly example: ExampleAddress;
+  readonly showPage: ShownPathOf;
+}): string => {
   const { recipe, anchor } = request.example;
-  return `${recipe.sourceFile ?? `${recipe.name}${RECIPE_PAGE_EXTENSION}`}#${anchor}`;
+  return `${request.showPage({ target: recipe.sourceFile ?? `${recipe.name}${RECIPE_PAGE_EXTENSION}` })}#${anchor}`;
 };
 
-const mapExamplesToText = (request: { readonly examples: readonly ExampleAddress[] }): string =>
+const mapExamplesToText = (request: {
+  readonly examples: readonly ExampleAddress[];
+  readonly showPage: ShownPathOf;
+}): string =>
   request.examples.length === 0
     ? ""
-    : ` (${request.examples.map((example) => mapExampleToText({ example })).join(", ")})`;
+    : ` (${request.examples.map((example) => mapExampleToText({ example, showPage: request.showPage })).join(", ")})`;
 
 const fixNote = (
   request: CatalogueRequest & {
     readonly page: CheckPage;
+    readonly showPage: ShownPathOf;
     readonly finding: CheckFinding;
   },
 ): string => {
@@ -89,13 +102,14 @@ const fixNote = (
     check: page.check,
     form: remedy.form,
   });
-  return ` form: ${remedy.form} (${page.check.page}#${remedy.form}) fix: ${onOneLine({ text: remedy.fix })}${mapExamplesToText({ examples })}`;
+  return ` form: ${remedy.form} (${request.showPage({ target: page.check.page })}#${remedy.form}) fix: ${onOneLine({ text: remedy.fix })}${mapExamplesToText({ examples, showPage: request.showPage })}`;
 };
 
 export const findingLine = (
   request: CatalogueRequest & {
     readonly finding: CheckFinding;
     readonly symptomPage: string;
+    readonly showPage: ShownPathOf;
     readonly content: NotedContent;
   },
 ): string => {
@@ -103,13 +117,14 @@ export const findingLine = (
     finding: request.finding,
     pages: request.content,
   });
-  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage, content: request.content })}${fixNote({ ...request, page })}`;
+  return `${locatedText({ site, finding: request.finding })}${symptomNote({ ...request, site })}${fixNote({ ...request, page })}`;
 };
 
 export const answeredLine = (
   request: CatalogueRequest & {
     readonly answered: AnsweredFinding;
     readonly content: CheckPages;
+    readonly showPage: ShownPathOf;
   },
 ): string => {
   const { finding, by } = request.answered;

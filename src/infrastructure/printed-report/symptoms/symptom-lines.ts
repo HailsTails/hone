@@ -1,3 +1,4 @@
+import type { ShownPathOf } from "../../../application/ports/installation/shown-path-of.ts";
 import type { SymptomUnheld } from "../../../domain/language-layer/rule-content.ts";
 import type {
   Indication,
@@ -40,11 +41,16 @@ const recipeSentence = (request: { readonly recipes: readonly Recipe[] }): strin
 export const symptomSourceOf = (request: {
   readonly symptom: Pick<Symptom, "name" | "sourceFile">;
   readonly page: string;
-}): string => request.symptom.sourceFile ?? `${request.page}#${request.symptom.name}`;
+  readonly showPage: ShownPathOf;
+}): string =>
+  request.symptom.sourceFile === undefined
+    ? `${request.showPage({ target: request.page })}#${request.symptom.name}`
+    : request.showPage({ target: request.symptom.sourceFile });
 
 export const symptomLine = (request: {
   readonly symptom: Symptom;
   readonly page: string;
+  readonly showPage: ShownPathOf;
 }): string => {
   const { symptom } = request;
   const indications = symptom.mayIndicate

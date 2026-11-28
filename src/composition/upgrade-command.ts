@@ -29,7 +29,7 @@ import {
   upgradeOf,
 } from "../operations/upgrade/run-upgrade-command.ts";
 import type { FoundTreeReach } from "../operations/upgrade/smoothing-commands.ts";
-import { checkCommandsOf, symptomPageOf } from "./check-command.ts";
+import { checkCommandsOf, reportPagesOf } from "./check-command.ts";
 import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import {
@@ -102,7 +102,7 @@ const createPointers = (request: Placed): Result<CheckReportPointers, LoadFailur
     ? commands
     : {
         outcome: "ok",
-        value: { ...commands.value, symptomPage: symptomPageOf({ ports, located }) },
+        value: { ...commands.value, ...reportPagesOf({ ports, located }) },
       };
 };
 

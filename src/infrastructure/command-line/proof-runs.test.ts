@@ -55,6 +55,7 @@ const CONTENT = {
 
 const POINTERS = {
   symptomPage: "rules/typescript/symptoms.md",
+  showPage: ({ target }: { readonly target: string }) => target,
   pruneCommand: "hone prune-debt --repo .",
   projectCommand: "hone project --repo .",
 };

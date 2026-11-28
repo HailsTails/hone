@@ -280,7 +280,7 @@ const CONFIG_WITH_HONE =
   'import projection from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
 
 const WALKER_SETUP = {
-  replace: ["disciplines.json"],
+  replace: ["disciplines.json", "src/plain.test.ts"],
   files: [
     {
       name: V2_CONFIG,
@@ -288,9 +288,19 @@ const WALKER_SETUP = {
   "version": 2,
   "ruleSets": {},
   "checks": {
+    "branch-in-a-test#test-body": "walker",
     "unit-without-a-running-test#companion-test-file": "walker"
-  }
+  },
+  "forfeiture": "elsewhere"
 }\n`,
+    },
+    {
+      name: "src/plain.test.ts",
+      text: 'import { expect, it } from "vitest";\nit("holds three", () => { if (true) expect(3).toBe(3); });\n',
+    },
+    {
+      name: "hone-records/debt/branch-in-a-test.json",
+      text: '{"version":2,"records":[{"answers":"branch-in-a-test#test-body","file":"src/plain.test.ts"}]}\n',
     },
   ],
 };
@@ -443,11 +453,17 @@ const AUDIT_ACTIONS: readonly ProofAction[] = [
     kind: "check",
     expectation: {
       exitCode: 1,
-      output: `findings (1)
+      output: `editions (1)
+branch-in-a-test#test-body walker edition 1 of 2
+findings (1)
 unit-without-a-running-test#companion-test-file walker src/kept.ts:1:0 missing co-located *.test.ts(x) sibling symptom: unit-without-a-running-test (node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test) may indicate: tested-where-its-owned
+answered (1)
+branch-in-a-test#test-body walker src/plain.test.ts:2:26 if (true) expect(3).toBe(3); });  form: branching-with-if (node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md#branching-with-if) fix: The test branches because the unit can return more than one shape. Give each outcome its own test or make the return type express the one outcome callers can rely on. (node_modules/@hailstails/hone/rules/typescript/recipes/it-each-over-typed-rows.md#branching-with-if, node_modules/@hailstails/hone/rules/typescript/recipes/whole-written-out-expectation.md#branching-with-if) answered by debt
+assessment (1)
+forfeiture elsewhere: 1 debt record not checked for forfeiture in this run
 symptoms (1)
 unit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Recipe: Companion test file. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test
-verdict: fail
+verdict: fail (partial assessment)
 `,
     },
   },

@@ -533,14 +533,14 @@ describe("readNamedSettings", () => {
           ...LOOP_KEYWORD,
           ruleSet: acme,
           name: "team-loop",
-          sourceFile: "rules/typescript/symptoms/team-loop.md",
+          sourceFile: "/repo/team-rules/rules/typescript/symptoms/team-loop.md",
         },
       ],
       recipes: [
         {
           ruleSet: acme,
           name: "team-iteration",
-          sourceFile: "rules/typescript/recipes/team-iteration.md",
+          sourceFile: "/repo/team-rules/rules/typescript/recipes/team-iteration.md",
           title: "Team iteration",
           standing: "accepted",
           reason: { text: "It reads flat.", standing: "accepted" },
@@ -551,7 +551,7 @@ describe("readNamedSettings", () => {
         {
           ...LOOP_KEYWORD_LOOPS,
           symptom: { ruleSet: acme, name: "team-loop" },
-          page: "rules/typescript/symptoms/team-loop/loops.md",
+          page: "/repo/team-rules/rules/typescript/symptoms/team-loop/loops.md",
         },
       ],
     };
@@ -560,13 +560,13 @@ describe("readNamedSettings", () => {
       {
         entry: "recipe",
         catalogue: {
-          recipes: [{ sourceFile: "team-rules/rules/typescript/recipes/team-iteration.md" }],
+          recipes: [{ sourceFile: "/repo/team-rules/rules/typescript/recipes/team-iteration.md" }],
         },
       },
       {
         entry: "symptom",
         catalogue: {
-          symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
+          symptoms: [{ sourceFile: "/repo/team-rules/rules/typescript/symptoms/team-loop.md" }],
         },
       },
       {
@@ -575,12 +575,12 @@ describe("readNamedSettings", () => {
           checks: [
             {
               symptom: { ruleSet: acme, name: "team-loop" },
-              page: "team-rules/rules/typescript/symptoms/team-loop/loops.md",
+              page: "/repo/team-rules/rules/typescript/symptoms/team-loop/loops.md",
             },
           ],
         },
       },
-    ])("places the $entry under the team's folder", ({ catalogue }) => {
+    ])("keeps the $entry location supplied by the catalogue", ({ catalogue }) => {
       const sources = {
         ...sourcesHolding({ document: DOCUMENT }),
         catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({

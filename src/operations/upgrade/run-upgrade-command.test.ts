@@ -157,6 +157,7 @@ const inputWith = (
   foundTreeReach: vi.fn(),
   pointers: {
     symptomPage: "rules/typescript/symptoms.md",
+    showPage: ({ target }) => target,
     pruneCommand: "hone prune-debt --repo /repo",
     projectCommand: "hone project --repo /repo",
   },

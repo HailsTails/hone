@@ -761,7 +761,8 @@ describe("versionTwoReportRequestOf", () => {
       catalogue: REPORT_CATALOGUE,
       content,
       output: "counts",
-      symptomPage: "../install/rules/typescript/symptoms.md",
+      symptomPage: "/install/rules/typescript/symptoms.md",
+      showPage: expect.any(Function),
       projectCommand: "node /install/src/hone.ts project --repo /repo",
       pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
     });
