@@ -63,10 +63,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
     },
     {

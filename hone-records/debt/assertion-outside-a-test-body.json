@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
