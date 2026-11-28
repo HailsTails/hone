@@ -238,6 +238,7 @@ const EMPTY_AFTER: RunReport = {
 };
 
 const NAMED_LOOP_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   file: SRC_A,
   anchor: { line: 3, column: 1 },
   snippet: "the loop line",

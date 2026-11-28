@@ -331,6 +331,7 @@ const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 const PACKAGE_FILE = repoPathOf("package.json");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -339,6 +340,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const BRANCH_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: TEST_FILE,
@@ -361,6 +363,7 @@ const SECOND_CAST_CHECK: Check = {
 };
 
 const TEAM_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: ORDER_FILE,
@@ -596,7 +599,7 @@ describe("findingLine", () => {
         recipes: [recipe],
       },
       content: { symptoms: new Map([["acme/branch-in-a-test", symptom]]) },
-      finding: BRANCH_FINDING,
+      finding: { ...BRANCH_FINDING, ruleSet: symptom.ruleSet },
       symptomPage: SYMPTOM_PAGE,
     });
 
@@ -648,7 +651,7 @@ describe("findingLine", () => {
           symptoms: [symptom],
         },
         content: { symptoms: new Map([["acme/outside-import-past-a-boundary", symptom]]) },
-        finding: TEAM_FINDING,
+        finding: { ...TEAM_FINDING, ruleSet: symptom.ruleSet },
         symptomPage: SYMPTOM_PAGE,
       }),
     ).toBe(

@@ -296,6 +296,7 @@ const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -304,6 +305,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const CAST_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: WEBHOOK_FILE,
@@ -312,6 +314,7 @@ const CAST_FINDING: CheckFinding = {
 };
 
 const UNCATALOGUED_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "unknown-symptom#nowhere",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -428,7 +431,7 @@ describe("the debt a run's unanswered findings call for", () => {
           symptoms: [teamSymptom],
           checks: [{ ...CLOCK_CHECK, symptom: teamSymptom }],
         },
-        findings: [CLOCK_FINDING],
+        findings: [{ ...CLOCK_FINDING, ruleSet: acme }],
         runs: [WALKER_RUN],
       }).recordable,
     ).toEqual([

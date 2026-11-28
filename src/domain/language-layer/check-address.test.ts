@@ -209,6 +209,22 @@ describe("checkAddressOf", () => {
 });
 
 describe("checkAt", () => {
+  it("uses the qualified owner even when another owner holds the local check", () => {
+    const ruleSet = { name: ruleSetNameOf("acme") };
+    const teamCheck: Check = {
+      ...LOOP_KEYWORD_LOOPS,
+      symptom: { ...LOOP_KEYWORD_LOOPS.symptom, ruleSet },
+    };
+    const catalogue = { ...CATALOGUE, checks: [LOOP_KEYWORD_LOOPS, teamCheck] };
+    const address = { ruleSet, name: "loop-keyword#loops" };
+
+    const found = checkAt({ catalogue, address });
+    const missing = checkAt({ catalogue: CATALOGUE, address });
+
+    expect(found).toEqual({ found: "check", check: teamCheck });
+    expect(missing).toEqual({ found: "none" });
+  });
+
   it.each<AddressedRow>([
     { address: "loop-keyword#loops", check: LOOP_KEYWORD_LOOPS },
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },

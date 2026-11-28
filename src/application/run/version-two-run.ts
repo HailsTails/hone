@@ -9,6 +9,7 @@ import {
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
 import { recordsAtMovedPathsOf } from "../../domain/records/hone-records/records-following-renames.ts";
+import { runFailureOf } from "../../domain/report/run-failure.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
@@ -233,7 +234,10 @@ export const versionTwoRunOver = async (request: {
     answer,
   });
   if (report.outcome === "failed") {
-    return report;
+    return {
+      outcome: "failed",
+      error: runFailureOf({ engines: catalogue.engines, source: report.error }),
+    };
   }
   return {
     outcome: "ok",

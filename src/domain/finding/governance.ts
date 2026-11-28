@@ -1,5 +1,6 @@
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import type { OwnedName } from "../rule-set/rule-set-identity.ts";
 import type { CheckHit, CheckNativeException } from "../runner/check-observations.ts";
 import type { UnprojectedFolderReport } from "../runner/mechanism-run.ts";
 import type { Hit, NativeException } from "../runner/runner-result-types.ts";
@@ -16,7 +17,7 @@ export type AttributedNativeException = NativeException & {
   readonly mechanism: EngineId;
 };
 
-export type CheckFinding = CheckHit & { readonly mechanism: EngineId };
+export type CheckFinding = CheckHit & Pick<OwnedName, "ruleSet"> & { readonly mechanism: EngineId };
 
 export type NamedGovernedRun = {
   readonly mechanism: EngineId;

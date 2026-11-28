@@ -1,4 +1,4 @@
-import { checkOfFinding } from "../../finding/finding-check.ts";
+import { checkOfFinding, checkOfNativeException } from "../../finding/finding-check.ts";
 import type {
   AttributedCheckException,
   CheckFinding,
@@ -246,9 +246,9 @@ export const nativeSitesOf = (request: {
   if (!request.run.coverableKinds.includes(request.exception.kind)) {
     return [];
   }
-  const resolved = checkOfFinding({
+  const resolved = checkOfNativeException({
     catalogue: request.catalogue,
-    finding: { check: request.exception.check, mechanism: request.run.mechanism },
+    exception: { check: request.exception.check, mechanism: request.run.mechanism },
   });
   if (resolved.resolved === "none") return [];
   const { check } = resolved;

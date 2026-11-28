@@ -24,6 +24,7 @@ import type {
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 import type { VersionTwoReportOutput } from "../../src/domain/settings/report-output.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { runSelfCheck, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
@@ -58,6 +59,7 @@ const EMPTY_RUN_REPORT: RunReport = {
 };
 
 const NAMED_CLASS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "class-declared#class-syntax",
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },

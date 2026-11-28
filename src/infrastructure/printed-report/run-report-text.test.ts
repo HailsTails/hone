@@ -373,6 +373,7 @@ const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -381,6 +382,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const CAST_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: WEBHOOK_FILE,

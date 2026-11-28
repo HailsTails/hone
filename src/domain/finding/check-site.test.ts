@@ -295,6 +295,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: FILE,
@@ -303,6 +304,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const BRANCH_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: FILE,
@@ -312,6 +314,7 @@ const BRANCH_FINDING: CheckFinding = {
 };
 
 const UNFORMED_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#missing",
   mechanism: AUDIT,
   file: FILE,
@@ -320,6 +323,7 @@ const UNFORMED_FINDING: CheckFinding = {
 };
 
 const TEAM_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: FILE,
@@ -343,6 +347,7 @@ const TWO_CAST_CHECKS: SymptomCatalogue = {
 };
 
 const CAST_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: FILE,

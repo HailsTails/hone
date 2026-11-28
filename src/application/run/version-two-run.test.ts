@@ -314,7 +314,25 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selected: [],
+    selected: [
+      {
+        address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: "claimed-type#cast-expressions",
+          ruleSet: TOOL_RULE_SET,
+          engine: ESLINT,
+          checkOptions: { kind: "none" },
+          anchor: { kind: "file" },
+          pieceRoot: "/install/pieces",
+          settings: {},
+          checkSettings: {},
+          edition: editionOf("1"),
+        },
+        editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+      },
+    ],
     notAdopted: [],
     notRun: [],
     excluded: [repoPathOf("dist")],
@@ -376,7 +394,7 @@ const RUN: NamedEngineRun = {
   coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
   comparedOutputs: [],
   slices: [],
-  measured: [],
+  measured: [HIT],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
@@ -437,7 +455,7 @@ describe("versionTwoRunOver", () => {
         output: "actionable",
         report: {
           excluded: ["dist"],
-          findings: [{ ...HIT, mechanism: ESLINT }],
+          findings: [{ ...HIT, mechanism: ESLINT, ruleSet: TOOL_RULE_SET }],
           symptoms: [CLAIMED_TYPE],
         },
       },
@@ -789,7 +807,14 @@ it("refuses to compare against settings changed by the proposal", async () => {
     paths: new Set([repoPathOf("hone.config.json")]),
     landingRevision: "pinned",
   });
-  const stages = stagesGiving({ touched });
+  const stages = stagesGiving({
+    touched,
+    settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+      outcome: "ok",
+      value: { ...SETTINGS, selection: { ...SETTINGS.selection, selected: [] } },
+    }),
+    engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({ outcome: "ok", value: [] }),
+  });
 
   const inputs = versionTwoInputsOf({ stages });
   assert(inputs.outcome === "ok", "inputs are available");

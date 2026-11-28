@@ -226,6 +226,7 @@ const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/adapter-per-outside-
 const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
 const NO_CLASS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#class-syntax",
   file: FILE_A,
   anchor: { line: 3, column: 5 },
@@ -234,6 +235,7 @@ const NO_CLASS_IN_A: CheckFinding = {
 };
 
 const NO_CLASS_IN_B: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#class-syntax",
   file: FILE_B,
   anchor: { line: 8, column: 1 },
@@ -242,6 +244,7 @@ const NO_CLASS_IN_B: CheckFinding = {
 };
 
 const NO_THIS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#this-keyword",
   file: FILE_A,
   anchor: { line: 4, column: 7 },
@@ -252,6 +255,7 @@ const NO_THIS_IN_A: CheckFinding = {
 const NO_CLASS_IN_A_BY_ESLINT: CheckFinding = { ...NO_CLASS_IN_A, mechanism: ESLINT };
 
 const FOR_OF_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "loop-keyword#for-of",
   file: FILE_A,
   anchor: { line: 9, column: 2 },
@@ -260,6 +264,7 @@ const FOR_OF_IN_A: CheckFinding = {
 };
 
 const UNCATALOGUED_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "unknown-symptom#nowhere",
   file: FILE_A,
   anchor: { line: 1, column: 0 },
@@ -268,6 +273,7 @@ const UNCATALOGUED_IN_A: CheckFinding = {
 };
 
 const UUID_IMPORT_IN_IDS: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#import-or-require",
   file: IDS_ADAPTER,
   anchor: { line: 1, column: 0 },
@@ -276,6 +282,7 @@ const UUID_IMPORT_IN_IDS: CheckFinding = {
 };
 
 const LODASH_IMPORT_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#import-or-require",
   file: FILE_A,
   anchor: { line: 1, column: 0 },

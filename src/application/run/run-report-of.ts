@@ -37,6 +37,7 @@ import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touche
 import type { Result } from "../../domain/result.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
+import type { NamedEngineFailure } from "../ports/engine/engine-port.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import {
   engineProblemsOf,
@@ -232,7 +233,40 @@ const createComparisonEvidence = (
       : "unmeasured",
 });
 
-export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, SymptomUnheld> => {
+const createRaisedFindings = (
+  request: Pick<RunReportRequest, "runs" | "selection">,
+): Result<readonly RaisedFinding[], NamedEngineFailure> => {
+  const selections = Map.groupBy(request.selection.selected, ({ binding }) => binding.engine);
+  return gatheredOutcomes({
+    outcomes: request.runs.flatMap(({ hits, mechanism }) => {
+      const owners = new Map(
+        (selections.get(mechanism) ?? []).map(({ address }) => [address.check, address.ruleSet]),
+      );
+      return hits.map((hit): Result<readonly RaisedFinding[], NamedEngineFailure> => {
+        const ruleSet = owners.get(hit.check);
+        if (ruleSet === undefined) {
+          return {
+            outcome: "failed",
+            error: {
+              kind: "runner-failed",
+              mechanism,
+              failure: {
+                kind: "runner-invalid-output",
+                detail: `reported ${hit.check} without a selected check`,
+              },
+            },
+          };
+        }
+        const finding = { ...hit, mechanism, ruleSet };
+        return { outcome: "ok", value: [{ finding, party: partyOf({ finding }) }] };
+      });
+    }),
+  });
+};
+
+export const namedRunReportOf = (
+  request: RunReportRequest,
+): Result<RunReport, SymptomUnheld | NamedEngineFailure> => {
   const { catalogue, records, runs, selection } = request;
   const selected = selection.selected.map(({ binding }) => binding);
   const status = {
@@ -248,12 +282,8 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
       })),
     "projection-problems": engineProblemsOf({ catalogue, runs }),
   };
-  const findings = runs.flatMap(({ hits, mechanism }) =>
-    hits.map((hit): RaisedFinding => {
-      const finding = { ...hit, mechanism };
-      return { finding, party: partyOf({ finding }) };
-    }),
-  );
+  const findings = createRaisedFindings(request);
+  if (findings.outcome === "failed") return findings;
   const measurements = runMeasurementsOf({ ...request, selected });
   const unmeasured = [
     ...unmeasuredCarriedRecords({
@@ -266,7 +296,7 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
   const answering = request.answer({
     ...request,
     records: records.records,
-    findings,
+    findings: findings.value,
     measurements,
     readComparison: () =>
       createComparisonEvidence({

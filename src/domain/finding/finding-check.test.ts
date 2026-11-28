@@ -297,6 +297,7 @@ const FILE = repoPathOf("src/orders/charge-order.ts");
 const findingOf = (
   request: Pick<CheckFinding, "check" | "mechanism" | "remedy">,
 ): CheckFinding => ({
+  ruleSet: TOOL_RULE_SET,
   file: FILE,
   anchor: { line: 3, column: 4 },
   snippet: "snippet",

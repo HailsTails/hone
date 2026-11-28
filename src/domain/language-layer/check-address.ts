@@ -1,6 +1,6 @@
 import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import { ownedNameText } from "../rule-set/rule-set-identity.ts";
+import { type OwnedName, ownedNameText } from "../rule-set/rule-set-identity.ts";
 import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
 import type { Check, CheckAddress, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
 
@@ -28,13 +28,17 @@ export const qualifiedAddressOf = (request: {
 
 export const checkAt = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly address: string;
-}): FoundCheck =>
-  foundAmong({
-    checks: request.catalogue.checks.filter(
-      (candidate) => checkAddressOf({ check: candidate }) === request.address,
-    ),
-  });
+  readonly address: string | OwnedName;
+}): FoundCheck => {
+  const { address } = request;
+  const name = typeof address === "string" ? address : ownedNameText(address);
+  const check = request.catalogue.checks.find((candidate) =>
+    typeof address === "string"
+      ? checkAddressOf({ check: candidate }) === name
+      : qualifiedCheckAddressOf({ check: candidate }) === name,
+  );
+  return check === undefined ? NO_CHECK : { found: "check", check };
+};
 
 export const checksOf = <Each extends CheckContent>(request: {
   readonly catalogue: { readonly checks: readonly Each[] };

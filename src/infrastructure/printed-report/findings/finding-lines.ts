@@ -2,6 +2,7 @@ import {
   type CheckSite,
   checkSiteText,
   findingSiteOf,
+  nativeSiteOf,
   nativeSitesOf,
 } from "../../../domain/finding/check-site.ts";
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
@@ -164,5 +165,5 @@ export const unrecordedLines = (
 
 export const heldLine = (request: CatalogueRequest & { readonly held: HeldException }): string => {
   const { exception, by } = request.held;
-  return `${checkSiteText({ site: findingSiteOf({ catalogue: request.catalogue, finding: exception }) })} ${exception.kind} ${inlineDisableDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
+  return `${checkSiteText({ site: nativeSiteOf({ catalogue: request.catalogue, exception }) })} ${exception.kind} ${inlineDisableDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
 };
