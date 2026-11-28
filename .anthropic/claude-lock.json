@@ -9,26 +9,26 @@
     "./agents/hone-builder.md": {
       "kind": "agent",
       "id": "agent_01Q3xc9VhpVoWkFz48mqLWmr",
-      "version": "3",
-      "hash": "6cfbc39e8d926f9c32ae07118d45b61c",
-      "remote_hash": "fc8377e9c9f4f4869f8410e5d6f97cce",
-      "stamp": "3"
+      "version": "4",
+      "hash": "1dee8d992e40254d77695fd6ad6d9211",
+      "remote_hash": "d9c1e4e82fd945e8505d3bbd6647357f",
+      "stamp": "4"
     },
     "./agents/hone-reviewer.md": {
       "kind": "agent",
       "id": "agent_0166AL4hhkfnEMEUkbcRkeXR",
-      "version": "3",
-      "hash": "1e74cc2047a7c0debfd0912ef2e95346",
-      "remote_hash": "7ca248918b007ece421ce3ead6b5cf53",
-      "stamp": "3"
+      "version": "4",
+      "hash": "8ce4647232e37e350fa41ea84e4505e2",
+      "remote_hash": "5c82d95939a4647c3343adbeb15eb23b",
+      "stamp": "4"
     },
     "./agents/hone-triager.md": {
       "kind": "agent",
       "id": "agent_01Cx8XWLuQBAHiqGqh8qLvBo",
-      "version": "4",
-      "hash": "dd03b14377b2da28fc48d54d5cb005b8",
-      "remote_hash": "4afec2597e2546c3c6c666c1ad50c0b2",
-      "stamp": "4"
+      "version": "5",
+      "hash": "faee412c8cdfdb2995a1e1aa639c8d21",
+      "remote_hash": "6d13a16006b6ab5a3fff96a288a9fa0b",
+      "stamp": "5"
     },
     "./environments/hone.yaml": {
       "kind": "environment",
