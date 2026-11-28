@@ -5,6 +5,10 @@ import type {
   NamedEngineRun,
 } from "../../../../application/ports/engine/engine-run.ts";
 import type {
+  CheckHit,
+  CheckNativeException,
+} from "../../../../domain/runner/check-observations.ts";
+import type {
   ChecksSliceProblem,
   MisnamedRuleId,
   ProjectedFile,
@@ -20,10 +24,13 @@ import type {
   Equal,
 } from "../runner-module/type-equality.ts";
 import {
+  boundCheckExceptionSchema,
+  boundCheckHitSchema,
   checkHitSchema,
   checkMeasurementSchema,
   checkNativeExceptionSchema,
 } from "./check-wire.ts";
+import type { ChecksRunProjection } from "./checks-runner-types.ts";
 
 export const namedChecksRunnerModuleSchema = z.object({
   projectedKinds: z.array(nativeExceptionKindSchema),
@@ -105,8 +112,6 @@ const checksReportSchema = z.strictObject({
   nestedConfigurations: z.array(repoPathSchema).readonly(),
   unprojectedFolders: z.array(unprojectedFolderSchema).readonly(),
   misnamedRuleIds: z.array(misnamedRuleIdSchema).readonly(),
-  hits: z.array(checkHitSchema).readonly(),
-  nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
   measured: z.array(checkMeasurementSchema).readonly(),
 });
 
@@ -136,20 +141,34 @@ const reportWithProjection = <Shape extends z.ZodRawShape>(observations: Shape) 
   ]);
 };
 
-export const unscopedChecksRunReportSchema = reportWithProjection({});
+export const boundChecksRunReportSchema = reportWithProjection({
+  hits: z.array(boundCheckHitSchema).readonly(),
+  nativeExceptions: z.array(boundCheckExceptionSchema).readonly(),
+});
+
 export const namedChecksRunReportSchema = reportWithProjection({
+  hits: z.array(checkHitSchema).readonly(),
+  nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
   inapplicable: z.array(checkMeasurementSchema).readonly(),
 });
 
-type DecodedRunReport = NamedEngineProjection &
-  Omit<
-    NamedEngineRun,
-    "projection" | "mechanism" | "coverableKinds" | "coverage" | "comparedOutputs"
-  >;
+type ReportObservations<Hit, Exception> = Omit<
+  NamedEngineRun,
+  | keyof NamedEngineProjection
+  | "mechanism"
+  | "coverableKinds"
+  | "coverage"
+  | "comparedOutputs"
+  | "hits"
+  | "nativeExceptions"
+> & { readonly hits: readonly Hit[]; readonly nativeExceptions: readonly Exception[] };
 
-export const decodeUnscopedChecksReport = (
-  wire: z.output<typeof unscopedChecksRunReportSchema>,
-): DecodedRunReport => {
+export const decodeUnscopedChecksReport = <
+  Hit extends CheckHit,
+  Exception extends CheckNativeException,
+>(
+  wire: ReportObservations<Hit, Exception> & ChecksRunProjection,
+): ReportObservations<Hit, Exception> & NamedEngineProjection => {
   if (wire.projection !== "current") return wire;
   const { projectionFile, ...report } = wire;
   return projectionFile === undefined

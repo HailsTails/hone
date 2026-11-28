@@ -459,6 +459,7 @@ const EVERY_SECTION: RunReport = {
   held: [
     {
       exception: {
+        ruleSet: "hone",
         kind: "inline-disable",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -475,6 +476,7 @@ const EVERY_SECTION: RunReport = {
   forfeited: [DEBT],
   unrecorded: [
     {
+      ruleSet: "hone",
       kind: "ignore",
       check: "claimed-type#cast-expressions",
       file: WEBHOOK_FILE,

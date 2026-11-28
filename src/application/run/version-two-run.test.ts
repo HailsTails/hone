@@ -21,7 +21,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import type { CheckHit } from "../../domain/runner/check-observations.ts";
+import type { BoundCheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
@@ -352,7 +352,8 @@ const RECORDS: RecordsReading = {
   base: { measured: "yes", placements: [] },
 };
 
-const HIT: CheckHit = {
+const HIT: BoundCheckHit = {
+  ruleSet: "hone",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
   anchor: { line: 4, column: 9 },

@@ -1,8 +1,15 @@
 import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import { type OwnedName, ownedNameText } from "../rule-set/rule-set-identity.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
+import { ownedNameText } from "../rule-set/rule-set-identity.ts";
 import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
-import type { Check, CheckAddress, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
+import type {
+  Check,
+  CheckAddress,
+  CheckContent,
+  Engine,
+  SymptomCatalogue,
+} from "./symptom-catalogue.ts";
 
 export type FoundCheck =
   | { readonly found: "check"; readonly check: Check }
@@ -23,22 +30,40 @@ export const qualifiedCheckAddressOf = (request: { readonly check: CheckAddress 
 
 export const qualifiedAddressOf = (request: {
   readonly ruleSet: RuleSetIdentity;
+  readonly address: CheckAddressText;
+}): CheckAddressText => ownedNameText({ ruleSet: request.ruleSet, name: request.address });
+
+const findCheck = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly key: (check: Check) => string;
   readonly address: string;
-}): string => ownedNameText({ ruleSet: request.ruleSet, name: request.address });
+}): FoundCheck => {
+  const check = request.catalogue.checks.find((check) => request.key(check) === request.address);
+  return check === undefined ? NO_CHECK : { found: "check", check };
+};
 
 export const checkAt = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly address: string | OwnedName;
+  readonly address: string;
+}): FoundCheck => findCheck({ ...request, key: (check) => checkAddressOf({ check }) });
+
+export const findQualifiedCheck = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly ruleSet: RuleSetIdentity;
+  readonly address: CheckAddressText;
 }): FoundCheck => {
-  const { address } = request;
-  const name = typeof address === "string" ? address : ownedNameText(address);
-  const check = request.catalogue.checks.find((candidate) =>
-    typeof address === "string"
-      ? checkAddressOf({ check: candidate }) === name
-      : qualifiedCheckAddressOf({ check: candidate }) === name,
-  );
-  return check === undefined ? NO_CHECK : { found: "check", check };
+  const address = qualifiedAddressOf(request);
+  return findCheck({
+    ...request,
+    address,
+    key: (check) => qualifiedCheckAddressOf({ check }),
+  });
 };
+
+export const findCheckEngine = (request: {
+  readonly check: Pick<Check, "engines">;
+  readonly engine: EngineId;
+}): Engine | undefined => request.check.engines.find(({ name }) => name === request.engine);
 
 export const checksOf = <Each extends CheckContent>(request: {
   readonly catalogue: { readonly checks: readonly Each[] };

@@ -61,6 +61,7 @@ const MEASURED_WITH_APPLICABILITY: NamedEngineRun = {
   hits: [],
   nativeExceptions: [
     {
+      ruleSet: "hone",
       kind: "config-override",
       check: "claimed-type#non-null-assertions",
       file: repoPathOf("src/a.ts"),
@@ -119,7 +120,7 @@ describe("runEnginesMeasurement", () => {
       replied: [
         [
           {
-            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
+            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"ruleSet":"hone","kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
           },
         ],
       ],
@@ -260,7 +261,7 @@ describe("decodeMeasuredRuns", () => {
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["config-override","inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date","projectionFile":"hone.eslint.ts"},"comparedOutputs":["hone.eslint.ts","hone.eslint.d.mts"]}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["config-override","inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"ruleSet":"hone","kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date","projectionFile":"hone.eslint.ts"},"comparedOutputs":["hone.eslint.ts","hone.eslint.d.mts"]}]}',
     });
 
     expect(runs).toEqual({
@@ -276,6 +277,7 @@ describe("decodeMeasuredRuns", () => {
           hits: [],
           nativeExceptions: [
             {
+              ruleSet: "hone",
               kind: "config-override",
               check: "claimed-type#non-null-assertions",
               file: repoPathOf("src/a.ts"),

@@ -29,7 +29,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import type { CheckHit, CheckNativeException } from "../../domain/runner/check-observations.ts";
+import type { BoundCheckHit, BoundCheckException } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { NamedEngineProjection, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
@@ -319,7 +319,8 @@ const FILE_B = repoPathOf("src/b.ts");
 
 const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const CAST_HIT: CheckHit = {
+const CAST_HIT: BoundCheckHit = {
+  ruleSet: "hone",
   file: FILE_A,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
@@ -346,7 +347,7 @@ const PROJECTIONS = {
 >;
 
 const eslintRunOf = (request: {
-  readonly hits: readonly CheckHit[];
+  readonly hits: readonly BoundCheckHit[];
   readonly projection: keyof typeof PROJECTIONS;
 }): NamedEngineRun => ({
   mechanism: ESLINT,
@@ -550,22 +551,6 @@ describe("namedRunReportOf, findings and records", () => {
     });
   });
 
-  it("refuses an engine hit whose check was not selected", () => {
-    const report = namedRunReportOf({
-      ...REQUEST,
-      runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
-    });
-
-    expect(report).toMatchObject({
-      outcome: "failed",
-      error: {
-        kind: "runner-failed",
-        mechanism: ESLINT,
-        failure: { kind: "runner-invalid-output" },
-      },
-    });
-  });
-
   it("fails naming the symptom when the content does not hold a finding's symptom", () => {
     expect(
       namedRunReportOf({
@@ -618,7 +603,7 @@ describe("namedRunReportOf, findings and records", () => {
           ["acme/claimed-type", teamClaimedType],
         ]),
       },
-      runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
+      runs: [eslintRunOf({ hits: [{ ...CAST_HIT, ruleSet: acme }], projection: "current" })],
     });
 
     expect(report).toMatchObject({
@@ -631,7 +616,8 @@ describe("namedRunReportOf, findings and records", () => {
   });
 
   it("reports a Walker finding with the named check’s catalogue symptom", () => {
-    const clockHit: CheckHit = {
+    const clockHit: BoundCheckHit = {
+      ruleSet: "hone",
       check: "date-used-directly#clock-sources",
       file: FILE_A,
       anchor: { line: 2, column: 0 },
@@ -697,7 +683,8 @@ describe("namedRunReportOf, findings and records", () => {
 
   it("reports an inline disable a record holds as held by that record, and the record as not stale", () => {
     const location = carriedLocationAt({ file: FILE_A, index: 0 });
-    const disable: CheckNativeException = {
+    const disable: BoundCheckException = {
+      ruleSet: "hone",
       kind: "inline-disable",
       check: "claimed-type#cast-expressions",
       file: FILE_A,

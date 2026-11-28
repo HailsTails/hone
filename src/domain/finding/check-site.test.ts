@@ -392,6 +392,7 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           file: FILE,
           mechanism: ESLINT,
@@ -415,6 +416,7 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "claimed-type#cast-expressions",
           file: FILE,
@@ -438,6 +440,7 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           file: FILE,
           mechanism: ESLINT,
@@ -504,6 +507,7 @@ describe("nativeSitesOf", () => {
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "claimed-type#cast-expressions",
           file: FILE,
@@ -527,6 +531,7 @@ describe("nativeSitesOf", () => {
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "outside-import-past-a-boundary#no-moment",
           file: FILE,

@@ -382,7 +382,14 @@ const CAST_MEASUREMENT: CheckMeasurement = { check: CAST_CHECK_ADDRESS, file: FI
 
 const FAILING_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
-  hits: [{ ...CAST_MEASUREMENT, anchor: { line: 4, column: 9 }, snippet: "body as Event" }],
+  hits: [
+    {
+      ...CAST_MEASUREMENT,
+      ruleSet: TOOL_RULE_SET,
+      anchor: { line: 4, column: 9 },
+      snippet: "body as Event",
+    },
+  ],
   coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
   measured: [CAST_MEASUREMENT],
 };

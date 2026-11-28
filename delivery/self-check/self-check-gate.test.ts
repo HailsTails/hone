@@ -72,6 +72,7 @@ const NAMED_CLASS_IN_A: CheckFinding = {
 };
 
 const IGNORED_IN_A: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "ignore",
   check: "class-declared#class-syntax",
   file: repoPathOf("src/a.ts"),

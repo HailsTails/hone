@@ -1,7 +1,11 @@
-import { checkAt, type FoundCheck } from "../language-layer/check-address.ts";
+import {
+  findCheckEngine,
+  findQualifiedCheck,
+  type FoundCheck,
+} from "../language-layer/check-address.ts";
 import type { Check, Engine, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
-import type { AttributedCheckException, CheckFinding } from "./governance.ts";
+import type { CheckFinding } from "./governance.ts";
 
 export type FindingCheck =
   | { readonly resolved: "check"; readonly check: Check; readonly engine: Engine }
@@ -15,26 +19,21 @@ const mapCheckToFindingCheck = (request: {
 }): FindingCheck => {
   const { found, mechanism } = request;
   if (found.found === "none") return UNRESOLVED;
-  const engine = found.check.engines.find(({ name }) => name === mechanism);
+  const engine = findCheckEngine({ check: found.check, engine: mechanism });
   return engine === undefined ? UNRESOLVED : { resolved: "check", check: found.check, engine };
 };
 
-export const checkOfFinding = (request: {
+export const resolveObservedCheck = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly finding: Pick<CheckFinding, "check" | "mechanism" | "ruleSet">;
+  readonly observation: Pick<CheckFinding, "check" | "mechanism" | "ruleSet">;
 }): FindingCheck => {
-  const { catalogue, finding } = request;
+  const { catalogue, observation } = request;
   return mapCheckToFindingCheck({
-    found: checkAt({ catalogue, address: { ruleSet: finding.ruleSet, name: finding.check } }),
-    mechanism: finding.mechanism,
+    found: findQualifiedCheck({
+      catalogue,
+      ruleSet: observation.ruleSet,
+      address: observation.check,
+    }),
+    mechanism: observation.mechanism,
   });
 };
-
-export const checkOfNativeException = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly exception: Pick<AttributedCheckException, "check" | "mechanism">;
-}): FindingCheck =>
-  mapCheckToFindingCheck({
-    found: checkAt({ catalogue: request.catalogue, address: request.exception.check }),
-    mechanism: request.exception.mechanism,
-  });

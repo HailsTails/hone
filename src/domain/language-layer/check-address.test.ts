@@ -8,6 +8,7 @@ import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import {
   checkAddressOf,
   checkAt,
+  findQualifiedCheck,
   checkNamedAt,
   checksOf,
   qualifiedCheckAddressOf,
@@ -216,10 +217,10 @@ describe("checkAt", () => {
       symptom: { ...LOOP_KEYWORD_LOOPS.symptom, ruleSet },
     };
     const catalogue = { ...CATALOGUE, checks: [LOOP_KEYWORD_LOOPS, teamCheck] };
-    const address = { ruleSet, name: "loop-keyword#loops" };
+    const address = "loop-keyword#loops";
 
-    const found = checkAt({ catalogue, address });
-    const missing = checkAt({ catalogue: CATALOGUE, address });
+    const found = findQualifiedCheck({ catalogue, ruleSet, address });
+    const missing = findQualifiedCheck({ catalogue: CATALOGUE, ruleSet, address });
 
     expect(found).toEqual({ found: "check", check: teamCheck });
     expect(missing).toEqual({ found: "none" });

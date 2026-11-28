@@ -16,7 +16,7 @@ import type {
   AuthorisedLocationKind,
   UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
-import type { PlacedRecord } from "../domain/records/hone-records/hone-record.ts";
+import type { PlacedRecord, RecordsReading } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
@@ -235,7 +235,14 @@ const MOVED_BASKET_MEASUREMENT: CheckMeasurement = { check: CAST_ADDRESS, file: 
 
 const CAST_IN_MOVED_BASKET_RUN: NamedEngineRun = {
   mechanism: "walker",
-  hits: [{ ...MOVED_BASKET_MEASUREMENT, anchor: { line: 3, column: 0 }, snippet: "as Basket" }],
+  hits: [
+    {
+      ...MOVED_BASKET_MEASUREMENT,
+      ruleSet: TOOL_RULE_SET,
+      anchor: { line: 3, column: 0 },
+      snippet: "as Basket",
+    },
+  ],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "none",
@@ -249,6 +256,42 @@ const CAST_IN_MOVED_BASKET_RUN: NamedEngineRun = {
 };
 
 const HELD_DOCUMENTS = [{ file: DEBT_FILE, document: { version: 2, records: [] } }];
+
+const RENAME_SETTINGS: NamedSettingsReading = {
+  ...PROJECTION_SETTINGS,
+  selection: {
+    ...PROJECTION_SETTINGS.selection,
+    selected: [
+      {
+        address: { ruleSet: TOOL_RULE_SET, check: CAST_ADDRESS },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: CAST_ADDRESS,
+          ruleSet: TOOL_RULE_SET,
+          engine: "walker",
+          pieceRoot: "/install/cast",
+          settings: {},
+          checkSettings: {},
+          anchor: { kind: "file" },
+          edition: editionOf("1"),
+        },
+        editions: {
+          declared: [editionOf("1")],
+          default: editionOf("1"),
+          latest: editionOf("1"),
+        },
+      },
+    ],
+  },
+};
+
+const RENAME_RECORDS: RecordsReading = {
+  records: [DEBT_ON_BASKET],
+  refused: [],
+  notes: [],
+  base: { measured: "yes", placements: [DEBT_ON_BASKET] },
+};
 
 const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
   const input = inputWithOutOfDateProjection();
@@ -267,34 +310,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
       }),
       settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
         outcome: "ok",
-        value: {
-          ...PROJECTION_SETTINGS,
-          selection: {
-            ...PROJECTION_SETTINGS.selection,
-            selected: [
-              {
-                address: { ruleSet: TOOL_RULE_SET, check: CAST_ADDRESS },
-                check: CAST_CHECK,
-                exceptions: "allowed",
-                binding: {
-                  address: CAST_ADDRESS,
-                  ruleSet: TOOL_RULE_SET,
-                  engine: "walker",
-                  pieceRoot: "/install/cast",
-                  settings: {},
-                  checkSettings: {},
-                  anchor: { kind: "file" },
-                  edition: editionOf("1"),
-                },
-                editions: {
-                  declared: [editionOf("1")],
-                  default: editionOf("1"),
-                  latest: editionOf("1"),
-                },
-              },
-            ],
-          },
-        },
+        value: RENAME_SETTINGS,
       }),
       tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({
         outcome: "ok",
@@ -302,12 +318,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
       }),
       records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
         outcome: "ok",
-        value: {
-          records: [DEBT_ON_BASKET],
-          refused: [],
-          notes: [],
-          base: { measured: "yes", placements: [DEBT_ON_BASKET] },
-        },
+        value: RENAME_RECORDS,
       }),
       engines: vi
         .fn<VersionTwoStages["engines"]>()
@@ -327,12 +338,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
     recordsReader: {
       recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
         outcome: "ok",
-        value: {
-          records: [DEBT_ON_BASKET],
-          refused: [],
-          notes: [],
-          base: { measured: "yes", placements: [DEBT_ON_BASKET] },
-        },
+        value: RENAME_RECORDS,
       }),
     },
     recordsEditor: {

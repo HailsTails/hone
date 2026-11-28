@@ -4,9 +4,9 @@ import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type {
-  CheckHit,
+  BoundCheckHit,
   CheckMeasurement,
-  CheckNativeException,
+  BoundCheckException,
 } from "../../../domain/runner/check-observations.ts";
 import type {
   AnsweredFile,
@@ -69,12 +69,12 @@ export type NamedEngineRun = NamedEngineProjection & {
   readonly mechanism: EngineId;
   readonly comparedOutputs: readonly RepoPath[];
   readonly coverage: EngineCoverage;
-  readonly coverableKinds: readonly CheckNativeException["kind"][];
+  readonly coverableKinds: readonly BoundCheckException["kind"][];
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
   readonly slices: readonly ChecksProjectionProblem[];
   readonly nestedConfigurations: readonly RepoPath[];
   readonly unprojectedFolders: readonly UnprojectedFolderReport[];
-  readonly hits: readonly CheckHit[];
-  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly hits: readonly BoundCheckHit[];
+  readonly nativeExceptions: readonly BoundCheckException[];
   readonly measured: readonly CheckMeasurement[];
 };

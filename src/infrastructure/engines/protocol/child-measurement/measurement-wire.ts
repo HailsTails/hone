@@ -14,7 +14,7 @@ import { engineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import {
   decodeUnscopedChecksReport,
-  unscopedChecksRunReportSchema,
+  boundChecksRunReportSchema,
 } from "../checks/checks-runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
@@ -54,7 +54,7 @@ export const isCheckedTreeSchemaEqual: Equal<
 const engineReplySchema = z.strictObject({
   mechanism: engineIdSchema,
   coverableKinds: z.array(nativeExceptionKindSchema).readonly(),
-  report: unscopedChecksRunReportSchema,
+  report: boundChecksRunReportSchema,
   comparedOutputs: z.array(repoPathSchema).readonly(),
 });
 

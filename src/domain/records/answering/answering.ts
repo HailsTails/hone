@@ -1,4 +1,4 @@
-import { checkOfFinding, checkOfNativeException } from "../../finding/finding-check.ts";
+import { resolveObservedCheck } from "../../finding/finding-check.ts";
 import type {
   AttributedCheckException,
   CheckFinding,
@@ -11,7 +11,7 @@ import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { Result } from "../../result.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { CheckNativeException } from "../../runner/check-observations.ts";
+import type { BoundCheckException } from "../../runner/check-observations.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
   type MeasurementIndex,
@@ -210,7 +210,7 @@ export const findingSitesOf = (request: {
   readonly catalogue: SymptomCatalogue;
 }): readonly Site[] => {
   const { finding, party } = request.raised;
-  const resolved = checkOfFinding({ catalogue: request.catalogue, finding });
+  const resolved = resolveObservedCheck({ catalogue: request.catalogue, observation: finding });
   return resolved.resolved === "none"
     ? []
     : [
@@ -224,7 +224,7 @@ export const findingSitesOf = (request: {
 };
 
 const fileOfNative = (request: {
-  readonly exception: CheckNativeException;
+  readonly exception: BoundCheckException;
 }): readonly RepoPath[] => {
   switch (request.exception.kind) {
     case "command-line-option":
@@ -239,16 +239,16 @@ const fileOfNative = (request: {
 };
 
 export const nativeSitesOf = (request: {
-  readonly exception: CheckNativeException;
+  readonly exception: BoundCheckException;
   readonly run: NamedGovernedRun;
   readonly catalogue: SymptomCatalogue;
 }): readonly Site[] => {
   if (!request.run.coverableKinds.includes(request.exception.kind)) {
     return [];
   }
-  const resolved = checkOfNativeException({
+  const resolved = resolveObservedCheck({
     catalogue: request.catalogue,
-    exception: { check: request.exception.check, mechanism: request.run.mechanism },
+    observation: { ...request.exception, mechanism: request.run.mechanism },
   });
   if (resolved.resolved === "none") return [];
   const { check } = resolved;
@@ -261,7 +261,7 @@ export const nativeSitesOf = (request: {
 };
 
 const attributed = (request: {
-  readonly exception: CheckNativeException;
+  readonly exception: BoundCheckException;
   readonly mechanism: EngineId;
 }): AttributedCheckException => ({
   ...request.exception,

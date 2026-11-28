@@ -143,26 +143,45 @@ describe("createCheckMembership", () => {
 });
 
 describe("createCheckPages", () => {
-  it("gives each owner its own page for the same local check address", () => {
-    const tool: CheckAddress = {
+  it("gives each owner its page at the same local check address and leaves an unheld address unresolved", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const tool = {
       name: "loops",
       symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+      page: "hone/loops.md",
     };
-    const team: CheckAddress = {
+    const team = {
       name: "loops",
-      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "loop-keyword" },
+      symptom: { ruleSet: acme, name: "loop-keyword" },
+      page: "team/loops.md",
     };
     const pages = createCheckPages({
       catalogues: [
-        { checks: [{ ...tool, page: "hone/loops.md" }] },
-        { checks: [{ ...team, page: "team/loops.md" }] },
+        { checks: [{ ...tool, engines: [{ name: "walker" }] }] },
+        { checks: [{ ...team, engines: [{ name: "walker" }] }] },
       ],
     });
 
-    const toolPage = pages.checkPage(tool);
-    const teamPage = pages.checkPage(team);
-    const unheld = pages.checkPage({ ...team, name: "missing" });
+    const toolPage = pages.checkPage({
+      ruleSet: TOOL_RULE_SET,
+      check: "loop-keyword#loops",
+      engine: "walker",
+    });
+    const teamPage = pages.checkPage({
+      ruleSet: acme,
+      check: "loop-keyword#loops",
+      engine: "walker",
+    });
+    const unheld = pages.checkPage({
+      ruleSet: acme,
+      check: "loop-keyword#missing",
+      engine: "walker",
+    });
 
-    expect([toolPage, teamPage, unheld]).toEqual(["hone/loops.md", "team/loops.md", undefined]);
+    expect([toolPage, teamPage, unheld]).toEqual([
+      { resolved: "check", check: tool },
+      { resolved: "check", check: team },
+      { resolved: "none" },
+    ]);
   });
 });
