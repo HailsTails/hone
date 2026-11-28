@@ -1,4 +1,4 @@
-import type { RuleContent } from "../../../domain/language-layer/rule-content.ts";
+import type { RuleContent, CheckPages } from "../../../domain/language-layer/rule-content.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
@@ -31,7 +31,7 @@ export type ProofRunSources = {
       {
         readonly report: RunReport;
         readonly catalogue: SymptomCatalogue;
-        readonly content: RuleContent;
+        readonly content: RuleContent & CheckPages;
       },
       RunLoadFailure
     >

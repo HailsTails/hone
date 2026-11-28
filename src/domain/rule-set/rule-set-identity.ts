@@ -6,7 +6,9 @@ export const RULE_SET_SEPARATOR = "/";
 
 export type OwnedName = { readonly ruleSet: RuleSetIdentity; readonly name: string };
 
-export const ownedNameText = (request: OwnedName): string =>
+export const ownedNameText = <Name extends string>(
+  request: OwnedName & { readonly name: Name },
+): Name | `${string}/${Name}` =>
   request.ruleSet === TOOL_RULE_SET
     ? request.name
     : `${request.ruleSet.name}${RULE_SET_SEPARATOR}${request.name}`;

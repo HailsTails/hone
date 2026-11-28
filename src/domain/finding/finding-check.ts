@@ -1,5 +1,10 @@
-import { checkAt } from "../language-layer/check-address.ts";
+import {
+  findCheckEngine,
+  findQualifiedCheck,
+  type FoundCheck,
+} from "../language-layer/check-address.ts";
 import type { Check, Engine, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { CheckFinding } from "./governance.ts";
 
 export type FindingCheck =
@@ -8,13 +13,27 @@ export type FindingCheck =
 
 const UNRESOLVED: FindingCheck = { resolved: "none" };
 
-export const checkOfFinding = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly finding: Pick<CheckFinding, "check" | "mechanism">;
+const mapCheckToFindingCheck = (request: {
+  readonly found: FoundCheck;
+  readonly mechanism: EngineId;
 }): FindingCheck => {
-  const { catalogue, finding } = request;
-  const found = checkAt({ catalogue, address: finding.check });
+  const { found, mechanism } = request;
   if (found.found === "none") return UNRESOLVED;
-  const engine = found.check.engines.find(({ name }) => name === finding.mechanism);
+  const engine = findCheckEngine({ check: found.check, engine: mechanism });
   return engine === undefined ? UNRESOLVED : { resolved: "check", check: found.check, engine };
+};
+
+export const resolveObservedCheck = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly observation: Pick<CheckFinding, "check" | "mechanism" | "ruleSet">;
+}): FindingCheck => {
+  const { catalogue, observation } = request;
+  return mapCheckToFindingCheck({
+    found: findQualifiedCheck({
+      catalogue,
+      ruleSet: observation.ruleSet,
+      address: observation.check,
+    }),
+    mechanism: observation.mechanism,
+  });
 };

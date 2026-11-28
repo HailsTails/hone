@@ -40,7 +40,7 @@ import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
-import type { CheckHit, CheckNativeException } from "../domain/runner/check-observations.ts";
+import type { BoundCheckHit, BoundCheckException } from "../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
@@ -489,7 +489,29 @@ const settingsWith = (request: {
 }): NamedSettingsReading => ({
   available: [],
   selection: {
-    selected: [],
+    selected: [
+      {
+        address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: "claimed-type#cast-expressions",
+          ruleSet: TOOL_RULE_SET,
+          engine: ESLINT,
+          checkOptions: { kind: "none" },
+          pieceRoot: "/install/cast",
+          settings: {},
+          checkSettings: {},
+          anchor: { kind: "file" },
+          edition: editionOf("1"),
+        },
+        editions: {
+          declared: [editionOf("1")],
+          default: editionOf("1"),
+          latest: editionOf("1"),
+        },
+      },
+    ],
     notAdopted: [],
     notRun: [],
     excluded: [],
@@ -520,29 +542,35 @@ const HELD_DEBT: PlacedRecord = {
   },
 };
 
-const CAST: CheckHit = {
+const CAST: BoundCheckHit = {
+  ruleSet: "hone",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
 };
 
-const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun => ({
+const runOf = (request: { readonly hits: readonly BoundCheckHit[] }): NamedEngineRun => ({
   mechanism: ESLINT,
   hits: request.hits,
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
-  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  coverage: {
+    kind: "scoped",
+    candidateFiles: [FILE_A],
+    inapplicable: [],
+  },
   comparedOutputs: [],
   slices: [],
-  measured: [],
+  measured: request.hits,
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
 });
 
-const INLINE_DISABLE: CheckNativeException = {
+const INLINE_DISABLE: BoundCheckException = {
+  ruleSet: "hone",
   kind: "inline-disable",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
@@ -551,13 +579,15 @@ const INLINE_DISABLE: CheckNativeException = {
   reach: "one-check",
 };
 
-const IGNORE: CheckNativeException = {
+const IGNORE: BoundCheckException = {
+  ruleSet: "hone",
   kind: "ignore",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
 };
 
-const INLINE_RULE_CONFIG: CheckNativeException = {
+const INLINE_RULE_CONFIG: BoundCheckException = {
+  ruleSet: "hone",
   kind: "inline-rule-config",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
@@ -565,20 +595,23 @@ const INLINE_RULE_CONFIG: CheckNativeException = {
   text: '/* eslint hone/claimed-type#cast-expressions: "off" */',
 };
 
-const SUPPRESSION_ENTRY: CheckNativeException = {
+const SUPPRESSION_ENTRY: BoundCheckException = {
+  ruleSet: "hone",
   kind: "suppression-entry",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
   location: repoPathOf("eslint-suppressions.json"),
 };
 
-const CONFIG_OVERRIDE: CheckNativeException = {
+const CONFIG_OVERRIDE: BoundCheckException = {
+  ruleSet: "hone",
   kind: "config-override",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
 };
 
-const COMMAND_LINE_OPTION: CheckNativeException = {
+const COMMAND_LINE_OPTION: BoundCheckException = {
+  ruleSet: "hone",
   kind: "command-line-option",
   check: "claimed-type#cast-expressions",
   location: repoPathOf("package.json"),
@@ -588,7 +621,7 @@ const COMMAND_LINE_OPTION: CheckNativeException = {
 };
 
 const runHoldingNatives = (request: {
-  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly nativeExceptions: readonly BoundCheckException[];
 }): NamedEngineRun => ({
   ...runOf({ hits: [] }),
   nativeExceptions: request.nativeExceptions,
@@ -596,7 +629,7 @@ const runHoldingNatives = (request: {
 });
 
 const stagesHoldingNatives = (request: {
-  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly nativeExceptions: readonly BoundCheckException[];
 }): VersionTwoStages =>
   stagesGiving({
     engines: vi
@@ -757,7 +790,12 @@ describe("versionTwoRecordDebtCommandOf", () => {
         }),
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [runOf({ hits: [{ ...CAST, file: cart }] })],
+          value: [
+            {
+              ...runOf({ hits: [{ ...CAST, file: cart }] }),
+              coverage: { kind: "scoped", candidateFiles: [cart], inapplicable: [] },
+            },
+          ],
         }),
       }),
       held: debtHeld({ text: DEBT_DOCUMENT }),
@@ -888,7 +926,13 @@ describe("versionTwoRecordDebtCommandOf", () => {
     const stages = stagesGiving({
       engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
         outcome: "ok",
-        value: [{ ...runHoldingNatives({ nativeExceptions: [INLINE_DISABLE] }), hits: [CAST] }],
+        value: [
+          {
+            ...runOf({ hits: [CAST] }),
+            nativeExceptions: [INLINE_DISABLE],
+            coverableKinds: ["config-override", "inline-disable"],
+          },
+        ],
       }),
     });
     const ran = await ranWith({
@@ -951,7 +995,7 @@ claimed-type#cast-expressions unrecordable src/a.ts: an entry in the suppression
   });
 
   it("gives a script option the advice that matches why Hone could not judge it", async () => {
-    const wrapped: CheckNativeException = {
+    const wrapped: BoundCheckException = {
       ...COMMAND_LINE_OPTION,
       cause: { kind: "wrapped", command: "eslint", wrapper: "env" },
     };
@@ -1056,9 +1100,16 @@ describe("versionTwoPruneDebtCommandOf", () => {
     records: vi
       .fn<VersionTwoStages["records"]>()
       .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
-    engines: vi
-      .fn<VersionTwoStages["engines"]>()
-      .mockResolvedValue({ outcome: "ok", value: [runOf({ hits: [] })] }),
+    engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+      outcome: "ok",
+      value: [
+        {
+          ...runOf({ hits: [] }),
+          coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+          measured: [{ check: CAST.check, file: FILE_A }],
+        },
+      ],
+    }),
   });
 
   it("removes the debt the run shows stale, printing each debt removed, and deletes the emptied records file", async () => {
@@ -1077,47 +1128,11 @@ describe("versionTwoPruneDebtCommandOf", () => {
     expect(ran.written).toEqual([]);
   });
 
-  const settingsSelectingCast = (): NamedSettingsReading => {
-    const settings = settingsWith({ forfeiture: "this-run" });
-    return {
-      ...settings,
-      selection: {
-        ...settings.selection,
-        selected: [
-          {
-            address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
-            check: CAST_CHECK,
-            exceptions: "allowed",
-            binding: {
-              address: "claimed-type#cast-expressions",
-              ruleSet: TOOL_RULE_SET,
-              engine: ESLINT,
-              checkOptions: { kind: "none" },
-              pieceRoot: "/install/cast",
-              settings: {},
-              checkSettings: {},
-              anchor: { kind: "file" },
-              edition: editionOf("1"),
-            },
-            editions: {
-              declared: [editionOf("1")],
-              default: editionOf("1"),
-              latest: editionOf("1"),
-            },
-          },
-        ],
-      },
-    };
-  };
-
   const prunedWhileEngineRan = async (request: { readonly run: NamedEngineRun }) => {
     const ran = await ranWith({
       handler: versionTwoPruneDebtCommandOf,
       arguments: ["--repo", "/repo"],
       stages: stagesGiving({
-        settings: vi
-          .fn<VersionTwoStages["settings"]>()
-          .mockReturnValue({ outcome: "ok", value: settingsSelectingCast() }),
         records: vi
           .fn<VersionTwoStages["records"]>()
           .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
@@ -1174,7 +1189,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
       stages: stagesGiving({
         settings: vi
           .fn<VersionTwoStages["settings"]>()
-          .mockReturnValue({ outcome: "ok", value: settingsSelectingCast() }),
+          .mockReturnValue({ outcome: "ok", value: settingsWith({ forfeiture: "this-run" }) }),
         records: vi
           .fn<VersionTwoStages["records"]>()
           .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
@@ -1215,7 +1230,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 
   it("removes the debt on a file the settings exclude, saying its file is excluded, as it did before engines reported what they measured", async () => {
-    const settings = settingsSelectingCast();
+    const settings = settingsWith({ forfeiture: "this-run" });
     const ran = await ranWith({
       handler: versionTwoPruneDebtCommandOf,
       arguments: ["--repo", "/repo"],

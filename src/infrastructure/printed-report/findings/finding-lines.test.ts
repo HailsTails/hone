@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
+import {
+  createCheckPages,
+  createRuleContent,
+} from "../../../domain/language-layer/rule-content.ts";
 import type {
   Case,
   Check,
@@ -331,6 +335,7 @@ const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 const PACKAGE_FILE = repoPathOf("package.json");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -339,6 +344,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const BRANCH_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: TEST_FILE,
@@ -361,6 +367,7 @@ const SECOND_CAST_CHECK: Check = {
 };
 
 const TEAM_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: ORDER_FILE,
@@ -407,12 +414,22 @@ const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
   },
 };
 
+const CONTENT = {
+  ...createRuleContent({ catalogues: [REPORT_CATALOGUE] }),
+  ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
+};
+
+const UNSITED_CONTENT = {
+  ...createRuleContent({ catalogues: [{ symptoms: [] }] }),
+  ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
+};
+
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map([["date-used-directly", DATE_USED_DIRECTLY]]) },
+        content: CONTENT,
         finding: CLOCK_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -425,7 +442,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+        content: CONTENT,
         finding: BRANCH_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -489,7 +506,10 @@ describe("findingLine", () => {
 
     const line = findingLine({
       catalogue,
-      content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+      content: {
+        ...createRuleContent({ catalogues: [catalogue] }),
+        ...createCheckPages({ catalogues: [catalogue] }),
+      },
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
     });
@@ -541,10 +561,8 @@ describe("findingLine", () => {
     const line = findingLine({
       catalogue,
       content: {
-        symptoms: new Map([
-          ["branch-in-a-test", BRANCH_IN_A_TEST],
-          ["acme/branch-in-a-test", teamSymptom],
-        ]),
+        ...createRuleContent({ catalogues: [catalogue] }),
+        ...createCheckPages({ catalogues: [catalogue] }),
       },
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
@@ -588,15 +606,20 @@ describe("findingLine", () => {
       ],
     };
 
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      symptoms: [symptom],
+      checks: [check],
+      recipes: [recipe],
+    };
+
     const line = findingLine({
-      catalogue: {
-        ...REPORT_CATALOGUE,
-        symptoms: [symptom],
-        checks: [check],
-        recipes: [recipe],
+      catalogue,
+      content: {
+        ...createRuleContent({ catalogues: [catalogue] }),
+        ...createCheckPages({ catalogues: [catalogue] }),
       },
-      content: { symptoms: new Map([["acme/branch-in-a-test", symptom]]) },
-      finding: BRANCH_FINDING,
+      finding: { ...BRANCH_FINDING, ruleSet: symptom.ruleSet },
       symptomPage: SYMPTOM_PAGE,
     });
 
@@ -610,7 +633,10 @@ describe("findingLine", () => {
 
     const line = findingLine({
       catalogue,
-      content: { symptoms: new Map<string, Symptom>() },
+      content: {
+        ...createRuleContent({ catalogues: [{ symptoms: [] }] }),
+        ...createCheckPages({ catalogues: [catalogue] }),
+      },
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
     });
@@ -640,15 +666,20 @@ describe("findingLine", () => {
       forms: [],
       findingSpecifics: [],
     };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      checks: [check],
+      symptoms: [symptom],
+    };
+
     expect(
       findingLine({
-        catalogue: {
-          ...REPORT_CATALOGUE,
-          checks: [check],
-          symptoms: [symptom],
+        catalogue,
+        content: {
+          ...createRuleContent({ catalogues: [catalogue] }),
+          ...createCheckPages({ catalogues: [catalogue] }),
         },
-        content: { symptoms: new Map([["acme/outside-import-past-a-boundary", symptom]]) },
-        finding: TEAM_FINDING,
+        finding: { ...TEAM_FINDING, ruleSet: symptom.ruleSet },
         symptomPage: SYMPTOM_PAGE,
       }),
     ).toBe(
@@ -660,7 +691,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map<string, Symptom>() },
+        content: UNSITED_CONTENT,
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -670,7 +701,7 @@ describe("findingLine", () => {
   });
 
   it("says the catalogue and the records disagree when no catalogue holds the symptom its check names", () => {
-    const content = { symptoms: new Map<string, Symptom>() };
+    const content = UNSITED_CONTENT;
 
     const line = findingLine({
       catalogue: REPORT_CATALOGUE,
@@ -709,6 +740,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: CLOCK_FINDING, by: [DEBT, clockLocation] },
       }),
     ).toBe(
@@ -720,6 +752,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
@@ -731,6 +764,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION] },
       }),
     ).toBe(
@@ -765,6 +799,7 @@ describe("heldLine", () => {
         catalogue: REPORT_CATALOGUE,
         held: {
           exception: {
+            ruleSet: "hone",
             kind: "inline-disable",
             check: "claimed-type#cast-expressions",
             file: WEBHOOK_FILE,
@@ -806,6 +841,7 @@ describe("heldLine", () => {
         catalogue: REPORT_CATALOGUE,
         held: {
           exception: {
+            ruleSet: "hone",
             kind: "inline-disable",
             check: "claimed-type#cast-expressions",
             file: WEBHOOK_FILE,
@@ -857,6 +893,7 @@ describe("unrecordedLines", () => {
     {
       name: "an ignore",
       exception: {
+        ruleSet: "hone",
         kind: "ignore",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -867,6 +904,7 @@ describe("unrecordedLines", () => {
     {
       name: "a config override",
       exception: {
+        ruleSet: "hone",
         kind: "config-override",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -877,6 +915,7 @@ describe("unrecordedLines", () => {
     {
       name: "a suppression entry",
       exception: {
+        ruleSet: "hone",
         kind: "suppression-entry",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -888,6 +927,7 @@ describe("unrecordedLines", () => {
     {
       name: "an inline disable of one rule",
       exception: {
+        ruleSet: "hone",
         kind: "inline-disable",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -901,6 +941,7 @@ describe("unrecordedLines", () => {
     {
       name: "an inline disable that names no rule",
       exception: {
+        ruleSet: "hone",
         kind: "inline-disable",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -914,6 +955,7 @@ describe("unrecordedLines", () => {
     {
       name: "an inline rule config",
       exception: {
+        ruleSet: "hone",
         kind: "inline-rule-config",
         check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
@@ -926,6 +968,7 @@ describe("unrecordedLines", () => {
     {
       name: "a command-line option that weakens the whole run",
       exception: {
+        ruleSet: "hone",
         kind: "command-line-option",
         check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
@@ -939,6 +982,7 @@ describe("unrecordedLines", () => {
     {
       name: "a command-line option after another command",
       exception: {
+        ruleSet: "hone",
         kind: "command-line-option",
         check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
@@ -956,6 +1000,7 @@ describe("unrecordedLines", () => {
     {
       name: "a wrapped command-line option",
       exception: {
+        ruleSet: "hone",
         kind: "command-line-option",
         check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
@@ -969,6 +1014,7 @@ describe("unrecordedLines", () => {
     {
       name: "a command-line option in a script Hone cannot read",
       exception: {
+        ruleSet: "hone",
         kind: "command-line-option",
         check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
@@ -988,6 +1034,7 @@ describe("unrecordedLines", () => {
       unrecordedLines({
         catalogue: REPORT_CATALOGUE,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "outside-import-past-a-boundary#no-moment",
           file: ORDER_FILE,
@@ -1004,6 +1051,7 @@ describe("unrecordedLines", () => {
       unrecordedLines({
         catalogue: { ...REPORT_CATALOGUE, checks: [CAST_CHECK, SECOND_CAST_CHECK] },
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "claimed-type#cast-walker",
           file: WEBHOOK_FILE,

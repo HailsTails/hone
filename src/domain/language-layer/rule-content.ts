@@ -1,8 +1,12 @@
 import type { Result } from "../result.ts";
-import { ownedNameText } from "../rule-set/rule-set-identity.ts";
-import { qualifiedCheckAddressOf } from "./check-address.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
+import { type OwnedName, ownedNameText } from "../rule-set/rule-set-identity.ts";
+import type { CheckAddressText } from "./check-address-text.ts";
+import { findCheckEngine, qualifiedAddressOf, qualifiedCheckAddressOf } from "./check-address.ts";
 import type {
+  Check,
   CheckAddress,
+  CheckContent,
   Symptom,
   SymptomAddress,
   SymptomCatalogue,
@@ -18,6 +22,22 @@ type SymptomCatalogues = { readonly catalogues: readonly Pick<SymptomCatalogue, 
 
 export type CheckMembership = { readonly hasCheck: ReadonlySet<CheckAddress>["has"] };
 
+export type CheckPage =
+  | { readonly resolved: "check"; readonly check: CheckAddress & Pick<CheckContent, "page"> }
+  | { readonly resolved: "none" };
+
+type CheckPageRequest = {
+  readonly ruleSet: OwnedName["ruleSet"];
+  readonly check: CheckAddressText;
+  readonly engine: EngineId;
+};
+
+export type CheckPages = { readonly checkPage: (observation: CheckPageRequest) => CheckPage };
+
+type CheckCatalogues<Content extends CheckAddress> = {
+  readonly catalogues: readonly { readonly checks: readonly Content[] }[];
+};
+
 const createCatalogueIndex = <Catalogue, Content>(request: {
   readonly catalogues: readonly Catalogue[];
   readonly contents: (catalogue: Catalogue) => readonly Content[];
@@ -31,15 +51,37 @@ const createCatalogueIndex = <Catalogue, Content>(request: {
     ),
   );
 
-export const createCheckMembership = (request: {
-  readonly catalogues: readonly { readonly checks: readonly CheckAddress[] }[];
-}): CheckMembership => {
-  const index = createCatalogueIndex({
+const createCheckIndex = <Content extends CheckAddress>(request: CheckCatalogues<Content>) =>
+  createCatalogueIndex({
     catalogues: request.catalogues,
     contents: ({ checks }) => checks,
     address: (check) => qualifiedCheckAddressOf({ check }),
   });
+
+export const createCheckMembership = (request: CheckCatalogues<CheckAddress>): CheckMembership => {
+  const index = createCheckIndex(request);
   return { hasCheck: (check) => index.has(qualifiedCheckAddressOf({ check })) };
+};
+
+export const createCheckPages = (
+  request: CheckCatalogues<CheckAddress & Pick<Check, "page" | "engines">>,
+): CheckPages => {
+  const index = createCheckIndex(request);
+  return {
+    checkPage: ({ ruleSet, check: address, engine }) => {
+      const check = index.get(qualifiedAddressOf({ ruleSet, address }));
+      return check !== undefined && findCheckEngine({ check, engine }) !== undefined
+        ? {
+            resolved: "check",
+            check: {
+              name: check.name,
+              symptom: { name: check.symptom.name, ruleSet: check.symptom.ruleSet },
+              page: check.page,
+            },
+          }
+        : { resolved: "none" };
+    },
+  };
 };
 
 export const createRuleContent = (request: SymptomCatalogues): RuleContent => ({

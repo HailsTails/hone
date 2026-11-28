@@ -18,7 +18,7 @@ import { repoPathOf } from "../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { checkOfFinding, type FindingCheck } from "./finding-check.ts";
+import { resolveObservedCheck, type FindingCheck } from "./finding-check.ts";
 import type { CheckFinding } from "./governance.ts";
 
 const AUDIT = "walker" as const;
@@ -297,6 +297,7 @@ const FILE = repoPathOf("src/orders/charge-order.ts");
 const findingOf = (
   request: Pick<CheckFinding, "check" | "mechanism" | "remedy">,
 ): CheckFinding => ({
+  ruleSet: TOOL_RULE_SET,
   file: FILE,
   anchor: { line: 3, column: 4 },
   snippet: "snippet",
@@ -330,7 +331,7 @@ type Row = {
   readonly resolved: FindingCheck;
 };
 
-describe("checkOfFinding", () => {
+describe("resolveObservedCheck", () => {
   it.each<Row>([
     {
       name: "a finding naming a check its engine measures resolves to that check",
@@ -403,6 +404,6 @@ describe("checkOfFinding", () => {
       resolved: { resolved: "none" },
     },
   ])("$name", ({ catalogue, finding, resolved }) => {
-    expect(checkOfFinding({ catalogue, finding })).toEqual(resolved);
+    expect(resolveObservedCheck({ catalogue, observation: finding })).toEqual(resolved);
   });
 });

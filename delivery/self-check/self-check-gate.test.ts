@@ -15,6 +15,10 @@ import type {
   AttributedCheckException,
   CheckFinding,
 } from "../../src/domain/finding/governance.ts";
+import {
+  createCheckPages,
+  createRuleContent,
+} from "../../src/domain/language-layer/rule-content.ts";
 import type {
   RecordKind,
   SymptomCatalogue,
@@ -24,6 +28,7 @@ import type {
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 import type { VersionTwoReportOutput } from "../../src/domain/settings/report-output.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { runSelfCheck, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
@@ -58,6 +63,7 @@ const EMPTY_RUN_REPORT: RunReport = {
 };
 
 const NAMED_CLASS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "class-declared#class-syntax",
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
@@ -66,6 +72,7 @@ const NAMED_CLASS_IN_A: CheckFinding = {
 };
 
 const IGNORED_IN_A: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "ignore",
   check: "class-declared#class-syntax",
   file: repoPathOf("src/a.ts"),
@@ -120,7 +127,10 @@ const producedOf = (request: {
   run: {
     report: request.report,
     catalogue: EMPTY_CATALOGUE,
-    content: { symptoms: new Map() },
+    content: {
+      ...createRuleContent({ catalogues: [EMPTY_CATALOGUE] }),
+      ...createCheckPages({ catalogues: [EMPTY_CATALOGUE] }),
+    },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
     runs: [],

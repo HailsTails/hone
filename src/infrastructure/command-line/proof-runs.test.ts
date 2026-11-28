@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { ProofRunSources } from "../../application/ports/upgrade/proof-runs.ts";
-import { createRuleContent } from "../../domain/language-layer/rule-content.ts";
+import { createCheckPages, createRuleContent } from "../../domain/language-layer/rule-content.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
@@ -48,7 +48,10 @@ const CATALOGUE: SymptomCatalogue = {
   checks: [],
 };
 
-const CONTENT = createRuleContent({ catalogues: [CATALOGUE] });
+const CONTENT = {
+  ...createRuleContent({ catalogues: [CATALOGUE] }),
+  ...createCheckPages({ catalogues: [CATALOGUE] }),
+};
 
 const POINTERS = {
   symptomPage: "rules/typescript/symptoms.md",

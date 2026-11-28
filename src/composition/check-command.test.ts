@@ -12,6 +12,7 @@ import type { RecordsSourceOf } from "../application/ports/records/records-sourc
 import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
+import { createCheckPages, createRuleContent } from "../domain/language-layer/rule-content.ts";
 import type {
   Case,
   Check,
@@ -34,6 +35,8 @@ import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
+import type { CheckMeasurement } from "../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { VERSION_TWO_CHECK, versionTwoReportRequestOf } from "./check-command.ts";
@@ -373,16 +376,22 @@ const CLEAN_RUN: NamedEngineRun = {
   misnamedRuleIds: [],
 };
 
+const CAST_CHECK_ADDRESS = "claimed-type#cast-expressions";
+
+const CAST_MEASUREMENT: CheckMeasurement = { check: CAST_CHECK_ADDRESS, file: FILE_A };
+
 const FAILING_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
   hits: [
     {
-      check: "claimed-type#cast-expressions",
-      file: FILE_A,
+      ...CAST_MEASUREMENT,
+      ruleSet: TOOL_RULE_SET,
       anchor: { line: 4, column: 9 },
       snippet: "body as Event",
     },
   ],
+  coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+  measured: [CAST_MEASUREMENT],
 };
 
 const SLICES_RUN: NamedEngineRun = {
@@ -495,6 +504,38 @@ const ranWith = async (request: {
 };
 
 const FAILING_STAGES = stagesGiving({
+  settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+    outcome: "ok",
+    value: {
+      ...SETTINGS,
+      selection: {
+        ...SETTINGS.selection,
+        selected: [
+          {
+            address: { ruleSet: TOOL_RULE_SET, check: CAST_CHECK_ADDRESS },
+            check: CAST_CHECK,
+            exceptions: "allowed",
+            binding: {
+              address: CAST_CHECK_ADDRESS,
+              ruleSet: TOOL_RULE_SET,
+              engine: ESLINT,
+              checkOptions: { kind: "none" },
+              anchor: { kind: "file" },
+              pieceRoot: "/install/pieces",
+              settings: {},
+              checkSettings: {},
+              edition: editionOf("1"),
+            },
+            editions: {
+              declared: [editionOf("1")],
+              default: editionOf("1"),
+              latest: editionOf("1"),
+            },
+          },
+        ],
+      },
+    },
+  }),
   engines: vi
     .fn<VersionTwoStages["engines"]>()
     .mockResolvedValue({ outcome: "ok", value: [FAILING_RUN] }),
@@ -680,6 +721,11 @@ const EMPTY_RUN_REPORT: RunReport = {
 
 describe("versionTwoReportRequestOf", () => {
   it("hands the printed report the run's report, catalogue and output, the check's commands and the symptom page shown from the repository", () => {
+    const content = {
+      ...createRuleContent({ catalogues: [{ symptoms: [CLAIMED_TYPE] }] }),
+      ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
+    };
+
     expect(
       versionTwoReportRequestOf({
         ports: {
@@ -702,7 +748,7 @@ describe("versionTwoReportRequestOf", () => {
           run: {
             report: EMPTY_RUN_REPORT,
             catalogue: REPORT_CATALOGUE,
-            content: { symptoms: new Map([["claimed-type", CLAIMED_TYPE]]) },
+            content,
             touched: { measured: "yes", paths: new Set() },
             output: "counts",
             runs: [],
@@ -713,7 +759,7 @@ describe("versionTwoReportRequestOf", () => {
     ).toEqual({
       report: EMPTY_RUN_REPORT,
       catalogue: REPORT_CATALOGUE,
-      content: { symptoms: new Map([["claimed-type", CLAIMED_TYPE]]) },
+      content,
       output: "counts",
       symptomPage: "../install/rules/typescript/symptoms.md",
       projectCommand: "node /install/src/hone.ts project --repo /repo",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../repository/repo-path-of.ts";
 import { editionOf } from "../rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import type { CheckBinding } from "./check-binding.ts";
 import type { CheckHit, CheckMeasurement, CheckNativeException } from "./check-observations.ts";
 import { checkedObservations } from "./checked-observations.ts";
@@ -20,23 +21,35 @@ const BINDING: CheckBinding = {
 const REQUESTED = { files: [FILE], bindings: [BINDING] };
 
 describe("checkedObservations", () => {
-  it("accepts a hit and its measurement for the selected check and file", () => {
+  it("keeps the selected rule-set owner of a hit and an inline exception", () => {
+    const ruleSet = { name: ruleSetNameOf("acme") };
+    const requested = { files: [FILE], bindings: [{ ...BINDING, ruleSet }] };
     const hit: CheckHit = {
       check: BINDING.address,
       file: FILE,
       anchor: { line: 1, column: 0 },
       snippet: "let sample = 1",
     };
+    const inline: CheckNativeException = {
+      kind: "inline-disable",
+      check: BINDING.address,
+      file: FILE,
+      line: 2,
+      text: "// eslint-disable-next-line acme/rule",
+      reach: "one-check",
+    };
     const report = {
       hits: [hit],
       measured: [{ check: BINDING.address, file: FILE }],
-      nativeExceptions: [],
+      nativeExceptions: [inline],
       inapplicable: [],
     };
 
-    expect(checkedObservations({ requested: REQUESTED, report })).toEqual({
+    const observed = checkedObservations({ requested, report });
+
+    expect(observed).toEqual({
       outcome: "ok",
-      value: report,
+      value: { ...report, hits: [{ ...hit, ruleSet }], nativeExceptions: [{ ...inline, ruleSet }] },
     });
   });
 

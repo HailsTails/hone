@@ -1,6 +1,10 @@
 import { createClauseChecks } from "../../../domain/language-layer/clause-checks.ts";
 import { mappedSettings } from "../../../domain/records/upgrade/settings-mapping.ts";
 import type { Result } from "../../../domain/result.ts";
+import type {
+  BoundCheckException,
+  BoundCheckHit,
+} from "../../../domain/runner/check-observations.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
@@ -134,7 +138,17 @@ const findingsFor = async (
     measurements: ran.value,
   });
   return problem === undefined
-    ? versionOneObservationsOf({ names: names.value, runs: ran.value.map(({ report }) => report) })
+    ? versionOneObservationsOf({
+        names: names.value,
+        runs: ran.value.map(({ report }) => ({
+          mechanism: report.mechanism,
+          coverableKinds: report.coverableKinds,
+          hits: report.hits.map(({ ruleSet: _ruleSet, ...hit }) => hit),
+          nativeExceptions: report.nativeExceptions.map(
+            ({ ruleSet: _ruleSet, ...exception }) => exception,
+          ),
+        })),
+      })
     : { outcome: "failed", error: problem };
 };
 

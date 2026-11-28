@@ -282,6 +282,7 @@ const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-ty
 const RECORDS_FOLDER = repoPathOf("hone-records");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
@@ -297,6 +298,7 @@ const UNCATALOGUED_FINDING: CheckFinding = {
 const NEW_FILE_FINDING: CheckFinding = { ...CLOCK_FINDING, file: NEW_FILE };
 
 const TOUCHED_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: TOUCHED_FILE,
@@ -584,7 +586,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
         source: sourceOf({ documents: [] }),
         store: storeOf().store,
       },
-      run: request,
+      run: { ...request, findings: [{ ...CLOCK_FINDING, ruleSet: acme }] },
     });
     expect(recorded).toEqual({
       outcome: "ok",

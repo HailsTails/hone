@@ -1,6 +1,7 @@
 import type { Anchor } from "../finding/anchor.ts";
 import type { CheckAddressText } from "../language-layer/check-address-text.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
+import type { CheckBinding } from "./check-binding.ts";
 import type { Remedy, ScriptOptionCause } from "./runner-result-types.ts";
 
 export type CheckMeasurement = {
@@ -37,3 +38,9 @@ export type CheckNativeException =
       readonly option: string;
       readonly cause: ScriptOptionCause;
     };
+
+type BoundCheck = Pick<CheckBinding, "ruleSet">;
+
+export type BoundCheckHit = CheckHit & BoundCheck;
+
+export type BoundCheckException = CheckNativeException & BoundCheck;

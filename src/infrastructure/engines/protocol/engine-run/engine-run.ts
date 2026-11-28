@@ -109,21 +109,23 @@ const verifiedNamedRun = (request: {
   const { call, requested, report } = request;
   const { inapplicable: reportedInapplicable, ...reportWithoutScope } = report;
   const files = filesInScope(call.runner.fileScope, requested);
+  const observations = decodeUnscopedChecksReport(reportWithoutScope);
   const checked = checkedObservations({
     requested: { ...requested, files },
     report: {
-      ...decodeUnscopedChecksReport(reportWithoutScope),
+      ...observations,
       inapplicable: reportedInapplicable,
     },
   });
   if (checked.outcome === "failed") {
     return runnerFailed({ mechanism: call.mechanism, failure: checked.error });
   }
-  const { inapplicable, ...observations } = checked.value;
+  const { inapplicable, ...bound } = checked.value;
   return {
     outcome: "ok",
     value: {
       ...observations,
+      ...bound,
       mechanism: call.mechanism,
       coverableKinds: call.runner.projectedKinds,
       coverage: { kind: "scoped", candidateFiles: files, inapplicable },

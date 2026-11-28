@@ -21,7 +21,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import type { CheckHit } from "../../domain/runner/check-observations.ts";
+import type { BoundCheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
@@ -314,7 +314,25 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selected: [],
+    selected: [
+      {
+        address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: "claimed-type#cast-expressions",
+          ruleSet: TOOL_RULE_SET,
+          engine: ESLINT,
+          checkOptions: { kind: "none" },
+          anchor: { kind: "file" },
+          pieceRoot: "/install/pieces",
+          settings: {},
+          checkSettings: {},
+          edition: editionOf("1"),
+        },
+        editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+      },
+    ],
     notAdopted: [],
     notRun: [],
     excluded: [repoPathOf("dist")],
@@ -334,7 +352,8 @@ const RECORDS: RecordsReading = {
   base: { measured: "yes", placements: [] },
 };
 
-const HIT: CheckHit = {
+const HIT: BoundCheckHit = {
+  ruleSet: "hone",
   check: "claimed-type#cast-expressions",
   file: FILE_A,
   anchor: { line: 4, column: 9 },
@@ -376,7 +395,7 @@ const RUN: NamedEngineRun = {
   coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
   comparedOutputs: [],
   slices: [],
-  measured: [],
+  measured: [HIT],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
@@ -437,7 +456,7 @@ describe("versionTwoRunOver", () => {
         output: "actionable",
         report: {
           excluded: ["dist"],
-          findings: [{ ...HIT, mechanism: ESLINT }],
+          findings: [{ ...HIT, mechanism: ESLINT, ruleSet: TOOL_RULE_SET }],
           symptoms: [CLAIMED_TYPE],
         },
       },
@@ -789,7 +808,14 @@ it("refuses to compare against settings changed by the proposal", async () => {
     paths: new Set([repoPathOf("hone.config.json")]),
     landingRevision: "pinned",
   });
-  const stages = stagesGiving({ touched });
+  const stages = stagesGiving({
+    touched,
+    settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+      outcome: "ok",
+      value: { ...SETTINGS, selection: { ...SETTINGS.selection, selected: [] } },
+    }),
+    engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({ outcome: "ok", value: [] }),
+  });
 
   const inputs = versionTwoInputsOf({ stages });
   assert(inputs.outcome === "ok", "inputs are available");

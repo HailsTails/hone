@@ -295,6 +295,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
 const CLOCK_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: FILE,
@@ -303,6 +304,7 @@ const CLOCK_FINDING: CheckFinding = {
 };
 
 const BRANCH_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: FILE,
@@ -312,6 +314,7 @@ const BRANCH_FINDING: CheckFinding = {
 };
 
 const UNFORMED_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "branch-in-a-test#missing",
   mechanism: AUDIT,
   file: FILE,
@@ -320,6 +323,7 @@ const UNFORMED_FINDING: CheckFinding = {
 };
 
 const TEAM_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: FILE,
@@ -343,6 +347,7 @@ const TWO_CAST_CHECKS: SymptomCatalogue = {
 };
 
 const CAST_FINDING: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: FILE,
@@ -359,8 +364,11 @@ describe("findingSiteOf, a finding that names its check", () => {
       }),
     ).toEqual({
       sited: "check",
-      check: ANGLE_BRACKETS_CHECK,
-      engine: ESLINT_ENGINE,
+      address: {
+        name: "angle-brackets",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+      },
+      mechanism: ESLINT,
     });
   });
 
@@ -384,13 +392,23 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           file: FILE,
           mechanism: ESLINT,
           check: "claimed-type#angle-brackets",
         },
       }),
-    ).toEqual([{ sited: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "angle-brackets",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("limits an exception to its named check when another check shares its symptom", () => {
@@ -398,13 +416,23 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "claimed-type#cast-expressions",
           file: FILE,
           mechanism: ESLINT,
         },
       }),
-    ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "cast-expressions",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("names the address and mechanism when the catalogue has no such check", () => {
@@ -412,6 +440,7 @@ describe("nativeSitesOf, an exception that names its check", () => {
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           file: FILE,
           mechanism: ESLINT,
@@ -426,16 +455,19 @@ describe("findingSiteOf", () => {
   it("names the check and engine that saw a finding", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: CLOCK_FINDING })).toEqual({
       sited: "check",
-      check: CLOCK_CHECK,
-      engine: WALKER,
+      address: {
+        name: "clock-sources",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+      mechanism: AUDIT,
     });
   });
 
   it("names the selected check when the finding carries a remedy", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: BRANCH_FINDING })).toEqual({
       sited: "check",
-      check: TEST_BODY_CHECK,
-      engine: WALKER,
+      address: { name: "test-body", symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" } },
+      mechanism: AUDIT,
     });
   });
 
@@ -475,13 +507,23 @@ describe("nativeSitesOf", () => {
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "claimed-type#cast-expressions",
           file: FILE,
           mechanism: ESLINT,
         },
       }),
-    ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "cast-expressions",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("names the address and mechanism when the exception is unregistered", () => {
@@ -489,6 +531,7 @@ describe("nativeSitesOf", () => {
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
         exception: {
+          ruleSet: "hone",
           kind: "ignore",
           check: "outside-import-past-a-boundary#no-moment",
           file: FILE,
@@ -508,7 +551,16 @@ describe("nativeSitesOf", () => {
 describe("checkSiteText", () => {
   it("prints a check's address and its engine's name", () => {
     expect(
-      checkSiteText({ site: { sited: "check", check: TEST_BODY_CHECK, engine: WALKER } }),
+      checkSiteText({
+        site: {
+          sited: "check",
+          address: {
+            name: "test-body",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+          mechanism: AUDIT,
+        },
+      }),
     ).toBe("branch-in-a-test#test-body walker");
   });
 

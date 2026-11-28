@@ -1,7 +1,8 @@
 import {
   type CheckSite,
   checkSiteText,
-  findingSiteOf,
+  locateRenderedFinding,
+  locateNativeException,
   nativeSitesOf,
 } from "../../../domain/finding/check-site.ts";
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
@@ -13,6 +14,8 @@ import {
 import {
   mapAddressToSymptom,
   type RuleContent,
+  type CheckPage,
+  type CheckPages,
 } from "../../../domain/language-layer/rule-content.ts";
 import {
   type Check,
@@ -24,7 +27,7 @@ import type {
   HeldException,
 } from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
-import type { Remedy, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
@@ -38,7 +41,7 @@ const locatedText = (request: {
 }): string =>
   `${checkSiteText(request)} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${onOneLine({ text: request.finding.snippet })}`;
 
-export type NotedContent = RuleContent<"name" | "sourceFile" | "mayIndicate">;
+export type NotedContent = RuleContent<"name" | "sourceFile" | "mayIndicate"> & CheckPages;
 
 const symptomNote = (request: {
   readonly site: CheckSite;
@@ -48,7 +51,7 @@ const symptomNote = (request: {
   if (request.site.sited !== "check") return "";
   const found = mapAddressToSymptom({
     content: request.content,
-    symptom: request.site.check.symptom,
+    symptom: request.site.address.symptom,
   });
   if (found.outcome === "failed") return ` ${symptomUnheldText({ failure: found.error })}`;
   const symptom = found.value;
@@ -69,24 +72,25 @@ const mapExamplesToText = (request: { readonly examples: readonly ExampleAddress
     ? ""
     : ` (${request.examples.map((example) => mapExampleToText({ example })).join(", ")})`;
 
-const mapRemedyToText = (
-  request: CatalogueRequest & { readonly check: Check; readonly remedy: Remedy },
-): string => {
-  const { check, remedy, catalogue } = request;
-  const examples = listExamplesOfForm({ recipes: catalogue.recipes, check, form: remedy.form });
-  return ` form: ${remedy.form} (${check.page}#${remedy.form}) fix: ${onOneLine({ text: remedy.fix })}${mapExamplesToText({ examples })}`;
-};
-
 const fixNote = (
-  request: CatalogueRequest & { readonly site: CheckSite; readonly finding: CheckFinding },
-): string =>
-  request.site.sited === "check" && request.finding.remedy !== undefined
-    ? mapRemedyToText({
-        catalogue: request.catalogue,
-        check: request.site.check,
-        remedy: request.finding.remedy,
-      })
-    : "";
+  request: CatalogueRequest & {
+    readonly page: CheckPage;
+    readonly finding: CheckFinding;
+  },
+): string => {
+  const {
+    page,
+    catalogue,
+    finding: { remedy },
+  } = request;
+  if (page.resolved === "none" || remedy === undefined) return "";
+  const examples = listExamplesOfForm({
+    recipes: catalogue.recipes,
+    check: page.check,
+    form: remedy.form,
+  });
+  return ` form: ${remedy.form} (${page.check.page}#${remedy.form}) fix: ${onOneLine({ text: remedy.fix })}${mapExamplesToText({ examples })}`;
+};
 
 export const findingLine = (
   request: CatalogueRequest & {
@@ -95,17 +99,23 @@ export const findingLine = (
     readonly content: NotedContent;
   },
 ): string => {
-  const site = findingSiteOf(request);
-  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage, content: request.content })}${fixNote({ catalogue: request.catalogue, site, finding: request.finding })}`;
+  const { page, site } = locateRenderedFinding({
+    finding: request.finding,
+    pages: request.content,
+  });
+  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage, content: request.content })}${fixNote({ ...request, page })}`;
 };
 
 export const answeredLine = (
-  request: CatalogueRequest & { readonly answered: AnsweredFinding },
+  request: CatalogueRequest & {
+    readonly answered: AnsweredFinding;
+    readonly content: CheckPages;
+  },
 ): string => {
   const { finding, by } = request.answered;
-  const site = findingSiteOf({ catalogue: request.catalogue, finding });
+  const { page, site } = locateRenderedFinding({ finding, pages: request.content });
   const owedFix = by.some((placed) => placed.record.kind === "debt")
-    ? fixNote({ catalogue: request.catalogue, site, finding })
+    ? fixNote({ ...request, page, finding })
     : "";
   return `${locatedText({ site, finding })}${owedFix}${referencesText({ lead: "answered by", records: by })}`;
 };
@@ -164,5 +174,5 @@ export const unrecordedLines = (
 
 export const heldLine = (request: CatalogueRequest & { readonly held: HeldException }): string => {
   const { exception, by } = request.held;
-  return `${checkSiteText({ site: findingSiteOf({ catalogue: request.catalogue, finding: exception }) })} ${exception.kind} ${inlineDisableDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
+  return `${checkSiteText({ site: locateNativeException({ catalogue: request.catalogue, exception }) })} ${exception.kind} ${inlineDisableDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
 };

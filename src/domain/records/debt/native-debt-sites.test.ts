@@ -303,6 +303,7 @@ const ESLINT_RUN: NamedGovernedRun = {
 };
 
 const INLINE_DISABLE: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "inline-disable",
   mechanism: ESLINT,
   check: "claimed-type#cast-expressions",
@@ -313,6 +314,7 @@ const INLINE_DISABLE: AttributedCheckException = {
 };
 
 const CONFIG_OVERRIDE: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "config-override",
   mechanism: ESLINT,
   check: "claimed-type#cast-expressions",
@@ -320,6 +322,7 @@ const CONFIG_OVERRIDE: AttributedCheckException = {
 };
 
 const IGNORE: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "ignore",
   mechanism: ESLINT,
   check: "claimed-type#cast-expressions",
@@ -333,6 +336,7 @@ const NAMED_IGNORE: AttributedCheckException = {
 };
 
 const OPTION: AttributedCheckException = {
+  ruleSet: "hone",
   kind: "command-line-option",
   mechanism: ESLINT,
   check: "claimed-type#cast-expressions",

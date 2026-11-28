@@ -63,7 +63,7 @@ describe("an engines stage measured in a child process", () => {
     assert(second !== undefined, "the rewritten projection has an ESLint run");
     expect({ before: first.nativeExceptions, after: second.nativeExceptions }).toEqual({
       before: [],
-      after: [{ kind: "ignore", check, file: repoPathOf("a.ts") }],
+      after: [{ kind: "ignore", ruleSet: "hone", check, file: repoPathOf("a.ts") }],
     });
   });
 

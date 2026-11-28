@@ -19,7 +19,7 @@ import type { Result } from "../../result.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import type { CheckNativeException } from "../../runner/check-observations.ts";
+import type { BoundCheckException } from "../../runner/check-observations.ts";
 import type {
   AuthorisedLocation,
   Debt,
@@ -226,6 +226,7 @@ const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/adapter-per-outside-
 const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
 const NO_CLASS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#class-syntax",
   file: FILE_A,
   anchor: { line: 3, column: 5 },
@@ -234,6 +235,7 @@ const NO_CLASS_IN_A: CheckFinding = {
 };
 
 const NO_CLASS_IN_B: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#class-syntax",
   file: FILE_B,
   anchor: { line: 8, column: 1 },
@@ -242,6 +244,7 @@ const NO_CLASS_IN_B: CheckFinding = {
 };
 
 const NO_THIS_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "authored-class-or-this#this-keyword",
   file: FILE_A,
   anchor: { line: 4, column: 7 },
@@ -252,6 +255,7 @@ const NO_THIS_IN_A: CheckFinding = {
 const NO_CLASS_IN_A_BY_ESLINT: CheckFinding = { ...NO_CLASS_IN_A, mechanism: ESLINT };
 
 const FOR_OF_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "loop-keyword#for-of",
   file: FILE_A,
   anchor: { line: 9, column: 2 },
@@ -260,6 +264,7 @@ const FOR_OF_IN_A: CheckFinding = {
 };
 
 const UNCATALOGUED_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "unknown-symptom#nowhere",
   file: FILE_A,
   anchor: { line: 1, column: 0 },
@@ -268,6 +273,7 @@ const UNCATALOGUED_IN_A: CheckFinding = {
 };
 
 const UUID_IMPORT_IN_IDS: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#import-or-require",
   file: IDS_ADAPTER,
   anchor: { line: 1, column: 0 },
@@ -276,6 +282,7 @@ const UUID_IMPORT_IN_IDS: CheckFinding = {
 };
 
 const LODASH_IMPORT_IN_A: CheckFinding = {
+  ruleSet: TOOL_RULE_SET,
   check: "outside-import-past-a-boundary#import-or-require",
   file: FILE_A,
   anchor: { line: 1, column: 0 },
@@ -444,7 +451,8 @@ const UNMEASURED: TouchedSet = { measured: "no", base: { state: "not-given" } };
 
 const ELSEWHERE: TouchedSet = { measured: "elsewhere" };
 
-const DISABLE_IN_A: CheckNativeException = {
+const DISABLE_IN_A: BoundCheckException = {
+  ruleSet: "hone",
   kind: "inline-disable",
   check: "authored-class-or-this#class-syntax",
   file: FILE_A,
@@ -453,7 +461,8 @@ const DISABLE_IN_A: CheckNativeException = {
   reach: "one-check",
 };
 
-const SCRIPT_RULE_OFF: CheckNativeException = {
+const SCRIPT_RULE_OFF: BoundCheckException = {
+  ruleSet: "hone",
   kind: "command-line-option",
   check: "authored-class-or-this#class-syntax",
   location: PACKAGE_JSON,
@@ -463,7 +472,7 @@ const SCRIPT_RULE_OFF: CheckNativeException = {
 };
 
 const inlineRun = (request: {
-  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly nativeExceptions: readonly BoundCheckException[];
 }): NamedGovernedRun => ({
   mechanism: AUDIT,
   nativeExceptions: request.nativeExceptions,
@@ -1527,6 +1536,7 @@ describe("answerFindings, natives held", () => {
             mechanism: AUDIT,
             nativeExceptions: [
               {
+                ruleSet: "hone",
                 kind: "config-override",
                 check: "authored-class-or-this#class-syntax",
                 file: FILE_A,
@@ -1654,7 +1664,8 @@ describe("answerFindings, natives held", () => {
         },
       },
     };
-    const disableInIds: CheckNativeException = {
+    const disableInIds: BoundCheckException = {
+      ruleSet: "hone",
       kind: "inline-disable",
       check: "outside-import-past-a-boundary#import-or-require",
       file: IDS_ADAPTER,
@@ -1688,7 +1699,8 @@ describe("answerFindings, natives held", () => {
   });
 
   it("lists an inline disable on an import check at a deviation's file, since the import it hides may be a named ban", () => {
-    const disableInA: CheckNativeException = {
+    const disableInA: BoundCheckException = {
+      ruleSet: "hone",
       kind: "inline-disable",
       check: "outside-import-past-a-boundary#import-or-require",
       file: FILE_A,
@@ -1769,7 +1781,7 @@ describe("answerFindings, natives held", () => {
   });
 
   it("keeps unrecorded native exceptions in the runs' order, then each run's own order", () => {
-    const disableInB: CheckNativeException = { ...DISABLE_IN_A, file: FILE_B };
+    const disableInB: BoundCheckException = { ...DISABLE_IN_A, file: FILE_B };
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -1830,7 +1842,7 @@ const MISNAMED_FINDING_IN_A: CheckFinding = {
   check: "authored-class-or-this#class-keyword",
 };
 
-const HERITAGE_DISABLE_IN_A: CheckNativeException = {
+const HERITAGE_DISABLE_IN_A: BoundCheckException = {
   ...DISABLE_IN_A,
   check: "authored-class-or-this#class-heritage",
 };
