@@ -52,6 +52,24 @@ describe("upgradeFailureOutcomeOf", () => {
     expect(outcome.text).not.toContain("Nothing was changed.");
   });
 
+  it("reports a known failed restoration when the v1 project also fails", () => {
+    const failure = {
+      kind: "version-one-project-failed",
+      detail: "disk full",
+      removedByVersionOne: [],
+      unrestored: [{ written: "file-replaced", path: OLD_FILE, detail: "EBUSY" }],
+    } satisfies UpgradeFailure;
+
+    const outcome = upgradeFailureOutcomeOf({ failure, placement: PLACEMENT });
+
+    expect(outcome.code).toBe(1);
+    expect(outcome.text).toContain(failure.detail);
+    expect(outcome.text).toContain("may have changed files");
+    expect(outcome.text).toContain(OLD_FILE);
+    expect(outcome.text).toContain("EBUSY");
+    expect(outcome.text).not.toContain("Nothing was changed.");
+  });
+
   it.each<Row>([
     {
       name: "the version 1 run cannot be made for the oracle",
