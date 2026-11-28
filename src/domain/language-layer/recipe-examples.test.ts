@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import { findExampleFaults, listExamplesOfForm } from "./recipe-examples.ts";
-import { createRuleContent } from "./rule-content.ts";
+import { createCheckMembership, createRuleContent } from "./rule-content.ts";
 import type { Case, CheckContent, Principle, Recipe, Rule, Symptom } from "./symptom-catalogue.ts";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
@@ -78,7 +78,7 @@ describe("findExampleFaults", () => {
         { kind: "rule", rule: WRITTEN_OUT_ANSWERS },
       ],
       content: createRuleContent({
-        catalogueContents: [
+        catalogues: [
           {
             symptoms: [
               {
@@ -88,10 +88,10 @@ describe("findExampleFaults", () => {
                 ],
               },
             ],
-            checks: [TEST_BODY],
           },
         ],
       }),
+      checks: createCheckMembership({ catalogues: [{ checks: [TEST_BODY] }] }),
     });
 
     expect(found).toEqual([]);
@@ -105,7 +105,7 @@ describe("findExampleFaults", () => {
         { kind: "principle", principle: NO_HIDDEN_EFFECTS },
       ],
       content: createRuleContent({
-        catalogueContents: [
+        catalogues: [
           {
             symptoms: [
               {
@@ -115,10 +115,10 @@ describe("findExampleFaults", () => {
                 ],
               },
             ],
-            checks: [TEST_BODY],
           },
         ],
       }),
+      checks: createCheckMembership({ catalogues: [{ checks: [TEST_BODY] }] }),
     });
 
     expect(found).toEqual([
@@ -137,10 +137,11 @@ describe("findExampleFaults", () => {
     const found = findExampleFaults({
       recipe: STUB,
       serves: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }],
-      content: createRuleContent({
-        catalogueContents: [
+
+      content: createRuleContent({ catalogues: [{ symptoms: [REBINDING] }] }),
+      checks: createCheckMembership({
+        catalogues: [
           {
-            symptoms: [REBINDING],
             checks: [
               {
                 ...TEST_BODY,
@@ -172,7 +173,8 @@ describe("findExampleFaults", () => {
         reason: { text: "It has no body.", standing: "accepted" },
       },
       serves: [{ kind: "rule", rule: WRITTEN_OUT_ANSWERS }],
-      content: createRuleContent({ catalogueContents: [] }),
+      content: createRuleContent({ catalogues: [] }),
+      checks: createCheckMembership({ catalogues: [] }),
     });
 
     expect(found).toEqual([]);

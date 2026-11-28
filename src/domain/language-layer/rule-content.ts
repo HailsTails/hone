@@ -2,9 +2,7 @@ import type { Result } from "../result.ts";
 import { ownedNameText } from "../rule-set/rule-set-identity.ts";
 import { qualifiedCheckAddressOf } from "./check-address.ts";
 import type {
-  CatalogueContent,
   CheckAddress,
-  CheckContent,
   Symptom,
   SymptomAddress,
   SymptomCatalogue,
@@ -18,15 +16,7 @@ export type RuleContent<Field extends keyof Symptom = keyof Symptom> = {
 
 type SymptomCatalogues = { readonly catalogues: readonly Pick<SymptomCatalogue, "symptoms">[] };
 
-type CatalogueWithChecks = Pick<CatalogueContent, "symptoms" | "checks">;
-
-type CatalogueContents = { readonly catalogueContents: readonly CatalogueWithChecks[] };
-
-type CheckUnheld = { readonly kind: "check-unheld"; readonly check: CheckAddress };
-
-export type RuleContentChecks = {
-  readonly check: (address: CheckAddress) => Result<CheckContent, CheckUnheld>;
-};
+export type CheckMembership = { readonly hasCheck: ReadonlySet<CheckAddress>["has"] };
 
 const createCatalogueIndex = <Catalogue, Content>(request: {
   readonly catalogues: readonly Catalogue[];
@@ -41,38 +31,24 @@ const createCatalogueIndex = <Catalogue, Content>(request: {
     ),
   );
 
-const createCheckLookup = (
-  catalogues: readonly CatalogueWithChecks[],
-): RuleContentChecks["check"] => {
-  const checks = createCatalogueIndex({
-    catalogues,
+export const createCheckMembership = (request: {
+  readonly catalogues: readonly { readonly checks: readonly CheckAddress[] }[];
+}): CheckMembership => {
+  const index = createCatalogueIndex({
+    catalogues: request.catalogues,
     contents: ({ checks }) => checks,
     address: (check) => qualifiedCheckAddressOf({ check }),
   });
-  return (address) => {
-    const check = checks.get(qualifiedCheckAddressOf({ check: address }));
-    return check === undefined
-      ? { outcome: "failed", error: { kind: "check-unheld", check: address } }
-      : { outcome: "ok", value: check };
-  };
+  return { hasCheck: (check) => index.has(qualifiedCheckAddressOf({ check })) };
 };
 
-export function createRuleContent(request: CatalogueContents): RuleContent & RuleContentChecks;
-export function createRuleContent(request: SymptomCatalogues): RuleContent;
-export function createRuleContent(
-  request: CatalogueContents | SymptomCatalogues,
-): RuleContent | (RuleContent & RuleContentChecks) {
-  const catalogues =
-    "catalogueContents" in request ? request.catalogueContents : request.catalogues;
-  const symptoms = createCatalogueIndex({
-    catalogues,
+export const createRuleContent = (request: SymptomCatalogues): RuleContent => ({
+  symptoms: createCatalogueIndex({
+    catalogues: request.catalogues,
     contents: ({ symptoms }) => symptoms,
     address: ownedNameText,
-  });
-  return "catalogueContents" in request
-    ? { symptoms, check: createCheckLookup(request.catalogueContents) }
-    : { symptoms };
-}
+  }),
+});
 
 export const mapAddressToSymptom = <Field extends keyof Symptom>(request: {
   readonly content: RuleContent<Field>;
