@@ -7,10 +7,6 @@
     },
     {
       "answers": "process-global-used-in-place#direct-global-use",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
@@ -20,10 +16,6 @@
     {
       "answers": "process-global-used-in-place#direct-global-use",
       "file": "delivery/install-proof/install-proof-ports.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
     },
     {
       "answers": "process-global-used-in-place#direct-global-use",

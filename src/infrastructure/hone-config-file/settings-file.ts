@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
+import type {
+  ProjectionKind,
+  SettingsFileFormat,
+  VersionTwoSettingsFile,
+} from "../../application/ports/settings/settings-file-format.ts";
 import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
@@ -18,7 +22,6 @@ import {
   eslintConfigLookupOf,
   RENAMED_SETTINGS,
   type RuleSetLocation,
-  type SettingsFile,
   type SettingsFileFault,
 } from "../../domain/settings/settings-file.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
@@ -41,6 +44,8 @@ const LEADING_CURRENT_DIRECTORY = "./";
 const ENGINE_NAME_TEXT = /^[a-z][a-z0-9-]*$/;
 
 const SETTINGS_FILE_VERSION = 2;
+
+const DEFAULT_PROJECTION_KIND: ProjectionKind = "mjs";
 
 const REPOSITORY_ROOT_TEXT = ".";
 
@@ -128,6 +133,7 @@ const settingsFileWireSchema = z.strictObject({
   eslintConfigRoots: folderListSchema({
     refusal: "an eslintConfigRoots entry is a repository folder, not a glob",
   }),
+  eslintProjectionKind: z.enum(["mjs", "ts"]).default(DEFAULT_PROJECTION_KIND),
   generated: z.unknown().optional(),
   layers: z.unknown().optional(),
   testFiles: z.unknown().optional(),
@@ -175,7 +181,7 @@ const ruleSetFaultOf = (request: {
 const settingsFileOfWire = (request: {
   readonly wire: SettingsFileWire;
   readonly conventions: ConventionsReading;
-}): SettingsFile => ({
+}): VersionTwoSettingsFile => ({
   exclude: request.wire.exclude,
   ruleSets: request.wire.ruleSets.map(([name, location]) => ({ name, location })),
   checks: request.wire.checks.map(([address, state]) => ({ address, state })),
@@ -185,6 +191,7 @@ const settingsFileOfWire = (request: {
   checkEditions: request.wire.checkEditions,
   eslintConfigLookup: eslintConfigLookupOf({ declared: request.wire.eslintConfigLookup }),
   eslintConfigRoots: request.wire.eslintConfigRoots,
+  eslintProjectionKind: request.wire.eslintProjectionKind,
   conventions: request.conventions,
 });
 
@@ -201,6 +208,7 @@ export type SettingsWire = {
   readonly reportOutput?: VersionTwoReportOutput;
   readonly checkEditions?: CheckEditions;
   readonly eslintConfigLookup?: EslintConfigLookup;
+  readonly eslintProjectionKind?: ProjectionKind;
 } & ConventionsWire;
 
 const byKey = <Value>(request: {
@@ -235,7 +243,7 @@ const withheldWhenDefault = <Value>(request: {
   request.value === request.standard ? {} : { given: request.value };
 
 const settingsWireOfDefaults = (request: {
-  readonly settings: SettingsFile;
+  readonly settings: VersionTwoSettingsFile;
 }): Omit<SettingsWire, "version" | "ruleSets" | "checks"> => {
   const { settings } = request;
   const forfeiture = withheldWhenDefault({
@@ -249,6 +257,10 @@ const settingsWireOfDefaults = (request: {
   const checkEditions = withheldWhenDefault({
     value: settings.checkEditions,
     standard: DEFAULT_CHECK_EDITIONS,
+  }).given;
+  const eslintProjectionKind = withheldWhenDefault({
+    value: settings.eslintProjectionKind,
+    standard: DEFAULT_PROJECTION_KIND,
   }).given;
   return {
     ...(settings.checkSettings.length === 0
@@ -271,11 +283,14 @@ const settingsWireOfDefaults = (request: {
     ...(settings.eslintConfigLookup.lookup === "declared"
       ? { eslintConfigLookup: settings.eslintConfigLookup.value }
       : {}),
+    ...(eslintProjectionKind === undefined ? {} : { eslintProjectionKind }),
     ...conventionsWireOf({ reading: settings.conventions }),
   };
 };
 
-export const settingsWireOf = (request: { readonly settings: SettingsFile }): SettingsWire => ({
+export const settingsWireOf = (request: {
+  readonly settings: VersionTwoSettingsFile;
+}): SettingsWire => ({
   version: SETTINGS_FILE_VERSION,
   ruleSets: sortedRecordOf({
     entries: request.settings.ruleSets.map(({ name, location }): WireEntry<string> => [
@@ -292,12 +307,12 @@ export const settingsWireOf = (request: { readonly settings: SettingsFile }): Se
   ...settingsWireOfDefaults({ settings: request.settings }),
 });
 
-export const settingsTextOf = (request: { readonly settings: SettingsFile }): string =>
+export const settingsTextOf = (request: { readonly settings: VersionTwoSettingsFile }): string =>
   `${JSON.stringify(settingsWireOf({ settings: request.settings }), null, JSON_INDENT)}\n`;
 
 export const settingsFileOf = (request: {
   readonly document: unknown;
-}): Result<SettingsFile, SettingsFileFault> => {
+}): Result<VersionTwoSettingsFile, SettingsFileFault> => {
   const parsed = settingsFileWireSchema.safeParse(request.document);
   if (!parsed.success) {
     return {

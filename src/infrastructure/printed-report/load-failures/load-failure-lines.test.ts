@@ -213,7 +213,7 @@ describe("runLoadFailureLine, records that could not be read", () => {
     },
     {
       failure: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") },
-      line: "load failure: not-a-records-file hone-records/notes.md: a records file is boundary-records.json or dependency-records.json, or a .json file named for its symptom, or for its recipe in deviations, inside the folder authorised-locations, debt or deviations of hone-records; move this file to where its kind belongs, or out of hone-records if it holds no records",
+      line: "load failure: not-a-records-file hone-records/notes.md: a records file is dependency-records.json, or a .json file named for its symptom, or for its recipe in deviations, inside the folder authorised-locations, debt or deviations of hone-records; move this file to where its kind belongs, or out of hone-records if it holds no records",
     },
     {
       failure: {
@@ -243,6 +243,13 @@ describe("runLoadFailureLine, records that could not be read", () => {
         ],
       },
       line: "load failure: records-refused hone-records/acme/debt/console-output.json unknown-rule-set acme: no check this run reads comes from that rule set; declare it in hone.config.json and list its checks, or remove its records",
+    },
+    {
+      failure: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "console-output" },
+      },
+      line: "load failure: symptom-unheld acme/console-output: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it",
     },
   ])("prints $failure.kind", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: UPGRADE_COMMAND })).toBe(line);
@@ -296,15 +303,28 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
   });
 });
 
-describe("runLoadFailureLine, a stale projection", () => {
+describe("runLoadFailureLine, projection failures", () => {
   const PROJECT_COMMAND =
     "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
   it.each<LineRow>([
     {
       failure: {
+        kind: "file-unremovable",
+        file: repoPathOf("hone.eslint.ts"),
+        detail: "EACCES",
+      },
+      line: "load failure: file-unremovable hone.eslint.ts could not remove the projection file: EACCES",
+    },
+    {
+      failure: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+        problem: {
+          scope: "projection",
+          engine: ESLINT_ENGINE,
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.mjs"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
       line: `load failure: projection-stale eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
@@ -316,7 +336,7 @@ describe("runLoadFailureLine, a stale projection", () => {
           scope: "slice",
           engine: ESLINT_ENGINE,
           state: "missing",
-          slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+          file: repoPathOf("packages/ui/hone.eslint.mjs"),
         },
         projectCommand: PROJECT_COMMAND,
       },
@@ -325,12 +345,17 @@ describe("runLoadFailureLine, a stale projection", () => {
     {
       failure: {
         kind: "projection-stale",
-        problem: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+        problem: {
+          kind: "engine-not-run",
+          engine: ESLINT_ENGINE,
+          projection: "missing",
+          file: repoPathOf("hone.eslint.mjs"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
       line: `load failure: projection-stale engine-not-run eslint missing: hone.eslint.mjs is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
     },
-  ])("prints the stale projection", ({ failure, line }) => {
+  ])("prints the projection failure", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: undefined })).toBe(line);
   });
 });

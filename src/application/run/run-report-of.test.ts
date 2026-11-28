@@ -10,7 +10,10 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
+import { answerCountedFindings, answerFindings } from "../../domain/records/answering/answering.ts";
 import type {
   Debt,
   PlacedRecord,
@@ -28,7 +31,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit, CheckNativeException } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedEngineProjection, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
@@ -131,29 +134,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -177,7 +173,14 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
@@ -196,7 +199,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -214,7 +217,9 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+  correctUses: [
+    { situation: "a schema proves the type", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -237,26 +242,32 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -269,20 +280,34 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION, BOUNDARY_RECORD, DEBT],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -303,15 +328,34 @@ const CAST_HIT: CheckHit = {
 
 const CAST_FINDING = { ...CAST_HIT, mechanism: ESLINT };
 
+const PROJECTION_FILE = repoPathOf("hone.eslint.mjs");
+
+const PROJECTIONS = {
+  none: { projection: "none" },
+  current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
+  "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
+  missing: { projection: "missing", projectionFile: PROJECTION_FILE },
+  "not-included": {
+    projection: "not-included",
+    projectionFile: PROJECTION_FILE,
+    recovery: { kind: "include-projection" },
+  },
+} satisfies Record<
+  "none" | "current" | "out-of-date" | "missing" | "not-included",
+  NamedEngineProjection
+>;
+
 const eslintRunOf = (request: {
   readonly hits: readonly CheckHit[];
-  readonly projection: NamedEngineRun["projection"];
+  readonly projection: keyof typeof PROJECTIONS;
 }): NamedEngineRun => ({
   mechanism: ESLINT,
-  hits: request.hits,
+  ...request,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
-  projection: request.projection,
+  ...PROJECTIONS[request.projection],
+  coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -326,7 +370,7 @@ const debtAt = (request: {
   place: { file: DEBT_FILE, index: request.index },
   record: {
     kind: "debt",
-    symptom: CLAIMED_TYPE,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
     reach: WHOLE_SYMPTOM,
     file: request.file,
     holding: { held: "stated" },
@@ -343,6 +387,7 @@ const SELECTS_CAST: RunReportRequest["selection"] = {
         address: "claimed-type#cast-expressions",
         ruleSet: TOOL_RULE_SET,
         engine: "eslint",
+        checkOptions: { kind: "none" },
         anchor: { kind: "file" },
         pieceRoot: "/install/pieces",
         settings: {},
@@ -367,10 +412,16 @@ const carriedLocationAt = (request: {
   place: { file: LOCATION_FILE, index: request.index },
   record: {
     kind: "authorised-location",
-    symptom: CLAIMED_TYPE,
-    reach: WHOLE_SYMPTOM,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: request.file,
-    holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" },
+    holding: {
+      binding: { binds: "check-and-file" },
+      held: "carried",
+      entry: {},
+      lacks: [],
+      standing: "unjudged",
+    },
   },
 });
 
@@ -378,12 +429,13 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const REQUEST: RunReportRequest = {
+  answer: answerFindings,
   available: [],
   catalogue: REPORT_CATALOGUE,
   selection: { selected: [], notAdopted: [], notRun: [], excluded: [], eslintConfigRoots: [] },
@@ -393,9 +445,17 @@ const REQUEST: RunReportRequest = {
   touched: MEASURED_NOTHING_TOUCHED,
   runs: [],
   tracked: [FILE_A, FILE_B],
+  content: {
+    symptoms: new Map([
+      ["date-used-directly", DATE_USED_DIRECTLY],
+      ["branch-in-a-test", BRANCH_IN_A_TEST],
+      ["claimed-type", CLAIMED_TYPE],
+    ]),
+  },
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -430,15 +490,20 @@ describe("namedRunReportOf, findings and records", () => {
           runs: [{ ...eslintRunOf({ hits: [], projection }), nestedConfigurations: [nested] }],
         }),
       ).toMatchObject({
-        unmeasured: [
-          {
-            kind: "engine-not-run",
-            engine: { name: ESLINT },
-            projection: "not-included",
-            nestedConfigurations: [nested],
-          },
-        ],
-        assessment: [],
+        outcome: "ok",
+        value: {
+          unmeasured: [
+            {
+              kind: "engine-not-run",
+              engine: { name: ESLINT },
+              projection: "not-included",
+              file: repoPathOf("hone.eslint.mjs"),
+              nestedConfigurations: [nested],
+              recovery: { kind: "include-projection" },
+            },
+          ],
+          assessment: [],
+        },
       });
     },
   );
@@ -457,10 +522,13 @@ describe("namedRunReportOf, findings and records", () => {
         ],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      findings: [CAST_FINDING],
-      symptoms: [CLAIMED_TYPE],
-      assessment: [{ concern: "nested-projection", engine: { name: ESLINT }, folders: [nested] }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        findings: [CAST_FINDING],
+        symptoms: [CLAIMED_TYPE],
+        assessment: [{ concern: "nested-projection", engine: { name: ESLINT }, folders: [nested] }],
+      },
     });
   });
 
@@ -471,9 +539,25 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      findings: [CAST_FINDING],
-      symptoms: [CLAIMED_TYPE],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        findings: [CAST_FINDING],
+        symptoms: [CLAIMED_TYPE],
+      },
+    });
+  });
+
+  it("fails naming the symptom when the content does not hold a finding's symptom", () => {
+    expect(
+      namedRunReportOf({
+        ...REQUEST,
+        content: { symptoms: new Map() },
+        runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "symptom-unheld", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
     });
   });
 
@@ -482,10 +566,12 @@ describe("namedRunReportOf, findings and records", () => {
     const teamClaimedType: Symptom = { ...CLAIMED_TYPE, ruleSet: acme };
     const teamCastCheck: Check = {
       name: "team-casts",
-      symptom: teamClaimedType,
+      symptom: { ruleSet: acme, name: "claimed-type" },
+      page: "claimed-type/team-casts.md",
       clause: { ...CAST_EXPRESSIONS, ruleSet: acme },
       engines: [ESLINT_ENGINE],
       forms: [],
+      findingSpecifics: [],
     };
     const teamCastHit: CheckHit = { ...CAST_HIT, check: "claimed-type#team-casts" };
     expect(
@@ -496,9 +582,15 @@ describe("namedRunReportOf, findings and records", () => {
           symptoms: [...REPORT_CATALOGUE.symptoms, teamClaimedType],
           checks: [...REPORT_CATALOGUE.checks, teamCastCheck],
         },
+        content: {
+          symptoms: new Map([
+            ["claimed-type", CLAIMED_TYPE],
+            ["acme/claimed-type", teamClaimedType],
+          ]),
+        },
         runs: [eslintRunOf({ hits: [CAST_HIT, teamCastHit], projection: "current" })],
       }),
-    ).toMatchObject({ symptoms: [CLAIMED_TYPE, teamClaimedType] });
+    ).toMatchObject({ outcome: "ok", value: { symptoms: [CLAIMED_TYPE, teamClaimedType] } });
   });
 
   it("reports a Walker finding with the named check’s catalogue symptom", () => {
@@ -514,9 +606,12 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [{ ...eslintRunOf({ hits: [clockHit], projection: "current" }), mechanism: AUDIT }],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      findings: [{ ...clockHit, mechanism: AUDIT }],
-      symptoms: [DATE_USED_DIRECTLY],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        findings: [{ ...clockHit, mechanism: AUDIT }],
+        symptoms: [DATE_USED_DIRECTLY],
+      },
     });
   });
 
@@ -529,8 +624,11 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      answered: [{ finding: CAST_FINDING, by: [debt] }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        answered: [{ finding: CAST_FINDING, by: [debt] }],
+      },
     });
   });
 
@@ -556,9 +654,12 @@ describe("namedRunReportOf, findings and records", () => {
         ],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      held: [{ exception: { ...disable, mechanism: ESLINT }, by: [location] }],
-      carried: [{ place: location.place, lacks: [], standing: "unjudged" }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        held: [{ exception: { ...disable, mechanism: ESLINT }, by: [location] }],
+        carried: [{ place: location.place, lacks: [], standing: "unjudged" }],
+      },
     });
   });
 
@@ -571,10 +672,13 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      findings: [CAST_FINDING],
-      stale: [{ placed: debt, reason: "credited-nothing" }],
-      symptoms: [CLAIMED_TYPE],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        findings: [CAST_FINDING],
+        stale: [{ placed: debt, reason: "credited-nothing" }],
+        symptoms: [CLAIMED_TYPE],
+      },
     });
   });
 
@@ -585,25 +689,35 @@ describe("namedRunReportOf, findings and records", () => {
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
-        runs: [eslintRunOf({ hits: [], projection: "not-included" })],
+        runs: [
+          eslintRunOf({
+            hits: [],
+            projection: "not-included",
+          }),
+        ],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      unmeasured: [
-        {
-          kind: "engine-not-run",
-          engine: ESLINT_ENGINE,
-          projection: "not-included",
-          nestedConfigurations: [],
-        },
-      ],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        unmeasured: [
+          {
+            kind: "engine-not-run",
+            engine: ESLINT_ENGINE,
+            projection: "not-included",
+            file: repoPathOf("hone.eslint.mjs"),
+            nestedConfigurations: [],
+            recovery: { kind: "include-projection" },
+          },
+        ],
+      },
     });
   });
 
   it("does not call a record stale when a package slice is missing and the engine measured no file under a current root projection, and says the engine measured nothing", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     const missingSlice: ChecksSliceProblem = {
-      slice: repoPathOf("packages/a/hone.eslint.mjs"),
+      file: repoPathOf("packages/a/hone.eslint.mjs"),
       state: "missing",
     };
     expect(
@@ -614,13 +728,16 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [{ ...eslintRunOf({ hits: [], projection: "current" }), slices: [missingSlice] }],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      unmeasured: [
-        { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
-      ],
-      "projection-problems": [
-        { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: missingSlice.slice },
-      ],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        unmeasured: [
+          { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
+        ],
+        "projection-problems": [
+          { scope: "slice", engine: ESLINT_ENGINE, state: "missing", file: missingSlice.file },
+        ],
+      },
     });
   });
 
@@ -634,11 +751,21 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [eslintRunOf({ hits: [], projection: "out-of-date" })],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      unmeasured: [
-        { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
-      ],
-      "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        unmeasured: [
+          { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
+        ],
+        "projection-problems": [
+          {
+            scope: "projection",
+            engine: ESLINT_ENGINE,
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
+        ],
+      },
     });
   });
 
@@ -656,7 +783,10 @@ describe("namedRunReportOf, findings and records", () => {
           },
         ],
       }),
-    ).toEqual({ ...EMPTY_REPORT, stale: [{ placed: debt, reason: "credited-nothing" }] });
+    ).toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, stale: [{ placed: debt, reason: "credited-nothing" }] },
+    });
   });
 
   it("calls a record stale when its file is no longer in the tree, since no run can measure a file that is gone", () => {
@@ -674,7 +804,10 @@ describe("namedRunReportOf, findings and records", () => {
           },
         ],
       }),
-    ).toEqual({ ...EMPTY_REPORT, stale: [{ placed: debt, reason: "file-gone" }] });
+    ).toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, stale: [{ placed: debt, reason: "file-gone" }] },
+    });
   });
 
   it("calls a record stale when the settings exclude its file, which is still in the repository but out of what is checked", () => {
@@ -694,9 +827,12 @@ describe("namedRunReportOf, findings and records", () => {
         ],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      excluded: [FILE_A],
-      stale: [{ placed: debt, reason: "file-excluded" }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        excluded: [FILE_A],
+        stale: [{ placed: debt, reason: "file-excluded" }],
+      },
     });
   });
 
@@ -714,7 +850,7 @@ describe("namedRunReportOf, findings and records", () => {
           },
         ],
       }),
-    ).toEqual(EMPTY_REPORT);
+    ).toEqual({ outcome: "ok", value: EMPTY_REPORT });
   });
 
   it("reports debt on a file the change touched as forfeited, and the finding it held as unanswered", () => {
@@ -727,10 +863,13 @@ describe("namedRunReportOf, findings and records", () => {
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      findings: [CAST_FINDING],
-      forfeited: [debt],
-      symptoms: [CLAIMED_TYPE],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        findings: [CAST_FINDING],
+        forfeited: [debt],
+        symptoms: [CLAIMED_TYPE],
+      },
     });
   });
 
@@ -739,7 +878,7 @@ describe("namedRunReportOf, findings and records", () => {
       place: { file: DEBT_FILE, index: 3 },
       record: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: FILE_B,
         holding: { held: "carried", entry: {}, lacks: [], standing: "established" },
@@ -756,30 +895,49 @@ describe("namedRunReportOf, findings and records", () => {
           records: [carried],
           refused: [refused],
           notes: [],
-          base: { measured: "yes", held: [] },
+          base: { measured: "yes", placements: [] },
         },
       }),
     ).toMatchObject({
-      refused: [refused],
-      carried: [{ place: { file: DEBT_FILE, index: 3 }, lacks: [], standing: "established" }],
+      outcome: "ok",
+      value: {
+        refused: [refused],
+        carried: [{ place: { file: DEBT_FILE, index: 3 }, lacks: [], standing: "established" }],
+      },
     });
   });
 });
 
 describe("namedRunReportOf, what the run could not measure", () => {
-  it("lists debt unmeasured for forfeiture when no base revision was given, beside an engine whose projection is not written", () => {
+  it("lists unmeasured forfeiture before unmeasured carryover and a missing engine projection", () => {
     expect(
       namedRunReportOf({
         ...REQUEST,
         touched: { measured: "no", base: { state: "not-given" } },
-        records: { ...NO_RECORDS, records: [debtAt({ file: FILE_B, index: 0 })] },
+        records: {
+          ...NO_RECORDS,
+          base: { measured: "no", base: { state: "not-given" } },
+          records: [
+            debtAt({ file: FILE_B, index: 0 }),
+            carriedLocationAt({ file: FILE_A, index: 1 }),
+          ],
+        },
         runs: [eslintRunOf({ hits: [], projection: "missing" })],
       }),
     ).toMatchObject({
-      unmeasured: [
-        { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
-        { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
-      ],
+      outcome: "ok",
+      value: {
+        unmeasured: [
+          { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
+          { kind: "import-unmeasured", base: { state: "not-given" } },
+          {
+            kind: "engine-not-run",
+            engine: ESLINT_ENGINE,
+            projection: "missing",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
+        ],
+      },
     });
   });
 
@@ -790,7 +948,17 @@ describe("namedRunReportOf, what the run could not measure", () => {
         runs: [eslintRunOf({ hits: [], projection: "out-of-date" })],
       }),
     ).toMatchObject({
-      "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
+      outcome: "ok",
+      value: {
+        "projection-problems": [
+          {
+            scope: "projection",
+            engine: ESLINT_ENGINE,
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.mjs"),
+          },
+        ],
+      },
     });
   });
 
@@ -804,7 +972,10 @@ describe("namedRunReportOf, what the run could not measure", () => {
           records: [debtAt({ file: FILE_A, index: 0 }), debtAt({ file: FILE_B, index: 1 })],
         },
       }),
-    ).toMatchObject({ assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }] });
+    ).toMatchObject({
+      outcome: "ok",
+      value: { assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }] },
+    });
   });
 
   it("counts the carried records left to another run when forfeiture is left elsewhere and no base was measured", () => {
@@ -819,15 +990,18 @@ describe("namedRunReportOf, what the run could not measure", () => {
         },
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      stale: [
-        { placed: carriedLocationAt({ file: FILE_A, index: 0 }), reason: "credited-nothing" },
-      ],
-      assessment: [
-        { concern: "forfeiture", assessedBy: "elsewhere", debts: 0 },
-        { concern: "carried-standing", assessedBy: "elsewhere", carried: 1 },
-      ],
-      carried: [{ place: { file: LOCATION_FILE, index: 0 }, lacks: [], standing: "unjudged" }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        stale: [
+          { placed: carriedLocationAt({ file: FILE_A, index: 0 }), reason: "credited-nothing" },
+        ],
+        assessment: [
+          { concern: "forfeiture", assessedBy: "elsewhere", debts: 0 },
+          { concern: "carried-standing", assessedBy: "elsewhere", carried: 1 },
+        ],
+        carried: [{ place: { file: LOCATION_FILE, index: 0 }, lacks: [], standing: "unjudged" }],
+      },
     });
   });
 
@@ -848,8 +1022,11 @@ describe("namedRunReportOf, what the run could not measure", () => {
         },
       }),
     ).toMatchObject({
-      unmeasured: [{ kind: "import-unmeasured", base: gitFailed }],
-      assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 0 }],
+      outcome: "ok",
+      value: {
+        unmeasured: [{ kind: "import-unmeasured", base: gitFailed }],
+        assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 0 }],
+      },
     });
   });
 
@@ -859,8 +1036,11 @@ describe("namedRunReportOf, what the run could not measure", () => {
         ...REQUEST,
         touched: { measured: "elsewhere" },
         records: { ...NO_RECORDS, records: [carriedLocationAt({ file: FILE_A, index: 0 })] },
-      }).assessment,
-    ).toEqual([{ concern: "forfeiture", assessedBy: "elsewhere", debts: 0 }]);
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: { assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 0 }] },
+    });
   });
 });
 
@@ -881,6 +1061,7 @@ describe("namedRunReportOf, the selection and the settings", () => {
                 address: "claimed-type#cast-expressions",
                 ruleSet: TOOL_RULE_SET,
                 engine: "eslint",
+                checkOptions: { kind: "none" },
                 anchor: { kind: "file" },
                 pieceRoot: "/install/pieces",
                 settings: {},
@@ -914,13 +1095,16 @@ describe("namedRunReportOf, the selection and the settings", () => {
         available: [available],
       }),
     ).toEqual({
-      ...EMPTY_REPORT,
-      excluded: ["dist"],
-      "not-adopted": [CLOCK_CHECK],
-      "not-run": [TEST_BODY_CHECK],
-      editions: [{ check: CAST_CHECK, engine: ESLINT_ENGINE, edition: "1", latest: "2" }],
-      available: [available],
-      "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
+      outcome: "ok",
+      value: {
+        ...EMPTY_REPORT,
+        excluded: ["dist"],
+        "not-adopted": [CLOCK_CHECK],
+        "not-run": [TEST_BODY_CHECK],
+        editions: [{ check: CAST_CHECK, engine: ESLINT_ENGINE, edition: "1", latest: "2" }],
+        available: [available],
+        "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
+      },
     });
   });
 
@@ -940,6 +1124,143 @@ describe("namedRunReportOf, the selection and the settings", () => {
           { ...eslintRunOf({ hits: [], projection: "current" }), misnamedRuleIds: [misnamed] },
         ],
       }),
-    ).toMatchObject({ misnamed: [misnamed] });
+    ).toMatchObject({ outcome: "ok", value: { misnamed: [misnamed] } });
+  });
+});
+
+it("reports unavailable landing records in the no-new-findings assessment", () => {
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
+  };
+
+  const report = namedRunReportOf(request);
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] } },
+  });
+});
+
+it("counts a finding held only by the proposal and accepts one answered by landing", () => {
+  const carried = carriedLocationAt({ file: FILE_A, index: 0 });
+  const location: PlacedRecord = {
+    ...carried,
+    record: {
+      ...carried.record,
+      kind: "authorised-location",
+      symptom: CAST_CHECK.symptom,
+      reach: { reaches: "one-check", check: CAST_CHECK },
+      file: FILE_A,
+      holding: {
+        held: "carried",
+        entry: { reason: "A cast at the handoff" },
+        lacks: [],
+        standing: "established",
+        binding: { binds: "check-and-file" },
+      },
+    },
+  };
+  const run = { ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }), measured: [CAST_HIT] };
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [run],
+  };
+
+  const fromHead = namedRunReportOf({
+    ...request,
+    records: { ...NO_RECORDS, records: [location] },
+  });
+  const fromLanding = namedRunReportOf({
+    ...request,
+    records: {
+      ...NO_RECORDS,
+      records: [location],
+      base: {
+        measured: "yes",
+        placements: [location],
+      },
+    },
+  });
+
+  expect(fromHead).toMatchObject({
+    outcome: "ok",
+    value: {
+      findings: [],
+      judged: "counted-debt",
+      debtComparison: { issues: [{ kind: "uncovered", observed: 1 }] },
+    },
+  });
+  expect(fromLanding).toMatchObject({
+    outcome: "ok",
+    value: { judged: "counted-debt", debtComparison: { issues: [] } },
+  });
+});
+
+it("refuses unmeasured files in the engine's verified scope and stale projection", () => {
+  const config = repoPathOf("tsconfig.json");
+  const output = repoPathOf("hone.eslint.d.mts");
+  const run: NamedEngineRun = {
+    ...eslintRunOf({ hits: [], projection: "current" }),
+    coverage: {
+      kind: "scoped",
+      candidateFiles: [FILE_A, FILE_B, config, output],
+      inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
+    },
+    measured: [CAST_HIT],
+    comparedOutputs: [output],
+  };
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A, FILE_B, config, output],
+    selection: SELECTS_CAST,
+  };
+
+  const unknown = namedRunReportOf({ ...request, runs: [run] });
+  const stale = namedRunReportOf({
+    ...request,
+    runs: [{ ...run, projection: "out-of-date", projectionFile: repoPathOf("hone.eslint.mjs") }],
+  });
+
+  expect(unknown).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "unmeasured", file: config }] } },
+  });
+  expect(stale).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "projection-unmeasured" }] } },
+  });
+});
+
+it("refuses a counted report when a child run did not report candidate scope", () => {
+  const report = namedRunReportOf({
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [
+      {
+        ...eslintRunOf({ hits: [], projection: "current" }),
+        coverage: { kind: "scope-unavailable" },
+        measured: [CAST_HIT],
+      },
+    ],
+  });
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: {
+      judged: "counted-debt",
+      debtComparison: { issues: [{ kind: "coverage-unavailable", engines: [ESLINT] }] },
+    },
   });
 });

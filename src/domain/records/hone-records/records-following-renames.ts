@@ -22,7 +22,6 @@ const recordAt = (request: {
     case "authorised-location":
     case "deviation":
       return { ...record, file };
-    case "boundary-record":
     case "dependency-record":
       return record;
   }
@@ -48,7 +47,6 @@ const pathHeldBy = (request: { readonly record: HoneRecord }): RepoPath | undefi
     case "authorised-location":
     case "deviation":
       return record.file;
-    case "boundary-record":
     case "dependency-record":
       return undefined;
   }

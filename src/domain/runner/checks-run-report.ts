@@ -1,7 +1,11 @@
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 
-export type ProjectedFile = { readonly file: RepoPath; readonly text: string };
+export type ProjectionEntry =
+  | { readonly kind: "write"; readonly file: RepoPath; readonly text: string }
+  | { readonly kind: "remove"; readonly file: RepoPath };
+
+export type ProjectedFile = Extract<ProjectionEntry, { readonly kind: "write" }>;
 
 export type AnsweredFile = {
   readonly ruleSet: RuleSetIdentity;
@@ -31,7 +35,23 @@ export type MisnamedRuleId =
 
 export type MisnamedRuleIdKind = MisnamedRuleId["kind"];
 
-export type ChecksSliceProblem = {
-  readonly slice: RepoPath;
-  readonly state: "missing" | "out-of-date" | "unconfigured";
-};
+export type ChecksProjectionProblem =
+  | ChecksSliceProblem
+  | { readonly state: "left-over"; readonly file: RepoPath };
+
+type EngineInstructions = { readonly kind: "engine-instructions"; readonly detail: string };
+
+export type ProjectionInclusion = { readonly kind: "include-projection" } | EngineInstructions;
+
+export type ChecksSliceProblem =
+  | { readonly file: RepoPath; readonly state: "missing" | "out-of-date" }
+  | {
+      readonly file: RepoPath;
+      readonly state: "not-included";
+      readonly recovery: ProjectionInclusion;
+    }
+  | {
+      readonly file: RepoPath;
+      readonly state: "unconfigured";
+      readonly recovery: { readonly kind: "generate-configuration" } | EngineInstructions;
+    };

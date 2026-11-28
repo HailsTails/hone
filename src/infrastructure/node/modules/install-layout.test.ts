@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createPathPort } from "../path-port.ts";
-import { installFormOf, installRootAboveEntry, runnerModuleSegmentsOf } from "./install-layout.ts";
+import {
+  createMeasurementEntrySegments,
+  installFormOf,
+  installRootAboveEntry,
+  runnerModuleSegmentsOf,
+} from "./install-layout.ts";
 
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/" });
 
@@ -60,5 +65,25 @@ describe("runnerModuleSegmentsOf", () => {
         moduleExtension: ".ts",
       }),
     ).toEqual(["/install", "src", "infrastructure", "engines", "walker", "runner", "runner.ts"]);
+  });
+});
+
+describe("createMeasurementEntrySegments", () => {
+  it("names the built measurement entry beside the built command", () => {
+    const segments = createMeasurementEntrySegments({
+      installRoot: "/install",
+      moduleExtension: ".js",
+    });
+
+    expect(segments).toEqual(["/install", "src", "measure-engines.process.js"]);
+  });
+
+  it("names the source measurement entry beside the source command", () => {
+    const segments = createMeasurementEntrySegments({
+      installRoot: "/install",
+      moduleExtension: ".ts",
+    });
+
+    expect(segments).toEqual(["/install", "src", "measure-engines.process.ts"]);
   });
 });

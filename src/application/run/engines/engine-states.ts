@@ -9,14 +9,15 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../../domain/report/run-report.ts";
+import { typescriptFilesOf } from "../../../domain/repository/checked-tree.ts";
+import { excludeProjectionOutputs } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
-import { typescriptFilesOf } from "../checked-tree-of.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
-type Selected = Pick<CheckBinding, "address" | "engine">;
+export type SelectedEngineCheck = Pick<CheckBinding, "address" | "engine">;
 
 const engineOf = (request: {
   readonly catalogue: CatalogueEngines;
@@ -47,7 +48,7 @@ export const engineMeasurementOf = (request: {
 
 const runMeasurementOf = (request: {
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
 }): RunMeasurement => ({
   mechanism: request.run.mechanism,
   selected: request.selected
@@ -58,7 +59,7 @@ const runMeasurementOf = (request: {
 
 export const runMeasurementsOf = (request: {
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
 }): RunMeasurements => ({
@@ -71,43 +72,69 @@ const measuredNothingOf = (request: {
   readonly engine: Engine;
   readonly measurement: RunMeasurement;
   readonly tracked: readonly RepoPath[];
-}): readonly EngineNotRun[] =>
-  engineMeasurementOf({
-    run: request.measurement,
-    inReach: typescriptFilesOf({ tracked: request.tracked }),
-  }) === "measured-nothing"
+  readonly comparedOutputs: readonly RepoPath[];
+}): readonly EngineNotRun[] => {
+  const inReach = excludeProjectionOutputs({
+    files: typescriptFilesOf({ tracked: request.tracked }),
+    outputs: new Set(request.comparedOutputs),
+  });
+  return engineMeasurementOf({ run: request.measurement, inReach }) === "measured-nothing"
     ? [{ kind: "engine-not-run", engine: request.engine, projection: "measured-nothing" }]
     : [];
+};
 
 const notRunOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   const { nestedConfigurations, measured } = request.run;
-  const notIncluded: EngineNotRun = {
-    kind: "engine-not-run",
-    engine,
-    projection: "not-included",
-    nestedConfigurations,
-  };
   switch (request.run.projection) {
     case "missing":
-      return [{ kind: "engine-not-run", engine, projection: "missing" }];
+      return [
+        { kind: "engine-not-run", engine, projection: "missing", file: request.run.projectionFile },
+      ];
     case "not-included":
-      return [notIncluded];
+      return [
+        {
+          kind: "engine-not-run",
+          engine,
+          projection: "not-included",
+          file: request.run.projectionFile,
+          nestedConfigurations,
+          recovery: request.run.recovery,
+        },
+      ];
     case "none":
       return [];
     case "current":
-    case "out-of-date":
-      if (measured.length === 0 && nestedConfigurations.length > 0) return [notIncluded];
+    case "current-with-file":
+    case "out-of-date": {
+      if (
+        request.run.projection !== "current" &&
+        measured.length === 0 &&
+        nestedConfigurations.length > 0
+      ) {
+        return [
+          {
+            kind: "engine-not-run",
+            engine,
+            projection: "not-included",
+            file: request.run.projectionFile,
+            nestedConfigurations,
+            recovery: { kind: "include-projection" },
+          },
+        ];
+      }
       return measuredNothingOf({
         engine,
         measurement: runMeasurementOf(request),
         tracked: request.tracked,
+        comparedOutputs: request.run.comparedOutputs,
       });
+    }
   }
 };
 
@@ -116,7 +143,14 @@ const projectionProblemOf = (request: {
   readonly run: NamedEngineRun;
 }): readonly RunProjectionProblem[] =>
   request.run.projection === "out-of-date"
-    ? [{ scope: "projection", engine: request.engine, state: "out-of-date" }]
+    ? [
+        {
+          scope: "projection",
+          engine: request.engine,
+          state: "out-of-date",
+          file: request.run.projectionFile,
+        },
+      ]
     : [];
 
 const problemOf = (request: {
@@ -126,19 +160,18 @@ const problemOf = (request: {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   return [
     ...projectionProblemOf({ engine, run: request.run }),
-    ...request.run.slices.map(({ state, slice }): RunProjectionProblem => ({
-      scope: "slice",
-      engine,
-      state,
-      slice,
-    })),
+    ...request.run.slices.map((problem): RunProjectionProblem =>
+      problem.state === "left-over"
+        ? { ...problem, scope: "file", engine }
+        : { ...problem, scope: "slice", engine },
+    ),
   ];
 };
 
 export const engineUnmeasuredOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] =>
   request.runs.flatMap((run) =>
@@ -164,12 +197,14 @@ const refreshableProblemOf = (request: {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
+    case "file":
       return problem;
     case "slice":
       switch (problem.state) {
         case "out-of-date":
         case "missing":
           return problem;
+        case "not-included":
         case "unconfigured":
           return undefined;
       }

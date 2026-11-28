@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { CommandRequest } from "../application/ports/command-request.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
@@ -21,6 +22,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
@@ -37,12 +40,14 @@ import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
 const ranVersionTwoProject = (request: {
-  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>;
+  readonly ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest> & {
+    readonly fileRemoval?: FileRemovalPort;
+  };
   readonly command: CommandRequest;
 }) => {
   const handler = commandOf({
     tool: VERSION_TWO_PROJECT,
-    ports: { ...request.command, ...request.ports },
+    ports: { fileRemoval: { remove: vi.fn() }, ...request.command, ...request.ports },
   });
   return handler(request.command);
 };
@@ -143,29 +148,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -190,7 +188,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -210,7 +213,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -228,7 +231,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -252,25 +261,31 @@ const CAST_EXPRESSIONS = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
   symptom: BRANCH_IN_A_TEST,
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -283,8 +298,8 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -293,7 +308,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
       },
     },
     { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
@@ -302,7 +317,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const FILE: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
 const SETTINGS: NamedSettingsReading = {
   available: [],
@@ -315,6 +334,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -323,7 +343,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const stagesProjecting = (request: {
@@ -387,17 +407,22 @@ const commandWith = (request: {
   moduleUrl: request.moduleUrl,
 });
 
-const ranWith = async (request: {
+const ranWith = async ({
+  fileRemoval = { remove: vi.fn<FileRemovalPort["remove"]>() },
+  ...request
+}: {
   readonly arguments: readonly string[];
   readonly stagesOver: StagesOver;
   readonly moduleUrl: string;
   readonly fileText: FileTextPort;
+  readonly fileRemoval?: FileRemovalPort;
 }) => {
   const processPort = processWith({ arguments: request.arguments });
   const { fileText } = request;
   await ranVersionTwoProject({
     ports: {
-      namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+      fileRemoval,
+      namedEngine: { load: vi.fn() },
       gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
       directory: {
         list: vi.fn<DirectoryPort["list"]>(),
@@ -431,6 +456,29 @@ describe("versionTwoProjectCommandOf", () => {
     expect({ ran, written: vi.mocked(fileText.write).mock.calls }).toEqual({
       ran: { writes: [[{ text: "hone.eslint.mjs written\n" }]], exits: [[{ code: 0 }]] },
       written: [[{ path: "/repo/hone.eslint.mjs", text: "export default [];\n" }]],
+    });
+  });
+
+  it("removes a projection returned by the engine and reports the removal", async () => {
+    const remove = vi
+      .fn<FileRemovalPort["remove"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+    const ran = await ranWith({
+      moduleUrl: ENTRY_URL,
+      arguments: ["--repo", "/repo"],
+      fileText: fileTextAbsent(),
+      fileRemoval: { remove },
+      stagesOver: stagesOverProjecting({
+        projected: {
+          outcome: "ok",
+          value: [{ kind: "remove", file: repoPathOf("hone.eslint.ts") }],
+        },
+      }),
+    });
+
+    expect({ ran, removed: remove.mock.calls }).toEqual({
+      ran: { writes: [[{ text: "hone.eslint.ts removed\n" }]], exits: [[{ code: 0 }]] },
+      removed: [[{ path: "/repo/hone.eslint.ts" }]],
     });
   });
 

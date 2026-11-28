@@ -45,14 +45,14 @@ const FILE: CatalogueFile = {
     {
       name: "composition-root",
       title: "Composition root",
-      serves: { rule: "doer-or-orchestrator" },
+      serves: [{ rule: "doer-or-orchestrator" }],
       standing: "accepted",
       reason: { text: "Adapters are built once.", standing: "accepted" },
     },
     {
       name: "stub-each-port",
       title: "Stub each port",
-      serves: { principle: "tests-are-ours" },
+      serves: [{ principle: "tests-are-ours" }],
       standing: "accepted",
       reason: { text: "Tests own their stubs.", standing: "accepted" },
     },
@@ -81,6 +81,31 @@ describe("rulesPageOf", () => {
     ).toEqual({
       path: "rules/rules.md",
       text: "# Rules\n\n## One place decides\n\n### Doer or orchestrator\n\n- **What must hold:** A doer does. See [the case](cases/does-one-job.md).\n\n- **Cases served:** Does one job; Takes a dependency (proposed).\n- **Recipes:** [Composition root](typescript/recipes.md#composition-root).\n\n### One job\n\nProposed, not accepted.\n",
+    });
+  });
+
+  it("lists a recipe under each rule it serves", () => {
+    const page = rulesPageOf({
+      file: {
+        ...FILE,
+        cases: [],
+        recipes: [
+          {
+            name: "composition-root",
+            title: "Composition root",
+            serves: [{ rule: "doer-or-orchestrator" }, { rule: "one-job" }],
+            standing: "accepted",
+            reason: { text: "Adapters are built once.", standing: "accepted" },
+          },
+        ],
+      },
+      path: PATH,
+      prose: new Map(),
+    });
+
+    expect(page).toEqual({
+      path: "rules/rules.md",
+      text: "# Rules\n\n## One place decides\n\n### Doer or orchestrator\n\n- **Recipes:** [Composition root](typescript/recipes.md#composition-root).\n\n### One job\n\nProposed, not accepted.\n\n- **Recipes:** [Composition root](typescript/recipes.md#composition-root).\n",
     });
   });
 });

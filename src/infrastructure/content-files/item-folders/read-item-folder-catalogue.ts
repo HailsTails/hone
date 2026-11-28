@@ -2,7 +2,9 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
+import { checkAddressTextOf } from "../../../domain/language-layer/check-address-text.ts";
 import type {
+  CatalogueContent,
   ContentHolding,
   RecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -25,7 +27,7 @@ type ItemFolder = {
   readonly ruleSet: RuleSetIdentity;
   readonly beside: HeldBesideItems;
   readonly inheritedRecordKinds: readonly RecordKind[];
-  readonly symptomSourcePrefix?: string;
+  readonly sourcePrefix?: string;
 };
 
 type ItemRead = Result<PlacedItem, VersionTwoLoadFailure>;
@@ -63,9 +65,9 @@ const placedItemAt = (request: ItemFolder & { readonly file: string }): ItemRead
         outcome: "ok",
         value: {
           name: identity.value.name,
-          ...(request.symptomSourcePrefix === undefined || identity.value.kind !== "symptom"
+          ...(request.sourcePrefix === undefined
             ? {}
-            : { sourceFile: `${request.symptomSourcePrefix}/${request.file}` }),
+            : { sourceFile: `${request.sourcePrefix}/${request.file}` }),
           within: identity.value.within,
           title: read.value.title,
           item: facts.value,
@@ -88,6 +90,47 @@ const placedItemsOf = (
       };
 };
 
+const createSourceKey = (placed: PlacedItem): string =>
+  placed.within === undefined
+    ? placed.name
+    : checkAddressTextOf({ check: { name: placed.name, symptom: { name: placed.within } } });
+
+const mapItemsToSourceFiles = (request: {
+  readonly items: readonly PlacedItem[];
+  readonly kind: "symptom" | "check" | "recipe";
+}): ReadonlyMap<string, string> =>
+  new Map(
+    request.items
+      .filter((placed) => placed.item.kind === request.kind)
+      .flatMap((placed) =>
+        placed.sourceFile === undefined
+          ? []
+          : [[createSourceKey(placed), placed.sourceFile] as const],
+      ),
+  );
+
+const addSourceFiles = (request: {
+  readonly content: CatalogueContent;
+  readonly items: readonly PlacedItem[];
+}): CatalogueContent => {
+  const symptomFiles = mapItemsToSourceFiles({ items: request.items, kind: "symptom" });
+  const checkFiles = mapItemsToSourceFiles({ items: request.items, kind: "check" });
+  const symptoms = request.content.symptoms.map((symptom) => {
+    const sourceFile = symptomFiles.get(symptom.name);
+    return sourceFile === undefined ? symptom : { ...symptom, sourceFile };
+  });
+  const recipeFiles = mapItemsToSourceFiles({ items: request.items, kind: "recipe" });
+  const recipes = request.content.recipes.map((recipe) => {
+    const sourceFile = recipeFiles.get(recipe.name);
+    return sourceFile === undefined ? recipe : { ...recipe, sourceFile };
+  });
+  const checks = request.content.checks.map((check) => ({
+    ...check,
+    page: checkFiles.get(checkAddressTextOf({ check })) ?? check.page,
+  }));
+  return { ...request.content, recipes, symptoms, checks };
+};
+
 const holdingOf = (request: {
   readonly root: AbsolutePath;
   readonly ruleSet: RuleSetIdentity;
@@ -107,25 +150,12 @@ const holdingOf = (request: {
   if (content.outcome === "failed") {
     return { outcome: "failed", error: malformed({ path: request.root, detail: content.error }) };
   }
-  const sourceFiles = new Map<string, string>();
-  for (const { name, sourceFile } of request.items) {
-    if (sourceFile !== undefined) sourceFiles.set(name, sourceFile);
-  }
-  if (sourceFiles.size === 0) {
-    return { outcome: "ok", value: { held: "catalogue", content: content.value } };
-  }
-  const symptoms = content.value.symptoms.map((symptom) => ({
-    ...symptom,
-    sourceFile: sourceFiles.get(symptom.name),
-  }));
-  const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
-  const checks = content.value.checks.map((check) => ({
-    ...check,
-    symptom: byName.get(check.symptom.name) ?? check.symptom,
-  }));
   return {
     outcome: "ok",
-    value: { held: "catalogue", content: { ...content.value, symptoms, checks } },
+    value: {
+      held: "catalogue",
+      content: addSourceFiles({ content: content.value, items: request.items }),
+    },
   };
 };
 
@@ -151,5 +181,5 @@ const readItemFolderCatalogue = (
 export const createItemFolderCatalogueRepository = (
   options: ItemFolder,
 ): SymptomCatalogueRepository => ({
-  read: (_request) => readItemFolderCatalogue(options),
+  read: () => readItemFolderCatalogue(options),
 });

@@ -21,19 +21,12 @@ const LOOPS_CLAUSE = {
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
-  symptom: {
-    ruleSet: "hone",
-    name: "loop-keyword",
-    title: "Loop keyword",
-    seen: "`for` or `while`.",
-    mayIndicate: [],
-    breachUsuallySits: "in the unit",
-    recipes: [],
-    correctUses: [],
-  },
+  symptom: { ruleSet: "hone", name: "loop-keyword" },
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [{ name: "walker" }, { name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

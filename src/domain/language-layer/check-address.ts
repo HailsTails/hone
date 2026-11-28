@@ -2,7 +2,7 @@ import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
 import { ownedNameText } from "../rule-set/rule-set-identity.ts";
 import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
-import type { Check, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
+import type { Check, CheckAddress, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
 
 export type FoundCheck =
   | { readonly found: "check"; readonly check: Check }
@@ -15,15 +15,10 @@ const foundAmong = (request: { readonly checks: readonly Check[] }): FoundCheck 
   return check === undefined ? NO_CHECK : { found: "check", check };
 };
 
-export const checkAddressOf = (request: { readonly check: Check }): CheckAddressText =>
+export const checkAddressOf = (request: { readonly check: CheckAddress }): CheckAddressText =>
   checkAddressTextOf(request);
 
-export type OwnedCheck = {
-  readonly name: string;
-  readonly symptom: { readonly name: string; readonly ruleSet: RuleSetIdentity };
-};
-
-export const qualifiedCheckAddressOf = (request: { readonly check: OwnedCheck }): string =>
+export const qualifiedCheckAddressOf = (request: { readonly check: CheckAddress }): string =>
   ownedNameText({ ruleSet: request.check.symptom.ruleSet, name: checkAddressTextOf(request) });
 
 export const qualifiedAddressOf = (request: {

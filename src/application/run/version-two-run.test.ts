@@ -10,6 +10,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -17,14 +19,17 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
-import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
+  measureEngines,
   settledCatalogueOf,
-  type VersionTwoRequest,
+  versionTwoInputsOf,
+  type VersionTwoPlan,
   type VersionTwoStages,
   versionTwoRunOver,
 } from "./version-two-run.ts";
@@ -127,29 +132,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -173,7 +171,14 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
@@ -192,7 +197,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -210,7 +215,9 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+  correctUses: [
+    { situation: "a schema proves the type", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -233,26 +240,32 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -265,20 +278,34 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION, BOUNDARY_RECORD, DEBT],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -295,6 +322,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -303,7 +331,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const HIT: CheckHit = {
@@ -313,12 +341,40 @@ const HIT: CheckHit = {
   snippet: "body as Event",
 };
 
+const STAGE_CHECKS: readonly EngineCheck[] = [
+  {
+    name: "clock-sources",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "date-used-directly",
+      title: "Date used directly",
+    },
+    engines: [WALKER],
+  },
+  {
+    name: "test-body",
+    symptom: {
+      ruleSet: TOOL_RULE_SET,
+      name: "branch-in-a-test",
+      title: "Branch in a test",
+    },
+    engines: [WALKER],
+  },
+  {
+    name: "cast-expressions",
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type", title: "Claimed type" },
+    engines: [ESLINT_ENGINE],
+  },
+];
+
 const RUN: NamedEngineRun = {
   mechanism: ESLINT,
   hits: [HIT],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -356,15 +412,24 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
   ...request,
 });
 
-const NO_ARGUMENTS: VersionTwoRequest = {
-  forfeiture: undefined,
-  reportOutput: undefined,
+const CONFIGURED_PLAN: VersionTwoPlan = {
+  ...SETTINGS.runSettings,
+  measuring: "when-debt-held",
+};
+
+const PLAN_COMPARING_COUNTS: VersionTwoPlan = {
+  assessment: { forfeiture: "no-new-findings" },
+  reportOutput: "actionable",
   measuring: "when-debt-held",
 };
 
 describe("versionTwoRunOver", () => {
-  it("reports the findings the engines raised, with the catalogue and the output the settings name", async () => {
-    const run = await versionTwoRunOver({ stages: stagesGiving({}), arguments: NO_ARGUMENTS });
+  it("reports the findings the engines raised, with the catalogue and the planned output", async () => {
+    const stages = stagesGiving({});
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     expect(run).toMatchObject({
       outcome: "ok",
       value: {
@@ -379,18 +444,26 @@ describe("versionTwoRunOver", () => {
     });
   });
 
-  it("takes the report output and the forfeiture assessment the command line gave over the settings", async () => {
+  it("passes the planned forfeiture to the touched stage and returns the planned output", async () => {
     const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({ measured: "elsewhere" });
+    const stages = stagesGiving({ touched });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
     const run = await versionTwoRunOver({
-      stages: stagesGiving({ touched }),
-      arguments: { forfeiture: "elsewhere", reportOutput: "counts", measuring: "when-debt-held" },
+      stages,
+      inputs: inputs.value,
+      plan: {
+        assessment: { forfeiture: "elsewhere" },
+        reportOutput: "counts",
+        measuring: "when-debt-held",
+      },
     });
     expect(run).toMatchObject({ outcome: "ok", value: { output: "counts" } });
     expect(touched.mock.calls).toEqual([
       [
         {
-          assessment: { forfeiture: "elsewhere" },
-          measuring: "when-debt-held",
+          scope: { baseScope: "elsewhere" },
           records: RECORDS,
           renamed: { measured: "yes", renamed: new Map() },
         },
@@ -401,16 +474,20 @@ describe("versionTwoRunOver", () => {
   it("hands back the touched set it measured once, and the measuring it was asked for reaches the stage", async () => {
     const measured = { measured: "yes", paths: new Set([FILE_A]) } as const;
     const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue(measured);
+    const stages = stagesGiving({ touched });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
     const run = await versionTwoRunOver({
-      stages: stagesGiving({ touched }),
-      arguments: { ...NO_ARGUMENTS, measuring: "always" },
+      stages,
+      inputs: inputs.value,
+      plan: { ...SETTINGS.runSettings, measuring: "always" },
     });
     expect(run).toMatchObject({ outcome: "ok", value: { touched: measured } });
     expect(touched.mock.calls).toEqual([
       [
         {
-          assessment: { forfeiture: "this-run" },
-          measuring: "always",
+          scope: { baseScope: "merge-base", measuring: "always" },
           records: RECORDS,
           renamed: { measured: "yes", renamed: new Map() },
         },
@@ -423,7 +500,7 @@ describe("versionTwoRunOver", () => {
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
       record: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
         reach: { reaches: "whole-symptom" },
         file: repoPathOf("src/basket.ts"),
         holding: { held: "stated" },
@@ -432,10 +509,7 @@ describe("versionTwoRunOver", () => {
     const onDisk: RecordsReading = {
       ...RECORDS,
       records: [debtAtBase],
-      base: {
-        measured: "yes",
-        held: [debtAtBase.record],
-      },
+      base: { measured: "yes", placements: [debtAtBase] },
     };
     const stages = stagesGiving({
       records: vi
@@ -449,7 +523,10 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["touched"]>()
         .mockReturnValue({ measured: "yes", paths: new Set([FILE_A]) }),
     });
-    const run = await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     assert(run.outcome === "ok", "the run completes");
     expect({
       moved: run.value.moved,
@@ -460,34 +537,28 @@ describe("versionTwoRunOver", () => {
       forfeited: [
         {
           place: debtAtBase.place,
-          record: {
-            kind: "debt",
-            symptom: CLAIMED_TYPE,
-            reach: { reaches: "whole-symptom" },
-            file: FILE_A,
-            holding: { held: "stated" },
-          },
+          record: { ...debtAtBase.record, file: FILE_A },
         },
       ],
       refused: [
         { place: debtAtBase.place, refusals: [{ kind: "held-at-moved-path", movedTo: FILE_A }] },
       ],
     });
-    expect(vi.mocked(stages.engines).mock.calls).toEqual([
-      [
-        {
-          catalogue: REPORT_CATALOGUE,
-          settings: SETTINGS,
-          records: onDisk,
-          tree: { tracked: [FILE_A], declaredConfigRoots: [] },
-        },
-      ],
-    ]);
+    expect(stages.engines).toHaveBeenCalledExactlyOnceWith({
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: onDisk,
+      tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+      checks: STAGE_CHECKS,
+    });
   });
 
   it("asks the settings and the records with the catalogue, and the engines with everything read", async () => {
     const stages = stagesGiving({});
-    await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS });
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
     expect({
       settings: vi.mocked(stages.settings).mock.calls,
       records: vi.mocked(stages.records).mock.calls,
@@ -502,39 +573,82 @@ describe("versionTwoRunOver", () => {
             settings: SETTINGS,
             records: RECORDS,
             tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+            checks: STAGE_CHECKS,
           },
         ],
       ],
     });
   });
 
-  it("fails with the catalogue's failure and reads nothing more when the catalogue cannot be read", async () => {
+  it("fails naming the symptom a check names and no catalogue holds, and runs no engine", () => {
+    const stages = stagesGiving({
+      catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          principles: [],
+          rules: [],
+          cases: [],
+          recipes: [],
+          recordKinds: [],
+          engines: [WALKER],
+          symptoms: [],
+          clauses: [],
+          checks: [
+            {
+              name: "clock-sources",
+              symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+              page: "date-used-directly/clock-sources.md",
+              engines: [WALKER],
+              forms: [],
+              findingSpecifics: [],
+            },
+          ],
+          namedBans: [],
+        },
+      }),
+    });
+
+    const run = versionTwoInputsOf({ stages });
+
+    expect({ run, engines: vi.mocked(stages.engines).mock.calls }).toEqual({
+      run: {
+        outcome: "failed",
+        error: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+        },
+      },
+      engines: [],
+    });
+  });
+
+  it("fails with the catalogue's failure and reads nothing more when the catalogue cannot be read", () => {
     const stages = stagesGiving({
       catalogue: vi
         .fn<VersionTwoStages["catalogue"]>()
         .mockReturnValue({ outcome: "failed", error: CATALOGUE_UNREAD }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: CATALOGUE_UNREAD,
     });
     expect(vi.mocked(stages.settings).mock.calls).toEqual([]);
   });
 
-  it("fails with the settings' failure and runs no engine when the settings cannot be read", async () => {
+  it("fails with the settings' failure and runs no engine when the settings cannot be read", () => {
     const stages = stagesGiving({
       settings: vi
         .fn<VersionTwoStages["settings"]>()
         .mockReturnValue({ outcome: "failed", error: SETTINGS_ABSENT }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
     });
     expect(vi.mocked(stages.engines).mock.calls).toEqual([]);
   });
 
-  it("fails with the records' failure when the records cannot be read", async () => {
+  it("fails with the records' failure when the records cannot be read", () => {
     const refused: RunLoadFailure = {
       kind: "records-refused",
       refusals: [{ kind: "not-a-records-file", file: repoPathOf("hone-records/notes.txt") }],
@@ -544,7 +658,7 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["records"]>()
         .mockReturnValue({ outcome: "failed", error: refused }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    expect(versionTwoInputsOf({ stages })).toEqual({
       outcome: "failed",
       error: refused,
     });
@@ -560,7 +674,12 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["tree"]>()
         .mockReturnValue({ outcome: "failed", error: untracked }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
+
+    expect(run).toEqual({
       outcome: "failed",
       error: untracked,
     });
@@ -578,10 +697,66 @@ describe("versionTwoRunOver", () => {
         .fn<VersionTwoStages["engines"]>()
         .mockResolvedValue({ outcome: "failed", error: failure }),
     });
-    expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const run = await versionTwoRunOver({ stages, inputs: inputs.value, plan: CONFIGURED_PLAN });
+
+    expect(run).toEqual({
       outcome: "failed",
       error: failure,
     });
+  });
+});
+
+describe("measureEngines", () => {
+  it("hands back the engines' runs with everything it read to run them, and asks no touched set", async () => {
+    const stages = stagesGiving({});
+
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const measured = await measureEngines({ stages, inputs: inputs.value });
+
+    expect(measured).toEqual({
+      outcome: "ok",
+      value: {
+        catalogue: REPORT_CATALOGUE,
+        settings: SETTINGS,
+        records: RECORDS,
+        tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+        checks: STAGE_CHECKS,
+        content: {
+          symptoms: new Map([
+            ["date-used-directly", DATE_USED_DIRECTLY],
+            ["branch-in-a-test", BRANCH_IN_A_TEST],
+            ["claimed-type", CLAIMED_TYPE],
+          ]),
+        },
+        runs: [RUN],
+      },
+    });
+    expect(vi.mocked(stages.touched).mock.calls).toEqual([]);
+  });
+
+  it("fails with the engines' failure", async () => {
+    const failure: RunLoadFailure = {
+      kind: "engine-failed",
+      engine: { named: "mechanism", mechanism: "eslint" },
+      failure: { kind: "team-config-unloadable", detail: "eslint.config.mjs threw" },
+    };
+    const stages = stagesGiving({
+      engines: vi
+        .fn<VersionTwoStages["engines"]>()
+        .mockResolvedValue({ outcome: "failed", error: failure }),
+    });
+
+    const inputs = versionTwoInputsOf({ stages });
+    assert(inputs.outcome === "ok", "inputs are available");
+
+    const measured = await measureEngines({ stages, inputs: inputs.value });
+
+    expect(measured).toEqual({ outcome: "failed", error: failure });
   });
 });
 
@@ -605,5 +780,89 @@ describe("settledCatalogueOf", () => {
       value: { catalogue: { symptoms: [...REPORT_CATALOGUE.symptoms, teamSymptom] } },
     });
     expect(vi.mocked(stages.records).mock.calls).toEqual([]);
+  });
+});
+
+it("refuses to compare against settings changed by the proposal", async () => {
+  const touched = vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
+    measured: "pinned-ancestor",
+    paths: new Set([repoPathOf("hone.config.json")]),
+    landingRevision: "pinned",
+  });
+  const stages = stagesGiving({ touched });
+
+  const inputs = versionTwoInputsOf({ stages });
+  assert(inputs.outcome === "ok", "inputs are available");
+
+  const run = await versionTwoRunOver({
+    stages,
+    inputs: inputs.value,
+    plan: PLAN_COMPARING_COUNTS,
+  });
+
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: {
+      report: {
+        debtComparison: {
+          revision: "pinned",
+          issues: [{ kind: "settings-changed" }, { kind: "no-checks" }],
+        },
+      },
+    },
+  });
+});
+
+it("refuses comparison for an externally supplied selected check", async () => {
+  const ruleSet = { name: ruleSetNameOf("acme") };
+  const edition = editionOf("1");
+  const selection: NamedSettingsReading["selection"] = {
+    ...SETTINGS.selection,
+    selected: [
+      {
+        address: { ruleSet, check: HIT.check },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: HIT.check,
+          ruleSet,
+          engine: "eslint",
+          anchor: { kind: "file" },
+          pieceRoot: "/install/pieces",
+          settings: {},
+          checkSettings: {},
+          checkOptions: { kind: "piece" },
+          edition,
+        },
+        editions: { declared: [edition], default: edition, latest: edition },
+      },
+    ],
+  };
+  const settings = vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+    outcome: "ok",
+    value: { ...SETTINGS, selection },
+  });
+
+  const engines = vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+    outcome: "ok",
+    value: [{ ...RUN, measured: [HIT] }],
+  });
+
+  const touched = vi
+    .fn<VersionTwoStages["touched"]>()
+    .mockReturnValue({ measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" });
+  const stages = stagesGiving({ settings, engines, touched });
+  const inputs = versionTwoInputsOf({ stages });
+  assert(inputs.outcome === "ok", "inputs are available");
+
+  const run = await versionTwoRunOver({
+    stages,
+    inputs: inputs.value,
+    plan: PLAN_COMPARING_COUNTS,
+  });
+
+  expect(run).toMatchObject({
+    outcome: "ok",
+    value: { report: { debtComparison: { issues: [{ kind: "external-checks" }] } } },
   });
 });

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type {
   Case,
-  Check,
+  CheckAddress,
   Pointed,
   Recipe,
   Rule,
-  Symptom,
+  SymptomAddress,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   CatalogueNote,
@@ -54,44 +54,9 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
 };
 
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "A cast.",
-  mayIndicate: [
-    {
-      case: GIVES_A_VALUE_ITS_TYPE,
-      situation: "or needs it narrower",
-      points: [OWED_DECLARED_NOT_ASSERTED],
-    },
-  ],
-  breachUsuallySits: "at the producer",
-  recipes: [],
-  correctUses: [
-    {
-      situation: "a schema proves the type",
-      kind: {
-        name: "authorised-location",
-        title: "Authorised location",
-        phrase: "an authorised location",
-        todaysFormat: "authorised-location",
-      },
-    },
-  ],
-};
+const CLAIMED_TYPE: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "claimed-type" };
 
-const CAST_CHECK: Check = {
-  name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-2"),
-    clause: clauseIdOf("cast-expressions"),
-  },
-  engines: [{ name: "eslint" }],
-  forms: [],
-};
+const CAST_CHECK: CheckAddress = { name: "cast-expressions", symptom: CLAIMED_TYPE };
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -141,13 +106,9 @@ const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
-
-const CLOCK_ADAPTER = repoPathOf("src/adapters/system-clock.ts");
-
 const STATED_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: { held: "stated" },
@@ -155,7 +116,7 @@ const STATED_DEBT: HoneRecord = {
 
 const CARRIED_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: WHOLE_SYMPTOM,
   file: FILE,
   holding: { held: "carried", entry: {}, lacks: [], standing: "established" },
@@ -164,9 +125,10 @@ const CARRIED_DEBT: HoneRecord = {
 const MATCHED_LOCATION: HoneRecord = {
   kind: "authorised-location",
   symptom: CLAIMED_TYPE,
-  reach: WHOLE_SYMPTOM,
+  reach: { reaches: "one-check", check: CAST_CHECK },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "stated",
     owing: {
       matches: "the-catalogue",
@@ -180,9 +142,10 @@ const MATCHED_LOCATION: HoneRecord = {
 const UNKNOWN_CASE_LOCATION: HoneRecord = {
   kind: "authorised-location",
   symptom: CLAIMED_TYPE,
-  reach: WHOLE_SYMPTOM,
+  reach: { reaches: "one-check", check: CAST_CHECK },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "stated",
     owing: {
       matches: "not-the-catalogue",
@@ -195,9 +158,10 @@ const UNKNOWN_CASE_LOCATION: HoneRecord = {
 const UNOWED_LOCATION: HoneRecord = {
   kind: "authorised-location",
   symptom: CLAIMED_TYPE,
-  reach: WHOLE_SYMPTOM,
+  reach: { reaches: "one-check", check: CAST_CHECK },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "stated",
     owing: {
       matches: "not-the-catalogue",
@@ -210,9 +174,10 @@ const UNOWED_LOCATION: HoneRecord = {
 const CARRIED_LOCATION: HoneRecord = {
   kind: "authorised-location",
   symptom: CLAIMED_TYPE,
-  reach: WHOLE_SYMPTOM,
+  reach: { reaches: "one-check", check: CAST_CHECK },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "carried",
     entry: {},
     lacks: ["case", "owes", "whyChain"],
@@ -229,27 +194,6 @@ const DEVIATION: HoneRecord = {
   ruleHolds: "Holds.",
 };
 
-const CLOCK_BOUNDARY: HoneRecord = {
-  kind: "boundary-record",
-  module: CLOCK_ADAPTER,
-  outsideParty: { kind: "runtime", facility: "clock" },
-  holding: { held: "stated", ports: ["Clock"] },
-};
-
-const FS_BOUNDARY: HoneRecord = {
-  kind: "boundary-record",
-  module: repoPathOf("src/adapters/files"),
-  outsideParty: { kind: "scheme-module", specifier: "node:fs" },
-  holding: { held: "carried", entry: {}, lacks: ["ports"], standing: "established" },
-};
-
-const UUID_BOUNDARY: HoneRecord = {
-  kind: "boundary-record",
-  module: repoPathOf("src/adapters/ids"),
-  outsideParty: { kind: "package", specifier: "uuid/v4", dependency: "uuid" },
-  holding: { held: "stated", ports: ["Ids"] },
-};
-
 const DEPENDENCY: HoneRecord = {
   kind: "dependency-record",
   dependency: "zod",
@@ -259,18 +203,22 @@ const DEPENDENCY: HoneRecord = {
 
 const CAST_DEBT: HoneRecord = {
   kind: "debt",
-  symptom: CLAIMED_TYPE,
-  reach: { reaches: "one-check", check: CAST_CHECK },
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  reach: {
+    reaches: "one-check",
+    check: { name: "cast-expressions", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+  },
   file: FILE,
   holding: { held: "stated" },
 };
 
 const UNKNOWN_CHECK_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: { reaches: "unknown-check", check: "cast-old" },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "stated",
     owing: {
       matches: "the-catalogue",
@@ -283,16 +231,19 @@ const UNKNOWN_CHECK_LOCATION: HoneRecord = {
 
 const CARRIED_UNKNOWN_CHECK_LOCATION: HoneRecord = {
   kind: "authorised-location",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   reach: { reaches: "unknown-check", check: "cast-old" },
   file: FILE,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "carried",
     entry: {},
     lacks: ["case", "owes", "whyChain"],
     standing: "unjudged",
   },
 };
+
+type SubjectRow = { readonly name: string; readonly record: HoneRecord; readonly text: string };
 
 describe("recordPlaceText", () => {
   it("names a record by its records file and its index in that file's records", () => {
@@ -321,7 +272,7 @@ describe("recordPlaceText", () => {
 });
 
 describe("recordSubjectText", () => {
-  it.each([
+  it.each<SubjectRow>([
     { name: "debt", record: STATED_DEBT, text: "claimed-type debt src/adapters/stripe-webhook.ts" },
     {
       name: "carried debt",
@@ -331,22 +282,22 @@ describe("recordSubjectText", () => {
     {
       name: "an authorised location that matches the catalogue",
       record: MATCHED_LOCATION,
-      text: "claimed-type authorised-location src/adapters/stripe-webhook.ts",
+      text: "claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts",
     },
     {
       name: "an authorised location on a case the catalogue does not hold",
       record: UNKNOWN_CASE_LOCATION,
-      text: 'claimed-type authorised-location src/adapters/stripe-webhook.ts note: the catalogue has no case "parses a webhook", owing "declared-not-asserted"',
+      text: 'claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts note: the catalogue has no case "parses a webhook", owing "declared-not-asserted"',
     },
     {
       name: "an authorised location owing what its case does not owe",
       record: UNOWED_LOCATION,
-      text: 'claimed-type authorised-location src/adapters/stripe-webhook.ts note: gives-a-value-its-type does not owe "written out answers"',
+      text: 'claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts note: gives-a-value-its-type does not owe "written out answers"',
     },
     {
       name: "a carried authorised location",
       record: CARRIED_LOCATION,
-      text: "claimed-type authorised-location src/adapters/stripe-webhook.ts carried",
+      text: "claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts carried",
     },
     {
       name: "a deviation",
@@ -354,19 +305,85 @@ describe("recordSubjectText", () => {
       text: "world-values-through-a-port deviation src/adapters/stripe-webhook.ts",
     },
     {
-      name: "a boundary record on a runtime facility",
-      record: CLOCK_BOUNDARY,
-      text: "runtime:clock boundary-record src/adapters/system-clock.ts",
+      name: "an authorised location bound to a package",
+      record: {
+        kind: "authorised-location",
+        symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+          },
+        },
+        file: repoPathOf("src/adapters/schemas.ts"),
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "zod" },
+          },
+          held: "stated",
+          owing: {
+            matches: "the-catalogue",
+            case: GIVES_A_VALUE_ITS_TYPE,
+            owes: OWED_DECLARED_NOT_ASSERTED,
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+      text: "outside-import-past-a-boundary#import-or-require authorised-location src/adapters/schemas.ts for zod",
     },
     {
-      name: "a carried boundary record on a scheme module",
-      record: FS_BOUNDARY,
-      text: "node:fs boundary-record src/adapters/files carried",
+      name: "a carried authorised location bound to a module of a scheme",
+      record: {
+        kind: "authorised-location",
+        symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+          },
+        },
+        file: repoPathOf("src/adapters/schemas.ts"),
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "scheme-module", specifier: "node:fs" },
+          },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "established",
+        },
+      },
+      text: "outside-import-past-a-boundary#import-or-require authorised-location src/adapters/schemas.ts for node:fs carried",
     },
     {
-      name: "a boundary record on a package subpath",
-      record: UUID_BOUNDARY,
-      text: "uuid/v4 boundary-record src/adapters/ids",
+      name: "a carried authorised location bound to a whole scheme",
+      record: {
+        kind: "authorised-location",
+        symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+          },
+        },
+        file: repoPathOf("src/adapters/schemas.ts"),
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "scheme", scheme: "node:" },
+          },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "established",
+        },
+      },
+      text: "outside-import-past-a-boundary#import-or-require authorised-location src/adapters/schemas.ts for node: carried",
     },
     { name: "a dependency record", record: DEPENDENCY, text: "zod dependency-record" },
     {
@@ -390,7 +407,7 @@ describe("recordSubjectText", () => {
 });
 
 describe("recordReferenceText", () => {
-  it.each([
+  it.each<SubjectRow>([
     { name: "debt", record: STATED_DEBT, text: "debt" },
     { name: "carried debt", record: CARRIED_DEBT, text: "debt carried" },
     {
@@ -403,7 +420,35 @@ describe("recordReferenceText", () => {
       record: UNOWED_LOCATION,
       text: 'authorised-location note: gives-a-value-its-type does not owe "written out answers"',
     },
-    { name: "a boundary record", record: CLOCK_BOUNDARY, text: "boundary-record runtime:clock" },
+    {
+      name: "an authorised location bound to a package",
+      record: {
+        kind: "authorised-location",
+        symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+        reach: {
+          reaches: "one-check",
+          check: {
+            name: "import-or-require",
+            symptom: { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" },
+          },
+        },
+        file: repoPathOf("src/adapters/schemas.ts"),
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "zod" },
+          },
+          held: "stated",
+          owing: {
+            matches: "the-catalogue",
+            case: GIVES_A_VALUE_ITS_TYPE,
+            owes: OWED_DECLARED_NOT_ASSERTED,
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+      text: "authorised-location for zod",
+    },
     { name: "a deviation", record: DEVIATION, text: "deviation world-values-through-a-port" },
     { name: "a dependency record", record: DEPENDENCY, text: "dependency-record zod" },
     { name: "debt on one check", record: CAST_DEBT, text: "debt" },
@@ -462,9 +507,29 @@ describe("refusedLines", () => {
       line: "hone-records/authorised-locations/claimed-type.json records[2] named-ban lodash",
     },
     {
-      name: "an unknown runtime facility",
-      refusal: { kind: "unknown-runtime-facility", outsideParty: "runtime:env" },
-      line: "hone-records/authorised-locations/claimed-type.json records[2] unknown-runtime-facility runtime:env",
+      name: "an authorised location naming no check",
+      refusal: { kind: "no-check-named", symptom: "claimed-type" },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] no-check-named claimed-type",
+    },
+    {
+      name: "an authorised location on a symptom with no authorised-location correct use",
+      refusal: { kind: "no-authorised-correct-use", symptom: "branch-in-a-test" },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] no-authorised-correct-use branch-in-a-test",
+    },
+    {
+      name: "an authorised location missing the outside party its symptom binds",
+      refusal: { kind: "outside-party-missing", symptom: "outside-import-past-a-boundary" },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] outside-party-missing outside-import-past-a-boundary",
+    },
+    {
+      name: "an authorised location naming an outside party its symptom does not bind",
+      refusal: { kind: "outside-party-not-bound", symptom: "claimed-type" },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] outside-party-not-bound claimed-type",
+    },
+    {
+      name: "a stated authorised location bound to a whole scheme",
+      refusal: { kind: "scheme-party-stated", outsideParty: "node:" },
+      line: "hone-records/authorised-locations/claimed-type.json records[2] scheme-party-stated node:, a whole scheme, which only an upgraded record holds",
     },
     {
       name: "a misplaced record, by the file it belongs in",
@@ -537,7 +602,11 @@ describe("recordNoteLine", () => {
   it.each<{ readonly name: string; readonly note: CatalogueNote; readonly line: string }>([
     {
       name: "a check its symptom does not have",
-      note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "cast-old" },
+      note: {
+        kind: "unknown-check",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        check: "cast-old",
+      },
       line: 'hone-records/authorised-locations/claimed-type.json records[2] unknown-check: the catalogue has no check "cast-old" of claimed-type',
     },
     {
@@ -572,8 +641,8 @@ describe("carriedLine", () => {
   it("names a carried record that lacks nothing by its standing alone", () => {
     expect(
       carriedLine({
-        listing: { place: { file: BOUNDARIES_FILE, index: 0 }, lacks: [], standing: "established" },
+        listing: { place: { file: DEBT_FILE, index: 0 }, lacks: [], standing: "established" },
       }),
-    ).toBe("hone-records/boundary-records.json records[0] established");
+    ).toBe("hone-records/debt/claimed-type.json records[0] established");
   });
 });

@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "let"
+  },
+  "settings": {
+    "rule": "implicit-any-let",
+    "pluginNamespace": "hone-untyped-value-explicit-any",
+    "module": "implicit-any-plugin.ts"
+  },
+  "moduleScope": "runner"
+}

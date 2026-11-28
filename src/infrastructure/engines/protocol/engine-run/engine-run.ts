@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 import type {
-  NamedEngineCall,
+  NamedEnginePort,
+  NamedEngineLocation,
   NamedEngineFailure,
 } from "../../../../application/ports/engine/engine-port.ts";
 import type {
   NamedEngineRun,
   NamedEngineRunRequest,
-  ParsedNamedRunner,
+  NamedEslintRunRequest,
 } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   RunnerInvalid,
@@ -21,7 +22,7 @@ import type {
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { checkedObservations } from "../../../../domain/runner/checked-observations.ts";
-import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../../../domain/runner/checks-run-report.ts";
 import {
   rejectedCall,
   type RunnerFailure,
@@ -29,6 +30,7 @@ import {
 } from "../../../../domain/runner/runner-failure.ts";
 import {
   checksProjectResultSchema,
+  decodeUnscopedChecksReport,
   measurementResultSchema,
   namedChecksRunReportSchema,
   namedChecksRunResultSchema,
@@ -71,7 +73,15 @@ const invalidChecksOutput = (request: {
 
 const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
 
-export const loadedNamedRunnerOver =
+type ParsedNamedRunner = z.output<typeof namedChecksRunnerModuleSchema>;
+
+type NamedEngineCall = {
+  readonly mechanism: EngineId;
+  readonly runner: ParsedNamedRunner;
+  readonly request: NamedEngineRunRequest | NamedEslintRunRequest;
+};
+
+export const createRunnerLoader =
   (ports: RunnerModulePorts) =>
   async (request: RunnerLocation): Promise<Result<ParsedNamedRunner, RunnerInvalid>> => {
     const loaded = await ports.runnerModuleOf(request);
@@ -83,7 +93,10 @@ export const loadedNamedRunnerOver =
       : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
   };
 
-const namedRequestOf = (call: NamedEngineCall): NamedEngineRunRequest => ({
+const filesInScope = (scope: ParsedNamedRunner["fileScope"], request: NamedEngineRunRequest) =>
+  scope === "tracked" ? request.trackedPaths : request.files;
+
+const mapCallToRunnerRequest = (call: NamedEngineCall): NamedEngineRunRequest => ({
   ...call.request,
   bindings: call.request.bindings.filter(({ engine }) => engine === call.mechanism),
 });
@@ -94,24 +107,33 @@ const verifiedNamedRun = (request: {
   readonly report: z.output<typeof namedChecksRunReportSchema>;
 }): NamedOutcome<NamedEngineRun> => {
   const { call, requested, report } = request;
-  const files = call.runner.fileScope === "tracked" ? requested.trackedPaths : requested.files;
-  const checked = checkedObservations({ requested: { ...requested, files }, report });
-  return checked.outcome === "failed"
-    ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
-    : {
-        outcome: "ok",
-        value: {
-          ...checked.value,
-          mechanism: call.mechanism,
-          coverableKinds: call.runner.projectedKinds,
-        },
-      };
+  const { inapplicable: reportedInapplicable, ...reportWithoutScope } = report;
+  const files = filesInScope(call.runner.fileScope, requested);
+  const checked = checkedObservations({
+    requested: { ...requested, files },
+    report: {
+      ...decodeUnscopedChecksReport(reportWithoutScope),
+      inapplicable: reportedInapplicable,
+    },
+  });
+  if (checked.outcome === "failed") {
+    return runnerFailed({ mechanism: call.mechanism, failure: checked.error });
+  }
+  const { inapplicable, ...observations } = checked.value;
+  return {
+    outcome: "ok",
+    value: {
+      ...observations,
+      mechanism: call.mechanism,
+      coverableKinds: call.runner.projectedKinds,
+      coverage: { kind: "scoped", candidateFiles: files, inapplicable },
+      comparedOutputs: [],
+    },
+  };
 };
 
-export const namedEngineRunOf = async (
-  call: NamedEngineCall,
-): Promise<NamedOutcome<NamedEngineRun>> => {
-  const requested = namedRequestOf(call);
+const runNamedEngine = async (call: NamedEngineCall): Promise<NamedOutcome<NamedEngineRun>> => {
+  const requested = mapCallToRunnerRequest(call);
   const parsed = namedChecksRunResultSchema.safeParse(
     await returnedBy({ call: () => call.runner.run(requested) }),
   );
@@ -129,7 +151,7 @@ const versionOneMeasurementModuleSchema = z.object({
 });
 
 const measureNamedRun = async (call: NamedEngineCall): ReturnType<MeasureVersionOneProjection> => {
-  const report = await namedEngineRunOf(call);
+  const report = await runNamedEngine(call);
   return report.outcome === "failed"
     ? report
     : { outcome: "ok", value: { report: report.value, unappliedSlices: [] } };
@@ -152,7 +174,7 @@ const measuredVersionOne = async (
     return invalid({ mechanism: call.mechanism, detail: z.prettifyError(module.error) });
   const measureVersionOne = module.data.measureVersionOne;
   if (measureVersionOne === undefined) return measureNamedRun(call);
-  const requested = namedRequestOf(call);
+  const requested = mapCallToRunnerRequest(call);
   const parsed = measurementResultSchema.safeParse(
     await returnedBy({ call: () => measureVersionOne({ run: requested, projection }) }),
   );
@@ -180,11 +202,11 @@ const measuredVersionOne = async (
       };
 };
 
-export const namedEngineProjectionOf = async (
+const projectNamedEngine = async (
   call: NamedEngineCall,
-): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
+): Promise<NamedOutcome<readonly ProjectionEntry[]>> => {
   const parsed = checksProjectResultSchema.safeParse(
-    await returnedBy({ call: () => call.runner.project(namedRequestOf(call)) }),
+    await returnedBy({ call: () => call.runner.project(mapCallToRunnerRequest(call)) }),
   );
   if (!parsed.success) {
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
@@ -194,7 +216,53 @@ export const namedEngineProjectionOf = async (
     : parsed.data;
 };
 
-export const measureVersionOneProjectionOver =
-  (ports: RunnerModulePorts): MeasureVersionOneProjection =>
-  (measurement) =>
-    measuredVersionOne({ ...ports, ...measurement });
+export const measureVersionOneProjectionOver = (
+  ports: RunnerModulePorts,
+): MeasureVersionOneProjection => {
+  const load = createRunnerLoader(ports);
+  return async ({ request, location, projection }) => {
+    const runner = await load(location);
+    if (runner.outcome === "failed") return runner;
+    return measuredVersionOne({
+      ...ports,
+      call: { mechanism: location.mechanism, runner: runner.value, request },
+      location,
+      projection,
+    });
+  };
+};
+
+const bindRunner = (location: NamedEngineLocation, runner: ParsedNamedRunner) => {
+  const { mechanism } = location;
+  const createCall = (request: NamedEngineRunRequest): NamedEngineCall => ({
+    mechanism,
+    runner,
+    request:
+      location.mechanism === "eslint"
+        ? { ...request, projectionKind: location.projectionKind }
+        : request,
+  });
+  return {
+    run: (request: NamedEngineRunRequest): Promise<NamedOutcome<NamedEngineRun>> =>
+      runNamedEngine(
+        createCall(
+          mechanism === "walker"
+            ? { ...request, trackedPaths: filesInScope(runner.fileScope, request) }
+            : request,
+        ),
+      ),
+    project: (request: NamedEngineRunRequest) => projectNamedEngine(createCall(request)),
+  };
+};
+
+export const createNamedEnginePort = (ports: RunnerModulePorts): NamedEnginePort => {
+  const load = createRunnerLoader(ports);
+  return {
+    load: async (location) => {
+      const { mechanism, installRoot, moduleExtension, modules, path } = location;
+      const runner = await load({ mechanism, installRoot, moduleExtension, modules, path });
+      if (runner.outcome === "failed") return runner;
+      return { outcome: "ok", value: bindRunner(location, runner.value) };
+    },
+  };
+};

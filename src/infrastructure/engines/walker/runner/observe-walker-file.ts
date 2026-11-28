@@ -27,6 +27,7 @@ export type WalkerFileObservations = {
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
   readonly applicable: readonly CheckAddressText[];
+  readonly inapplicable: readonly CheckAddressText[];
 };
 
 export type ObserveWalkerFileRequest = {
@@ -195,52 +196,28 @@ const beginFile = (request: {
   }
 };
 
-const observeSource = (request: {
+const visitSyntax = (request: {
   readonly tree: SyntaxTree;
-  readonly file: WalkerFile;
   readonly parse: TypeScriptParsePort;
-  readonly sources: readonly SyntaxFilePiece[];
-}): Outcome<readonly CommentRange[]> => {
-  const seenComments = new Set<number>();
-  const comments: CommentRange[] = [];
+  readonly nextNode: () => "visit" | "stop";
+  readonly enter: (node: SyntaxNode) => void;
+  readonly leave: (node: SyntaxNode) => void;
+  readonly comment: (range: CommentRange) => void;
+}): void => {
   const emptyMembership = new Set<SyntaxNode>();
-  let failure: RunnerFailure | undefined;
-  const invoke = (call: {
-    readonly source: SyntaxFilePiece;
-    readonly notify: () => unknown;
-  }): void => {
-    if (failure !== undefined) return;
-    try {
-      call.notify();
-    } catch (thrown) {
-      failure = pieceInvalid({ piece: call.source.piece, detail: thrownDetail({ thrown }) }).error;
-    }
-  };
-  const comment = (range: CommentRange): void => {
-    if (seenComments.has(range.pos)) return;
-    seenComments.add(range.pos);
-    comments.push(range);
-    request.sources.forEach((source) => {
-      invoke({ source, notify: () => source.observers.comment?.({ range }) });
-    });
-  };
   const visit = (frame: {
     readonly node: SyntaxNode;
     readonly relation: "semantic" | "syntax";
     readonly membership: ReadonlySet<SyntaxNode>;
   }): void => {
-    if (failure !== undefined) return;
-    if (frame.relation === "semantic") {
-      request.sources.forEach((source) => {
-        invoke({ source, notify: () => source.observers.enter?.({ node: frame.node }) });
-      });
-    }
+    if (request.nextNode() === "stop") return;
+    if (frame.relation === "semantic") request.enter(frame.node);
     request.parse.syntaxApi
       .getLeadingCommentRanges(request.tree.text, frame.node.pos)
-      ?.forEach(comment);
+      ?.forEach(request.comment);
     request.parse.syntaxApi
       .getTrailingCommentRanges(request.tree.text, frame.node.end)
-      ?.forEach(comment);
+      ?.forEach(request.comment);
     const membership =
       frame.relation === "semantic"
         ? new Set(request.parse.children({ node: frame.node }))
@@ -250,14 +227,45 @@ const observeSource = (request: {
     frame.node.getChildren(request.tree).forEach((node) => {
       visit({ node, relation: membership.has(node) ? "semantic" : "syntax", membership });
     });
-    if (frame.relation === "semantic") {
-      request.sources.forEach((source) => {
-        invoke({ source, notify: () => source.observers.leave?.({ node: frame.node }) });
-      });
-    }
+    if (frame.relation === "semantic") request.leave(frame.node);
+  };
+  visit({ node: request.tree, relation: "semantic", membership: emptyMembership });
+};
+
+const observeSource = (request: {
+  readonly tree: SyntaxTree;
+  readonly file: WalkerFile;
+  readonly parse: TypeScriptParsePort;
+  readonly sources: readonly SyntaxFilePiece[];
+}): Outcome<readonly CommentRange[]> => {
+  const seenComments = new Set<number>();
+  const comments: CommentRange[] = [];
+  let failure: RunnerFailure | undefined;
+  const notify = (invoke: (source: SyntaxFilePiece) => unknown): void => {
+    request.sources.forEach((source) => {
+      if (failure !== undefined) return;
+      try {
+        invoke(source);
+      } catch (thrown) {
+        failure = pieceInvalid({ piece: source.piece, detail: thrownDetail({ thrown }) }).error;
+      }
+    });
+  };
+  const comment = (range: CommentRange): void => {
+    if (seenComments.has(range.pos)) return;
+    seenComments.add(range.pos);
+    comments.push(range);
+    notify((source) => source.observers.comment?.({ range }));
   };
   try {
-    visit({ node: request.tree, relation: "semantic", membership: emptyMembership });
+    visitSyntax({
+      tree: request.tree,
+      parse: request.parse,
+      nextNode: () => (failure === undefined ? "visit" : "stop"),
+      enter: (node) => notify((source) => source.observers.enter?.({ node })),
+      leave: (node) => notify((source) => source.observers.leave?.({ node })),
+      comment,
+    });
   } catch (thrown) {
     return {
       outcome: "failed",
@@ -308,6 +316,7 @@ const finishFile = (request: {
 const completedFile = (request: {
   readonly file: WalkerFile;
   readonly active: readonly ActiveFilePiece[];
+  readonly inapplicable: readonly CheckAddressText[];
   readonly nativeExceptions: readonly WalkerDirectiveException[];
 }): ObserveWalkerFileResult => {
   const finished = collect({ outcomes: request.active.map((active) => finishFile({ active })) });
@@ -319,6 +328,7 @@ const completedFile = (request: {
         hits.map((hit) => ({ ...hit, file: request.file.file })),
       ),
       nativeExceptions: request.nativeExceptions,
+      inapplicable: request.inapplicable,
       applicable: request.active.flatMap((active) =>
         active.piece.bindings.map((binding) => binding.address),
       ),
@@ -335,6 +345,18 @@ const syntaxChecksOf = (request: {
       : [],
   );
 
+const classifyPreparedPieces = (pieces: readonly FilePiece[]) => {
+  const grouped = Map.groupBy(pieces, ({ check }) =>
+    check.kind === "skipped" ? "inapplicable" : "applicable",
+  );
+  return {
+    applicable: grouped.get("applicable") ?? [],
+    inapplicable: (grouped.get("inapplicable") ?? []).flatMap(({ piece }) =>
+      piece.bindings.map(({ address }) => address),
+    ),
+  };
+};
+
 export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWalkerFileResult => {
   const cache = cachedFile(request);
   const file = cache.file;
@@ -344,7 +366,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   if (prepared.outcome === "failed") return prepared;
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
-  const applicable = prepared.value.filter((selected) => selected.check.kind !== "skipped");
+  const { applicable, inapplicable } = classifyPreparedPieces(prepared.value);
   if (!applicable.some((selected) => selected.check.kind === "syntax")) {
     return completedFile({
       file,
@@ -354,6 +376,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
           : [],
       ),
       nativeExceptions: [],
+      inapplicable,
     });
   }
   const parsed = parsedSource({ file, parse: request.parse });
@@ -376,6 +399,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   return completedFile({
     file,
     active: active.value,
+    inapplicable,
     nativeExceptions: directiveEscapesIn({
       sourceFile: parsed.value,
       syntaxApi: request.parse.syntaxApi,

@@ -4,15 +4,42 @@ import { folderScope } from "@hailstails/hone/walker";
 
 import consolePiece from "../engines/eslint/direct-console/console-calls/piece.json" with { type: "json" };
 import consoleExamples from "../engines/eslint/direct-console/console-calls/console-calls.examples.json" with { type: "json" };
+import scratchPiece from "../engines/walker/scratch-file/scratch-files/piece.json" with { type: "json" };
 import scratchExamples from "../engines/walker/scratch-file/scratch-files/scratch-files.examples.json" with { type: "json" };
+
+declare global {
+  interface ImportMeta {
+    readonly dirname: string;
+  }
+}
+
+const SCRATCH_PIECE_ROOT = import.meta.dirname.replace(
+  /([\\/])proof$/,
+  "$1engines$1walker$1scratch-file$1scratch-files",
+);
 
 const ACME: TeamRuleSetUnderTest = { name: "acme", root: "tools/disciplines/acme" };
 
 export const typedExamples: readonly Examples[] = [consoleExamples, scratchExamples];
 export const typedConsoleSettings: EslintPieceSettings = consolePiece.settings;
 
+const sameValue = (actual: unknown, expected: unknown): boolean => {
+  if (Object.is(actual, expected)) return true;
+  if (
+    typeof actual !== "object" || actual === null ||
+    typeof expected !== "object" || expected === null ||
+    Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected)
+  ) return false;
+
+  const fields = Reflect.ownKeys(expected);
+  return Reflect.ownKeys(actual).length === fields.length && fields.every((field) =>
+    Object.hasOwn(actual, field) &&
+    sameValue(Reflect.get(actual, field), Reflect.get(expected, field)),
+  );
+};
+
 const provedEqual = (request: { readonly proof: string; readonly actual: unknown; readonly expected: unknown }): void => {
-  if (JSON.stringify(request.actual) !== JSON.stringify(request.expected)) {
+  if (!sameValue(request.actual, request.expected)) {
     throw new Error(`${request.proof}: expected ${JSON.stringify(request.expected)}, but got ${JSON.stringify(request.actual)}`);
   }
 };
@@ -29,6 +56,17 @@ provedEqual({
       ruleSet: ACME,
       check: "scratch-file#scratch-files",
       engine: "walker",
+      binding: {
+        address: "scratch-file#scratch-files",
+        ruleSet: { name: "acme" },
+        engine: "walker",
+        anchor: { kind: "file" },
+        pieceRoot: SCRATCH_PIECE_ROOT,
+        settings: scratchPiece.settings,
+        forms: {},
+        checkSettings: {},
+        edition: "1",
+      },
       examples: [
         { name: "scratch file", file: "src/draft.scratch.ts", source: "export const draft = 1;\n", edition: "1" },
         { name: "draft file", file: "src/notes.draft.ts", source: "export const notes = 1;\n", edition: "2" },

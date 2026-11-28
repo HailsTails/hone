@@ -12,6 +12,8 @@ import {
 import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
 import {
   settledCatalogueOf,
+  versionTwoInputsOf,
+  type VersionTwoRun,
   type VersionTwoStages,
   versionTwoRunOver,
 } from "../application/run/version-two-run.ts";
@@ -23,7 +25,7 @@ import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
-import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
+import { assessmentInEffect, type ForfeitureAssessment } from "../domain/settings/assessment.ts";
 
 export type RecordsSourceFor = (request: { readonly catalogue: SymptomCatalogue }) => RecordsSource;
 
@@ -51,30 +53,50 @@ const recordFailureOf = <Value>(request: {
       }
     : request.recorded;
 
+type ProjectCommand = { readonly projectCommand: string };
+
+const runOverCurrentProjection = async (
+  request: ProjectCommand & Parameters<typeof versionTwoRunOver>[0],
+): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const run = await versionTwoRunOver(request);
+  if (run.outcome === "failed") {
+    return run;
+  }
+  const { report } = run.value;
+  const stale = refreshableProjectionOf({
+    problems: report["projection-problems"],
+    unmeasured: report.unmeasured,
+  });
+  return stale === undefined
+    ? run
+    : {
+        outcome: "failed",
+        error: {
+          kind: "projection-stale",
+          problem: stale,
+          projectCommand: request.projectCommand,
+        },
+      };
+};
+
 export const versionTwoRecordDebtOf = async (
-  request: VersionTwoRecordInput & {
-    readonly leave: readonly RepoPath[];
-    readonly projectCommand: string;
-  },
+  request: VersionTwoRecordInput &
+    ProjectCommand & {
+      readonly leave: readonly RepoPath[];
+    },
 ): Promise<Result<RecordedDebt, RunLoadFailure>> => {
-  const run = await versionTwoRunOver({
+  const inputs = versionTwoInputsOf(request);
+  if (inputs.outcome === "failed") return inputs;
+  const run = await runOverCurrentProjection({
     stages: request.stages,
-    arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
+    projectCommand: request.projectCommand,
+    inputs: inputs.value,
+    plan: { ...inputs.value.settings.runSettings, measuring: "always" },
   });
   if (run.outcome === "failed") {
     return run;
   }
   const { catalogue, report, runs, touched, moved } = run.value;
-  const stale = refreshableProjectionOf({
-    problems: report["projection-problems"],
-    unmeasured: report.unmeasured,
-  });
-  if (stale !== undefined) {
-    return {
-      outcome: "failed",
-      error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
-    };
-  }
   const recorded = recordFailureOf({
     recorded: recordDebtOf({
       ports: {
@@ -100,13 +122,19 @@ export const versionTwoRecordDebtOf = async (
 };
 
 export const versionTwoPruneDebtOf = async (
-  request: VersionTwoRecordInput & { readonly forfeiture: ForfeitureAssessment | undefined },
+  request: VersionTwoRecordInput &
+    ProjectCommand & { readonly forfeiture: ForfeitureAssessment | undefined },
 ): Promise<Result<readonly PrunableDebt[], RunLoadFailure>> => {
-  const run = await versionTwoRunOver({
+  const inputs = versionTwoInputsOf(request);
+  if (inputs.outcome === "failed") return inputs;
+  const configured = inputs.value.settings.runSettings;
+  const run = await runOverCurrentProjection({
     stages: request.stages,
-    arguments: {
-      forfeiture: request.forfeiture,
-      reportOutput: undefined,
+    projectCommand: request.projectCommand,
+    inputs: inputs.value,
+    plan: {
+      ...configured,
+      assessment: assessmentInEffect({ requested: request, configured: configured.assessment }),
       measuring: "when-debt-held",
     },
   });

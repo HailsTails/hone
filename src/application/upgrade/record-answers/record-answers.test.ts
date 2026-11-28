@@ -8,6 +8,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
@@ -27,14 +29,14 @@ const SRC_A = repoPathOf("src/a.ts");
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -88,25 +90,31 @@ const LAYERING_CLAUSE = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -124,8 +132,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -341,7 +349,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
       ...LOOP_FINDING,
       clause: TEST_BODY_CLAUSE,
       check: undefined,
-      remedy: { fix: "bind it once", page: "rules/CD-27/README.md", section: "a-let" },
+      remedy: { fix: "bind it once", form: "a-let" },
     };
     expect(
       recordAnswersOf({

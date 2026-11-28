@@ -7,7 +7,6 @@ import {
   debtWireSchema,
   recordsDocumentSchema,
   statedAuthorisedLocationWireSchema,
-  statedBoundaryRecordWireSchema,
 } from "./records-wire.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
@@ -227,19 +226,6 @@ describe("the version 2 records forms", () => {
     });
   });
 
-  it("refuses a boundary record that names no port", () => {
-    expect(
-      statedBoundaryRecordWireSchema.safeParse({
-        module: "src/adapters/files",
-        outsideParty: "node:fs",
-        ports: [],
-      }),
-    ).toMatchObject({
-      success: false,
-      error: { issues: [expect.objectContaining({ code: "too_small", path: ["ports"] })] },
-    });
-  });
-
   it.each([
     { outsideParty: "c:/Users/x" },
     { outsideParty: String.raw`c:\Users` },
@@ -250,17 +236,20 @@ describe("the version 2 records forms", () => {
     { outsideParty: "../src/x.ts" },
     { outsideParty: "/etc/x.js" },
     { outsideParty: "pkg/../../src/x" },
-    { outsideParty: "pkg/./x" },
     { outsideParty: "@scope/pkg/../x" },
-    { outsideParty: "npm:pkg/../x" },
+    { outsideParty: "lodash/fp" },
+    { outsideParty: "Not A Package" },
   ])(
-    "refuses $outsideParty as an outside party, since it names a file by its path",
+    "refuses $outsideParty as an outside party, since it is no package's name, module or scheme",
     ({ outsideParty }) => {
       expect(
-        statedBoundaryRecordWireSchema.safeParse({
-          module: "src/adapters/files",
+        statedAuthorisedLocationWireSchema.safeParse({
+          answers: "outside-import-past-a-boundary#import-or-require",
+          file: "src/adapters/files.ts",
+          case: "adapter-per-outside-party",
+          owes: "external-behaviour-sits-at-a-boundary",
+          whyChain: CAUSAL_WHY_CHAIN,
           outsideParty,
-          ports: ["FileReader"],
         }),
       ).toMatchObject({
         success: false,
@@ -270,18 +259,20 @@ describe("the version 2 records forms", () => {
   );
 
   it.each([
+    { outsideParty: "zod" },
+    { outsideParty: "@scope/pkg" },
     { outsideParty: "node:fs" },
+    { outsideParty: "node:" },
     { outsideParty: "jsr:@std/path" },
-    { outsideParty: "https://esm.sh/preact@10" },
-    { outsideParty: "lodash/fp" },
-    { outsideParty: "pkg/.config" },
-    { outsideParty: "npm:@date-fns/tz@1.2.0/locale" },
   ])("accepts $outsideParty as an outside party", ({ outsideParty }) => {
     expect(
-      statedBoundaryRecordWireSchema.safeParse({
-        module: "src/adapters/files",
+      statedAuthorisedLocationWireSchema.safeParse({
+        answers: "outside-import-past-a-boundary#import-or-require",
+        file: "src/adapters/files.ts",
+        case: "adapter-per-outside-party",
+        owes: "external-behaviour-sits-at-a-boundary",
+        whyChain: CAUSAL_WHY_CHAIN,
         outsideParty,
-        ports: ["FileReader"],
       }).success,
     ).toBe(true);
   });
@@ -300,4 +291,20 @@ describe("the version 2 records forms", () => {
   ])("tells a carried record by its carried key: $entry", ({ entry, form }) => {
     expect(carriedFormSchema.safeParse(entry).success).toBe(form);
   });
+});
+
+it("accepts a positive whole count on a debt row", () => {
+  const entry = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings: 2 };
+
+  const parsed = debtWireSchema.safeParse(entry);
+
+  expect(parsed).toMatchObject({ success: true, data: { findings: 2 } });
+});
+
+it.each([0, -1, 1.5, "2"])("refuses an invalid debt finding count %s", (findings) => {
+  const entry = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings };
+
+  const parsed = debtWireSchema.safeParse(entry);
+
+  expect(parsed.success).toBe(false);
 });

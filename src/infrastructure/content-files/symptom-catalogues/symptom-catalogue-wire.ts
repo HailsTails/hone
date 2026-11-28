@@ -1,24 +1,52 @@
 import { z } from "zod";
 
+import {
+  type BindingFault,
+  listDivergentBindings,
+  listUnreportedBindings,
+} from "../../../domain/language-layer/binding-invariants.ts";
+import { findCaseNameFaults } from "../../../domain/language-layer/case-name.ts";
+import { mapSymptomToAddress } from "../../../domain/language-layer/catalogue-address.ts";
 import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
+import {
+  type CheckNames,
+  checkNamesOf,
+} from "../../../domain/language-layer/check-address-text.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
-import type {
-  Case,
-  CatalogueContent,
-  CataloguedClause,
-  CheckContent,
-  ClauseSight,
-  CorrectUse,
-  Engine,
-  FormSight,
-  Indication,
-  NamedBan,
-  Pointed,
-  Principle,
-  Recipe,
-  RecordKind,
-  Rule,
-  Symptom,
+import {
+  createUnowedPointFault,
+  findOwedPoint,
+  type OwedPoint,
+} from "../../../domain/language-layer/owed-points.ts";
+import {
+  type ExampleFault,
+  findExampleFaults,
+} from "../../../domain/language-layer/recipe-examples.ts";
+import {
+  findRecipeFaults,
+  type RecipeFault,
+  type ServingRecipe,
+} from "../../../domain/language-layer/recipe-reach.ts";
+import {
+  type Case,
+  type CatalogueContent,
+  type CataloguedClause,
+  type CheckContent,
+  type ClauseSight,
+  mapSpecificsToBinding,
+  type CorrectUse,
+  type Engine,
+  type FormSight,
+  type Indication,
+  type NamedBan,
+  type Pointed,
+  type Principle,
+  type Recipe,
+  type RecipeExample,
+  type RecordKind,
+  type Rule,
+  type Symptom,
+  type SymptomAddress,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
@@ -45,7 +73,6 @@ export const recordKindNameSchema = z.enum([
   "authorised-location",
   "deviation",
   "debt",
-  "boundary-record",
   "dependency-record",
 ]);
 
@@ -61,11 +88,23 @@ export const caseWireSchema = z.strictObject({
   owes: z.array(pointedWireSchema).min(1),
 });
 
-const correctUseWireSchema = z.strictObject({
-  situation: textSchema,
-  kind: recordKindNameSchema,
-  at: textSchema.optional(),
-});
+export const specificSchema = z.enum(["outside-party"]);
+
+const specificsSchema = z.array(specificSchema).min(1);
+
+const correctUseWireSchema = z.discriminatedUnion("kind", [
+  z.strictObject({
+    situation: textSchema,
+    kind: z.literal("authorised-location"),
+    at: textSchema.optional(),
+    binds: specificsSchema.optional(),
+  }),
+  z.strictObject({
+    situation: textSchema,
+    kind: recordKindNameSchema.exclude(["authorised-location"]),
+    at: textSchema.optional(),
+  }),
+]);
 
 export const seenBySchema = z.enum([
   "syntax",
@@ -108,7 +147,7 @@ export const sightWireSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("one-symptom"), symptom: catalogueNameSchema }),
   z.strictObject({
     kind: z.literal("symptom-by-form"),
-    forms: z.array(z.strictObject({ section: textSchema, symptom: catalogueNameSchema })).min(1),
+    forms: z.array(z.strictObject({ form: textSchema, symptom: catalogueNameSchema })).min(1),
   }),
   z.strictObject({
     kind: z.literal("method"),
@@ -129,9 +168,24 @@ export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema.optional(),
+  findingSpecifics: specificsSchema.optional(),
   flagsBeyondTheSymptom: textSchema.optional(),
   misses: textSchema.optional(),
   settingsTracedTo: textSchema.optional(),
+});
+
+const checkNamesSchema = z.string().transform((text, context): CheckNames => {
+  const names = checkNamesOf({ text });
+  if (names !== undefined) {
+    return names;
+  }
+  context.addIssue({ code: "custom", message: "is not a check address, <symptom>#<check>" });
+  return z.NEVER;
+});
+
+const recipeExampleWireSchema = z.strictObject({
+  anchor: catalogueNameSchema,
+  answers: z.array(z.strictObject({ check: checkNamesSchema, form: textSchema })).min(1),
 });
 
 export const catalogueFileSchema = z.strictObject({
@@ -150,9 +204,10 @@ export const catalogueFileSchema = z.strictObject({
     z.strictObject({
       name: catalogueNameSchema,
       title: textSchema,
-      serves: pointedWireSchema,
+      serves: z.array(pointedWireSchema).min(1),
       standing: standingSchema,
       reason: z.strictObject({ text: textSchema, standing: standingSchema }),
+      examples: z.array(recipeExampleWireSchema).optional(),
     }),
   ),
   recordKinds: z.array(recordKindWireSchema),
@@ -173,11 +228,13 @@ type CaseWire = z.infer<typeof caseWireSchema>;
 
 type RecipeWire = CatalogueFile["recipes"][number];
 
+type RecipeExampleWire = z.infer<typeof recipeExampleWireSchema>;
+
 type RecordKindWire = z.infer<typeof recordKindWireSchema>;
 
 type EngineWire = CatalogueFile["engines"][number];
 
-type SymptomWire = z.infer<typeof symptomWireSchema>;
+export type SymptomWire = z.infer<typeof symptomWireSchema>;
 
 type PointedWire = z.infer<typeof pointedWireSchema>;
 
@@ -246,6 +303,17 @@ type Definitions = Pointable & {
 
 const principleOf = (wire: PrincipleWire): Principle => ({ name: wire.name, title: wire.title });
 
+const mapWireToRecipeExample = (request: {
+  readonly wire: RecipeExampleWire;
+  readonly ruleSet: RuleSetIdentity;
+}): RecipeExample => ({
+  anchor: request.wire.anchor,
+  answers: request.wire.answers.map(({ check, form }) => ({
+    check: { name: check.check, symptom: { ruleSet: request.ruleSet, name: check.symptom } },
+    form,
+  })),
+});
+
 const recipeOf = (request: {
   readonly wire: RecipeWire;
   readonly ruleSet: RuleSetIdentity;
@@ -255,6 +323,13 @@ const recipeOf = (request: {
   title: request.wire.title,
   standing: request.wire.standing,
   reason: { text: request.wire.reason.text, standing: request.wire.reason.standing },
+  ...(request.wire.examples === undefined
+    ? {}
+    : {
+        examples: request.wire.examples.map((wire) =>
+          mapWireToRecipeExample({ wire, ruleSet: request.ruleSet }),
+        ),
+      }),
 });
 
 const recordKindOf = (wire: RecordKindWire): RecordKind => ({
@@ -311,23 +386,35 @@ const pointedOf = (request: {
         to: (principle): Pointed => ({ kind: "principle", principle }),
       });
 
+const resolveServes = (request: {
+  readonly wire: RecipeWire;
+  readonly pointable: Pointable;
+}): Resolution<readonly Pointed[]> =>
+  allResolved(
+    request.wire.serves.map((point) =>
+      pointedOf({ listing: "recipes", point, pointable: request.pointable }),
+    ),
+  );
+
 const caseOf = (request: {
   readonly wire: CaseWire;
   readonly pointable: Pointable;
-}): Resolution<Case> =>
-  mapped({
-    resolution: allResolved(
-      request.wire.owes.map((point) =>
-        pointedOf({ listing: "cases", point, pointable: request.pointable }),
-      ),
+}): Resolution<Case> => {
+  const owes = allResolved(
+    request.wire.owes.map((point) =>
+      pointedOf({ listing: "cases", point, pointable: request.pointable }),
     ),
-    to: (owes) => ({
-      name: request.wire.name,
-      title: request.wire.title,
-      standing: request.wire.standing,
-      owes,
-    }),
-  });
+  );
+  const nameFaults = findCaseNameFaults(request.wire);
+  return owes.outcome === "failed" || nameFaults.length > 0
+    ? { outcome: "failed", error: [...nameFaults, ...faultsOf(owes)] }
+    : resolved({
+        name: request.wire.name,
+        title: request.wire.title,
+        standing: request.wire.standing,
+        owes: owes.value,
+      });
+};
 
 const requiredRecordKindFaultsOf = (recordKinds: readonly RecordKind[]): readonly string[] =>
   ["debt", "authorised-location"].flatMap((name) =>
@@ -372,9 +459,7 @@ const definitionsOf = (request: {
   );
   const recordKindFaults = requiredRecordKindFaultsOf(recordKinds);
   const served = allResolved(
-    request.file.recipes.map((wire) =>
-      pointedOf({ listing: "recipes", point: wire.serves, pointable: pointable.value }),
-    ),
+    request.file.recipes.map((wire) => resolveServes({ wire, pointable: pointable.value })),
   );
   return cases.outcome === "failed" || recordKindFaults.length > 0 || served.outcome === "failed"
     ? {
@@ -390,7 +475,43 @@ const definitionsOf = (request: {
       });
 };
 
+export const mapWireToOwedPoint = (request: { readonly point: PointedWire }): OwedPoint =>
+  "rule" in request.point
+    ? { kind: "rule", name: request.point.rule }
+    : { kind: "principle", name: request.point.principle };
+
+const mapPointedToOwedPoint = (point: Pointed): OwedPoint =>
+  point.kind === "rule"
+    ? { kind: "rule", name: point.rule.name }
+    : { kind: "principle", name: point.principle.name };
+
+const resolveOwedPoint = (request: {
+  readonly symptom: string;
+  readonly owing: Case;
+  readonly point: PointedWire;
+}): Resolution<Pointed> => {
+  const wanted = mapWireToOwedPoint({ point: request.point });
+  const owed = findOwedPoint({
+    owes: request.owing.owes,
+    point: wanted,
+    mapOwedToPoint: mapPointedToOwedPoint,
+  });
+  return owed === undefined
+    ? {
+        outcome: "failed",
+        error: [
+          createUnowedPointFault({
+            symptom: request.symptom,
+            owing: request.owing.name,
+            point: wanted,
+          }),
+        ],
+      }
+    : resolved(owed);
+};
+
 const indicationOf = (request: {
+  readonly symptom: string;
   readonly indication: SymptomWire["mayIndicate"][number];
   readonly definitions: Definitions;
 }): Resolution<Indication> => {
@@ -399,25 +520,41 @@ const indicationOf = (request: {
     entries: request.definitions.cases,
     name: request.indication.case,
   });
-  const points = allResolved(
-    request.indication.points.map((point) =>
-      pointedOf({ listing: "symptoms", point, pointable: request.definitions }),
+  if (indicated.outcome === "failed") {
+    return indicated;
+  }
+  return mapped({
+    resolution: allResolved(
+      request.indication.points.map((point) =>
+        resolveOwedPoint({ symptom: request.symptom, owing: indicated.value, point }),
+      ),
     ),
-  );
-  return indicated.outcome === "failed" || points.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(indicated), ...faultsOf(points)] }
-    : resolved(
-        request.indication.situation === undefined
-          ? { case: indicated.value, points: points.value }
-          : {
-              case: indicated.value,
-              situation: request.indication.situation,
-              points: points.value,
-            },
-      );
+    to: (points): Indication =>
+      request.indication.situation === undefined
+        ? { case: indicated.value, points }
+        : { case: indicated.value, situation: request.indication.situation, points },
+  });
 };
 
-const correctUseOf = (request: {
+const mapWireToCorrectUse = (request: {
+  readonly use: CorrectUseWire;
+  readonly kind: RecordKind;
+}): CorrectUse => {
+  const { use, kind } = request;
+  const at = use.at === undefined ? {} : { at: use.at };
+  const { name } = kind;
+  if (name === "authorised-location") {
+    return {
+      situation: use.situation,
+      kind: { ...kind, name },
+      ...at,
+      binding: mapSpecificsToBinding({ specifics: "binds" in use ? (use.binds ?? []) : [] }),
+    };
+  }
+  return { situation: use.situation, kind: { ...kind, name }, ...at };
+};
+
+const resolveCorrectUse = (request: {
   readonly use: CorrectUseWire;
   readonly definitions: Definitions;
 }): Resolution<CorrectUse> =>
@@ -427,11 +564,18 @@ const correctUseOf = (request: {
       entries: request.definitions.recordKinds,
       name: request.use.kind,
     }),
-    to: (kind): CorrectUse =>
-      request.use.at === undefined
-        ? { situation: request.use.situation, kind }
-        : { situation: request.use.situation, kind, at: request.use.at },
+    to: (kind) => mapWireToCorrectUse({ use: request.use, kind }),
   });
+
+const mapBindingFaultToText = (request: { readonly fault: BindingFault }): string => {
+  const { fault } = request;
+  switch (fault.kind) {
+    case "divergent-bindings":
+      return `${fault.symptom} has authorised-location correct uses that bind differently`;
+    case "binding-not-reported":
+      return `${fault.symptom} binds outside-party, which its check ${fault.check} does not report`;
+  }
+};
 
 const symptomOf = (request: {
   readonly wire: SymptomWire;
@@ -440,7 +584,9 @@ const symptomOf = (request: {
 }): Resolution<Symptom> => {
   const { wire, definitions } = request;
   const mayIndicate = allResolved(
-    wire.mayIndicate.map((indication) => indicationOf({ indication, definitions })),
+    wire.mayIndicate.map((indication) =>
+      indicationOf({ symptom: wire.name, indication, definitions }),
+    ),
   );
   const recipes = allResolved(
     wire.recipes.map((name) =>
@@ -448,7 +594,7 @@ const symptomOf = (request: {
     ),
   );
   const correctUses = allResolved(
-    wire.correctUses.map((use) => correctUseOf({ use, definitions })),
+    wire.correctUses.map((use) => resolveCorrectUse({ use, definitions })),
   );
   if (
     mayIndicate.outcome === "failed" ||
@@ -460,7 +606,7 @@ const symptomOf = (request: {
       error: [...faultsOf(mayIndicate), ...faultsOf(recipes), ...faultsOf(correctUses)],
     };
   }
-  return resolved({
+  const symptom: Symptom = {
     ruleSet: request.ruleSet,
     name: wire.name,
     title: wire.title,
@@ -469,13 +615,26 @@ const symptomOf = (request: {
     breachUsuallySits: wire.breachUsuallySits,
     recipes: recipes.value,
     correctUses: correctUses.value,
-  });
+  };
+  const divergent = listDivergentBindings({ symptom });
+  return divergent.length > 0
+    ? { outcome: "failed", error: divergent.map((fault) => mapBindingFaultToText({ fault })) }
+    : resolved(symptom);
 };
 
 type Sighting = { readonly symptoms: readonly Symptom[]; readonly recipes: readonly Recipe[] };
 
-const sightedSymptomOf = (request: Sighting & { readonly name: string }): Resolution<Symptom> =>
-  heldEntryNamed({ listing: "clauses", entries: request.symptoms, name: request.name });
+const sightedSymptomOf = (
+  request: Sighting & { readonly name: string },
+): Resolution<SymptomAddress> =>
+  mapped({
+    resolution: heldEntryNamed({
+      listing: "clauses",
+      entries: request.symptoms,
+      name: request.name,
+    }),
+    to: (symptom) => mapSymptomToAddress({ symptom }),
+  });
 
 const methodSightOf = (
   request: Sighting & { readonly sight: Extract<SightWire, { readonly kind: "method" }> },
@@ -507,7 +666,7 @@ const sightOf = (request: Sighting & { readonly sight: SightWire }): Resolution<
           sight.forms.map((form) =>
             mapped({
               resolution: sightedSymptomOf({ ...request, name: form.symptom }),
-              to: (symptom): FormSight => ({ section: form.section, symptom }),
+              to: (symptom): FormSight => ({ form: form.form, symptom }),
             }),
           ),
         ),
@@ -528,7 +687,7 @@ const clauseOf = (
     to: (sight) => ({ clause: request.wire.clause, sight }),
   });
 
-const sightedSymptomsOf = (request: { readonly sight: ClauseSight }): readonly Symptom[] => {
+const sightedSymptomsOf = (request: { readonly sight: ClauseSight }): readonly SymptomAddress[] => {
   switch (request.sight.kind) {
     case "one-symptom":
       return [request.sight.symptom];
@@ -546,12 +705,12 @@ const sightedNamesOf = (request: { readonly clause: CataloguedClause }): readonl
 
 const formsOf = (request: {
   readonly clause: CataloguedClause;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
 }): readonly string[] =>
   request.clause.sight.kind === "symptom-by-form"
     ? request.clause.sight.forms
         .filter((form) => form.symptom.name === request.symptom.name)
-        .map((form) => form.section)
+        .map((form) => form.form)
     : [];
 
 type Checking = {
@@ -578,17 +737,26 @@ const checkedClauseOf = (
     : resolved(clause);
 };
 
+const CHECK_PAGE_EXTENSION = ".md";
+
+const createCheckPage = (request: {
+  readonly symptom: SymptomAddress;
+  readonly name: string;
+}): string => `${request.symptom.name}/${request.name}${CHECK_PAGE_EXTENSION}`;
+
 const sightedCheckOf = (request: {
   readonly wire: CheckWire;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly clause: CataloguedClause;
 }): Resolution<CheckContent> =>
   sightedNamesOf({ clause: request.clause }).includes(request.symptom.name)
     ? resolved({
         name: request.wire.name,
         symptom: request.symptom,
+        page: createCheckPage({ symptom: request.symptom, name: request.wire.name }),
         clause: request.clause.clause,
         forms: formsOf({ clause: request.clause, symptom: request.symptom }),
+        findingSpecifics: request.wire.findingSpecifics ?? [],
       })
     : {
         outcome: "failed",
@@ -599,15 +767,24 @@ const sightedCheckOf = (request: {
 
 const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CheckContent> => {
   const { wire } = request;
-  const symptom = heldEntryNamed({
-    listing: "checks",
-    entries: request.symptoms,
-    name: wire.symptom,
+  const symptom = mapped({
+    resolution: heldEntryNamed({
+      listing: "checks",
+      entries: request.symptoms,
+      name: wire.symptom,
+    }),
+    to: (held) => mapSymptomToAddress({ symptom: held }),
   });
   if (wire.clause === undefined) {
     return symptom.outcome === "failed"
       ? symptom
-      : resolved({ name: wire.name, symptom: symptom.value, forms: [] });
+      : resolved({
+          name: wire.name,
+          symptom: symptom.value,
+          page: createCheckPage({ symptom: symptom.value, name: wire.name }),
+          forms: [],
+          findingSpecifics: wire.findingSpecifics ?? [],
+        });
   }
   const clause = checkedClauseOf({ ...request, address: wire.clause });
   return symptom.outcome === "failed" || clause.outcome === "failed"
@@ -640,7 +817,70 @@ const resolvedChecksOf = (
   const unchecked = request.clauses.flatMap((clause) =>
     uncheckedSightingsOf({ clause, checks: checks.value }),
   );
-  return unchecked.length > 0 ? { outcome: "failed", error: unchecked } : checks;
+  const unreported = listUnreportedBindings({
+    symptoms: request.symptoms,
+    checks: checks.value,
+  }).map((fault) => mapBindingFaultToText({ fault }));
+  const faults = [...unchecked, ...unreported];
+  return faults.length > 0 ? { outcome: "failed", error: faults } : checks;
+};
+
+const mapExampleFaultToText = (request: { readonly fault: ExampleFault }): string => {
+  const { fault } = request;
+  switch (fault.kind) {
+    case "check-unheld":
+      return `the example ${fault.anchor} of ${fault.recipe} answers ${fault.check}, which the catalogue does not hold`;
+    case "recipe-not-indicated":
+      return `the example ${fault.anchor} of ${fault.recipe} answers ${fault.check}, but ${fault.recipe} serves ${fault.serves.join(", ")}, none of which ${fault.symptom} indicates`;
+  }
+};
+
+const mapRecipeFaultToText = (request: { readonly fault: RecipeFault }): string => {
+  const { symptom, recipe, serves } = request.fault;
+  return `${symptom} lists the recipe ${recipe}, but ${recipe} serves ${serves.join(", ")}, none of which ${symptom} indicates`;
+};
+
+const listServingRecipes = (request: {
+  readonly file: CatalogueFile;
+  readonly pointable: Pointable;
+}): readonly ServingRecipe[] =>
+  request.file.recipes.flatMap((wire) => {
+    const serves = resolveServes({ wire, pointable: request.pointable });
+    return serves.outcome === "failed" ? [] : [{ name: wire.name, serves: serves.value }];
+  });
+
+const listRecipeFaults = (request: {
+  readonly file: CatalogueFile;
+  readonly pointable: Pointable;
+  readonly symptoms: readonly Symptom[];
+}): readonly string[] => {
+  const serving = listServingRecipes(request);
+  return request.symptoms.flatMap((symptom) => {
+    const listed = symptom.recipes.map(({ name }) => name);
+    const recipes = serving.filter(({ name }) => listed.includes(name));
+    return findRecipeFaults({ symptom, recipes }).map((fault) => mapRecipeFaultToText({ fault }));
+  });
+};
+
+const listExampleFaults = (request: {
+  readonly file: CatalogueFile;
+  readonly ruleSet: RuleSetIdentity;
+  readonly pointable: Pointable;
+  readonly symptoms: readonly Symptom[];
+  readonly checks: readonly CheckContent[];
+}): readonly string[] => {
+  const { symptoms, checks, pointable, ruleSet } = request;
+  return request.file.recipes.flatMap((wire) => {
+    const serves = resolveServes({ wire, pointable });
+    return serves.outcome === "failed"
+      ? serves.error
+      : findExampleFaults({
+          recipe: recipeOf({ wire, ruleSet }),
+          serves: serves.value,
+          symptoms,
+          checks,
+        }).map((fault) => mapExampleFaultToText({ fault }));
+  });
 };
 
 const catalogueOf = (request: {
@@ -665,20 +905,30 @@ const catalogueOf = (request: {
   if (clauses.outcome === "failed") {
     return clauses;
   }
-  return mapped({
-    resolution: resolvedChecksOf({
-      symptoms: symptoms.value,
-      clauses: clauses.value,
-      wires: request.file.checks,
-    }),
-    to: (checks) => ({
-      ...definitions.value,
-      symptoms: symptoms.value,
-      clauses: clauses.value,
-      checks,
-      namedBans: request.file.namedBans.map(namedBanOf),
-    }),
+  const checks = resolvedChecksOf({
+    symptoms: symptoms.value,
+    clauses: clauses.value,
+    wires: request.file.checks,
   });
+  if (checks.outcome === "failed") {
+    return checks;
+  }
+  const chain = {
+    ...request,
+    pointable: definitions.value,
+    symptoms: symptoms.value,
+    checks: checks.value,
+  };
+  const chainFaults = [...listRecipeFaults(chain), ...listExampleFaults(chain)];
+  return chainFaults.length > 0
+    ? { outcome: "failed", error: chainFaults }
+    : resolved({
+        ...definitions.value,
+        symptoms: symptoms.value,
+        clauses: clauses.value,
+        checks: checks.value,
+        namedBans: request.file.namedBans.map(namedBanOf),
+      });
 };
 
 const repeatsIn = (request: {
@@ -694,9 +944,17 @@ const formSectionRepeatsOf = (request: { readonly file: CatalogueFile }): readon
     sight.kind === "symptom-by-form"
       ? repeatsIn({
           listing: `the forms of ${clauseAddressText({ address: clause })}`,
-          names: sight.forms.map((form) => form.section),
+          names: sight.forms.map((form) => form.form),
         })
       : [],
+  );
+
+const listExampleRepeats = (request: { readonly file: CatalogueFile }): readonly string[] =>
+  request.file.recipes.flatMap(({ name, examples }) =>
+    repeatsIn({
+      listing: `the examples of ${name}`,
+      names: (examples ?? []).map(({ anchor }) => anchor),
+    }),
   );
 
 const indicatedCaseRepeatsOf = (request: { readonly file: CatalogueFile }): readonly string[] =>
@@ -752,6 +1010,7 @@ const repeatedNamesOf = (request: { readonly file: CatalogueFile }): readonly st
   }),
   ...checkedClauseRepeatsOf(request),
   ...formSectionRepeatsOf(request),
+  ...listExampleRepeats(request),
   ...indicatedCaseRepeatsOf(request),
 ];
 

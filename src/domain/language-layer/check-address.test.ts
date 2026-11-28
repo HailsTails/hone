@@ -20,18 +20,20 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -97,26 +99,32 @@ const FAILURES_AS_VALUES: Recipe = {
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const CATALOGUE: SymptomCatalogue = {
@@ -128,21 +136,31 @@ const CATALOGUE: SymptomCatalogue = {
   engines: [WALKER],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: LOOPS_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+    },
     {
       clause: TEST_BODY_CLAUSE,
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+    {
+      clause: LAYERING_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
+    },
     {
       clause: RESULT_FAILURES_CLAUSE,
-      sight: { kind: "method", recipe: FAILURES_AS_VALUES, outcomeSeenBy: [REBINDING] },
+      sight: {
+        kind: "method",
+        recipe: FAILURES_AS_VALUES,
+        outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "rebinding" }],
+      },
     },
     {
       clause: {
@@ -157,9 +175,23 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-describe("checkAddressOf", () => {
-  type AddressRow = { readonly name: string; readonly check: Check; readonly address: string };
+type AddressRow = { readonly name: string; readonly check: Check; readonly address: string };
 
+type AddressedRow = { readonly address: string; readonly check: Check };
+
+type ClauseRow = {
+  readonly name: string;
+  readonly clause: ClauseAddress;
+  readonly checks: readonly Check[];
+};
+
+type NotOfTheClauseRow = {
+  readonly name: string;
+  readonly clause: ClauseAddress;
+  readonly address: string;
+};
+
+describe("checkAddressOf", () => {
   it.each<AddressRow>([
     {
       name: "a check that is its clause's only check",
@@ -177,9 +209,7 @@ describe("checkAddressOf", () => {
 });
 
 describe("checkAt", () => {
-  type FoundRow = { readonly address: string; readonly check: Check };
-
-  it.each<FoundRow>([
+  it.each<AddressedRow>([
     { address: "loop-keyword#loops", check: LOOP_KEYWORD_LOOPS },
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },
     { address: "rebinding#test-body", check: REBINDING_TEST_BODY },
@@ -198,12 +228,6 @@ describe("checkAt", () => {
 });
 
 describe("checksOf", () => {
-  type ClauseRow = {
-    readonly name: string;
-    readonly clause: ClauseAddress;
-    readonly checks: readonly Check[];
-  };
-
   it.each<ClauseRow>([
     { name: "a clause that sees one symptom", clause: LOOPS_CLAUSE, checks: [LOOP_KEYWORD_LOOPS] },
     {
@@ -265,7 +289,7 @@ describe("checkNamedAt", () => {
     ).toEqual({ named: "unnamed" });
   });
 
-  it.each<{ readonly address: string; readonly check: Check }>([
+  it.each<AddressedRow>([
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },
     { address: "rebinding#test-body", check: REBINDING_TEST_BODY },
   ])("is the check $address when the clause has it", ({ address, check }) => {
@@ -275,7 +299,7 @@ describe("checkNamedAt", () => {
     });
   });
 
-  it.each<{ readonly name: string; readonly clause: ClauseAddress; readonly address: string }>([
+  it.each<NotOfTheClauseRow>([
     { name: "a check of another clause", clause: LOOPS_CLAUSE, address: "rebinding#test-body" },
     { name: "a check no clause has", clause: TEST_BODY_CLAUSE, address: "rebinding#loops" },
     {

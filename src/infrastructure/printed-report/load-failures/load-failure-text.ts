@@ -1,3 +1,4 @@
+import type { SymptomUnheld } from "../../../domain/language-layer/rule-content.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
@@ -7,6 +8,7 @@ import type {
   UnavailablePeers,
 } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
+import { symptomUnheldText } from "../symptoms/symptom-lines.ts";
 
 const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");
@@ -127,10 +129,15 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
   }
 };
 
-export const loadFailureDetail = (request: { readonly failure: LoadFailure }): string =>
-  [request.failure.kind, ...loadFailureFields(request)]
+export const loadFailureDetail = (request: {
+  readonly failure: LoadFailure | SymptomUnheld;
+}): string => {
+  const { failure } = request;
+  if (failure.kind === "symptom-unheld") return symptomUnheldText({ failure });
+  return [failure.kind, ...loadFailureFields({ failure })]
     .map((text) => escapedLineBreaks({ text }))
     .join(" ");
+};
 
 export const loadFailureText = (request: { readonly failure: LoadFailure }): string =>
   `load failure: ${loadFailureDetail(request)}\n`;

@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "tested-where-its-owned"
-  },
+  "serves": [
+    {
+      "rule": "tested-where-its-owned"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"a useful pattern to ensure boundaries are clear when to maintain and keep pyramid checkable.\"",

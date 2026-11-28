@@ -5,6 +5,7 @@ import { exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-f
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { foundTreeRecordsSourceOf } from "../infrastructure/discipline-exceptions-folder/found-tree-records-source.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { createDefaultChildEnginesStage } from "../infrastructure/engines/protocol/child-measurement/child-measurement.ts";
 import { runnerModuleAt } from "../infrastructure/engines/protocol/runner-module/runner-module-at.ts";
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 import {
@@ -17,7 +18,7 @@ import { recordsEditor } from "../infrastructure/hone-records-folder/writing/rec
 import { loadFailureDetail } from "../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import { runnerEnginesOver } from "./runner-engines.ts";
 import type { ToolPorts } from "./tool-ports.ts";
-import { versionTwoStagesOver } from "./version-two-stages.ts";
+import { createChildMeasuredStagesOver, versionTwoStagesOver } from "./version-two-stages.ts";
 
 export type NodePorts = Pick<
   ToolPorts,
@@ -50,6 +51,9 @@ export const installedPortsOver = (node: NodePorts): ToolPorts => {
     selectionRepositoryOf: createSelectionRepository,
     shownPathOfRepository,
     stagesOver: versionTwoStagesOver,
+    childMeasuredStagesOver: createChildMeasuredStagesOver({
+      createEngines: createDefaultChildEnginesStage,
+    }),
     recordsSourceOf: versionOneAwareRecordsSourceOf({
       recordsSourceOf: createRecordsFolder,
       exceptionRepositoryOf: exceptionRepositories,

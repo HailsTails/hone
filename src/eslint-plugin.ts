@@ -1,19 +1,16 @@
-import { SYMPTOM_CATALOGUE_SEGMENTS } from "./domain/language-layer/symptom-catalogue-location.ts";
+import { mapToolCatalogueToEngineChecks } from "./application/run/engines/tool-engine-checks.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { Result } from "./domain/result.ts";
-import { TOOL_RULE_SET } from "./domain/rule-set/clause-address.ts";
 import { TOOL_IDENTITY } from "./domain/rule-set/tool-identity.ts";
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
-import { readBoundCatalogue } from "./infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import {
-  honePluginAt,
-  honePluginFailureText,
-} from "./infrastructure/engines/eslint/runner/hone-plugin/hone-plugin.ts";
-import { installedEslintBoundary } from "./infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createBoundCatalogueOf } from "./infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import type { ChecksPlugin } from "./infrastructure/engines/eslint/runner/hone-plugin/checks-plugin.ts";
+import { createPluginAt } from "./infrastructure/engines/eslint/runner/hone-plugin/plugin-build.ts";
 import { createDefaultDirectoryPort } from "./infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
+import { runLoadFailureLine } from "./infrastructure/printed-report/load-failures/load-failure-lines.ts";
 import { loadFailureText } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 export type HoneNodeVisit = { visit(...nodes: unknown[]): void }["visit"];
@@ -33,45 +30,30 @@ const fileText = createDefaultFileTextPort({});
 
 const pluginAt = async (request: {
   readonly installRoot: AbsolutePath;
-}): Promise<Result<HonePlugin, string>> => {
-  const catalogue = readBoundCatalogue({
-    fileText,
-    directory: createDefaultDirectoryPort({}),
-    path,
-    ruleSetRoot: request.installRoot,
-    ruleSet: TOOL_RULE_SET,
-    installRoot: request.installRoot,
-    inheritedRecordKinds: [],
-  });
-  if (catalogue.outcome === "failed") {
-    return { outcome: "failed", error: loadFailureText({ failure: catalogue.error }) };
-  }
-  if (catalogue.value.held === "none") {
-    return {
-      outcome: "failed",
-      error: `this install holds no ${SYMPTOM_CATALOGUE_SEGMENTS.join("/")} under ${request.installRoot}`,
-    };
-  }
-  const boundary = await installedEslintBoundary();
-  if (boundary.outcome === "failed") {
-    return boundary;
-  }
-  const plugin = await honePluginAt({
-    checks: catalogue.value.catalogue.checks,
-    installRoot: request.installRoot,
+}): Promise<Result<ChecksPlugin, string>> => {
+  const checks = mapToolCatalogueToEngineChecks({
     fileText,
     path,
-    modules: createDefaultModuleLoaderPort({}),
-    boundary: boundary.value,
+    installRoot: request.installRoot,
+    boundCatalogueOf: createBoundCatalogueOf({ directory: createDefaultDirectoryPort({}) }),
   });
-  return plugin.outcome === "failed"
-    ? { outcome: "failed", error: honePluginFailureText({ failure: plugin.error }) }
-    : plugin;
+  return checks.outcome === "failed"
+    ? {
+        outcome: "failed",
+        error: runLoadFailureLine({ failure: checks.error, upgradeCommand: undefined }),
+      }
+    : createPluginAt({
+        checks: checks.value,
+        installRoot: request.installRoot,
+        fileText,
+        path,
+        modules: createDefaultModuleLoaderPort({}),
+      });
 };
 
 const installRoot = installRootOfApiEntry({ path, moduleUrl: import.meta.url });
 
-const built: Result<HonePlugin, string> =
+const built: Result<ChecksPlugin, string> =
   installRoot.outcome === "failed"
     ? { outcome: "failed", error: loadFailureText({ failure: installRoot.error }) }
     : await pluginAt({ installRoot: installRoot.value });

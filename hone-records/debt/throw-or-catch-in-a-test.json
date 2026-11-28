@@ -3,35 +3,11 @@
   "records": [
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/composition/commands.version-two-needed.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",

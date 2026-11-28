@@ -108,18 +108,6 @@ const NON_NULL_ASSERTIONS_PIECE = {
     pluginNamespace: "hone-cd2",
     pluginModule: "eslint-plugin.ts",
     rule: "no-restricted-syntax",
-    options: [
-      {
-        selector: "TSNonNullExpression",
-        message:
-          "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead.",
-      },
-      {
-        selector: "[definite=true]",
-        message:
-          "CD-2: a definite assignment assertion claims an assignment the compiler cannot see; initialise the binding instead.",
-      },
-    ],
   },
   edition: "1",
 };
@@ -162,7 +150,15 @@ const VERSION_ONE_BINDINGS = [
   },
   {
     mechanism: "eslint",
-    clause: { address: NON_NULL_ASSERTIONS, ...NON_NULL_ASSERTIONS_PIECE, clauseSettings: {} },
+    clause: {
+      address: NON_NULL_ASSERTIONS,
+      ...NON_NULL_ASSERTIONS_PIECE,
+      settings: {
+        ...NON_NULL_ASSERTIONS_PIECE.settings,
+        authoredCheck: "claimed-type#non-null-assertions",
+      },
+      clauseSettings: {},
+    },
   },
   {
     mechanism: "walker",
@@ -248,6 +244,10 @@ const VERSION_TWO_SELECTED = [
       ruleSet: TOOL_RULE_SET,
       engine: "eslint",
       ...NON_NULL_ASSERTIONS_PIECE,
+      checkOptions: {
+        kind: "non-null-assertions",
+        rejects: ["asserted-value", "asserted-assignment"],
+      },
       forms: {},
       checkSettings: {},
     },
@@ -456,7 +456,7 @@ const AVAILABLE_CHECKS = [
       discipline: disciplineIdOf("CD-44"),
       clause: clauseIdOf("parameter-reassignment"),
     },
-    engines: [{ name: "eslint" }],
+    engines: [{ name: "eslint" }, { name: "oxlint" }],
   },
   {
     position: 3,

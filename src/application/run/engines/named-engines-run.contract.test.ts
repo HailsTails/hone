@@ -1,12 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  RecordKind,
-  Rule,
-  Symptom,
-} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import type {
   RecordsReading,
@@ -18,22 +12,22 @@ import type { Result } from "../../../domain/result.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadedEngine, NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type {
+  EngineCheck,
   NamedEngineRun,
   NamedEngineRunRequest,
-  ParsedNamedRunner,
 } from "../../ports/engine/engine-run.ts";
 import type { RunnerInvalid } from "../../ports/engine/runner-location.ts";
-import type { RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { NamedSettingsReading } from "../settings/read-settings.ts";
 import {
   type NamedEnginesRequest,
-  namedEngineProjectionsOf,
-  namedEngineRunsOf,
+  projectNamedEngines,
+  runNamedEngines,
 } from "./named-engines-run.ts";
 
 const REPO = absoluteRootOf("/repo");
@@ -50,60 +44,25 @@ const ESLINT = "eslint" as const;
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const DECLARED_NOT_ASSERTED: Rule = {
-  name: "declared-not-asserted",
-  title: "Declared, not asserted",
-  principle: { name: "one-place-decides", title: "One place decides" },
-  standing: "accepted",
-};
-
-const DEBT: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-
-const AUTHORISED_LOCATION: RecordKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "A cast.",
-  mayIndicate: [
-    {
-      case: {
-        name: "gives-a-value-its-type",
-        title: "Gives a value its type",
-        standing: "accepted",
-        owes: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
-      },
-      situation: "or needs it narrower",
-      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
-    },
-  ],
-  breachUsuallySits: "at the producer",
-  recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
-};
-
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: "hone", name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
+};
+
+const CAST_ENGINE_CHECK: EngineCheck = {
+  name: "cast-expressions",
+  symptom: { ruleSet: "hone", name: "claimed-type", title: "Claimed type" },
+  engines: [ESLINT_ENGINE],
 };
 
 const README = repoPathOf("README.md");
 
-const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => ({
-  engine: request.mechanism,
+const WALKER_BINDING: CheckBinding = {
+  engine: AUDIT,
   address: "claimed-type#cast-expressions",
   ruleSet: "hone",
   anchor: { kind: "file" },
@@ -111,16 +70,22 @@ const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => (
   checkSettings: {},
   edition: editionOf("1"),
   settings: {},
-});
+};
+const ESLINT_BINDING: CheckBinding = {
+  ...WALKER_BINDING,
+  ruleSet: "hone",
+  engine: ESLINT,
+  checkOptions: { kind: "none" },
+};
 
-const selectedOn = (request: {
-  readonly mechanism: CheckBinding["engine"];
-}): NamedSettingsReading["selection"]["selected"][number] => ({
+const selectedOn = (
+  binding: CheckBinding,
+): NamedSettingsReading["selection"]["selected"][number] => ({
   address: { ruleSet: "hone", check: "claimed-type#cast-expressions" },
   check: CAST_CHECK,
   exceptions: "allowed",
   editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
-  binding: bindingOn(request),
+  binding,
 });
 
 const settingsBinding = (request: {
@@ -137,6 +102,7 @@ const settingsBinding = (request: {
   },
   runSettings: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: request.lookup,
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 });
@@ -147,7 +113,7 @@ const DEBT_ON_A: RecordsReading = {
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
       record: {
         kind: "debt",
-        symptom: CLAIMED_TYPE,
+        symptom: { ruleSet: "hone", name: "claimed-type" },
         reach: WHOLE_SYMPTOM,
         file: A,
         holding: { held: "stated" },
@@ -156,24 +122,12 @@ const DEBT_ON_A: RecordsReading = {
   ],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const UNUSED_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>() };
 
 const MODULES: ModuleLoaderPort = { load: vi.fn<ModuleLoaderPort["load"]>() };
-
-const UNCALLED_RUNNER: RunnerCall = vi.fn<RunnerCall>();
-
-const AUDIT_LOADED: ParsedNamedRunner = {
-  fileScope: "tracked",
-  projectedKinds: [],
-  run: UNCALLED_RUNNER,
-  conform: UNCALLED_RUNNER,
-  project: UNCALLED_RUNNER,
-};
-
-const ESLINT_LOADED: ParsedNamedRunner = { ...AUDIT_LOADED, fileScope: "typescript" };
 
 const AUDIT_RUN: NamedEngineRun = {
   mechanism: AUDIT,
@@ -181,6 +135,8 @@ const AUDIT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -192,17 +148,16 @@ const ESLINT_RUN: NamedEngineRun = { ...AUDIT_RUN, mechanism: ESLINT };
 
 const engineFake = () => {
   const load = vi.fn<NamedEnginePort["load"]>();
-  const runChecks = vi.fn<NamedEnginePort["run"]>();
-  const projectChecks = vi.fn<NamedEnginePort["project"]>();
+  const runChecks = vi.fn<LoadedEngine["run"]>();
+  const projectChecks = vi
+    .fn<LoadedEngine["project"]>()
+    .mockResolvedValue({ outcome: "ok", value: [] });
   return {
     load,
     runChecks,
     projectChecks,
-    port: {
-      load,
-      run: runChecks,
-      project: projectChecks,
-    },
+    port: { load },
+    loaded: { run: runChecks, project: projectChecks },
   };
 };
 
@@ -213,7 +168,7 @@ const enginesRequestOf = (request: {
   readonly lookup: NamedSettingsReading["eslintConfigLookup"];
   readonly engine: NamedEnginePort;
 }): NamedEnginesRequest => ({
-  checks: [CAST_CHECK],
+  checks: [CAST_ENGINE_CHECK],
   settings: settingsBinding(request),
   answered: answeredFilesOf({ records: DEBT_ON_A.records }),
   tree: { tracked: [A, README], declaredConfigRoots: [] },
@@ -230,40 +185,52 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   installRoot: INSTALL,
   files: [A],
   trackedPaths: [A, README],
-  checks: [CAST_CHECK],
-  bindings: [bindingOn({ mechanism: ESLINT })],
+  checks: [CAST_ENGINE_CHECK],
+  bindings: [ESLINT_BINDING],
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
   testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
-const RUNNER_INVALID: Result<ParsedNamedRunner, RunnerInvalid> = {
+const RUNNER_INVALID: Result<LoadedEngine, RunnerInvalid> = {
   outcome: "failed",
   error: { kind: "runner-invalid", mechanism: ESLINT, detail: "Cannot find module" },
 };
 
-describe("namedEngineRunsOf", () => {
+describe("runNamedEngines", () => {
   it("runs each mechanism the selection binds once, loading its engine from the install", async () => {
-    const engine = engineFake();
-    engine.load
-      .mockResolvedValueOnce({ outcome: "ok", value: AUDIT_LOADED })
-      .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.runChecks
-      .mockResolvedValueOnce({ outcome: "ok", value: AUDIT_RUN })
-      .mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    const run = await namedEngineRunsOf(
+    const audit = vi
+      .fn<LoadedEngine["run"]>()
+      .mockResolvedValue({ outcome: "ok", value: AUDIT_RUN });
+    const eslint = vi
+      .fn<LoadedEngine["run"]>()
+      .mockResolvedValue({ outcome: "ok", value: ESLINT_RUN });
+    const load = vi
+      .fn<NamedEnginePort["load"]>()
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: { run: audit, project: async () => ({ outcome: "ok", value: [] }) },
+      })
+      .mockResolvedValueOnce({
+        outcome: "ok",
+        value: { run: eslint, project: async () => ({ outcome: "ok", value: [] }) },
+      });
+
+    const run = await runNamedEngines(
       enginesRequestOf({
         selected: [
-          selectedOn({ mechanism: AUDIT }),
-          selectedOn({ mechanism: ESLINT }),
-          selectedOn({ mechanism: AUDIT }),
+          selectedOn(WALKER_BINDING),
+          selectedOn(ESLINT_BINDING),
+          selectedOn(WALKER_BINDING),
         ],
         lookup: DETECTED,
-        engine: engine.port,
+        engine: { load },
       }),
     );
-    expect({ run, loaded: engine.load.mock.calls }).toEqual({
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(eslint).toHaveBeenCalledTimes(1);
+    expect({ run, loaded: load.mock.calls }).toEqual({
       run: { outcome: "ok", value: [AUDIT_RUN, ESLINT_RUN] },
       loaded: [
         [
@@ -278,6 +245,7 @@ describe("namedEngineRunsOf", () => {
         [
           expect.objectContaining({
             mechanism: ESLINT,
+            projectionKind: "mjs",
             installRoot: INSTALL,
             moduleExtension: ".ts",
             modules: MODULES,
@@ -290,39 +258,63 @@ describe("namedEngineRunsOf", () => {
 
   it("asks the engine to run its checks with the TypeScript files, the tracked paths, the catalogue's checks, the bindings and the files records answer", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineRunsOf(
+    await runNamedEngines(
       enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
+        selected: [selectedOn(ESLINT_BINDING)],
         lookup: DETECTED,
         engine: engine.port,
       }),
     );
-    expect(engine.runChecks.mock.calls).toEqual([
-      [{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }],
-    ]);
+    expect(engine.runChecks.mock.calls).toEqual([[ESLINT_RUN_REQUEST]]);
+  });
+
+  it("projects the full request and runs the engine with projected paths removed", async () => {
+    const file = repoPathOf("hone.eslint.d.mts");
+    const engine = engineFake();
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
+    engine.projectChecks.mockResolvedValueOnce({
+      outcome: "ok",
+      value: [{ kind: "write", file, text: "export {};" }],
+    });
+    engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
+    const request = enginesRequestOf({
+      selected: [selectedOn(ESLINT_BINDING)],
+      lookup: DETECTED,
+      engine: engine.port,
+    });
+
+    const run = await runNamedEngines({
+      ...request,
+      tree: { tracked: [A, README, file], declaredConfigRoots: [] },
+    });
+
+    expect(run).toEqual({
+      outcome: "ok",
+      value: [{ ...ESLINT_RUN, comparedOutputs: [repoPathOf("hone.eslint.d.mts")] }],
+    });
+    expect(engine.projectChecks).toHaveBeenCalledExactlyOnceWith({
+      ...ESLINT_RUN_REQUEST,
+      files: [A, file],
+      trackedPaths: [A, README, file],
+    });
+    expect(engine.runChecks).toHaveBeenCalledExactlyOnceWith(ESLINT_RUN_REQUEST);
   });
 
   it("passes the ESLint config lookup the settings declare, and none when the settings leave it to be detected", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineRunsOf(
+    await runNamedEngines(
       enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
+        selected: [selectedOn(ESLINT_BINDING)],
         lookup: { lookup: "declared", value: "repository-root" },
         engine: engine.port,
       }),
     );
     expect(engine.runChecks.mock.calls).toEqual([
-      [
-        {
-          mechanism: ESLINT,
-          runner: ESLINT_LOADED,
-          request: { ...ESLINT_RUN_REQUEST, declaredConfigLookup: "repository-root" },
-        },
-      ],
+      [{ ...ESLINT_RUN_REQUEST, declaredConfigLookup: "repository-root" }],
     ]);
   });
 
@@ -330,9 +322,9 @@ describe("namedEngineRunsOf", () => {
     const engine = engineFake();
     engine.load.mockResolvedValueOnce(RUNNER_INVALID);
     expect(
-      await namedEngineRunsOf(
+      await runNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -349,7 +341,7 @@ describe("namedEngineRunsOf", () => {
 
   it("fails as an engine that failed, naming the engine, when its runner fails", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.runChecks.mockResolvedValueOnce({
       outcome: "failed",
       error: {
@@ -359,9 +351,9 @@ describe("namedEngineRunsOf", () => {
       },
     });
     expect(
-      await namedEngineRunsOf(
+      await runNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -379,7 +371,7 @@ describe("namedEngineRunsOf", () => {
   it("runs nothing when the selection binds no mechanism", async () => {
     const engine = engineFake();
     expect({
-      run: await namedEngineRunsOf(
+      run: await runNamedEngines(
         enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
@@ -387,17 +379,21 @@ describe("namedEngineRunsOf", () => {
   });
 });
 
-const WRITTEN_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN_PROJECTION: ProjectedFile = {
+  kind: "write",
+  file: repoPathOf("hone.eslint.mjs"),
+  text: "export default [];\n",
+};
 
-describe("namedEngineProjectionsOf", () => {
+describe("projectNamedEngines", () => {
   it("gives the files the checks runner wrote", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [WRITTEN_PROJECTION] });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -408,43 +404,14 @@ describe("namedEngineProjectionsOf", () => {
     });
   });
 
-  it("asks the engine to project the very request it would run, so a run and a projection cannot see different inputs", async () => {
-    const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [] });
-    engine.runChecks.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_RUN });
-    await namedEngineProjectionsOf(
-      enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
-        lookup: DETECTED,
-        engine: engine.port,
-      }),
-    );
-    await namedEngineRunsOf(
-      enginesRequestOf({
-        selected: [selectedOn({ mechanism: ESLINT })],
-        lookup: DETECTED,
-        engine: engine.port,
-      }),
-    );
-    expect({
-      projected: engine.projectChecks.mock.calls,
-      run: engine.runChecks.mock.calls,
-    }).toEqual({
-      projected: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
-      run: [[{ mechanism: ESLINT, runner: ESLINT_LOADED, request: ESLINT_RUN_REQUEST }]],
-    });
-  });
-
   it("writes nothing for an engine that projects no file", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: AUDIT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({ outcome: "ok", value: [] });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: AUDIT })],
+          selected: [selectedOn(WALKER_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -458,7 +425,7 @@ describe("namedEngineProjectionsOf", () => {
   it("writes nothing when the selection binds no mechanism", async () => {
     const engine = engineFake();
     expect({
-      projected: await namedEngineProjectionsOf(
+      projected: await projectNamedEngines(
         enginesRequestOf({ selected: [], lookup: DETECTED, engine: engine.port }),
       ),
       loaded: engine.load.mock.calls,
@@ -469,9 +436,9 @@ describe("namedEngineProjectionsOf", () => {
     const engine = engineFake();
     engine.load.mockResolvedValueOnce(RUNNER_INVALID);
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),
@@ -488,7 +455,7 @@ describe("namedEngineProjectionsOf", () => {
 
   it("fails as an engine that failed, naming the engine, when the checks runner fails", async () => {
     const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
+    engine.load.mockResolvedValueOnce({ outcome: "ok", value: engine.loaded });
     engine.projectChecks.mockResolvedValueOnce({
       outcome: "failed",
       error: {
@@ -498,9 +465,9 @@ describe("namedEngineProjectionsOf", () => {
       },
     });
     expect(
-      await namedEngineProjectionsOf(
+      await projectNamedEngines(
         enginesRequestOf({
-          selected: [selectedOn({ mechanism: ESLINT })],
+          selected: [selectedOn(ESLINT_BINDING)],
           lookup: DETECTED,
           engine: engine.port,
         }),

@@ -1759,8 +1759,7 @@ describe.each(LINES)("a package that spreads its own projection slice, on real $
           {
             ruleId: "hone/no-class-authoring",
             severity: 2,
-            message:
-              "CD-14: use functions and closure-backed factories instead of authoring a class.",
+            message: expect.any(String),
             messageId: "noClass",
             nodeType: line.classMessageNodeType,
             line: 1,

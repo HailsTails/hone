@@ -1,7 +1,8 @@
-import type { RunnerFileScope } from "../../../../application/ports/engine/engine-run.ts";
+import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
+import type { RunnerFileScope } from "../checks/checks-runner-module-schema.ts";
 import type { NamedChecksRunner } from "../checks/checks-runner-types.ts";
 import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
@@ -49,12 +50,15 @@ export const toolchainBoundEmbeddedRunner = <Toolchain>(request: {
   };
 };
 
-export const toolchainBoundNamedChecksRunner = <Toolchain>(request: {
+export const toolchainBoundNamedChecksRunner = <
+  Toolchain,
+  Request extends NamedEngineRunRequest,
+>(request: {
   readonly toolchain: ToolchainLoad<Toolchain>;
   readonly fileScope: RunnerFileScope;
   readonly projectedKinds: readonly NativeException["kind"][];
-  readonly runnerOf: (toolchain: Toolchain) => NamedChecksRunner;
-}): NamedChecksRunner & {
+  readonly runnerOf: (toolchain: Toolchain) => NamedChecksRunner<Request>;
+}): NamedChecksRunner<Request> & {
   readonly fileScope: RunnerFileScope;
   readonly projectedKinds: readonly NativeException["kind"][];
 } => {

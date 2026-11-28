@@ -11,14 +11,6 @@
     },
     {
       "answers": "outside-import-past-a-boundary#import-or-require",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts"
-    },
-    {
-      "answers": "outside-import-past-a-boundary#import-or-require",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/infrastructure/node/file-system/file-system-port.ts"
     },
     {
@@ -35,7 +27,11 @@
     },
     {
       "answers": "outside-import-past-a-boundary#import-or-require",
-      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts"
+      "file": "src/infrastructure/node/process/reply-port.ts"
+    },
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/process/request-port.ts"
     }
   ]
 }

@@ -210,7 +210,7 @@ describe("parseCheckArguments refusing what it cannot read", () => {
       problem: {
         kind: "choice-invalid",
         option: FORFEITURE_OPTION,
-        choices: ["this-run", "elsewhere"],
+        choices: ["this-run", "elsewhere", "no-new-findings"],
         given: "reported",
       },
     },
@@ -473,4 +473,28 @@ describe("a version 1 command given no --repo", () => {
       }),
     );
   });
+});
+
+it("takes a full landing commit only for the checked comparison", () => {
+  const revision = "1234567890123456789012345678901234567890";
+  const words = ["--repo", "/work/repo", "--forfeiture", "no-new-findings", "--base-revision"];
+
+  const pinned = parseCheckArguments({ arguments: [...words, revision], reportOutputs: [] });
+  const mutable = parseCheckArguments({ arguments: [...words, "HEAD"], reportOutputs: [] });
+  const pruning = parsePruneDebtArguments({ arguments: [...words, revision] });
+
+  expect(pinned).toMatchObject({
+    outcome: "ok",
+    value: { baseRevision: revision, forfeiture: "no-new-findings" },
+  });
+  expect(mutable).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
+  expect(pruning).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
+});
+
+it("requires an explicit landing revision for no-new-findings", () => {
+  const words = ["--repo", "/work/repo", "--forfeiture", "no-new-findings"];
+
+  const unpinned = parseCheckArguments({ arguments: words, reportOutputs: [] });
+
+  expect(unpinned).toMatchObject({ outcome: "failed", error: { kind: "arguments-invalid" } });
 });

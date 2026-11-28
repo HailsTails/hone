@@ -17,7 +17,7 @@ export const RECORDS_FILE_EXTENSION = ".json";
 
 const RECORDS_ROOT = repoPathOf(RECORDS_FOLDER);
 
-export type SingleFileKind = Extract<RecordsFolderKind, "boundary-records" | "dependency-records">;
+export type SingleFileKind = Extract<RecordsFolderKind, "dependency-records">;
 
 export const NAMED_FOLDER_KINDS: readonly NamedFolderKind[] = [
   "authorised-locations",
@@ -25,10 +25,7 @@ export const NAMED_FOLDER_KINDS: readonly NamedFolderKind[] = [
   "deviations",
 ];
 
-export const SINGLE_FILE_KINDS: readonly SingleFileKind[] = [
-  "boundary-records",
-  "dependency-records",
-];
+export const SINGLE_FILE_KINDS: readonly SingleFileKind[] = ["dependency-records"];
 
 export type RecordsFileStanding =
   | {

@@ -1,7 +1,7 @@
 import type { CheckAddressText } from "../../../domain/language-layer/check-address-text.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { NamedEngineCall, NamedEngineFailure } from "../engine/engine-port.ts";
+import type { NamedEngineFailure } from "../engine/engine-port.ts";
 import type { NamedEngineRun, NamedEngineRunRequest } from "../engine/engine-run.ts";
 import type { RunnerLocation } from "../engine/runner-location.ts";
 
@@ -23,7 +23,7 @@ export type ProjectionMeasurement<Report> = {
 };
 
 export type MeasureVersionOneProjection = (request: {
-  readonly call: NamedEngineCall;
+  readonly request: NamedEngineRunRequest;
   readonly location: RunnerLocation;
   readonly projection: CheckedVersionOneProjection | undefined;
 }) => Promise<Result<ProjectionMeasurement<NamedEngineRun>, NamedEngineFailure>>;

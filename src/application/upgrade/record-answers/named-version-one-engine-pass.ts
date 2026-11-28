@@ -1,5 +1,7 @@
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { createClauseChecks } from "../../../domain/language-layer/clause-checks.ts";
+import { mappedSettings } from "../../../domain/records/upgrade/settings-mapping.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type {
@@ -12,13 +14,10 @@ import type {
   MeasureVersionOneProjection,
   ProjectionMeasurement,
 } from "../../ports/upgrade/version-one-measurement.ts";
+import { mapCataloguesToEngineChecks } from "../../run/engines/engine-checks.ts";
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
-import { namedEngineCallsOf } from "../../run/engines/named-engines-run.ts";
-import {
-  type NamedSettingsReading,
-  readNamedSettingsFile,
-} from "../../run/settings/read-settings.ts";
-import { mappedSettings } from "../mapping/settings-mapping.ts";
+import { callNamedEngines } from "../../run/engines/named-engines-run.ts";
+import { type NamedSettingsReading, bindNamedSettings } from "../../run/settings/read-settings.ts";
 import {
   versionOneAnsweredFilesOf,
   versionOneNamesOf,
@@ -27,12 +26,12 @@ import {
 
 export type NamedVersionOnePassRequest = Omit<
   NamedEnginesRequest,
-  "settings" | "checks" | "answered"
+  "settings" | "checks" | "answered" | "engine"
 > &
-  Pick<Parameters<typeof readNamedSettingsFile>[0], "sources" | "readPiece"> & {
+  Pick<Parameters<typeof bindNamedSettings>[0], "sources" | "readPiece"> & {
     readonly selected: Parameters<typeof versionOneNamesOf>[0]["selected"];
     readonly selection: Parameters<typeof mappedSettings>[0]["selection"];
-    readonly catalogues: Parameters<typeof mappedSettings>[0]["catalogues"];
+    readonly catalogues: readonly RuleSetCatalogue[];
     readonly settingsPath: string;
     readonly loadFailureDetail: LoadFailureDetail;
     readonly measureVersionOne: MeasureVersionOneProjection;
@@ -48,14 +47,17 @@ const refused = (detail: string): Result<never, EnginePassFailure> => ({
 
 const settingsFor = (
   request: NamedVersionOnePassRequest,
-): Result<NamedSettingsReading, EnginePassFailure> => {
-  const mapped = mappedSettings({ ...request, notAdoptedClauses: [] });
+): Result<Omit<NamedSettingsReading, "eslintProjectionKind">, EnginePassFailure> => {
+  const mapped = mappedSettings({
+    selection: request.selection,
+    clauseChecks: createClauseChecks({ catalogues: request.catalogues }),
+  });
   if (mapped.outcome === "failed") {
     return refused(
       `version one selection could not be bound to checks: ${mapped.error.map(({ kind }) => kind).join(", ")}`,
     );
   }
-  const settings = readNamedSettingsFile({
+  const settings = bindNamedSettings({
     ...request,
     path: request.settingsPath,
     file: mapped.value.settings,
@@ -67,21 +69,35 @@ const settingsFor = (
 
 const projectionProblemOf = (request: {
   readonly measurements: readonly ProjectionMeasurement<NamedEngineRun>[];
-  readonly projection: CheckedVersionOneProjection | undefined;
 }): EnginePassFailure | undefined => {
   const unapplied = request.measurements.flatMap(({ unappliedSlices }) => unappliedSlices)[0];
   if (unapplied !== undefined) {
     return { kind: "projection-not-current", file: unapplied, state: "not-applied" };
   }
-  const state = request.measurements
-    .map(({ report }) => report.projection)
-    .find((candidate) => candidate !== "none" && candidate !== "current");
-  return state === undefined
+  const problem = request.measurements
+    .map(({ report }) => report)
+    .find(
+      (
+        report,
+      ): report is Extract<
+        NamedEngineRun,
+        {
+          readonly projection: Exclude<
+            NamedEngineRun["projection"],
+            "none" | "current" | "current-with-file"
+          >;
+        }
+      > =>
+        report.projection !== "none" &&
+        report.projection !== "current" &&
+        report.projection !== "current-with-file",
+    );
+  return problem === undefined
     ? undefined
     : {
         kind: "projection-not-current",
-        file: request.projection?.projectionFile ?? repoPathOf("disciplines.eslint.mjs"),
-        state,
+        file: problem.projectionFile,
+        state: problem.projection,
       };
 };
 
@@ -94,27 +110,28 @@ const findingsFor = async (
   if (names.outcome === "failed") return names;
   const checkedProjection = await request.checkProjection({ records: request.records });
   if (checkedProjection.outcome === "failed") return checkedProjection;
-  const checks = request.catalogues.flatMap(({ catalogue }) => catalogue.checks);
-  const ran = await namedEngineCallsOf({
+  const catalogues = request.catalogues.map(({ catalogue }) => catalogue);
+  const checks = mapCataloguesToEngineChecks({ catalogues });
+  if (checks.outcome === "failed") {
+    return refused(request.loadFailureDetail({ failure: checks.error }));
+  }
+  const ran = await callNamedEngines({
     ...request,
-    checks,
+    checks: checks.value,
     settings: settings.value,
     answered: versionOneAnsweredFilesOf({ names: names.value, records: request.records }),
-    call: (call) => {
-      const { installRoot, moduleExtension, modules, path } = request;
-      return request.measureVersionOne({
-        call,
+    call: (location, engineRequest) =>
+      request.measureVersionOne({
+        request: engineRequest,
         projection: checkedProjection.value,
-        location: { installRoot, moduleExtension, modules, path, mechanism: call.mechanism },
-      });
-    },
+        location,
+      }),
   });
   if (ran.outcome === "failed") {
     return refused(request.loadFailureDetail({ failure: ran.error }));
   }
   const problem = projectionProblemOf({
     measurements: ran.value,
-    projection: checkedProjection.value,
   });
   return problem === undefined
     ? versionOneObservationsOf({ names: names.value, runs: ran.value.map(({ report }) => report) })

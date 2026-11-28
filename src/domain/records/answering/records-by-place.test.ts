@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import type { FoundCheck } from "../../language-layer/check-address.ts";
-import type { Check, Recipe, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { Check, Recipe, SymptomAddress } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { HoneRecord, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
-import type { Site } from "./record-reach.ts";
+import type { Holding, ResolvedSite } from "./record-reach.ts";
 import {
   answeredAt,
   answeredByPlaceOf,
@@ -20,34 +21,25 @@ import {
 
 const STUB_WITH_VIFN: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "stub-with-vifn",
+  name: "stub-with-vi-fn",
   title: "Stub with vi.fn",
   standing: "accepted",
   reason: { text: "A stub states its answer.", standing: "accepted" },
 };
 
-const CLAIMED_TYPE: Symptom = {
+const CLAIMED_TYPE: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "claimed-type" };
+
+const OUTSIDE_IMPORT: SymptomAddress = {
   ruleSet: TOOL_RULE_SET,
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "Seen.",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
+  name: "outside-import-past-a-boundary",
 };
 
-const OUTSIDE_IMPORT: Symptom = { ...CLAIMED_TYPE, name: "outside-import-past-a-boundary" };
-
-const MOCKED: Symptom = {
-  ...CLAIMED_TYPE,
-  name: "module-or-global-patched",
-  recipes: [STUB_WITH_VIFN],
-};
+const MOCKED: SymptomAddress = { ruleSet: TOOL_RULE_SET, name: "module-or-global-patched" };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -55,6 +47,7 @@ const CAST_CHECK: Check = {
   },
   engines: [{ name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const NON_NULL_CHECK: Check = { ...CAST_CHECK, name: "non-null-assertions" };
@@ -93,26 +86,47 @@ const debtAt = (request: {
 
 const siteAt = (request: {
   readonly file: RepoPath;
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly check: FoundCheck;
-}): Site => ({ ...request, party: { reported: "not-reported" } });
+  readonly recipes: readonly Recipe[];
+}): ResolvedSite => ({ ...request, party: { reported: "not-reported" } });
 
-const castSiteAt = (request: { readonly file: RepoPath }): Site =>
+const castSiteAt = (request: { readonly file: RepoPath }): ResolvedSite =>
   siteAt({
     file: request.file,
     symptom: CLAIMED_TYPE,
     check: { found: "check", check: CAST_CHECK },
+    recipes: [],
   });
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const ADAPTERS_BOUNDARY = placedOf({
+const IMPORT_CHECK: Check = {
+  name: "import-or-require",
+  symptom: OUTSIDE_IMPORT,
+  page: "outside-import-past-a-boundary/import-or-require.md",
+  engines: [],
+  forms: [],
+  findingSpecifics: ["outside-party"],
+};
+
+const OTHER_ADAPTER_UUID_LOCATION = placedOf({
   index: 0,
   record: {
-    kind: "boundary-record",
-    module: repoPathOf("src/adapters"),
-    outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
-    holding: { held: "stated", ports: ["Port"] },
+    kind: "authorised-location",
+    symptom: OUTSIDE_IMPORT,
+    reach: { reaches: "one-check", check: IMPORT_CHECK },
+    file: OTHER_ADAPTER,
+    holding: {
+      binding: {
+        binds: "check-file-and-outside-party",
+        outsideParty: { kind: "package", dependency: "uuid" },
+      },
+      held: "carried",
+      entry: { reason: "uuid stays here." },
+      lacks: ["case", "owes", "whyChain"],
+      standing: "unjudged",
+    },
   },
 });
 
@@ -162,7 +176,7 @@ const RECORDS = [
   ADAPTER_DEBT,
   DEPENDENCY,
   DOMAIN_DEVIATION,
-  ADAPTERS_BOUNDARY,
+  OTHER_ADAPTER_UUID_LOCATION,
   ADAPTER_CAST_DEBT,
   OTHER_ADAPTER_DEBT,
 ];
@@ -180,25 +194,41 @@ describe("recordsReachingSites", () => {
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
-        sites: [siteAt({ file: ADAPTER, symptom: CLAIMED_TYPE, check: { found: "none" } })],
+        sites: [
+          siteAt({ file: ADAPTER, symptom: CLAIMED_TYPE, check: { found: "none" }, recipes: [] }),
+        ],
       }),
     ).toEqual([ADAPTER_DEBT]);
   });
 
-  it("gives a module record for a site under the module whose symptom it reaches", () => {
+  it("gives an authorised location bound to an outside party for a site of its check at its file", () => {
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
-        sites: [siteAt({ file: OTHER_ADAPTER, symptom: OUTSIDE_IMPORT, check: { found: "none" } })],
+        sites: [
+          siteAt({
+            file: OTHER_ADAPTER,
+            symptom: OUTSIDE_IMPORT,
+            check: { found: "check", check: IMPORT_CHECK },
+            recipes: [],
+          }),
+        ],
       }),
-    ).toEqual([ADAPTERS_BOUNDARY]);
+    ).toEqual([OTHER_ADAPTER_UUID_LOCATION]);
   });
 
   it("gives a deviation for a site whose symptom lists its recipe", () => {
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
-        sites: [siteAt({ file: DOMAIN, symptom: MOCKED, check: { found: "none" } })],
+        sites: [
+          siteAt({
+            file: DOMAIN,
+            symptom: MOCKED,
+            check: { found: "none" },
+            recipes: [STUB_WITH_VIFN],
+          }),
+        ],
       }),
     ).toEqual([DOMAIN_DEVIATION]);
   });
@@ -228,7 +258,10 @@ describe("recordsReachingSites", () => {
 });
 
 describe("recordsReachingSites, a team's symptom sharing a name with one of Hone's", () => {
-  const TEAM_CLAIMED_TYPE: Symptom = { ...CLAIMED_TYPE, ruleSet: { name: ruleSetNameOf("acme") } };
+  const TEAM_CLAIMED_TYPE: SymptomAddress = {
+    ruleSet: { name: ruleSetNameOf("acme") },
+    name: "claimed-type",
+  };
 
   const TEAM_CAST_CHECK: Check = { ...CAST_CHECK, symptom: TEAM_CLAIMED_TYPE };
 
@@ -265,6 +298,7 @@ describe("recordsReachingSites, a team's symptom sharing a name with one of Hone
             file: ADAPTER,
             symptom: TEAM_CLAIMED_TYPE,
             check: { found: "check", check: TEAM_CAST_CHECK },
+            recipes: [],
           }),
         ],
       }),
@@ -286,6 +320,7 @@ describe("recordsReachingSites, a team's symptom sharing a name with one of Hone
             file: ADAPTER,
             symptom: TEAM_CLAIMED_TYPE,
             check: { found: "check", check: TEAM_CAST_CHECK },
+            recipes: [],
           }),
         ],
       }),
@@ -293,28 +328,42 @@ describe("recordsReachingSites, a team's symptom sharing a name with one of Hone
   });
 
   it("gives no deviation from Hone's recipe for a site whose symptom lists a team's recipe of the same name", () => {
-    const teamMocked: Symptom = {
-      ...MOCKED,
-      ruleSet: TEAM_CLAIMED_TYPE.ruleSet,
-      recipes: [{ ...STUB_WITH_VIFN, ruleSet: TEAM_CLAIMED_TYPE.ruleSet }],
-    };
-    expect(
-      recordsReachingSites({
-        byPlace: BY_PLACE,
-        sites: [siteAt({ file: DOMAIN, symptom: teamMocked, check: { found: "none" } })],
+    const sites = [
+      siteAt({
+        file: DOMAIN,
+        symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "module-or-global-patched" },
+        check: { found: "none" },
+        recipes: [
+          {
+            ruleSet: { name: ruleSetNameOf("acme") },
+            name: "stub-with-vi-fn",
+            title: "Stub with vi.fn",
+            standing: "accepted",
+            reason: { text: "A stub states its answer.", standing: "accepted" },
+          },
+        ],
       }),
-    ).toEqual([]);
+    ];
+
+    const reaching = recordsReachingSites({ byPlace: BY_PLACE, sites });
+
+    expect(reaching).toEqual([]);
   });
 
-  it("gives no module record for a team's symptom named as one a boundary record reaches", () => {
+  it("gives no authorised location of Hone's symptom for a site of the team's symptom of the same name", () => {
+    const teamImport: SymptomAddress = {
+      ruleSet: { name: ruleSetNameOf("acme") },
+      name: "outside-import-past-a-boundary",
+    };
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
         sites: [
           siteAt({
             file: OTHER_ADAPTER,
-            symptom: { ...OUTSIDE_IMPORT, ruleSet: { name: ruleSetNameOf("acme") } },
-            check: { found: "none" },
+            symptom: teamImport,
+            check: { found: "check", check: { ...IMPORT_CHECK, symptom: teamImport } },
+            recipes: [],
           }),
         ],
       }),
@@ -333,6 +382,14 @@ describe("placedInRecordOrder", () => {
   });
 });
 
+type AnsweredAtRow = {
+  readonly file: RepoPath;
+  readonly ruleSet: RuleSetIdentity;
+  readonly symptom: string;
+  readonly address: string;
+  readonly expected: Holding;
+};
+
 describe("answeredAt", () => {
   const file = repoPathOf("src/a.ts");
   const other = repoPathOf("src/b.ts");
@@ -345,49 +402,55 @@ describe("answeredAt", () => {
     ],
   });
 
-  it.each([
+  it.each<AnsweredAtRow>([
     {
       file,
       ruleSet: TOOL_RULE_SET,
       symptom: "claimed-type",
       address: "claimed-type#cast-expressions",
-      expected: true,
+      expected: "holds",
     },
     {
       file,
       ruleSet: TOOL_RULE_SET,
       symptom: "claimed-type",
       address: "claimed-type#assertion",
-      expected: false,
+      expected: "does-not-hold",
     },
     {
       file: other,
       ruleSet: TOOL_RULE_SET,
       symptom: "claimed-type",
       address: "claimed-type#assertion",
-      expected: true,
+      expected: "holds",
     },
     {
       file: repoPathOf("src/c.ts"),
       ruleSet: TOOL_RULE_SET,
       symptom: "claimed-type",
       address: "claimed-type#cast-expressions",
-      expected: false,
+      expected: "does-not-hold",
     },
     {
       file,
       ruleSet: acme,
       symptom: "claimed-type",
       address: "claimed-type#cast-expressions",
-      expected: false,
+      expected: "does-not-hold",
     },
-    { file, ruleSet: acme, symptom: "loop-keyword", address: "loop-keyword#loops", expected: true },
+    {
+      file,
+      ruleSet: acme,
+      symptom: "loop-keyword",
+      address: "loop-keyword#loops",
+      expected: "holds",
+    },
     {
       file,
       ruleSet: TOOL_RULE_SET,
       symptom: "loop-keyword",
       address: "loop-keyword#loops",
-      expected: false,
+      expected: "does-not-hold",
     },
   ])(
     "checks the answer for $address of $ruleSet in $file",

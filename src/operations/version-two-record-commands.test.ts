@@ -4,6 +4,7 @@ import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import type { RecordsEditor } from "../application/ports/records/records-editor.ts";
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
+import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
@@ -11,6 +12,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
@@ -88,14 +91,14 @@ describe("versionTwoRecordDebtOf", () => {
   });
 });
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -121,6 +124,9 @@ const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "out-of-date",
+  projectionFile: repoPathOf("hone.eslint.ts"),
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -148,13 +154,19 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
         },
         runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
         eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "ts",
         conventions: DEFAULT_CONVENTIONS,
         notes: [],
       },
     }),
     records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
       outcome: "ok",
-      value: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+      value: {
+        records: [],
+        refused: [],
+        notes: [],
+        base: { measured: "yes", placements: [] },
+      },
     }),
     tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({
       outcome: "ok",
@@ -189,8 +201,10 @@ const CLAIMED_TYPE: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const BASKET = repoPathOf("src/basket.ts");
@@ -223,6 +237,8 @@ const CAST_IN_MOVED_BASKET_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "none",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -248,7 +264,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
-          base: { measured: "yes", held: [DEBT_ON_BASKET.record] },
+          base: { measured: "yes", placements: [DEBT_ON_BASKET] },
         },
       }),
       engines: vi
@@ -273,7 +289,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           records: [DEBT_ON_BASKET],
           refused: [],
           notes: [],
-          base: { measured: "yes", held: [DEBT_ON_BASKET.record] },
+          base: { measured: "yes", placements: [DEBT_ON_BASKET] },
         },
       }),
     },
@@ -329,7 +345,12 @@ describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
       outcome: "failed",
       error: {
         kind: "projection-stale",
-        problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+        problem: {
+          scope: "projection",
+          engine: { name: "eslint" },
+          state: "out-of-date",
+          file: repoPathOf("hone.eslint.ts"),
+        },
         projectCommand: PROJECT_COMMAND,
       },
     });
@@ -341,11 +362,51 @@ describe("versionTwoPruneDebtOf", () => {
   it("gives the run's load failure and opens no records store", async () => {
     const input = inputFailingCatalogue();
 
-    expect(await versionTwoPruneDebtOf({ ...input, forfeiture: undefined })).toEqual({
+    expect(
+      await versionTwoPruneDebtOf({
+        ...input,
+        forfeiture: undefined,
+        projectCommand: PROJECT_COMMAND,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
     });
     expect(input.recordsStoreOf).not.toHaveBeenCalled();
+  });
+});
+
+describe("versionTwoPruneDebtOf, an out-of-date projection", () => {
+  it("refuses with projection-stale naming the project command and writes no records", async () => {
+    const input = inputWithOutOfDateProjection();
+
+    const pruned = await versionTwoPruneDebtOf({
+      ...input,
+      forfeiture: undefined,
+      projectCommand: PROJECT_COMMAND,
+    });
+
+    expect({
+      pruned,
+      storesOpened: vi.mocked(input.recordsStoreOf).mock.calls,
+      sourcesOpened: vi.mocked(input.recordsSourceFor).mock.calls,
+    }).toEqual({
+      pruned: {
+        outcome: "failed",
+        error: {
+          kind: "projection-stale",
+          problem: {
+            scope: "projection",
+            engine: { name: "eslint" },
+            state: "out-of-date",
+            file: repoPathOf("hone.eslint.ts"),
+          },
+          projectCommand: PROJECT_COMMAND,
+        },
+      },
+      storesOpened: [],
+      sourcesOpened: [],
+    });
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Recipe, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Recipe, Check, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
   SymptomReach,
@@ -59,8 +59,18 @@ const CLAIMED_TYPE: Symptom = {
         phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
+      binding: "check-and-file",
     },
   ],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
+  engines: [],
+  forms: [],
+  findingSpecifics: [],
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
@@ -145,9 +155,10 @@ const LOCATION: PlacedRecord = {
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
-    reach: WHOLE_SYMPTOM,
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: WEBHOOK_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "stated",
       owing: {
         matches: "not-the-catalogue",
@@ -229,7 +240,7 @@ describe("staleLine", () => {
     {
       name: "an authorised location",
       placed: LOCATION,
-      line: 'claimed-type authorised-location src/adapters/stripe-webhook.ts note: the catalogue has no case "parses a webhook", owing "declared-not-asserted"',
+      line: 'claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts note: the catalogue has no case "parses a webhook", owing "declared-not-asserted"',
     },
     {
       name: "a deviation",

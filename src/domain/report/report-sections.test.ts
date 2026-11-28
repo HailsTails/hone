@@ -12,6 +12,7 @@ import {
   type RunSectionRole,
   runSectionRoleOf,
   runVerdictOf,
+  summariseRunFailures,
 } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";
 
@@ -63,11 +64,13 @@ const CLAIMED_TYPE: Symptom = {
         phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
+      binding: "check-and-file",
     },
   ],
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -168,6 +171,7 @@ describe("runVerdictOf", () => {
         reach: { reaches: "unknown-check", check: "cast-old" },
         file: repoPathOf("src/a.ts"),
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: {},
           lacks: ["case", "owes", "whyChain"],
@@ -195,6 +199,7 @@ describe("runVerdictOf", () => {
     const castExpressions: Check = {
       name: "cast-expressions",
       symptom: CLAIMED_TYPE,
+      page: "claimed-type/cast-expressions.md",
       clause: {
         ruleSet: TOOL_RULE_SET,
         discipline: disciplineIdOf("CD-2"),
@@ -202,6 +207,7 @@ describe("runVerdictOf", () => {
       },
       engines: [{ name: "eslint" }],
       forms: [],
+      findingSpecifics: [],
     };
     expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe(
       "pass",
@@ -215,12 +221,27 @@ describe("runVerdictOf", () => {
           ...EMPTY_REPORT,
           refused: [
             {
-              place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
+              place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
               refusals: [{ kind: "carried-changed-since-base" }],
             },
           ],
         },
       }),
     ).toBe("fail");
+  });
+});
+
+it("fails a run when the measured debt comparison refuses a pair", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const summary = summariseRunFailures({ report });
+
+  expect(summary).toEqual({
+    verdict: "fail",
+    sections: [{ name: "debtComparison", count: 1 }],
   });
 });

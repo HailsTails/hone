@@ -1,14 +1,13 @@
 import { assert, describe, expect, it } from "vitest";
 
 import type {
+  Check,
   RecordKind,
   Symptom,
   SymptomCatalogue,
 } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { holdsAt } from "../../../../../domain/records/answering/record-reach.ts";
-import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
-import type { CheckHit } from "../../../../../domain/runner/check-observations.ts";
 import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
@@ -33,46 +32,12 @@ const BINDING: CheckBinding = {
   settings: { module: "throws-in-production.ts" },
 };
 
-const parsePort = await loadParsePort({
+const parsed = await loadParsePort({
   peers: defaultTypeScriptPeers({
     installRoot: `${import.meta.dirname}/../../../../../..`,
     installForm: "source",
   }),
 });
-assert(parsePort.outcome === "ok");
-const parse = parsePort.value;
-
-const findingsIn = (request: {
-  readonly file: RepoPath;
-  readonly source: string;
-}): readonly CheckHit[] => {
-  const prepared = check.prepare({
-    bindings: [BINDING],
-    repository: {
-      files: [request.file],
-      exists: () => "present",
-      disk: textsDisk({ root: "/repo", texts: {} }),
-      testFiles: DEFAULT_TEST_FILES,
-    },
-    syntaxApi: parse.syntaxApi,
-  });
-  assert(prepared.outcome === "ok");
-  const result = observeWalkerFile({
-    file: { file: request.file, readText: () => ({ outcome: "ok", value: request.source }) },
-    pieces: [
-      {
-        modulePath:
-          "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
-        bindings: [BINDING],
-        check: prepared.value,
-      },
-    ],
-    parse,
-    escapes: [],
-  });
-  assert(result.outcome === "ok");
-  return result.value.hits;
-};
 
 const DEBT: RecordKind = {
   name: "debt",
@@ -111,12 +76,34 @@ const CATALOGUE: SymptomCatalogue = {
 
 describe("throws in production", () => {
   it("reports a production throw at the keyword", () => {
-    expect(
-      findingsIn({
-        file: SOURCE_FILE,
-        source: "function readOrder() {\n  throw new Error('missing order');\n}",
-      }),
-    ).toEqual([
+    const source = "function readOrder() {\n  throw new Error('missing order');\n}";
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [SOURCE_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file: SOURCE_FILE, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([
       {
         file: SOURCE_FILE,
         check: BINDING.address,
@@ -127,22 +114,66 @@ describe("throws in production", () => {
   });
 
   it("passes returned failures", () => {
-    expect(
-      findingsIn({
-        file: SOURCE_FILE,
-        source: "function readOrder() { return { outcome: 'failed' }; }",
-      }),
-    ).toEqual([]);
+    const source = "function readOrder() { return { outcome: 'failed' }; }";
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [SOURCE_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file: SOURCE_FILE, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([]);
   });
 
   it("flattens and bounds a multiline production throw", () => {
-    expect(
-      findingsIn({
-        file: SOURCE_FILE,
-        source:
-          'function readOrder() {\n  throw new Error(\n    "1234567890123456789012345678901234567890123456789012345678901234567890",\n  );\n}',
-      }),
-    ).toEqual([
+    const source =
+      'function readOrder() {\n  throw new Error(\n    "1234567890123456789012345678901234567890123456789012345678901234567890",\n  );\n}';
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [SOURCE_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file: SOURCE_FILE, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([
       {
         file: SOURCE_FILE,
         check: BINDING.address,
@@ -155,13 +186,36 @@ describe("throws in production", () => {
 
   it.each(["src/read-order.test.ts", "src/read-order.test.tsx"])(
     "leaves throws in %s to the test detector",
-    (file) => {
-      expect(
-        findingsIn({
-          file: repoPathSchema.parse(file),
-          source: "throw new Error('test setup');",
-        }),
-      ).toEqual([]);
+    (fileName) => {
+      const file = repoPathSchema.parse(fileName);
+      const source = "throw new Error('test setup');";
+      assert(parsed.outcome === "ok");
+      const prepared = check.prepare({
+        bindings: [BINDING],
+        repository: {
+          files: [file],
+          exists: () => "present",
+          disk: textsDisk({ root: "/repo", texts: {} }),
+          testFiles: DEFAULT_TEST_FILES,
+        },
+        syntaxApi: parsed.value.syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+      const observed = observeWalkerFile({
+        file: { file, readText: () => ({ outcome: "ok", value: source }) },
+        pieces: [
+          {
+            modulePath:
+              "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+            bindings: [BINDING],
+            check: prepared.value,
+          },
+        ],
+        parse: parsed.value,
+        escapes: [],
+      });
+      assert(observed.outcome === "ok");
+      expect(observed.value.hits).toEqual([]);
     },
   );
 
@@ -174,17 +228,96 @@ describe("throws in production", () => {
     "src/read-order.test.cts",
   ])("preserves the production detector's existing exclusion for %s", (name) => {
     const file = repoPathSchema.parse(name);
-    expect(findingsIn({ file, source: "throw failure;" })).toEqual([]);
+    const source = "throw failure;";
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [file],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([]);
   });
 
   it("does not follow calls into another unit that might throw", () => {
-    expect(findingsIn({ file: SOURCE_FILE, source: "return parseOrder(input);" })).toEqual([]);
+    const source = "return parseOrder(input);";
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [SOURCE_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file: SOURCE_FILE, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([]);
   });
 
   it("lets an authorised exception adapter answer its production throw", () => {
-    expect(
-      findingsIn({ file: ADAPTER_FILE, source: "throw new Error('legacy failure');" }),
-    ).toEqual([
+    const source = "throw new Error('legacy failure');";
+    assert(parsed.outcome === "ok");
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [ADAPTER_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
+      },
+      syntaxApi: parsed.value.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const observed = observeWalkerFile({
+      file: { file: ADAPTER_FILE, readText: () => ({ outcome: "ok", value: source }) },
+      pieces: [
+        {
+          modulePath:
+            "/install/walker/throw-between-our-units/throw-statement/throws-in-production.ts",
+          bindings: [BINDING],
+          check: prepared.value,
+        },
+      ],
+      parse: parsed.value,
+      escapes: [],
+    });
+    assert(observed.outcome === "ok");
+    expect(observed.value.hits).toEqual([
       {
         file: ADAPTER_FILE,
         check: BINDING.address,
@@ -192,24 +325,34 @@ describe("throws in production", () => {
         snippet: "throw new Error('legacy failure');",
       },
     ]);
+    const throwStatement: Check = {
+      name: "throw-statement",
+      symptom: { ruleSet: "hone", name: "throw-between-our-units" },
+      page: "throw-between-our-units/throw-statement.md",
+      engines: [{ name: "walker" }],
+      forms: [],
+      findingSpecifics: [],
+    };
     expect(
       holdsAt({
         record: {
           kind: "authorised-location",
-          symptom: SYMPTOM,
+          symptom: { ruleSet: "hone", name: "throw-between-our-units" },
           file: ADAPTER_FILE,
-          reach: { reaches: "whole-symptom" },
+          reach: { reaches: "one-check", check: throwStatement },
           holding: {
             held: "carried",
             entry: { reason: "The caller expects exceptions." },
             lacks: ["case", "owes", "whyChain"],
             standing: "established",
+            binding: { binds: "check-and-file" },
           },
         },
         site: {
           file: ADAPTER_FILE,
-          symptom: SYMPTOM,
-          check: { found: "none" },
+          symptom: { ruleSet: "hone", name: "throw-between-our-units" },
+          recipes: [],
+          check: { found: "check", check: throwStatement },
           party: { reported: "not-reported" },
         },
         catalogue: CATALOGUE,

@@ -6,7 +6,8 @@
   },
   "settings": {
     "pluginNamespace": "hone-cd10",
-    "pluginModule": "eslint-plugin.ts",
+    "pluginModule": "throw-only-error.ts",
     "rule": "throw-only-error"
-  }
+  },
+  "moduleScope": "shared"
 }

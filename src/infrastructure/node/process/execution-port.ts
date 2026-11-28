@@ -1,6 +1,7 @@
 import {
   type SpawnSyncOptionsWithStringEncoding,
   type SpawnSyncReturns,
+  type StdioOptions,
   spawnSync,
 } from "node:child_process";
 
@@ -8,14 +9,29 @@ import { z } from "zod";
 
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import { openReplyPipe, readReplyPipe } from "./reply-pipe.ts";
 
 export type ExecutionEnvironment = Readonly<Record<string, string | undefined>>;
 
-export type ExecutionExit = {
+export type ExecutionStdout = "captured" | "passed-through";
+
+export type ExecutionReplyPipe = "none" | "opened";
+
+type NoChannelOutput = Readonly<Record<never, never>>;
+
+type StdoutExit<Stdout extends ExecutionStdout> = Stdout extends "captured"
+  ? { readonly stdout: string }
+  : NoChannelOutput;
+
+type ReplyExit<ReplyPipe extends ExecutionReplyPipe> = ReplyPipe extends "opened"
+  ? { readonly reply: string }
+  : NoChannelOutput;
+
+export type ExecutionExit<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = {
   readonly status: number;
-  readonly stdout: string;
   readonly stderr: string;
-};
+} & StdoutExit<Stdout> &
+  ReplyExit<ReplyPipe>;
 
 export type ExecutionFailure = {
   readonly kind:
@@ -35,29 +51,51 @@ export type ExecutionFailure = {
 export type ExecutionRequest = {
   readonly arguments: readonly string[];
   readonly cwd?: AbsolutePath;
+  readonly input?: string;
 };
 
-export type ExecutionPort = {
-  readonly run: (request: ExecutionRequest) => Result<ExecutionExit, ExecutionFailure>;
+export type ExecutionPort<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = {
+  readonly run: (
+    request: ExecutionRequest,
+  ) => Result<ExecutionExit<Stdout, ReplyPipe>, ExecutionFailure>;
 };
 
-export type ExecutionPolicy = {
+export type ExecutionPolicy<
+  Stdout extends ExecutionStdout,
+  ReplyPipe extends ExecutionReplyPipe,
+> = {
   readonly executable: string;
   readonly environment: (request: {
     readonly ambient: ExecutionEnvironment;
   }) => ExecutionEnvironment;
   readonly timeoutMilliseconds: number | undefined;
   readonly maximumOutputBytes: number;
+  readonly stdout: Stdout;
+  readonly replyPipe: ReplyPipe;
 };
 
-export type ExecutionSpawn = (request: {
+type ExecutionSpawnRequest<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = {
   readonly executable: string;
   readonly arguments: readonly string[];
   readonly cwd?: AbsolutePath;
+  readonly input?: string;
   readonly environment: ExecutionEnvironment;
   readonly timeoutMilliseconds: number | undefined;
   readonly maximumOutputBytes: number;
-}) => Result<ExecutionExit, ExecutionFailure>;
+  readonly stdout: Stdout;
+  readonly replyPipe: ReplyPipe;
+};
+
+export type ExecutionSpawn<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = (
+  request: ExecutionSpawnRequest<Stdout, ReplyPipe>,
+) => Result<ExecutionExit<Stdout, ReplyPipe>, ExecutionFailure>;
+
+export type ExecutionSpawner = <
+  Stdout extends ExecutionStdout,
+  ReplyPipe extends ExecutionReplyPipe,
+>(
+  request: ExecutionSpawnRequest<Stdout, ReplyPipe>,
+) => Result<ExecutionExit<Stdout, ReplyPipe>, ExecutionFailure>;
 
 export type ExecutionSpawnProvider = (request: {
   readonly command: string;
@@ -67,7 +105,7 @@ export type ExecutionSpawnProvider = (request: {
 
 const executionEnvironmentSchema = z.record(z.string(), z.string().optional()).readonly();
 const positiveSafeIntegerSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
-const capturedPolicySchema = z
+const policySchema = z
   .object({
     executable: z.string().min(1),
     environment: executionEnvironmentSchema,
@@ -103,9 +141,48 @@ const launchFailureKind = (request: {
   return "launch-failed";
 };
 
-const nativeOutcome = (request: {
+type ExecutionDiagnostics = Pick<ExecutionFailure, "stdout" | "stderr" | "code" | "signal">;
+
+type ChannelReading = {
   readonly spawned: SpawnSyncReturns<string>;
-}): Result<ExecutionExit, ExecutionFailure> => {
+  readonly diagnostics: ExecutionDiagnostics;
+};
+
+const STDOUT_READERS: {
+  readonly [Stdout in ExecutionStdout]: (
+    request: ChannelReading,
+  ) => Result<StdoutExit<Stdout>, ExecutionFailure>;
+} = {
+  captured: (request) => ({ outcome: "ok", value: { stdout: request.diagnostics.stdout } }),
+  "passed-through": () => ({ outcome: "ok", value: {} }),
+};
+
+const REPLY_READERS: {
+  readonly [ReplyPipe in ExecutionReplyPipe]: (
+    request: ChannelReading,
+  ) => Result<ReplyExit<ReplyPipe>, ExecutionFailure>;
+} = {
+  none: () => ({ outcome: "ok", value: {} }),
+  opened: (request) => {
+    const reply = readReplyPipe({ output: request.spawned.output });
+    return reply !== undefined
+      ? { outcome: "ok", value: { reply } }
+      : failedExecution({
+          ...request.diagnostics,
+          kind: "host-failed",
+          detail: "the process exited without a readable reply pipe",
+        });
+  },
+};
+
+const nativeOutcome = <
+  Stdout extends ExecutionStdout,
+  ReplyPipe extends ExecutionReplyPipe,
+>(request: {
+  readonly spawned: SpawnSyncReturns<string>;
+  readonly stdout: Stdout;
+  readonly replyPipe: ReplyPipe;
+}): Result<ExecutionExit<Stdout, ReplyPipe>, ExecutionFailure> => {
   const { spawned } = request;
   const launchError: NodeJS.ErrnoException | undefined = spawned.error;
   const diagnostics = {
@@ -131,14 +208,28 @@ const nativeOutcome = (request: {
           : `the process was ended by signal ${spawned.signal}`,
     });
   }
+  const reading = { spawned, diagnostics };
+  const stdout = STDOUT_READERS[request.stdout](reading);
+  if (stdout.outcome === "failed") return stdout;
+  const reply = REPLY_READERS[request.replyPipe](reading);
+  if (reply.outcome === "failed") return reply;
   return {
     outcome: "ok",
-    value: { status: spawned.status, stdout: diagnostics.stdout, stderr: diagnostics.stderr },
+    value: { status: spawned.status, stderr: diagnostics.stderr, ...stdout.value, ...reply.value },
   };
 };
 
+const createStdio = (request: {
+  readonly stdout: ExecutionStdout;
+  readonly replyPipe: ExecutionReplyPipe;
+}): StdioOptions => {
+  const stdout = request.stdout === "captured" ? "pipe" : "inherit";
+  const standardStreams = ["pipe", stdout, "pipe"] as const;
+  return request.replyPipe === "opened" ? openReplyPipe({ standardStreams }) : [...standardStreams];
+};
+
 export const createExecutionSpawn =
-  (options: { readonly spawnProvider: ExecutionSpawnProvider }): ExecutionSpawn =>
+  (options: { readonly spawnProvider: ExecutionSpawnProvider }): ExecutionSpawner =>
   (request) => {
     try {
       return nativeOutcome({
@@ -148,13 +239,17 @@ export const createExecutionSpawn =
           options: {
             encoding: "utf8",
             ...(request.cwd === undefined ? {} : { cwd: request.cwd }),
+            ...(request.input === undefined ? {} : { input: request.input }),
             env: request.environment,
+            stdio: createStdio(request),
             windowsHide: true,
             timeout: request.timeoutMilliseconds,
             killSignal: "SIGKILL",
             maxBuffer: request.maximumOutputBytes,
           },
         }),
+        stdout: request.stdout,
+        replyPipe: request.replyPipe,
       });
     } catch (thrown) {
       const parsedDiagnostics = hostDiagnosticsSchema.safeParse(thrown);
@@ -170,10 +265,15 @@ export const createExecutionSpawn =
     }
   };
 
-const bindPolicy = (options: {
-  readonly policy: ExecutionPolicy;
+type BoundPolicy<Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe> = Omit<
+  ExecutionSpawnRequest<Stdout, ReplyPipe>,
+  "arguments" | "cwd" | "input" | "timeoutMilliseconds"
+> & { readonly timeoutMilliseconds?: number };
+
+const bindPolicy = <Stdout extends ExecutionStdout, ReplyPipe extends ExecutionReplyPipe>(options: {
+  readonly policy: ExecutionPolicy<Stdout, ReplyPipe>;
   readonly ambientEnvironment: ExecutionEnvironment;
-}): Result<z.infer<typeof capturedPolicySchema>, ExecutionFailure> => {
+}): Result<BoundPolicy<Stdout, ReplyPipe>, ExecutionFailure> => {
   try {
     const parsedAmbient = executionEnvironmentSchema.safeParse(options.ambientEnvironment);
     if (!parsedAmbient.success) {
@@ -183,15 +283,19 @@ const bindPolicy = (options: {
         detail: z.prettifyError(parsedAmbient.error),
       });
     }
-    const { executable, environment, timeoutMilliseconds, maximumOutputBytes } = options.policy;
-    const parsedPolicy = capturedPolicySchema.safeParse({
+    const { executable, environment, timeoutMilliseconds, maximumOutputBytes, stdout, replyPipe } =
+      options.policy;
+    const parsedPolicy = policySchema.safeParse({
       executable,
       environment: environment({ ambient: parsedAmbient.data }),
       timeoutMilliseconds,
       maximumOutputBytes,
     });
     return parsedPolicy.success
-      ? { outcome: "ok", value: parsedPolicy.data }
+      ? {
+          outcome: "ok",
+          value: { ...parsedPolicy.data, stdout, replyPipe },
+        }
       : failedExecution({
           ...EMPTY_DIAGNOSTICS,
           kind: "policy-invalid",
@@ -206,11 +310,14 @@ const bindPolicy = (options: {
   }
 };
 
-export const createExecutionPort = (options: {
-  readonly spawn: ExecutionSpawn;
-  readonly policy: ExecutionPolicy;
+export const createExecutionPort = <
+  Stdout extends ExecutionStdout,
+  ReplyPipe extends ExecutionReplyPipe,
+>(options: {
+  readonly spawn: ExecutionSpawn<Stdout, ReplyPipe>;
+  readonly policy: ExecutionPolicy<Stdout, ReplyPipe>;
   readonly ambientEnvironment: ExecutionEnvironment;
-}): ExecutionPort => {
+}): ExecutionPort<Stdout, ReplyPipe> => {
   const bound = bindPolicy(options);
   return {
     run: (request) =>
@@ -221,13 +328,17 @@ export const createExecutionPort = (options: {
             timeoutMilliseconds: bound.value.timeoutMilliseconds,
             arguments: [...request.arguments],
             ...(request.cwd === undefined ? {} : { cwd: request.cwd }),
+            ...(request.input === undefined ? {} : { input: request.input }),
           }),
   };
 };
 
-export const createDefaultExecutionPort = (options: {
-  readonly policy: ExecutionPolicy;
-}): ExecutionPort =>
+export const createDefaultExecutionPort = <
+  Stdout extends ExecutionStdout,
+  ReplyPipe extends ExecutionReplyPipe,
+>(options: {
+  readonly policy: ExecutionPolicy<Stdout, ReplyPipe>;
+}): ExecutionPort<Stdout, ReplyPipe> =>
   createExecutionPort({
     spawn: createExecutionSpawn({
       spawnProvider: (request) =>

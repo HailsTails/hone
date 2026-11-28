@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   Check,
   RecordKind,
+  Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -12,8 +15,9 @@ import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { DEFAULT_TEST_FILES } from "../../../domain/settings/test-files.ts";
-import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
+import type { RunnerLocation } from "../../ports/engine/runner-location.ts";
 import {
   createNamedVersionOneEnginePass,
   type NamedVersionOnePassRequest,
@@ -49,7 +53,6 @@ const INPUT: NamedVersionOnePassRequest = {
   path: { join: vi.fn() },
   modules: { load: vi.fn() },
   tree: { tracked: [], declaredConfigRoots: [] },
-  engine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
   settingsPath: "hone.config.json",
   sources: { settingsFile: vi.fn(), ruleSetRoot: vi.fn(), catalogue: vi.fn() },
   readPiece: vi.fn(),
@@ -57,31 +60,35 @@ const INPUT: NamedVersionOnePassRequest = {
   loadFailureDetail: vi.fn(),
 };
 
+const LOOP_KEYWORD: Symptom = {
+  ruleSet: TOOL_RULE_SET,
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "A loop.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
 const LOOP: Check = {
   name: "loops",
-  symptom: {
-    ruleSet: TOOL_RULE_SET,
-    name: "loop-keyword",
-    title: "Loop keyword",
-    seen: "A loop.",
-    mayIndicate: [],
-    breachUsuallySits: "in the unit",
-    recipes: [],
-    correctUses: [],
-  },
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/loops.md",
   clause: CLAUSE,
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED: RecordKind = {
+const AUTHORISED: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -95,18 +102,10 @@ const CATALOGUE: SymptomCatalogue = {
   recipes: [],
   recordKinds: [DEBT, AUTHORISED],
   engines: LOOP.engines,
-  symptoms: [LOOP.symptom],
+  symptoms: [LOOP_KEYWORD],
   clauses: [{ clause: CLAUSE, sight: { kind: "one-symptom", symptom: LOOP.symptom } }],
   checks: [LOOP],
   namedBans: [],
-};
-
-const RUNNER: ParsedNamedRunner = {
-  fileScope: "tracked",
-  projectedKinds: [],
-  run: vi.fn(),
-  conform: vi.fn(),
-  project: vi.fn(),
 };
 
 const PROJECTION = {
@@ -126,6 +125,8 @@ const WALKER_MEASURED = {
     measured: [],
     nativeExceptions: [],
     projection: "none",
+    coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+    comparedOutputs: [],
     slices: [],
     nestedConfigurations: [],
     unprojectedFolders: [],
@@ -144,6 +145,30 @@ const WALKER_PIECE = {
   editions: { declared: [FIRST], default: FIRST, latest: FIRST },
 } as const;
 
+const ACME = { name: ruleSetNameOf("acme") };
+
+const TEAM_LOOP: Check = { ...LOOP, symptom: { ruleSet: ACME, name: "loop-keyword" } };
+
+const LOOP_BINDING: CheckBinding = {
+  address: "loop-keyword#loops",
+  ruleSet: TOOL_RULE_SET,
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/walker/loop-keyword/loops",
+  settings: {},
+  forms: {},
+  checkSettings: {},
+  edition: FIRST,
+};
+
+const WALKER_LOCATION: RunnerLocation = {
+  installRoot: INSTALL,
+  mechanism: "walker",
+  moduleExtension: ".ts",
+  path: INPUT.path,
+  modules: INPUT.modules,
+};
+
 describe("createNamedVersionOneEnginePass", () => {
   it("refuses a legacy selection whose clause cannot be matched to a named check", async () => {
     const pass = createNamedVersionOneEnginePass(INPUT);
@@ -155,18 +180,13 @@ describe("createNamedVersionOneEnginePass", () => {
       },
     });
     expect(INPUT.checkProjection).not.toHaveBeenCalled();
-    expect(INPUT.engine.load).not.toHaveBeenCalled();
+    expect(INPUT.measureVersionOne).not.toHaveBeenCalled();
   });
 
   it("sends a selected Walker check through the upgrade measurement port with the inspected projection", async () => {
     const measureVersionOne = vi
       .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
       .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
-    const engine: NamedVersionOnePassRequest["engine"] = {
-      load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
-      run: vi.fn(),
-      project: vi.fn(),
-    };
     const pass = createNamedVersionOneEnginePass({
       ...INPUT,
       catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE }],
@@ -179,7 +199,6 @@ describe("createNamedVersionOneEnginePass", () => {
         }),
       },
       readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
-      engine,
       checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
       measureVersionOne,
     });
@@ -191,37 +210,29 @@ describe("createNamedVersionOneEnginePass", () => {
       },
     });
     expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
-      call: { mechanism: "walker", runner: RUNNER, request: expect.anything() },
+      request: expect.objectContaining({
+        bindings: [expect.objectContaining({ engine: "walker" })],
+      }),
       projection: PROJECTION,
-      location: {
-        installRoot: INSTALL,
-        mechanism: "walker",
-        moduleExtension: ".ts",
-        path: INPUT.path,
-        modules: INPUT.modules,
-      },
+      location: WALKER_LOCATION,
     });
-    expect(engine.run).not.toHaveBeenCalled();
   });
 
   it("sends a team rule set's checks with their own rule set", async () => {
-    const acme = { name: ruleSetNameOf("acme") };
-    const teamLoop: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: acme } };
     const measureVersionOne = vi
       .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
       .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
-    const engine: NamedVersionOnePassRequest["engine"] = {
-      load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
-      run: vi.fn(),
-      project: vi.fn(),
-    };
     const pass = createNamedVersionOneEnginePass({
       ...INPUT,
       catalogues: [
         { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
         {
-          ruleSet: acme,
-          catalogue: { ...CATALOGUE, symptoms: [teamLoop.symptom], checks: [teamLoop] },
+          ruleSet: ACME,
+          catalogue: {
+            ...CATALOGUE,
+            symptoms: [{ ...LOOP_KEYWORD, ruleSet: ACME }],
+            checks: [TEAM_LOOP],
+          },
         },
       ],
       sources: {
@@ -233,46 +244,65 @@ describe("createNamedVersionOneEnginePass", () => {
         }),
       },
       readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
-      engine,
       checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
       measureVersionOne,
     });
     await pass.findingsFor({ records: [] });
     expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
-      call: {
-        mechanism: "walker",
-        runner: RUNNER,
-        request: {
-          repoRoot: REPO,
-          installRoot: INSTALL,
-          files: [],
-          trackedPaths: [],
-          bindings: [
-            {
-              address: "loop-keyword#loops",
-              ruleSet: TOOL_RULE_SET,
-              engine: "walker",
-              anchor: { kind: "file" },
-              pieceRoot: "/install/walker/loop-keyword/loops",
-              settings: {},
-              forms: {},
-              checkSettings: {},
-              edition: FIRST,
-            },
-          ],
-          checks: [LOOP, teamLoop],
-          answered: [],
-          declaredConfigRoots: [],
-          testFiles: DEFAULT_TEST_FILES,
-        },
+      request: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        files: [],
+        trackedPaths: [],
+        bindings: [LOOP_BINDING],
+        checks: [
+          {
+            name: "loops",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword", title: "Loop keyword" },
+            engines: [{ name: "walker" }],
+          },
+          {
+            name: "loops",
+            symptom: { ruleSet: ACME, name: "loop-keyword", title: "Loop keyword" },
+            engines: [{ name: "walker" }],
+          },
+        ],
+        answered: [],
+        declaredConfigRoots: [],
+        testFiles: DEFAULT_TEST_FILES,
       },
       projection: PROJECTION,
-      location: {
-        installRoot: INSTALL,
-        mechanism: "walker",
-        moduleExtension: ".ts",
-        path: INPUT.path,
-        modules: INPUT.modules,
+      location: WALKER_LOCATION,
+    });
+  });
+
+  it("refuses when a check names a symptom no catalogue holds", async () => {
+    const loadFailureDetail = vi.fn().mockReturnValue("the symptom is unheld");
+    const pass = createNamedVersionOneEnginePass({
+      ...INPUT,
+      loadFailureDetail,
+      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: { ...CATALOGUE, symptoms: [] } }],
+      sources: {
+        ...INPUT.sources,
+        ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+        catalogue: vi.fn().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: { ...CATALOGUE, symptoms: [] } },
+        }),
+      },
+      readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
+      checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
+    });
+    const found = await pass.findingsFor({ records: [] });
+
+    expect(found).toEqual({
+      outcome: "failed",
+      error: { kind: "version-one-run-failed", detail: "the symptom is unheld" },
+    });
+    expect(loadFailureDetail).toHaveBeenCalledWith({
+      failure: {
+        kind: "symptom-unheld",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
       },
     });
   });

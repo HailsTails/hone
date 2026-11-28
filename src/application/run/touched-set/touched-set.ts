@@ -1,8 +1,7 @@
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
-import type { GitPort } from "../../ports/git-port.ts";
+import type { GitChangeQuery, GitPort } from "../../ports/git-port.ts";
 
 const firstLineOf = (request: { readonly failure: GitFailure }): string =>
   request.failure.detail
@@ -19,17 +18,21 @@ export const baseRevisionAvailabilityOf = (request: {
   gitMessage: firstLineOf({ failure: request.failure }),
 });
 
-export const computeTouchedSet = (request: {
-  readonly repoRoot: AbsolutePath;
+export type ChangeMeasurement = Omit<GitChangeQuery, "baseRevision"> & {
   readonly baseRevision: string | undefined;
   readonly git: Pick<GitPort, "changedSince">;
-}): TouchedSet => {
+};
+
+export const computeTouchedSet = (
+  request: ChangeMeasurement,
+): Exclude<TouchedSet, { readonly measured: "elsewhere" }> => {
   if (request.baseRevision === undefined) {
     return { measured: "no", base: { state: "not-given" } };
   }
   const changed = request.git.changedSince({
     repoRoot: request.repoRoot,
     baseRevision: request.baseRevision,
+    baseScope: request.baseScope,
   });
   if (changed.outcome === "failed") {
     return {
@@ -37,5 +40,8 @@ export const computeTouchedSet = (request: {
       base: baseRevisionAvailabilityOf({ revision: request.baseRevision, failure: changed.error }),
     };
   }
-  return { measured: "yes", paths: new Set(changed.value) };
+  const paths = new Set(changed.value);
+  return request.baseScope === "pinned-ancestor"
+    ? { measured: "pinned-ancestor", paths, landingRevision: request.baseRevision }
+    : { measured: "yes", paths };
 };

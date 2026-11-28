@@ -1,3 +1,6 @@
+import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
+import type { PrunableDebt } from "../../../domain/records/debt/prunable-debt.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
@@ -7,39 +10,13 @@ import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts
 import type { PlanRefusal } from "./plan-refusal.ts";
 import type { ProofRunFailure } from "./proof-runs.ts";
 import type { OracleFailure } from "./record-answer-oracle.ts";
-
-export const PROOF_SECTIONS = [
-  "excluded",
-  "findings",
-  "answered",
-  "unrecorded",
-  "misnamed",
-  "paid",
-  "stale",
-  "forfeited",
-  "doubly-held",
-  "invalid-records",
-  "not-adopted",
-  "not-run",
-  "editions",
-  "unmeasured",
-  "projection-problems",
-  "assessment",
-  "verdict",
-] as const;
-
-export type ProofSection = (typeof PROOF_SECTIONS)[number];
-
-export type ProofDifference = {
-  readonly section: ProofSection;
-  readonly onlyBefore: readonly string[];
-  readonly onlyAfter: readonly string[];
-};
+import type { SmoothingFailure, SmoothingStep } from "./smoothing-commands.ts";
 
 export type ProofWrite =
   | { readonly kind: "directory-created"; readonly path: AbsolutePath }
   | { readonly kind: "file-created"; readonly path: AbsolutePath }
-  | { readonly kind: "file-replaced"; readonly path: AbsolutePath; readonly original: string };
+  | { readonly kind: "file-replaced"; readonly path: AbsolutePath; readonly original: string }
+  | { readonly kind: "file-removed"; readonly path: AbsolutePath; readonly original: string };
 
 export type ProofWriteFailure =
   | { readonly kind: "path-already-exists"; readonly path: AbsolutePath }
@@ -48,8 +25,14 @@ export type ProofWriteFailure =
       readonly path: AbsolutePath;
       readonly detail: string;
     }
+  | {
+      readonly kind: "removed-file-unreadable";
+      readonly path: AbsolutePath;
+      readonly detail: string;
+    }
   | { readonly kind: "directory-uncreatable"; readonly path: AbsolutePath; readonly detail: string }
-  | { readonly kind: "unwritable"; readonly path: AbsolutePath; readonly detail: string };
+  | { readonly kind: "unwritable"; readonly path: AbsolutePath; readonly detail: string }
+  | { readonly kind: "unremovable"; readonly path: AbsolutePath; readonly detail: string };
 
 export type Unrestored = {
   readonly written: ProofWrite["kind"];
@@ -82,12 +65,19 @@ export type RemovalFailure =
       readonly removed: Removed;
     };
 
+export type Smoothed = {
+  readonly removedCarried: readonly PlacedRecord[];
+  readonly recordedDebt: readonly DebtOutcome[];
+  readonly prunedDebt: readonly PrunableDebt[];
+  readonly projected: readonly RepoPath[];
+};
+
 export type ProofCarriedOver = {
   readonly written: readonly RepoPath[];
   readonly replaced: readonly RepoPath[];
   readonly removed: Removed;
   readonly records: readonly RecordLine[];
-  readonly findings: number;
+  readonly smoothed: Smoothed;
 };
 
 export type AfterWriting = {
@@ -98,7 +88,7 @@ export type AfterWriting = {
 type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[] };
 
 export type ProofRefusal =
-  | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
+  | ({ readonly kind: "oracle-failed"; readonly failure: OracleFailure } & AfterVersionOneProject)
   | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
   | ({
       readonly kind: "version-one-run-failed";
@@ -111,10 +101,6 @@ export type ProofRefusal =
   | ({
       readonly kind: "version-one-project-failed";
       readonly detail: string;
-    } & AfterVersionOneProject)
-  | ({
-      readonly kind: "version-one-project-rewrote";
-      readonly files: readonly RepoPath[];
     } & AfterVersionOneProject)
   | ({ readonly kind: "unplaceable-path"; readonly file: RepoPath } & AfterVersionOneProject)
   | ({ readonly kind: "removal-refused"; readonly failure: OutsideRoot } & AfterVersionOneProject)
@@ -138,9 +124,14 @@ export type ProofRefusal =
       readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({
-      readonly kind: "differences";
-      readonly differences: readonly ProofDifference[];
-      readonly writtenReported: readonly RepoPath[];
+      readonly kind: "smoothing-failed";
+      readonly step: SmoothingStep;
+      readonly failure: SmoothingFailure;
+      readonly unrestored: readonly Unrestored[];
+    } & AfterVersionOneProject)
+  | ({
+      readonly kind: "check-failed";
+      readonly failing: readonly string[];
       readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({

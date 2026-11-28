@@ -30,6 +30,7 @@ import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requir
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";
 import { projectionMissingLine, projectionProblemLine } from "../run-state-lines.ts";
+import { symptomUnheldText } from "../symptoms/symptom-lines.ts";
 
 const LOAD_FAILURE_LEAD = "load failure:";
 
@@ -147,6 +148,7 @@ type ToolFailure = Extract<
       | "file-unreadable"
       | "file-malformed"
       | "file-unwritable"
+      | "file-unremovable"
       | "rule-set-invalid"
       | "unsupported-version"
       | "reserved-rule-set-name"
@@ -192,7 +194,8 @@ type RecordsFailure = Extract<
       | "catalogue-not-read"
       | "upgrade-needed"
       | "rule-set-not-upgraded"
-      | "rule-set-half-upgraded";
+      | "rule-set-half-upgraded"
+      | "symptom-unheld";
   }
 >;
 
@@ -212,6 +215,8 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
     case "file-unwritable":
     case "rule-set-invalid":
       return [failure.path, failure.detail];
+    case "file-unremovable":
+      return [failure.file, "could not remove the projection file:", failure.detail];
     case "unsupported-version":
       return [failure.path, String(JSON.stringify(failure.found))];
     case "reserved-rule-set-name":
@@ -335,6 +340,8 @@ const recordsFields = (request: {
         "this rule set holds both version 1 discipline files and version 2 items, so an upgrade stopped part way; remove these version 1 files, or restore the rule set from version control and run the upgrade again:",
         ...failure.files,
       ];
+    case "symptom-unheld":
+      return [symptomUnheldText({ failure })];
   }
 };
 
@@ -362,6 +369,7 @@ const failureFields = (request: {
     case "settings-in-both-versions":
     case "not-ready-yet":
     case "projection-stale":
+    case "file-unremovable":
       return toolFields({ failure });
     case "unknown-check":
     case "review-only-listed":
@@ -385,6 +393,7 @@ const failureFields = (request: {
     case "upgrade-needed":
     case "rule-set-not-upgraded":
     case "rule-set-half-upgraded":
+    case "symptom-unheld":
       return recordsFields({ failure, upgradeCommand: request.upgradeCommand });
   }
 };

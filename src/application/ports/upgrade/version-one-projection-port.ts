@@ -10,13 +10,8 @@ import type { ModuleExtension } from "../host/module-extension.ts";
 import type { ModuleLoaderPort } from "../host/module-loader-port.ts";
 import type { PathPort } from "../host/path-port.ts";
 
-export type VersionOneProjectionCurrency = {
-  readonly file: RepoPath;
-  readonly state: "current" | "missing" | "out-of-date";
-};
-
 export type VersionOneProjectionInspection = {
-  readonly files: readonly VersionOneProjectionCurrency[];
+  readonly files: readonly RepoPath[];
   readonly ruleIds: ReadonlyMap<string, string>;
 };
 

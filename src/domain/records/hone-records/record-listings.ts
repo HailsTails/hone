@@ -35,7 +35,6 @@ const carriedOf = (request: {
   switch (record.kind) {
     case "debt":
     case "authorised-location":
-    case "boundary-record":
       return record.holding.held === "carried"
         ? [{ lacks: record.holding.lacks, standing: record.holding.standing }]
         : [];

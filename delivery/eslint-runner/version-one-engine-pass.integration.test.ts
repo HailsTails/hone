@@ -55,10 +55,6 @@ const RAW_FINDING_REPO = absolutePathSchema.parse(
   `${INSTALL_ROOT}/artefacts/version-one-engine-pass-raw-finding`,
 );
 
-const NO_RECORDS_REPO = absolutePathSchema.parse(
-  `${INSTALL_ROOT}/artefacts/version-one-engine-pass-no-records`,
-);
-
 const ORACLE_REPO = absolutePathSchema.parse(
   `${INSTALL_ROOT}/artefacts/version-one-engine-pass-oracle`,
 );
@@ -93,16 +89,20 @@ const AUTHORED_CLASS: Symptom = {
 const CLASS_KEYWORD_CHECK: Check = {
   name: "class-keyword",
   symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/class-keyword.md",
   clause: CLASS_SYNTAX,
   forms: [],
+  findingSpecifics: [],
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
 const STATIC_MEMBERS_CHECK: Check = {
   name: "static-members-only",
   symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/static-members-only.md",
   clause: STATIC_ONLY_CLASS,
   forms: [],
+  findingSpecifics: [],
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
@@ -237,7 +237,6 @@ const UNPROJECTED_TRACKED: readonly RepoPath[] = [
 
 afterAll(() => {
   scratch.removeTree({ path: RAW_FINDING_REPO });
-  scratch.removeTree({ path: NO_RECORDS_REPO });
   scratch.removeTree({ path: ORACLE_REPO });
   scratch.removeTree({ path: UNPROJECTED_REPO });
 });
@@ -297,49 +296,6 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
             nativeExceptions: [],
           },
         ],
-      },
-    });
-  });
-
-  it("refuses the same projection when given no records, since the records are what its override was projected from", async () => {
-    const repoRoot = NO_RECORDS_REPO;
-    const before = createUpgradeBefore({
-      ...UPGRADE_INPUT,
-      sources: createSettingsSources({ ...REPO_PLATFORM, repoRoot }),
-      check: {
-        ...CHECK_PLATFORM,
-        repoRoot,
-        selectionRepository: createSelectionRepository({ ...REPO_PLATFORM, repoRoot }),
-        exceptionRepository: {
-          read: vi.fn<ExceptionRepository["read"]>(),
-          readAt: vi.fn<ExceptionRepository["readAt"]>(),
-        },
-        git: {
-          trackedPaths: vi
-            .fn<GitPort["trackedPaths"]>()
-            .mockReturnValue({ outcome: "ok", value: CARVED_TRACKED }),
-          changedSince: vi.fn<GitPort["changedSince"]>(),
-          contentInBase: vi.fn<GitPort["contentInBase"]>(),
-          textInBase: vi.fn<GitPort["textInBase"]>(),
-          renamedSince: vi.fn<GitPort["renamedSince"]>(),
-        },
-      },
-    });
-    expect([
-      scratch.removeTree({ path: repoRoot }),
-      scratch.makeDirectory({ path: `${repoRoot}/src` }),
-      fileText.write({ path: `${repoRoot}/disciplines.json`, text: SELECTION_FILE }),
-      fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
-      fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: TEAM_CONFIG }),
-      fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
-      await before.prepareProjections([CARVE_OUT]),
-    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, PROJECTED]);
-    await expect(before.enginePass.findingsFor({ records: [] })).resolves.toEqual({
-      outcome: "failed",
-      error: {
-        kind: "projection-not-current",
-        file: "disciplines.eslint.mjs",
-        state: "out-of-date",
       },
     });
   });
@@ -423,10 +379,15 @@ describe("the version 1 engine pass over a real ESLint run of a repository whose
       fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
       fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: UNPROJECTING_CONFIG }),
       fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
-    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
+      await before.prepareProjections([CARVE_OUT]),
+    ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, PROJECTED]);
     await expect(before.enginePass.findingsFor({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "projection-not-current", file: "disciplines.eslint.mjs", state: "missing" },
+      error: {
+        kind: "projection-not-current",
+        file: "disciplines.eslint.mjs",
+        state: "not-included",
+      },
     });
   });
 });

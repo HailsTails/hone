@@ -10,24 +10,15 @@ import type {
 } from "../../../domain/runner/check-observations.ts";
 import type {
   AnsweredFile,
-  ChecksSliceProblem,
+  ChecksProjectionProblem,
   MisnamedRuleId,
+  ProjectionInclusion,
 } from "../../../domain/runner/checks-run-report.ts";
 import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-run.ts";
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import type { TestFiles } from "../../../domain/settings/test-files.ts";
-import type { RunnerCall } from "./runner-module.ts";
-
-export type RunnerFileScope = "tracked" | "typescript";
-
-export type ParsedNamedRunner = {
-  readonly fileScope: RunnerFileScope;
-  readonly projectedKinds: readonly CheckNativeException["kind"][];
-  readonly run: RunnerCall;
-  readonly conform: RunnerCall;
-  readonly project: RunnerCall;
-};
+import type { ProjectionKind } from "../settings/settings-file-format.ts";
 
 export type EngineCheck = {
   readonly name: string;
@@ -48,12 +39,39 @@ export type NamedEngineRunRequest = {
   readonly checks?: readonly EngineCheck[];
 };
 
-export type NamedEngineRun = {
+export type NamedEslintRunRequest = NamedEngineRunRequest & {
+  readonly projectionKind: ProjectionKind;
+};
+
+export type NamedEngineProjection =
+  | { readonly projection: "none" }
+  | { readonly projection: "current" }
+  | { readonly projection: "current-with-file"; readonly projectionFile: RepoPath }
+  | {
+      readonly projection: Exclude<ProjectionState, "current" | "not-included">;
+      readonly projectionFile: RepoPath;
+    }
+  | {
+      readonly projection: "not-included";
+      readonly projectionFile: RepoPath;
+      readonly recovery: ProjectionInclusion;
+    };
+
+type EngineCoverage =
+  | {
+      readonly kind: "scoped";
+      readonly candidateFiles: readonly RepoPath[];
+      readonly inapplicable: readonly CheckMeasurement[];
+    }
+  | { readonly kind: "scope-unavailable" };
+
+export type NamedEngineRun = NamedEngineProjection & {
   readonly mechanism: EngineId;
+  readonly comparedOutputs: readonly RepoPath[];
+  readonly coverage: EngineCoverage;
   readonly coverableKinds: readonly CheckNativeException["kind"][];
-  readonly projection: "none" | ProjectionState;
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
-  readonly slices: readonly ChecksSliceProblem[];
+  readonly slices: readonly ChecksProjectionProblem[];
   readonly nestedConfigurations: readonly RepoPath[];
   readonly unprojectedFolders: readonly UnprojectedFolderReport[];
   readonly hits: readonly CheckHit[];

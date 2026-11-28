@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, test } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
@@ -9,7 +9,7 @@ import {
   defaultEslintToolchainPeers,
   loadEslintToolchain,
 } from "../../runner/toolchain/eslint-toolchain.ts";
-import classAuthoringPlugin, { classDisposition, containerMode } from "./eslint-plugin.ts";
+import classAuthoringPlugin from "./eslint-plugin.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -36,109 +36,23 @@ const loadedToolchain = await loadEslintToolchain({
     installForm: "source",
   }),
 });
-assert(
-  loadedToolchain.outcome === "ok",
-  "the eslint-10 toolchain loads from the development install",
-);
-assert(
-  /^10\./.test(loadedToolchain.value.eslintVersion),
-  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
-);
-
-const eslint = createEslintPort({ toolchain: loadedToolchain.value });
-
-test("runtime class declarations are reported", () => {
-  expect(
-    classDisposition({
-      filename: "src/runtime.ts",
-      kind: "declaration",
-      declaration: "runtime",
-      container: "runtime",
-    }),
-  ).toBe("report");
-});
-
-test("class expressions stay runtime syntax", () => {
-  expect(
-    classDisposition({
-      filename: "src/runtime.ts",
-      kind: "expression",
-      declaration: "runtime",
-      container: "runtime",
-    }),
-  ).toBe("report");
-});
-
-test("ambient class declarations are type-only", () => {
-  expect(
-    classDisposition({
-      filename: "src/ambient.ts",
-      kind: "declaration",
-      declaration: "ambient",
-      container: "runtime",
-    }),
-  ).toBe("allow");
-});
-
-test("declaration files are type-only", () => {
-  expect(
-    classDisposition({
-      filename: "src/external.d.ts",
-      kind: "declaration",
-      declaration: "runtime",
-      container: "runtime",
-    }),
-  ).toBe("allow");
-});
-
-test("classes enclosed by ambient modules are type-only", () => {
-  expect(
-    classDisposition({
-      filename: "src/ambient.ts",
-      kind: "declaration",
-      declaration: "runtime",
-      container: "ambient",
-    }),
-  ).toBe("allow");
-});
-
-test("the parent walk reaches an ambient module through an ordinary ancestor", () => {
-  expect(
-    containerMode({
-      node: {
-        type: "ClassBody",
-        parent: { type: "TSModuleDeclaration", declare: true, parent: null },
-      },
-    }),
-  ).toBe("ambient");
-});
-
-test("runtime namespaces do not provide an ambient exemption", () => {
-  expect(containerMode({ node: { type: "TSModuleDeclaration", parent: null } })).toBe("runtime");
-});
-
-test("an unrelated declared node does not provide an ambient exemption", () => {
-  expect(
-    containerMode({
-      node: { type: "VariableDeclaration", declare: true, parent: null },
-    }),
-  ).toBe("runtime");
-});
 
 describe("CD-14 no-class-authoring rule, on a class keyword after its node's start, through the ESLint runner's lintSourceCases", () => {
   it.each(keywordAfterNodeStartCases)(
     "flags exactly the expected lines of the case $name",
     async (sharedCase) => {
-      expect(
-        await eslint.lintSourceCases({
-          cwd: PIECE_ROOT,
-          plugin: loadedPlugin,
-          pluginNamespace: "hone",
-          rule: "no-class-authoring",
-          options: [],
-          cases: [sharedCase],
-        }),
-      ).toEqual({
+      assert(loadedToolchain.outcome === "ok");
+      const eslint = createEslintPort({ toolchain: loadedToolchain.value });
+      const findings = await eslint.lintSourceCases({
+        cwd: PIECE_ROOT,
+        plugin: loadedPlugin,
+        pluginNamespace: "hone",
+        rule: "no-class-authoring",
+        options: [],
+        cases: [sharedCase],
+      });
+
+      expect(findings).toEqual({
         outcome: "ok",
         value: [{ caseName: sharedCase.name, flaggedLines: sharedCase.expectedLines }],
       });

@@ -12,6 +12,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
@@ -24,6 +26,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
   assessmentScopeOf,
+  mapRunReportToFailingLines,
   renderRunReportText,
   renderRunSectionsText,
 } from "./run-report-text.ts";
@@ -174,29 +177,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -221,7 +217,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -241,7 +242,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -259,7 +260,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -282,26 +289,32 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -314,20 +327,34 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -365,7 +392,7 @@ const DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: {
     kind: "debt",
-    symptom: CLAIMED_TYPE,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
     reach: WHOLE_SYMPTOM,
     file: WEBHOOK_FILE,
     holding: { held: "stated" },
@@ -376,10 +403,11 @@ const NOTED_LOCATION: PlacedRecord = {
   place: { file: AUTHORISED_FILE, index: 0 },
   record: {
     kind: "authorised-location",
-    symptom: CLAIMED_TYPE,
-    reach: WHOLE_SYMPTOM,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: WEBHOOK_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "stated",
       owing: {
         matches: "not-the-catalogue",
@@ -391,6 +419,7 @@ const NOTED_LOCATION: PlacedRecord = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -415,6 +444,7 @@ const EMPTY_REPORT: RunReport = {
 };
 
 const EVERY_SECTION: RunReport = {
+  judged: "touched-debt",
   excluded: [repoPathOf("dist")],
   "not-adopted": [CAST_CHECK],
   "not-run": [TEST_BODY_CHECK],
@@ -466,7 +496,14 @@ const EVERY_SECTION: RunReport = {
     },
   ],
   unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
-  "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
+  "projection-problems": [
+    {
+      scope: "projection",
+      engine: ESLINT_ENGINE,
+      state: "out-of-date",
+      file: repoPathOf("hone.eslint.mjs"),
+    },
+  ],
   assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }],
   "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
   "record-notes": [
@@ -492,7 +529,7 @@ const LINES = {
   answered: `claimed-type#cast-expressions eslint src/adapters/stripe-webhook.ts:4:9 body as Event answered by authorised-location ${NOTE}`,
   held: `claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by authorised-location ${NOTE}`,
   available: "date-used-directly#clock-sources",
-  stale: `claimed-type authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
+  stale: `claimed-type#cast-expressions authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
   forfeited: `claimed-type debt src/adapters/stripe-webhook.ts; this change touched its file, so it no longer answers: fix what it held, then run ${PRUNE_COMMAND} to remove it`,
   unrecorded: "claimed-type#cast-expressions eslint ignore src/adapters/stripe-webhook.ts",
   misnamed:
@@ -518,10 +555,78 @@ const rendered = (request: {
   renderRunReportText({
     ...request,
     catalogue: REPORT_CATALOGUE,
+    content: {
+      symptoms: new Map([
+        ["date-used-directly", DATE_USED_DIRECTLY],
+        ["branch-in-a-test", BRANCH_IN_A_TEST],
+        ["claimed-type", CLAIMED_TYPE],
+      ]),
+    },
     symptomPage: SYMPTOM_PAGE,
     projectCommand: PROJECT_COMMAND,
     pruneCommand: PRUNE_COMMAND,
   });
+
+describe("mapRunReportToFailingLines", () => {
+  it("gives each failing section's heading and lines, in report order, and nothing of the rest", () => {
+    const report = EVERY_SECTION;
+
+    const lines = mapRunReportToFailingLines({
+      report,
+      catalogue: REPORT_CATALOGUE,
+      content: {
+        symptoms: new Map([
+          ["date-used-directly", DATE_USED_DIRECTLY],
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["claimed-type", CLAIMED_TYPE],
+        ]),
+      },
+      symptomPage: SYMPTOM_PAGE,
+      projectCommand: PROJECT_COMMAND,
+      pruneCommand: PRUNE_COMMAND,
+    });
+
+    expect(lines).toEqual([
+      "findings (1)",
+      LINES.findings,
+      "stale (1)",
+      LINES.stale,
+      "forfeited (1)",
+      LINES.forfeited,
+      "unrecorded (1)",
+      LINES.unrecorded,
+      "misnamed (1)",
+      LINES.misnamed,
+      "refused (1)",
+      LINES.refused,
+      "unmeasured (1)",
+      LINES.unmeasured,
+      "projection-problems (1)",
+      LINES.projectionProblems,
+    ]);
+  });
+
+  it("gives no lines for a run that passes", () => {
+    const report = { ...EMPTY_REPORT, paid: EVERY_SECTION.paid };
+
+    const lines = mapRunReportToFailingLines({
+      report,
+      catalogue: REPORT_CATALOGUE,
+      content: {
+        symptoms: new Map([
+          ["date-used-directly", DATE_USED_DIRECTLY],
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["claimed-type", CLAIMED_TYPE],
+        ]),
+      },
+      symptomPage: SYMPTOM_PAGE,
+      projectCommand: PROJECT_COMMAND,
+      pruneCommand: PRUNE_COMMAND,
+    });
+
+    expect(lines).toEqual([]);
+  });
+});
 
 describe("renderRunReportText", () => {
   it("prints only the verdict for a run with nothing to report", () => {
@@ -613,6 +718,13 @@ describe("renderRunSectionsText", () => {
         },
         output: "full",
         catalogue: REPORT_CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["date-used-directly", DATE_USED_DIRECTLY],
+            ["branch-in-a-test", BRANCH_IN_A_TEST],
+            ["claimed-type", CLAIMED_TYPE],
+          ]),
+        },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,
@@ -626,6 +738,13 @@ describe("renderRunSectionsText", () => {
         report: EMPTY_REPORT,
         output: "full",
         catalogue: REPORT_CATALOGUE,
+        content: {
+          symptoms: new Map([
+            ["date-used-directly", DATE_USED_DIRECTLY],
+            ["branch-in-a-test", BRANCH_IN_A_TEST],
+            ["claimed-type", CLAIMED_TYPE],
+          ]),
+        },
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,
@@ -644,4 +763,57 @@ describe("assessmentScopeOf", () => {
       assessmentScopeOf({ report: { ...EMPTY_REPORT, assessment: EVERY_SECTION.assessment } }),
     ).toBe(" (partial assessment)");
   });
+});
+
+it("prints the landing ceiling and the observed count before the verdict", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: {
+      revision: "pinned",
+      issues: [
+        {
+          kind: "increased",
+          check: "claimed-type#cast-expressions",
+          file: repoPathOf("src/cart.ts"),
+          ceiling: 2,
+          observed: 3,
+        },
+      ],
+    },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toContain("src/cart.ts claimed-type#cast-expressions");
+  expect(text).toContain("landing 2, observed 3");
+  expect(text).toMatch(/verdict: fail\s*$/);
+});
+
+it("includes the comparison count or just the verdict at the requested detail", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+
+  const counts = rendered({ report, output: "counts" });
+  const verdict = rendered({ report, output: "verdict-only" });
+
+  expect(counts).toBe("debt comparison (1) against pinned\nverdict: fail\n");
+  expect(verdict).toBe("verdict: fail\n");
+});
+
+it("explains how to restore the landing history when the preview cannot use the base", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: undefined, issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toContain("debt comparison (1)\n");
+  expect(text).toMatch(/update your branch.*include the pinned landing commit/);
+  expect(text).toMatch(/verdict: fail\s*$/);
 });

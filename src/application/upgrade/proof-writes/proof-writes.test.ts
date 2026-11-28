@@ -231,6 +231,36 @@ describe("proofWritesAppliedOf", () => {
       failure: { kind: "unwritable", path: CONFIG, detail: "EPERM" },
       attempted: [{ kind: "file-replaced", path: CONFIG, original: ORIGINAL_CONFIG }],
     },
+    {
+      name: "a file that cannot be removed",
+      stopped: {
+        effect: { kind: "remove-restorable-file", path: CONFIG, original: ORIGINAL_CONFIG },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: CONFIG, detail: "EBUSY" },
+      attempted: [],
+    },
+    {
+      name: "a file that cannot be removed for good",
+      stopped: {
+        effect: { kind: "remove-file", path: CONFIG },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: CONFIG, detail: "EBUSY" },
+      attempted: [],
+    },
+    {
+      name: "a folder that cannot be removed",
+      stopped: {
+        effect: { kind: "remove-directory-if-empty", path: DEBT_FOLDER },
+        outcome: "failed",
+        detail: "EBUSY",
+      },
+      failure: { kind: "unremovable", path: DEBT_FOLDER, detail: "EBUSY" },
+      attempted: [],
+    },
   ] as const)("stops at $name", ({ stopped, failure, attempted }) => {
     expect(
       proofWritesAppliedOf({
@@ -245,6 +275,39 @@ describe("proofWritesAppliedOf", () => {
       failure,
       attempted: [{ kind: "directory-created", path: REPO }, ...attempted],
     });
+  });
+});
+
+describe("proofWritesAppliedOf on a removal", () => {
+  it("records a removed file with its original, so undoing it puts the file back", () => {
+    const applied = proofWritesAppliedOf({
+      applied: {
+        outcome: "all-applied",
+        settled: [
+          {
+            effect: { kind: "remove-restorable-file", path: CONFIG, original: ORIGINAL_CONFIG },
+            outcome: "applied",
+          },
+          { effect: { kind: "remove-directory-if-empty", path: DEBT_FOLDER }, outcome: "applied" },
+        ],
+      },
+    });
+
+    expect(applied).toEqual({
+      outcome: "written",
+      writes: [{ kind: "file-removed", path: CONFIG, original: ORIGINAL_CONFIG }],
+    });
+  });
+
+  it("records nothing for a final removal, since it cannot be undone", () => {
+    const applied = proofWritesAppliedOf({
+      applied: {
+        outcome: "all-applied",
+        settled: [{ effect: { kind: "remove-file", path: CONFIG }, outcome: "applied" }],
+      },
+    });
+
+    expect(applied).toEqual({ outcome: "written", writes: [] });
   });
 });
 
@@ -273,10 +336,17 @@ describe("rolledBackWrites", () => {
 });
 
 describe("writtenProofFiles", () => {
-  it("applies the planned effects and records what it wrote", () => {
+  it("applies projection removals after writes and records both for rollback", () => {
+    const previousProjection = absoluteRootOf("/repo/hone.eslint.ts");
+    const removal = {
+      kind: "remove-restorable-file",
+      path: previousProjection,
+      original: "export default [];",
+    } as const;
     const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce({
       outcome: "all-applied",
       settled: [
+        { effect: removal, outcome: "applied" },
         {
           effect: { kind: "create-file", path: PROJECTION_FILE, text: "projection" },
           outcome: "applied",
@@ -298,10 +368,17 @@ describe("writtenProofFiles", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
         files: [{ path: PROJECTION_FILE, text: "projection" }],
         replacements: [],
+        following: [removal],
       }),
-    ).toEqual({ outcome: "ok", value: [{ kind: "file-created", path: PROJECTION_FILE }] });
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        { kind: "file-removed", path: previousProjection, original: "export default [];" },
+        { kind: "file-created", path: PROJECTION_FILE },
+      ],
+    });
     expect(apply.mock.calls).toEqual([
-      [{ effects: [{ kind: "create-file", path: PROJECTION_FILE, text: "projection" }] }],
+      [{ effects: [{ kind: "create-file", path: PROJECTION_FILE, text: "projection" }, removal] }],
     ]);
   });
 

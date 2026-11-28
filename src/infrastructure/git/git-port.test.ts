@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { GitChangeQuery } from "../../application/ports/git-port.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import {
+  createEnvironmentOutsideRepository,
+  createGitExecutionPolicy,
   createGitHistoryPort,
   createGitPort,
   createGitTreePort,
@@ -129,11 +132,110 @@ describe("createGitPort trackedPaths", () => {
   });
 });
 
+const LANDING = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const PROPOSAL = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const FORK_POINT = "cccccccccccccccccccccccccccccccccccccccc";
+const LANDING_QUERY: GitChangeQuery = {
+  repoRoot: REPO_ROOT,
+  baseRevision: LANDING,
+  baseScope: "pinned-ancestor",
+};
+
+describe("createGitPort changedSince from a pinned ancestor", () => {
+  it("diffs the exact landing commit and resolved HEAD, keeping worktree and untracked paths", () => {
+    const spawn = vi
+      .fn<GitSpawn>()
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: PROPOSAL })
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: LANDING })
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "hone.config.json\0" })
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "src/cart.ts\0" })
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "notes.md\0" });
+
+    const changed = gitOver(spawn).changedSince(LANDING_QUERY);
+
+    expect(changed).toEqual({
+      outcome: "ok",
+      value: ["hone.config.json", "src/cart.ts", "notes.md"],
+    });
+    expect(spawn).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        arguments: ["-C", "/repo", "merge-base", "--end-of-options", LANDING, PROPOSAL],
+      }),
+    );
+    expect(spawn).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        arguments: [
+          "-C",
+          "/repo",
+          "diff",
+          "--name-only",
+          "-z",
+          "--end-of-options",
+          `${LANDING}..${PROPOSAL}`,
+        ],
+      }),
+    );
+    expect(spawn).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
+        arguments: ["-C", "/repo", "diff", "--name-only", "-z", PROPOSAL],
+      }),
+    );
+  });
+
+  it("refuses to measure from a fork point before a divergent pinned landing commit", () => {
+    const spawn = vi
+      .fn<GitSpawn>()
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: PROPOSAL })
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: FORK_POINT });
+
+    const changed = gitOver(spawn).changedSince(LANDING_QUERY);
+
+    expect(changed).toMatchObject({ outcome: "failed", error: { kind: "git-failed" } });
+    expect(spawn).toHaveBeenCalledTimes(2);
+  });
+
+  it("refuses to measure paths when Git cannot resolve the pinned landing commit", () => {
+    const spawn = vi
+      .fn<GitSpawn>()
+      .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: PROPOSAL })
+      .mockReturnValueOnce({
+        outcome: "exited",
+        status: 128,
+        stdout: "",
+        stderr: "fatal: invalid object",
+      });
+
+    const changed = gitOver(spawn).changedSince(LANDING_QUERY);
+
+    expect(changed).toMatchObject({
+      outcome: "failed",
+      error: { kind: "git-failed", detail: "fatal: invalid object" },
+    });
+    expect(spawn).toHaveBeenCalledTimes(2);
+  });
+
+  it("requires Git to provide one complete HEAD object name", () => {
+    const spawn = vi.fn<GitSpawn>().mockReturnValueOnce(EXITED_EMPTY);
+
+    const changed = gitOver(spawn).changedSince(LANDING_QUERY);
+
+    expect(changed).toMatchObject({ outcome: "failed", error: { kind: "git-failed" } });
+    expect(spawn).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("createGitPort changedSince", () => {
   it("diffs the base range with --end-of-options before it", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    gitOver(spawn).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(spawn).toHaveBeenNthCalledWith(
       1,
@@ -146,7 +248,11 @@ describe("createGitPort changedSince", () => {
   it("diffs the worktree against HEAD second", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    gitOver(spawn).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(spawn).toHaveBeenNthCalledWith(
       2,
@@ -162,6 +268,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "a.ts\0z.ts\0untracked.ts\0" });
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -187,6 +294,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce(EXITED_EMPTY);
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -200,7 +308,11 @@ describe("createGitPort changedSince", () => {
         .fn<GitSpawn>()
         .mockReturnValueOnce(EXITED_NOT_A_REPOSITORY)
         .mockReturnValueOnce(EXITED_EMPTY),
-    ).changedSince({ repoRoot: REPO_ROOT, baseRevision: "no-such-revision" });
+    ).changedSince({
+      baseScope: "merge-base",
+      repoRoot: REPO_ROOT,
+      baseRevision: "no-such-revision",
+    });
 
     expect(changedListing).toMatchObject({
       outcome: "failed",
@@ -216,6 +328,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce(ERRORED_ON_BUFFER);
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -239,6 +352,7 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "new.ts\0../outside.ts\0" });
 
     const changedListing = gitOver(spawn).changedSince({
+      baseScope: "merge-base",
       repoRoot: REPO_ROOT,
       baseRevision: "base",
     });
@@ -813,6 +927,37 @@ describe("createGitHistoryPort commitsAfter", () => {
           "git -C /repo log --reverse -z --format=%P%n%B --end-of-options v0.1.0-pre.3..HEAD",
         detail: "spawnSync git ENOBUFS",
       },
+    });
+  });
+});
+
+describe("createEnvironmentOutsideRepository", () => {
+  it("keeps every variable except those that name a repository location", () => {
+    const ambientEnvironment = {
+      GIT_DIR: "/elsewhere/.git",
+      GIT_WORK_TREE: "/elsewhere",
+      GIT_INDEX_FILE: "/elsewhere/.git/index",
+      PATH: "/usr/bin",
+      HOME: "/home/someone",
+    };
+
+    const environment = createEnvironmentOutsideRepository({ ambientEnvironment });
+
+    expect(environment).toEqual({ PATH: "/usr/bin", HOME: "/home/someone" });
+  });
+});
+
+describe("createGitExecutionPolicy", () => {
+  it("runs git outside any ambient repository, on the index file it is given", () => {
+    const policy = createGitExecutionPolicy({ indexFile: "/repo/.git/speed-index" });
+
+    const environment = policy.environment({
+      ambient: { GIT_DIR: "/elsewhere/.git", GIT_INDEX_FILE: "/elsewhere/index", PATH: "/usr/bin" },
+    });
+
+    expect({ executable: policy.executable, environment }).toEqual({
+      executable: "git",
+      environment: { PATH: "/usr/bin", GIT_INDEX_FILE: "/repo/.git/speed-index" },
     });
   });
 });

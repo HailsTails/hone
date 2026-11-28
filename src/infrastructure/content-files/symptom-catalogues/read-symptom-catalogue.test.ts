@@ -4,10 +4,13 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type {
   Case,
+  CatalogueContent,
   Engine,
   Principle,
   RecordKind,
   Symptom,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
@@ -47,14 +50,14 @@ const PARAMETER_REASSIGNMENT_TEXT = "# parameter-reassignment\n\n```json\n{}\n``
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -71,6 +74,7 @@ const MAKES_A_NEW_VALUE: Case = {
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT: Engine = { name: "eslint" };
+const OXLINT: Engine = { name: "oxlint" };
 
 const PARAMETER_REASSIGNMENT = {
   ruleSet: TOOL_RULE_SET,
@@ -170,17 +174,22 @@ describe("createSymptomCatalogueRepository", () => {
           cases: [MAKES_A_NEW_VALUE],
           recipes: [],
           recordKinds: [AUTHORISED_LOCATION, DEBT],
-          engines: [WALKER, ESLINT],
+          engines: [WALKER, ESLINT, OXLINT],
           symptoms: [REBINDING],
           clauses: [
-            { clause: PARAMETER_REASSIGNMENT, sight: { kind: "one-symptom", symptom: REBINDING } },
+            {
+              clause: PARAMETER_REASSIGNMENT,
+              sight: { kind: "one-symptom", symptom: { ruleSet: "hone", name: "rebinding" } },
+            },
           ],
           checks: [
             {
               name: "parameter-reassignment",
-              symptom: REBINDING,
+              symptom: { ruleSet: "hone", name: "rebinding" },
+              page: "rebinding/parameter-reassignment.md",
               clause: PARAMETER_REASSIGNMENT,
               forms: [],
+              findingSpecifics: [],
             },
           ],
           namedBans: [],
@@ -192,6 +201,39 @@ describe("createSymptomCatalogueRepository", () => {
     expect(ITEM_FOLDER_FILE_TEXT.write).not.toHaveBeenCalled();
   });
 });
+
+const TEAM_CLAUSE = {
+  ruleSet: TEAM,
+  discipline: disciplineIdOf("TM-1"),
+  clause: clauseIdOf("reassigned"),
+};
+
+const CONTENT_NAMED_BY_THE_TEAM: CatalogueContent = {
+  principles: [NO_HIDDEN_EFFECTS],
+  rules: [],
+  cases: [MAKES_A_NEW_VALUE],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  engines: [WALKER, ESLINT, OXLINT],
+  symptoms: [{ ...REBINDING, ruleSet: TEAM, sourceFile: "rules/typescript/symptoms/rebinding.md" }],
+  clauses: [
+    {
+      clause: TEAM_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TEAM, name: "rebinding" } },
+    },
+  ],
+  checks: [
+    {
+      name: "reassigned",
+      symptom: { ruleSet: TEAM, name: "rebinding" },
+      page: "rules/typescript/symptoms/rebinding/reassigned.md",
+      clause: TEAM_CLAUSE,
+      forms: [],
+      findingSpecifics: [],
+    },
+  ],
+  namedBans: [],
+};
 
 const teamCatalogueOf = (request: {
   readonly fileText: FileTextPort;
@@ -209,7 +251,10 @@ const teamCatalogueOf = (request: {
 describe("createSymptomCatalogueRepository over a team's rule set", () => {
   it("reads a symptom kept under a language folder other than typescript as the team's, naming its page by where it sits, with the record kinds it inherits as its own", () => {
     const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("absent"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: MAKES_A_NEW_VALUE_TEXT })
@@ -262,7 +307,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
           checks: [
             {
               name: "parameter-reassignment",
-              symptom: { ruleSet: TEAM, sourceFile: "rules/sql/symptoms/rebinding.md" },
+              symptom: { ruleSet: TEAM, name: "rebinding" },
             },
           ],
         },
@@ -273,11 +318,88 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
     });
   });
 
+  it("gives a check the clause the team's own version 1 names give it", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value:
+            '{ "version": 1, "clauses": [{ "clause": "team/TM-1#reassigned", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#reassigned"], "anchor": { "kind": "file" } }], "recordKinds": {} }',
+        })
+        .mockReturnValueOnce({ outcome: "ok", value: MAKES_A_NEW_VALUE_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: NO_HIDDEN_EFFECTS_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: REBINDING_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: PARAMETER_REASSIGNMENT_TEXT }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "cases", kind: "directory" },
+            { name: "principles", kind: "directory" },
+            { name: "typescript", kind: "directory" },
+          ],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "makes-a-new-value-from-what-it-has.md", kind: "file" }],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "no-hidden-effects.md", kind: "file" }],
+        })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "symptoms", kind: "directory" }] })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "rebinding", kind: "directory" },
+            { name: "rebinding.md", kind: "file" },
+          ],
+        })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "reassigned.md", kind: "file" }] }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+
+    const read = teamCatalogueOf({ fileText, directory });
+
+    expect([read, vi.mocked(fileText.read).mock.calls[0]]).toEqual([
+      { outcome: "ok", value: { held: "catalogue", content: CONTENT_NAMED_BY_THE_TEAM } },
+      [{ path: "/repo/team-rules/rules/version-one-names.json" }],
+    ]);
+  });
+
+  it("fails file-malformed at the team's version 1 names when they are malformed", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: '{ "version": 1, "clauses": [] }' }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const read = teamCatalogueOf({ fileText, directory: UNLISTED });
+
+    expect(read).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: "/repo/team-rules/rules/version-one-names.json",
+        detail: "✖ Invalid input: expected record, received undefined\n  → at recordKinds",
+      },
+    });
+  });
+
   it("fails rule-set-not-upgraded naming the rule set when its rules folder still holds version 1 discipline files and no items", () => {
     const fileText: FileTextPort = {
       exists: vi
         .fn<FileTextPort["exists"]>()
         .mockReturnValueOnce("present")
+        .mockReturnValueOnce("absent")
         .mockReturnValueOnce("present"),
       read: vi.fn<FileTextPort["read"]>(),
       write: vi.fn<FileTextPort["write"]>(),
@@ -329,7 +451,10 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
 
   it("fails file-unreadable naming the rules folder when it cannot list it to look for version 1 discipline files", () => {
     const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("absent"),
       read: vi.fn<FileTextPort["read"]>(),
       write: vi.fn<FileTextPort["write"]>(),
     };

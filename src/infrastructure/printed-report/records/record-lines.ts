@@ -1,17 +1,19 @@
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
-import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { SymptomAddress } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
-  AuthorisedReach,
+  AuthorisedBinding,
   CarriedListing,
   CatalogueNote,
   HoneRecord,
   OutsideParty,
+  HeldAs,
   PlacedRecord,
   RecordIssue,
   RecordNote,
   RecordPlace,
   RecordRefusal,
   RefusedRecord,
+  RecordReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
@@ -30,10 +32,20 @@ export const recordPlaceText = (request: { readonly place: RecordPlace }): strin
 export const outsidePartyText = (request: { readonly party: OutsideParty }): string => {
   switch (request.party.kind) {
     case "package":
+      return request.party.dependency;
     case "scheme-module":
       return request.party.specifier;
-    case "runtime":
-      return `runtime:${request.party.facility}`;
+    case "scheme":
+      return request.party.scheme;
+  }
+};
+
+const bindingText = (request: { readonly binding: AuthorisedBinding }): string => {
+  switch (request.binding.binds) {
+    case "check-and-file":
+      return "";
+    case "check-file-and-outside-party":
+      return ` for ${outsidePartyText({ party: request.binding.outsideParty })}`;
   }
 };
 
@@ -48,15 +60,13 @@ const catalogueNoteWords = (request: { readonly note: CatalogueNote }): string =
   }
 };
 
-const carriedText = (request: {
-  readonly holding: { readonly held: "stated" | "carried" };
-}): string => (request.holding.held === "carried" ? " carried" : "");
+const carriedText = (request: { readonly holding: { readonly held: HeldAs } }): string =>
+  request.holding.held === "carried" ? " carried" : "";
 
 const heldText = (request: { readonly record: HoneRecord }): string => {
   const { record } = request;
   switch (record.kind) {
     case "debt":
-    case "boundary-record":
       return carriedText(record);
     case "authorised-location":
       return `${carriedText(record)}${catalogueNotesOf({ record })
@@ -69,8 +79,8 @@ const heldText = (request: { readonly record: HoneRecord }): string => {
 };
 
 const reachedText = (request: {
-  readonly symptom: Symptom;
-  readonly reach: AuthorisedReach;
+  readonly symptom: SymptomAddress;
+  readonly reach: RecordReach;
 }): string => {
   const { symptom, reach } = request;
   switch (reach.reaches) {
@@ -87,12 +97,11 @@ const subjectOf = (request: { readonly record: HoneRecord }): string => {
   const { record } = request;
   switch (record.kind) {
     case "debt":
-    case "authorised-location":
       return `${reachedText(record)} ${record.kind} ${record.file}`;
+    case "authorised-location":
+      return `${reachedText(record)} ${record.kind} ${record.file}${bindingText(record.holding)}`;
     case "deviation":
       return `${record.recipe.name} ${record.kind} ${record.file}`;
-    case "boundary-record":
-      return `${outsidePartyText({ party: record.outsideParty })} ${record.kind} ${record.module}`;
     case "dependency-record":
       return `${record.dependency} ${record.kind}`;
   }
@@ -102,12 +111,11 @@ const referenceOf = (request: { readonly record: HoneRecord }): string => {
   const { record } = request;
   switch (record.kind) {
     case "debt":
-    case "authorised-location":
       return record.kind;
+    case "authorised-location":
+      return `${record.kind}${bindingText(record.holding)}`;
     case "deviation":
       return `${record.kind} ${record.recipe.name}`;
-    case "boundary-record":
-      return `${record.kind} ${outsidePartyText({ party: record.outsideParty })}`;
     case "dependency-record":
       return `${record.kind} ${record.dependency}`;
   }
@@ -150,8 +158,13 @@ const refusalDetail = (request: { readonly refusal: RecordRefusal }): string => 
       return ` ${refusal.recipe.name}: the catalogue gives its reason as ${quoted({ text: refusal.recipe.reason.text })}`;
     case "named-ban":
       return ` ${refusal.dependency}`;
-    case "unknown-runtime-facility":
-      return ` ${refusal.outsideParty}`;
+    case "no-check-named":
+    case "no-authorised-correct-use":
+    case "outside-party-missing":
+    case "outside-party-not-bound":
+      return ` ${refusal.symptom}`;
+    case "scheme-party-stated":
+      return ` ${refusal.outsideParty}, a whole scheme, which only an upgraded record holds`;
     case "misplaced":
       return ` ${refusal.belongsIn}`;
     case "not-a-records-name":

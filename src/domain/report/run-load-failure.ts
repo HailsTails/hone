@@ -1,3 +1,4 @@
+import type { SymptomUnheld } from "../language-layer/rule-content.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
 import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
@@ -8,6 +9,7 @@ import type { RunnerFailure } from "../runner/runner-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "./load-failure.ts";
 import type { MissingProjection, RunProjectionProblem } from "./run-report.ts";
+import { mapVersionOneSourceToFailure } from "./version-one-load-failure.ts";
 
 type KeptKind =
   | "arguments-invalid"
@@ -46,7 +48,8 @@ export type RunLoadFailureSource =
   | CheckChoiceRefusal
   | HoneRecordsFailure
   | CatalogueNotRead
-  | UpgradeNeeded;
+  | UpgradeNeeded
+  | SymptomUnheld;
 
 export type EngineNaming =
   | { readonly named: "engine"; readonly engine: Engine }
@@ -95,6 +98,11 @@ export type RunLoadFailure =
     }
   | { readonly kind: "check-settings-differ"; readonly check: string; readonly other: string }
   | {
+      readonly kind: "file-unremovable";
+      readonly file: RepoPath;
+      readonly detail: string;
+    }
+  | {
       readonly kind: "projection-stale";
       readonly problem: RunProjectionProblem | MissingProjection;
       readonly projectCommand: string;
@@ -110,23 +118,10 @@ export type RunLoadFailure =
   | { readonly kind: "not-a-records-name"; readonly folder: RepoPath; readonly name: string }
   | { readonly kind: "records-refused"; readonly refusals: readonly RecordsDocumentRefusal[] }
   | CatalogueNotRead
-  | UpgradeNeeded;
+  | UpgradeNeeded
+  | SymptomUnheld;
 
 type EnginesRequest = { readonly engines: readonly Engine[] };
-
-const engineNamingOf = (
-  request: EnginesRequest & { readonly mechanism: EngineId },
-): EngineNaming => {
-  const engine = request.engines.find((candidate) => candidate.name === request.mechanism);
-  return engine === undefined
-    ? { named: "mechanism", mechanism: request.mechanism }
-    : { named: "engine", engine };
-};
-
-const engineNameOf = (request: EnginesRequest & { readonly mechanism: EngineId }): string => {
-  const naming = engineNamingOf(request);
-  return naming.named === "engine" ? naming.engine.name : naming.mechanism;
-};
 
 const recordsFolderFailureOf = (request: {
   readonly failure: RecordsFolderFailure;
@@ -196,52 +191,20 @@ export const runLoadFailureOf = (
     case "unexpected-error":
     case "catalogue-not-read":
     case "upgrade-needed":
+    case "symptom-unheld":
       return source;
     case "selection-absent":
-      return { kind: "config-absent", repo: source.repo };
     case "unknown-discipline":
     case "unknown-clause":
-      return { kind: "unknown-check", check: source.address };
     case "judgement-clause-selected":
     case "judgement-clause-listed":
-      return { kind: "review-only-listed", check: source.address };
     case "duplicate-clause":
-      return {
-        kind: "duplicate-check",
-        key: "checks",
-        check: source.address,
-        prefixedCheck: source.prefixedAddress,
-      };
     case "mechanism-not-allowed":
-      return {
-        kind: "engine-not-allowed",
-        check: source.address,
-        engine: engineNameOf({ engines, mechanism: source.mechanism }),
-        allowed: { stated: "by-rule-set" },
-      };
     case "runner-missing":
-      return {
-        kind: "engine-missing",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-      };
     case "runner-invalid":
-      return {
-        kind: "engine-invalid",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-        detail: source.detail,
-      };
     case "runner-failed":
-      return {
-        kind: "engine-failed",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-        failure: source.failure,
-      };
     case "piece-missing":
-      return {
-        kind: "check-missing",
-        check: source.address,
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-      };
+      return mapVersionOneSourceToFailure({ engines, source });
     case "unknown-check":
     case "review-only-listed":
     case "engine-not-allowed":

@@ -18,6 +18,8 @@ import type {
 import type {
   RecordKind,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
@@ -31,6 +33,7 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
 const EMPTY_RUN_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -69,14 +72,14 @@ const IGNORED_IN_A: AttributedCheckException = {
   mechanism: "eslint",
 };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -117,6 +120,7 @@ const producedOf = (request: {
   run: {
     report: request.report,
     catalogue: EMPTY_CATALOGUE,
+    content: { symptoms: new Map() },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
     runs: [],
@@ -134,6 +138,28 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     ).toEqual({
       code: 0,
       text: "self-check: pass, no failing section holds an entry\n",
+    });
+  });
+
+  it("fails and names the missing TypeScript projection when the repository selects it", () => {
+    const produced = producedOf({
+      report: {
+        ...EMPTY_RUN_REPORT,
+        unmeasured: [
+          {
+            kind: "engine-not-run",
+            engine: { name: "eslint" },
+            projection: "missing",
+            file: repoPathOf("hone.eslint.ts"),
+          },
+        ],
+      },
+      output: "full",
+    });
+
+    expect(versionTwoSelfCheckOutcomeOf({ ports: SELF_CHECK_PORTS, produced })).toEqual({
+      code: 1,
+      text: `unmeasured (1)\nengine-not-run eslint missing: hone.eslint.ts is not written; run ${PROJECT_COMMAND} and commit every file it writes\nself-check: fail, failing sections hold entries: unmeasured (1)\n`,
     });
   });
 
@@ -295,4 +321,21 @@ describe("runSelfCheck", () => {
       reads: [],
     });
   });
+});
+
+it("names the comparison section when it is the only refusal", () => {
+  const report: RunReport = {
+    ...EMPTY_RUN_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+  const produced = producedOf({ report, output: "actionable" });
+
+  const checked = versionTwoSelfCheckOutcomeOf({ ports: SELF_CHECK_PORTS, produced });
+
+  expect(checked.code).toBe(1);
+  expect(checked.text).toContain("debt comparison (1) against pinned");
+  expect(checked.text).toContain(
+    "self-check: fail, failing sections hold entries: debt comparison (1)",
+  );
 });

@@ -7,11 +7,6 @@
   "settings": {
     "pluginNamespace": "hone-cd44",
     "pluginModule": "eslint-plugin.ts",
-    "rule": "no-param-reassign",
-    "options": [
-      {
-        "props": false
-      }
-    ]
+    "rule": "no-param-reassign"
   }
 }

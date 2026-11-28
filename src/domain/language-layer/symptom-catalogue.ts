@@ -2,8 +2,9 @@ import type { Finding } from "../finding/governance.ts";
 import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import type { OwnedName } from "../rule-set/rule-set-identity.ts";
 import type { Remedy } from "../runner/runner-result-types.ts";
-import type { RecordKindName, Standing } from "./authored-item-types.ts";
+import type { RecordKindName, Specific, Standing } from "./authored-item-types.ts";
 
 export type TodaysRecordFormat = "authorised-location" | "file-carve-out" | "none-yet";
 
@@ -18,12 +19,25 @@ export type Rule = {
 
 export type RecipeReason = { readonly text: string; readonly standing: Standing };
 
+export type SymptomAddress = OwnedName;
+
+export type CheckAddress = { readonly name: string; readonly symptom: SymptomAddress };
+
+export type AnsweredForm = { readonly check: CheckAddress; readonly form: string };
+
+export type RecipeExample = {
+  readonly anchor: string;
+  readonly answers: readonly AnsweredForm[];
+};
+
 export type Recipe = {
   readonly ruleSet: RuleSetIdentity;
   readonly name: string;
+  readonly sourceFile?: string;
   readonly title: string;
   readonly standing: Standing;
   readonly reason: RecipeReason;
+  readonly examples?: readonly RecipeExample[];
 };
 
 export type RecordKind = {
@@ -31,6 +45,12 @@ export type RecordKind = {
   readonly title: string;
   readonly phrase: string;
   readonly todaysFormat: TodaysRecordFormat;
+};
+
+export type AuthorisedLocationKind = RecordKind & { readonly name: "authorised-location" };
+
+export type UnboundRecordKind = RecordKind & {
+  readonly name: Exclude<RecordKindName, "authorised-location">;
 };
 
 export type Pointed =
@@ -50,11 +70,24 @@ export type Indication = {
   readonly points: readonly Pointed[];
 };
 
-export type CorrectUse = {
+export type Binding = "check-and-file" | "check-file-and-outside-party";
+
+export type AuthorisedCorrectUse = {
   readonly situation: string;
-  readonly kind: RecordKind;
+  readonly kind: AuthorisedLocationKind;
+  readonly at?: string;
+  readonly binding: Binding;
+};
+
+export type UnboundCorrectUse = {
+  readonly situation: string;
+  readonly kind: UnboundRecordKind;
   readonly at?: string;
 };
+
+export type CorrectUse = AuthorisedCorrectUse | UnboundCorrectUse;
+
+export type Authorisation = Binding | "no-correct-use";
 
 export type Symptom = {
   readonly ruleSet: RuleSetIdentity;
@@ -68,23 +101,27 @@ export type Symptom = {
   readonly correctUses: readonly CorrectUse[];
 };
 
-export type FormSight = { readonly section: string; readonly symptom: Symptom };
+export type FormSight = { readonly form: string; readonly symptom: SymptomAddress };
 
 export type ClauseSight =
-  | { readonly kind: "one-symptom"; readonly symptom: Symptom }
+  | { readonly kind: "one-symptom"; readonly symptom: SymptomAddress }
   | { readonly kind: "symptom-by-form"; readonly forms: readonly FormSight[] }
-  | { readonly kind: "method"; readonly recipe: Recipe; readonly outcomeSeenBy: readonly Symptom[] }
+  | {
+      readonly kind: "method";
+      readonly recipe: Recipe;
+      readonly outcomeSeenBy: readonly SymptomAddress[];
+    }
   | { readonly kind: "outside-the-cases" };
 
 export type CataloguedClause = { readonly clause: ClauseAddress; readonly sight: ClauseSight };
 
 export type Engine = { readonly name: EngineId };
 
-export type CheckContent = {
-  readonly name: string;
-  readonly symptom: Symptom;
+export type CheckContent = CheckAddress & {
+  readonly page: string;
   readonly clause?: ClauseAddress;
   readonly forms: readonly string[];
+  readonly findingSpecifics: readonly Specific[];
 };
 
 export type Check = CheckContent & { readonly engines: readonly Engine[] };
@@ -116,14 +153,16 @@ export type ContentHolding =
   | { readonly held: "none" };
 
 export type SymptomReading =
-  | { readonly reading: "named"; readonly symptom: Symptom }
+  | { readonly reading: "named"; readonly symptom: SymptomAddress }
   | { readonly reading: "sees-no-symptom" }
   | { readonly reading: "not-in-catalogue" };
 
 export const pointedNameOf = (request: { readonly point: Pointed }): string =>
   request.point.kind === "rule" ? request.point.rule.name : request.point.principle.name;
 
-export const indicatedNamesOf = (request: { readonly symptom: Symptom }): readonly string[] => [
+export const indicatedNamesOf = (request: {
+  readonly symptom: Pick<Symptom, "mayIndicate">;
+}): readonly string[] => [
   ...new Set(
     request.symptom.mayIndicate.flatMap((indication) =>
       indication.points.map((point) => pointedNameOf({ point })),
@@ -137,7 +176,7 @@ const formReadingOf = (request: {
   readonly forms: readonly FormSight[];
   readonly remedy: Remedy | undefined;
 }): SymptomReading => {
-  const form = request.forms.find((candidate) => candidate.section === request.remedy?.section);
+  const form = request.forms.find((candidate) => candidate.form === request.remedy?.form);
   return form === undefined ? NOT_IN_CATALOGUE : { reading: "named", symptom: form.symptom };
 };
 
@@ -156,9 +195,11 @@ const sightReadingOf = (request: {
   }
 };
 
+export type ClauseAndRemedy = Pick<Finding, "clause" | "remedy">;
+
 export const symptomReadingOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly finding: Pick<Finding, "clause" | "remedy">;
+  readonly finding: ClauseAndRemedy;
 }): SymptomReading => {
   const catalogued = request.catalogue.clauses.find(
     (entry) => sameClauseAddress({ left: entry.clause, right: request.finding.clause }) === "same",
@@ -167,3 +208,22 @@ export const symptomReadingOf = (request: {
     ? NOT_IN_CATALOGUE
     : sightReadingOf({ sight: catalogued.sight, remedy: request.finding.remedy });
 };
+
+export const mapSpecificsToBinding = (request: {
+  readonly specifics: readonly Specific[];
+}): Binding =>
+  request.specifics.includes("outside-party") ? "check-file-and-outside-party" : "check-and-file";
+
+export const mapSymptomToAuthorisation = (request: {
+  readonly symptom: Pick<Symptom, "correctUses">;
+}): Authorisation => {
+  const [binding] = request.symptom.correctUses.flatMap((use) =>
+    "binding" in use ? [use.binding] : [],
+  );
+  return binding ?? "no-correct-use";
+};
+
+export type PartyNaming = "names-the-party" | "names-no-party";
+
+export const mapCheckToPartyNaming = (request: { readonly check: CheckContent }): PartyNaming =>
+  request.check.findingSpecifics.includes("outside-party") ? "names-the-party" : "names-no-party";

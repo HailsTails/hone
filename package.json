@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0-pre.4",
+  "version": "2.2.0",
   "private": true,
   "description": "Runs a project's selected disciplines against its own files.",
   "keywords": [
@@ -7,6 +7,7 @@
     "disciplines",
     "eslint",
     "lint",
+    "oxlint",
     "typescript"
   ],
   "license": "MIT-0",
@@ -21,6 +22,7 @@
     "check": "pnpm run typecheck && oxfmt --check && vitest run --config vitest.config.ts",
     "self-check": "node delivery/self-check/self-check.ts check --repo .",
     "install-proof": "node delivery/install-proof/install-proof.ts",
+    "speed-baseline": "node delivery/speed-baseline/speed-baseline.ts",
     "build-package": "node delivery/packaging/building/build-package.ts",
     "pack-package": "node delivery/packaging/packing/pack-package.ts",
     "package-determinism": "node delivery/packaging/packing/check-package-determinism.ts",
@@ -39,7 +41,9 @@
     "esbuild": "0.25.12",
     "eslint": "10.15.0",
     "eslint-9": "npm:eslint@9.39.5",
+    "jiti": "2.7.0",
     "oxfmt": "0.79.0",
+    "oxlint": "1.95.0",
     "typescript": "6.0.3",
     "typescript-floor": "npm:typescript@4.8.4",
     "vitest": "4.1.11"
@@ -48,6 +52,7 @@
     "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@typescript-eslint/parser": "^8.73.0",
     "eslint": "^9.39.5 || ^10.15.0",
+    "oxlint": "^1.95.0",
     "typescript": ">=4.8.4 <7.0.0"
   },
   "peerDependenciesMeta": {
@@ -55,6 +60,9 @@
       "optional": true
     },
     "@typescript-eslint/parser": {
+      "optional": true
+    },
+    "oxlint": {
       "optional": true
     },
     "eslint": {

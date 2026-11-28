@@ -10,25 +10,19 @@ import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
+import type { TypeScriptParsePort } from "../../runner/toolchain/typescript-parse.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
 } from "../../runner/toolchain/typescript-toolchain.ts";
 import { check } from "./class-syntax.ts";
 
-const loadedParsePort = await loadParsePort({
+const parsing = loadParsePort({
   peers: defaultTypeScriptPeers({
     installRoot: `${import.meta.dirname}/../../../../../..`,
     installForm: "source",
   }),
 });
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const defaultParsePort = loadedParsePort.value;
-
 const CLASS_ON_LINE_THREE = "const a = 1;\n\n  class Alpha {}\n";
 const ADDRESS: CheckAddressText = "authored-class-or-this#class-keyword";
 
@@ -53,13 +47,14 @@ const loadingThisPiece: ModuleLoaderPort = {
   load: () => Promise.resolve({ outcome: "ok", value: { check } }),
 };
 
-const walkerRunner = createWalkerRunner({
-  fileText: sourceOnLineThree,
-  modules: loadingThisPiece,
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
-  parse: defaultParsePort,
-  entryKind: { kindOf: () => "absent" },
-});
+const createFixtureRunner = (parse: TypeScriptParsePort) =>
+  createWalkerRunner({
+    fileText: sourceOnLineThree,
+    modules: loadingThisPiece,
+    path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
+    parse,
+    entryKind: { kindOf: () => "absent" },
+  });
 
 describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
   it.each([
@@ -67,35 +62,45 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
     { name: "a dist folder", fileName: "dist/a.ts" },
     { name: "a root vendor folder", fileName: "vendor/a.ts" },
   ])("flags nothing in $name, a generated folder the audit skips", async ({ name, fileName }) => {
-    expect(
-      await walkerRunner.conform({
-        binding: CLAUSE,
-        cases: [
-          {
-            name,
-            fileName: repoPathSchema.parse(fileName),
-            source: "export class Generated {}\n",
-            expectedLines: [],
-          },
-        ],
-      }),
-    ).toEqual({ outcome: "ok", value: [{ caseName: name, flaggedLines: [] }] });
+    const loaded = await parsing;
+    assert(loaded.outcome === "ok", "TypeScript loads from the development install");
+
+    const conformed = await createFixtureRunner(loaded.value).conform({
+      binding: CLAUSE,
+      cases: [
+        {
+          name,
+          fileName: repoPathSchema.parse(fileName),
+          source: "export class Generated {}\n",
+          expectedLines: [],
+        },
+      ],
+    });
+
+    expect(conformed).toEqual({ outcome: "ok", value: [{ caseName: name, flaggedLines: [] }] });
   });
 
   it("anchors a class on line 3 at its class keyword, as the fake-port runner test does", async () => {
-    expect(
-      await walkerRunner.run({
-        repoRoot: absoluteRootOf("/repo"),
-        installRoot: absoluteRootOf("/install"),
-        files: [repoPathOf("src/alpha.ts")],
-        trackedPaths: [repoPathOf("src/alpha.ts")],
-        bindings: [CLAUSE],
-        answered: [],
-        declaredConfigRoots: [],
-        declaredConfigLookup: undefined,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
-      }),
-    ).toEqual({
+    const loaded = await parsing;
+    assert(loaded.outcome === "ok", "TypeScript loads from the development install");
+    assert(
+      /^6\./.test(loaded.value.syntaxApi.version),
+      `the typescript line runs TypeScript ${loaded.value.syntaxApi.version}`,
+    );
+
+    const measured = await createFixtureRunner(loaded.value).run({
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
+      files: [repoPathOf("src/alpha.ts")],
+      trackedPaths: [repoPathOf("src/alpha.ts")],
+      bindings: [CLAUSE],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    });
+
+    expect(measured).toEqual({
       outcome: "ok",
       value: {
         projection: "none",
@@ -113,6 +118,7 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
         ],
         nativeExceptions: [],
         measured: [{ check: ADDRESS, file: "src/alpha.ts" }],
+        inapplicable: [],
       },
     });
   });

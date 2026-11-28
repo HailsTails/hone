@@ -2,13 +2,14 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import {
   checkAddressOfNames,
+  type CheckAddressText,
   type CheckNames,
 } from "../../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { clauseAddressText, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import {
@@ -27,6 +28,7 @@ type InstallFiles = {
 };
 
 type InstalledPiece = {
+  readonly check: CheckAddressText;
   readonly mechanism: EngineId;
   readonly examplesPath: string;
   readonly piece: NamedPiece;
@@ -40,7 +42,11 @@ export const installedNamesPathOf = (request: Omit<InstallFiles, "fileText">): s
 export const readInstalledNames = (
   request: InstallFiles,
 ): Result<VersionOneNames, VersionTwoLoadFailure> =>
-  readVersionOneNames({ fileText: request.fileText, path: installedNamesPathOf(request) });
+  readVersionOneNames({
+    fileText: request.fileText,
+    path: installedNamesPathOf(request),
+    ruleSet: TOOL_RULE_SET,
+  });
 
 const installedPieceOf = (
   request: InstallFiles & CheckNames & { readonly mechanism: EngineId },
@@ -53,6 +59,7 @@ const installedPieceOf = (
   return {
     outcome: "ok",
     value: {
+      check: checkAddressOfNames(request),
       mechanism: request.mechanism,
       examplesPath: piece.value.examplesPath,
       piece: piece.value,
@@ -78,7 +85,7 @@ const firstPieceFrom = (
 
 export const firstInstalledPieceFor = (
   request: InstallFiles & {
-    readonly names: VersionOneNames;
+    readonly names: Pick<VersionOneNames, "namedClauses">;
     readonly clause: ClauseAddress;
     readonly mechanism: EngineId;
   },
@@ -86,7 +93,7 @@ export const firstInstalledPieceFor = (
 
 export const installedPiecesFor = (
   request: InstallFiles & {
-    readonly names: VersionOneNames;
+    readonly names: Pick<VersionOneNames, "namedClauses">;
     readonly clause: ClauseAddress;
     readonly mechanisms: readonly EngineId[];
   },
@@ -101,7 +108,9 @@ export const installedPiecesFor = (
 };
 
 export const catalogueClausesOf = (
-  request: InstallFiles & { readonly names: VersionOneNames },
+  request: InstallFiles & {
+    readonly names: Pick<VersionOneNames, "clauses" | "claimsPieceForms" | "namedClauses">;
+  },
 ): Result<CatalogueFile["clauses"], VersionTwoLoadFailure> => {
   const forms = everyOk({
     entries: request.names.claimsPieceForms,
@@ -126,13 +135,13 @@ export const catalogueClausesOf = (
       );
       const unknown = forms.find(([, check]) => !names.has(checkAddressOfNames(check)));
       if (unknown !== undefined) {
-        const [section, check] = unknown;
+        const [form, check] = unknown;
         return {
           outcome: "failed",
           error: {
             kind: "file-malformed",
             path: first.value.piece.declarationPath,
-            detail: `form ${section} names unregistered check ${checkAddressOfNames(check)}`,
+            detail: `form ${form} names unregistered check ${checkAddressOfNames(check)}`,
           },
         };
       }
@@ -142,7 +151,7 @@ export const catalogueClausesOf = (
           clause,
           sight: {
             kind: "symptom-by-form",
-            forms: forms.map(([section, { symptom }]) => ({ section, symptom })),
+            forms: forms.map(([form, { symptom }]) => ({ form, symptom })),
           },
         },
       };

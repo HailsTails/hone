@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
+import type { VersionTwoSettingsFile } from "../../ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
-import { plannedProjectionOf } from "./planned-projection.ts";
+import { plannedProjectionOf, planProjectionEntries } from "./planned-projection.ts";
 
-const SETTINGS: SettingsFile = {
+const SETTINGS: VersionTwoSettingsFile = {
   exclude: [],
   ruleSets: [],
   checks: [],
@@ -17,6 +18,7 @@ const SETTINGS: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
+  eslintProjectionKind: "mjs",
   conventions: {
     conventions: {
       generated: [],
@@ -27,18 +29,14 @@ const SETTINGS: SettingsFile = {
   },
 };
 
-const notUsed = (): never => {
-  throw new Error("this port is not used by the command under test");
-};
-
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules"),
-  joinRepository: notUsed,
-  relative: notUsed,
-  directoryOf: notUsed,
-  repositoryDirectoryOf: notUsed,
-  resolve: notUsed,
-  fromFileUrl: notUsed,
+  joinRepository: vi.fn(),
+  relative: vi.fn(),
+  directoryOf: vi.fn(),
+  repositoryDirectoryOf: vi.fn(),
+  resolve: vi.fn(),
+  fromFileUrl: vi.fn(),
 };
 
 const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
@@ -57,45 +55,68 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
-  modules: { load: notUsed },
+  modules: { load: vi.fn() },
   git: {
-    trackedPaths: notUsed,
-    changedSince: notUsed,
-    contentInBase: notUsed,
-    textInBase: notUsed,
-    renamedSince: notUsed,
+    trackedPaths: vi.fn(),
+    changedSince: vi.fn(),
+    contentInBase: vi.fn(),
+    textInBase: vi.fn(),
+    renamedSince: vi.fn(),
   },
-  exceptionRepositoryOf: notUsed,
+  exceptionRepositoryOf: vi.fn(),
   exceptionEntryParser: {
-    parseExceptionEntries: notUsed,
-    importedEntriesIn: notUsed,
-    importSourcesOf: notUsed,
+    parseExceptionEntries: vi.fn(),
+    importedEntriesIn: vi.fn(),
+    importSourcesOf: vi.fn(),
   },
-  selectionRepositoryOf: notUsed,
-  shownPathOfRepository: notUsed,
+  selectionRepositoryOf: vi.fn(),
+  shownPathOfRepository: vi.fn(),
   moduleUrl: "file:///install/src/hone.ts",
 };
 
+const UNUSED_SETTINGS_FORMAT = { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() };
+
 const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
+
+describe("planProjectionEntries", () => {
+  it("preserves writes and removal alongside the replacement configuration", () => {
+    const projection = repoPathOf("hone.eslint.mjs");
+    const declaration = repoPathOf("hone.eslint.d.mts");
+    const planned = planProjectionEntries([
+      { kind: "write", file: projection, text: "export default [];" },
+      { kind: "write", file: declaration, text: "export {};" },
+      { kind: "remove", file: repoPathOf("hone.eslint.ts") },
+    ]);
+
+    expect(planned).toEqual({
+      entries: [
+        { kind: "write", file: projection, text: "export default [];" },
+        { kind: "write", file: declaration, text: "export {};" },
+        { kind: "remove", file: "hone.eslint.ts" },
+      ],
+      projections: [{ file: projection, text: "export default [];" }],
+    });
+  });
+});
 
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
-    const projected = await plannedProjectionOf({
+    const plan = plannedProjectionOf({
       command,
       repoRoot: absoluteRootOf("/repo"),
       installRoot: absoluteRootOf("/install"),
-      directory: { list: notUsed, create: notUsed },
-      recordsReader: { recordsReadingOf: notUsed },
+      directory: { list: vi.fn(), create: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
       boundCatalogueOf: NO_CATALOGUE,
-      settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
-      settingsSourcesOf: notUsed,
-      checkPieceSourceOf: notUsed,
-      namedEngine: { load: notUsed, run: notUsed, project: notUsed },
-    })({
-      settings: SETTINGS,
-      documents: [],
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
+      settingsSourcesOf: vi.fn(),
+      checkPieceSourceOf: vi.fn(),
+      namedEngine: { load: vi.fn() },
     });
+
+    const projected = await plan({ settings: SETTINGS, documents: [] });
+
     expect(projected).toEqual({
       outcome: "failed",
       error: {
@@ -108,5 +129,65 @@ describe("plannedProjectionOf", () => {
       },
     });
     expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
+  });
+
+  it("fails naming the symptom a check names and no catalogue holds, and loads no engine", async () => {
+    const load = vi.fn();
+    const plan = plannedProjectionOf({
+      command: EMPTY_REPOSITORY_COMMAND,
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
+      directory: { list: vi.fn(), create: vi.fn() },
+      recordsReader: { recordsReadingOf: vi.fn() },
+      boundCatalogueOf: () => ({
+        outcome: "ok",
+        value: {
+          held: "catalogue",
+          catalogue: {
+            principles: [],
+            rules: [],
+            cases: [],
+            recipes: [],
+            recordKinds: [],
+            engines: [{ name: "walker" }],
+            symptoms: [],
+            clauses: [],
+            checks: [
+              {
+                name: "loops",
+                symptom: { ruleSet: "hone", name: "loop-keyword" },
+                page: "loop-keyword/loops.md",
+                engines: [{ name: "walker" }],
+                forms: [],
+                findingSpecifics: [],
+              },
+            ],
+            namedBans: [],
+          },
+        },
+      }),
+      settingsFormat: UNUSED_SETTINGS_FORMAT,
+      settingsSourcesOf: vi.fn().mockReturnValue({
+        settingsFile: vi.fn(),
+        ruleSetRoot: vi.fn(),
+        catalogue: vi.fn(),
+      }),
+      checkPieceSourceOf: vi.fn(),
+      namedEngine: { load },
+    });
+
+    const projected = await plan({ settings: SETTINGS, documents: [] });
+
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "projection-failed",
+        failure: {
+          kind: "symptom-unheld",
+          symptom: { ruleSet: "hone", name: "loop-keyword" },
+        },
+      },
+    });
+    expect(load).not.toHaveBeenCalled();
   });
 });

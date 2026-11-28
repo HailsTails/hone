@@ -38,7 +38,7 @@
   "reports": "seen",
   "recipes": [
     "zod-at-the-producers-adapter",
-    "bounded-context-generic"
+    "constrained-context-generic"
   ],
   "correctUses": []
 }

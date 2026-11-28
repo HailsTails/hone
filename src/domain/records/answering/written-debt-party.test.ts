@@ -7,24 +7,26 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { HoneRecord } from "../hone-records/hone-record.ts";
-import { holdsAt, type Site } from "./record-reach.ts";
+import { holdsAt, type ResolvedSite } from "./record-reach.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -77,26 +79,32 @@ const LAYERING_CLAUSE = {
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
-  symptom: LOOP_KEYWORD,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -108,18 +116,24 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: LOOPS_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+    },
     {
       clause: TEST_BODY_CLAUSE,
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+    {
+      clause: LAYERING_CLAUSE,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
+    },
   ],
   checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
   namedBans: [],
@@ -130,17 +144,21 @@ const SRC_A = repoPathOf("src/a.ts");
 const WRITTEN_DEBT: HoneRecord = {
   kind: "debt",
   symptom: LOOP_KEYWORD_LOOPS.symptom,
-  reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+  reach: {
+    reaches: "one-check",
+    check: { name: "loops", symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+  },
   file: SRC_A,
   note: "legacy loop",
   holding: { held: "stated" },
 };
 
-const siteWith = (request: { readonly party: Site["party"] }): Site => ({
+const siteWith = (request: { readonly party: ResolvedSite["party"] }): ResolvedSite => ({
   symptom: LOOP_KEYWORD_LOOPS.symptom,
   check: { found: "check", check: LOOP_KEYWORD_LOOPS },
   file: SRC_A,
   party: request.party,
+  recipes: [],
 });
 
 describe("a debt the upgrade writes, which names no outside party", () => {

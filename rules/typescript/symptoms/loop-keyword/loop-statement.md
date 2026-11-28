@@ -31,4 +31,4 @@ const totals = orders.map((order) => order.total);
 ```
 Replace a counted loop with `Array.from({ length }, (_, position) => ...)`.
 
-In a test file, the [computed-value-in-a-test check](../computed-value-in-a-test/test-body.md) flags `map` at either edition, and its edition 2 flags `Array.from`: write the values out instead, as [the allowed forms in a test](../computed-value-in-a-test/test-body.md#allowed-forms-in-a-test) show.
+In a test file, the [computed-value-in-a-test check](../computed-value-in-a-test/test-body.md) flags `map` at either edition, and its edition 2 flags `Array.from`: read [Computed value in a test](../computed-value-in-a-test.md) there.

@@ -2,99 +2,46 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
-## 2.0.0-pre.4
-
-### Breaking changes
-
-- speak the named model in the walker, rule-set and testing entries (#415)
+## 2.2.0
 
 ### Features
 
-- detect process global access (#359)
-- detect ambient random calls (#360)
-- detect throws in production units (#361)
-- detect prose in TypeScript comments (#362)
-- detect global patches and stub answers in hooks (#363)
-- detect floating versions and fetched tools (#364)
-- ci: stable managed agents build, triage and review, invoked from issues and pull requests (#409)
-- ci: review draft pull requests and hand review findings back to the builder (#428)
-- ci: reviews run from main and post as rin-reviewer (#430)
-- agents: triager weighs issues against ordinary use (#431)
-- keep team records in their rule set's records folder (#390)
-- record, prune and authorise on team rule set addresses (#408)
-- hone upgrade converts a team rule set from its version 1 layout (#424)
-- agent-detached label stops agent reviews and hand-backs on a pull request (#437)
-- release: fold a stable release's pre-release changelog sections into one (#351) (#405)
-- detect Vitest test call aliases (#385)
-- detect debugger statements (#386)
-- detect ambient browser dialogs in edition two (#388)
-- detect conditional and todo tests in edition two (#389)
-- detect exports from test files (#392)
-- detect type declarations in test files (#393)
-- detect empty error handlers (#394)
-- detect built units called in place (#395)
-- detect assertions outside test cases (#396)
-- detect tests reading code or prose as text (#397)
-- detect unread function parameters (#398)
-- declare which files are tests with testFiles in hone.config.json (#434)
-- the generated checks page shows each check's engines (#407)
+- emit a typed ESLint projection on request (#509)
+- add opt-in Oxlint support for TypeScript checks (#511)
+- add a no-new-findings check against counted landing debt (#512)
 
 ### Fixes
 
-- record-debt refuses and names project when the projection is stale (#371)
-- --repo refusal and help name hone.config.json, not disciplines.json (#370)
-- upgrade proof counts the files it writes, mentions every version 1 file, and says what it compared (#373)
-- ci: the agent job reads the session's list cost amount (#406)
-- cap hook answer snippets at eighty characters (#401)
-- detect Vitest environment stubs in edition two (#402)
-- ci: the agent job streams session events through a file (#425)
-- lead findings with their symptom and source (#378)
-- explain the problem in walker test-body remedies (#381)
-- report floating versions at their manifest declarations (#411)
-- detect pnpx in workflow commands (#404)
-- self-check: print the gate line as the run's only verdict (#419)
-- treat workspace packages and subpath imports as own API in test-body logic (#427)
-- share tracker reference parsing (#414)
-- an answered finding line names the fix its finding line names (#426)
-- records: record-debt new-file and left lines no longer ask for a reason of its own (#418)
-- continue checks around nested Hone configurations (#384)
+- leave Hone's compared projection outputs out of every engine's judgement (#503)
 
 ### Other changes
 
-- retire the output contract doc and the test that pins it to the code (#376)
-- run and report version 2 checks by name (#358)
-- Claude works an issue labelled claude or a comment mentioning @claude (#380)
-- a Claude Managed Agent works an issue labelled claude (#400)
-- record the applied agent definitions (#410)
-- share TypeScript throw detection (#399)
-- read team rule sets from the version 2 layout and refuse the version 1 layout by name (#383)
-- share anchored walker snippets (#429)
-- record the applied agent definitions (#432)
-- assess debt forfeiture in Hone's own runs again (#438)
+- hand the engines stage only what it reads, and prove its mappings on their own (#502)
+- the reviewer looks at quality first and holds bug and test findings to ordinary use (#507)
+- narrow the named engine port (#506)
 
-## 2.0.0-pre.3
+## 2.1.0
+
+### Features
+
+- the projection leaves out the declaration Hone writes; run hone project and commit the result (#499)
 
 ### Fixes
 
-- index records, measurements and declarations once instead of rescanning per hit (#365)
+- a clause-wide carve-out upgrades to debt by file (#496)
+- check and upgrade a workspace with ESLint only in its packages; adopters run hone project (#497)
 
-## 2.0.0-pre.2
-
-### Fixes
-
-- hone upgrade carries a carve-out that only held up a native suppression as debt (#352)
-- hone upgrade points a 1.x projection's plugin imports at the 2.0 modules before its version 1 run (#353)
-
-### Other changes
-
-- pages stop restating the code, and prose-pinning tests go (#347)
-
-## 2.0.0-pre.1
+## 2.0.0
 
 ### Breaking changes
 
 - Hone supports the latest release of each ESLint major (#230)
 - move the repository into named layers (#318)
+- speak the named model in the walker, rule-set and testing entries (#415)
+- an authorised location binds what its symptom declares, and boundary records go (#477)
+- hone upgrade runs the record tools and ends in a passing check (#478)
+- hone upgrade carries no names from 2.0 prereleases (#483)
+- findings reach recipe examples through symptom, case and rule (#484)
 
 ### Features
 
@@ -142,6 +89,36 @@ Every release of Hone, newest first. `pnpm run release-pull-request` writes each
 - register checks by name in version 2 (#338)
 - hone upgrade prints its record lines and the proof's finding count (#342)
 - hone upgrade turns a clause-wide carve-out into not-adopted checks (#348)
+- detect process global access (#359)
+- detect ambient random calls (#360)
+- detect throws in production units (#361)
+- detect prose in TypeScript comments (#362)
+- detect global patches and stub answers in hooks (#363)
+- detect floating versions and fetched tools (#364)
+- ci: stable managed agents build, triage and review, invoked from issues and pull requests (#409)
+- ci: review draft pull requests and hand review findings back to the builder (#428)
+- ci: reviews run from main and post as rin-reviewer (#430)
+- agents: triager weighs issues against ordinary use (#431)
+- keep team records in their rule set's records folder (#390)
+- record, prune and authorise on team rule set addresses (#408)
+- hone upgrade converts a team rule set from its version 1 layout (#424)
+- agent-detached label stops agent reviews and hand-backs on a pull request (#437)
+- release: fold a stable release's pre-release changelog sections into one (#351) (#405)
+- detect Vitest test call aliases (#385)
+- detect debugger statements (#386)
+- detect ambient browser dialogs in edition two (#388)
+- detect conditional and todo tests in edition two (#389)
+- detect exports from test files (#392)
+- detect type declarations in test files (#393)
+- detect empty error handlers (#394)
+- detect built units called in place (#395)
+- detect assertions outside test cases (#396)
+- detect tests reading code or prose as text (#397)
+- detect unread function parameters (#398)
+- declare which files are tests with testFiles in hone.config.json (#434)
+- the generated checks page shows each check's engines (#407)
+- an engines stage measures in a child process, so a rewritten config takes effect (#464)
+- a local speed baseline compares hone check CPU time against a pinned revision (#454)
 
 ### Fixes
 
@@ -161,6 +138,33 @@ Every release of Hone, newest first. `pnpm run release-pull-request` writes each
 - prune-debt drops a carve-out whose file the selection excludes (#322)
 - record-debt inherits the debt of a file git sees renamed (#329)
 - version-one-removal test compiles with D1's constructors (#336)
+- hone upgrade carries a carve-out that only held up a native suppression as debt (#352)
+- hone upgrade points a 1.x projection's plugin imports at the 2.0 modules before its version 1 run (#353)
+- index records, measurements and declarations once instead of rescanning per hit (#365)
+- record-debt refuses and names project when the projection is stale (#371)
+- --repo refusal and help name hone.config.json, not disciplines.json (#370)
+- upgrade proof counts the files it writes, mentions every version 1 file, and says what it compared (#373)
+- ci: the agent job reads the session's list cost amount (#406)
+- cap hook answer snippets at eighty characters (#401)
+- detect Vitest environment stubs in edition two (#402)
+- ci: the agent job streams session events through a file (#425)
+- lead findings with their symptom and source (#378)
+- explain the problem in walker test-body remedies (#381)
+- report floating versions at their manifest declarations (#411)
+- detect pnpx in workflow commands (#404)
+- self-check: print the gate line as the run's only verdict (#419)
+- treat workspace packages and subpath imports as own API in test-body logic (#427)
+- share tracker reference parsing (#414)
+- an answered finding line names the fix its finding line names (#426)
+- records: record-debt new-file and left lines no longer ask for a reason of its own (#418)
+- continue checks around nested Hone configurations (#384)
+- self-check fails on findings and unrecorded native exceptions (#445)
+- a moved file keeps its debt, and records follow renames (#447)
+- type-declared-in-a-test spares a row typed only by imported types (#450)
+- the child measurement replies on its own pipe, so adopter output can't break it (#476)
+- a check's tests are given its binding (#490)
+- a team rule set's carried records stand at the base (#491)
+- the upgrade regenerates a stale version 1 projection (#492)
 
 ### Other changes
 
@@ -215,6 +219,29 @@ Every release of Hone, newest first. `pnpm run release-pull-request` writes each
 - the entries' wiring is proven by what it does, not by its source text (#340)
 - format with oxfmt and drop Biome (#341)
 - Hone upgrades itself to version 2 (#349)
+- pages stop restating the code, and prose-pinning tests go (#347)
+- retire the output contract doc and the test that pins it to the code (#376)
+- run and report version 2 checks by name (#358)
+- Claude works an issue labelled claude or a comment mentioning @claude (#380)
+- a Claude Managed Agent works an issue labelled claude (#400)
+- record the applied agent definitions (#410)
+- share TypeScript throw detection (#399)
+- read team rule sets from the version 2 layout and refuse the version 1 layout by name (#383)
+- share anchored walker snippets (#429)
+- record the applied agent definitions (#432)
+- assess debt forfeiture in Hone's own runs again (#438)
+- Hone's record tools run without asking (#442)
+- record the applied agent definitions (#443)
+- the upgrade proof decides its effects as data (#448)
+- AGENTS.md holds the naming, test-layout and rules-over-checks rulings (#456)
+- freeze the version 2 names (#449)
+- the package plan finds every process entry by one convention (#463)
+- leave Hone's own debt forfeiture to another run until 2.0 ships (#468)
+- the ESLint integration tests prove only what real ESLint adds (#470)
+- Hone's own check prints only what needs action (#471)
+- records and checks refer to symptoms by address (#472)
+- the upgrade names a script, formatting and workspace pins (#488)
+- assess debt forfeiture in Hone's own runs again (#489)
 
 ## 1.5.0
 

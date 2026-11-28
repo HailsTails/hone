@@ -5,7 +5,7 @@ import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import type { RuleSetCatalogue } from "../settings/check-choices.ts";
-import { checksOfClause } from "./clause-checks.ts";
+import { checksOfClause, createClauseChecks, readChecksOfClause } from "./clause-checks.ts";
 import type {
   Check,
   Engine,
@@ -13,18 +13,20 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -78,25 +80,31 @@ const LAYERING_CLAUSE = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -114,8 +122,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -167,5 +175,51 @@ describe("checksOfClause", () => {
         },
       }),
     ).toEqual([]);
+  });
+});
+
+describe("createClauseChecks", () => {
+  it("holds each clause a check names under its address, with every check of that clause", () => {
+    const clauseChecks = createClauseChecks({ catalogues: CATALOGUES });
+
+    expect(clauseChecks).toEqual(
+      new Map([
+        ["CD-15#loops", [LOOP_KEYWORD_LOOPS]],
+        ["CD-27#test-body-logic", [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY]],
+      ]),
+    );
+  });
+
+  it("holds a team's clause under its rule set's name", () => {
+    const team = { name: ruleSetNameOf("team") };
+    const teamClause = {
+      ruleSet: team,
+      discipline: disciplineIdOf("TM-1"),
+      clause: clauseIdOf("no-tmp-files"),
+    };
+    const teamCheck: Check = { ...LOOP_KEYWORD_LOOPS, clause: teamClause };
+
+    const clauseChecks = createClauseChecks({
+      catalogues: [{ catalogue: { ...SETTINGS_CATALOGUE, checks: [teamCheck] } }],
+    });
+
+    expect(clauseChecks).toEqual(new Map([["team/TM-1#no-tmp-files", [teamCheck]]]));
+  });
+});
+
+describe("readChecksOfClause", () => {
+  it("reads the checks held under a clause's address", () => {
+    const checks = readChecksOfClause({
+      clauseChecks: new Map([["CD-15#loops", [LOOP_KEYWORD_LOOPS]]]),
+      clause: LOOPS_CLAUSE,
+    });
+
+    expect(checks).toEqual([LOOP_KEYWORD_LOOPS]);
+  });
+
+  it("reads no check for a clause nothing is held under", () => {
+    const checks = readChecksOfClause({ clauseChecks: new Map(), clause: LAYERING_CLAUSE });
+
+    expect(checks).toEqual([]);
   });
 });

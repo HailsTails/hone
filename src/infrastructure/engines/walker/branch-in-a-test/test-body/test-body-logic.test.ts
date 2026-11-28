@@ -6,15 +6,16 @@ import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import type { TestFiles } from "../../../../../domain/settings/test-files.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
   PieceHit,
+  PreparedFileCheck,
   PreparedWalkerCheck,
-  SourceObservers,
   WalkerFile,
 } from "../../runner/pieces/walker-piece.ts";
-import type { SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
+import type { SyntaxApi } from "../../runner/toolchain/typescript-parse.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
@@ -22,22 +23,8 @@ import {
 import { check } from "./test-body-logic.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
-const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({
-    installRoot: `${import.meta.dirname}/../../../../../..`,
-    installForm: "source",
-  }),
-});
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const defaultParsePort = loadedParsePort.value;
-
 const FILE = repoPathOf("src/logic.test.ts");
 const ADDRESS: CheckAddressText = "test-body-forms#all";
-const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
   ruleSet: "hone",
@@ -79,51 +66,20 @@ const TEAM_SECOND_EDITION_CLAUSE: CheckBinding = {
   forms: { "a-short-circuit": TEAM_ADDRESS },
 };
 
-type SourceObservations = {
-  readonly tree: SyntaxTree;
-  readonly observers: SourceObservers;
-  readonly enter: NonNullable<SourceObservers["enter"]>;
-  readonly anchorAt: Mock<(request: { readonly position: number }) => Anchor>;
-  readonly finish: PreparedWalkerCheck["finish"];
-};
+const TEST_FILES: TestFiles = { suffixes: ["test", "spec"], folders: [] };
 
-const sourceObservations = (request: {
-  readonly source: string;
-  readonly bindings: readonly CheckBinding[];
-}): SourceObservations => {
-  const prepared = check.prepare({
-    bindings: request.bindings,
-    repository: {
-      files: [FILE],
-      exists: vi.fn().mockReturnValue("present"),
-      disk: EMPTY_DISK,
-      testFiles: { suffixes: ["test", "spec"], folders: [] },
-    },
-    syntaxApi: SYNTAX_API,
+describe("the TypeScript line", () => {
+  it("loads TypeScript 6 from the development install", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    expect(loaded.value.syntaxApi.version).toMatch(/^6\./);
   });
-  assert(prepared.outcome === "ok");
-  const selected = prepared.value.prepareFile({
-    file: FILE,
-    readText: vi
-      .fn<WalkerFile["readText"]>()
-      .mockReturnValue({ outcome: "ok", value: request.source }),
-  });
-  assert(selected.outcome === "ok");
-  assert(selected.value.kind === "syntax");
-  const tree = SYNTAX_API.createSourceFile(
-    FILE,
-    request.source,
-    SYNTAX_API.ScriptTarget.Latest,
-    true,
-  );
-  const anchorAt = vi
-    .fn<(request: { readonly position: number }) => Anchor>()
-    .mockReturnValue({ line: 1, column: 0 });
-  const observers = selected.value.begin({ sourceFile: tree, anchorAt });
-  const { enter } = observers;
-  assert.isDefined(enter);
-  return { tree, observers, enter, anchorAt, finish: prepared.value.finish };
-};
+});
 
 describe("CD-27 existing whole-test-file logic observations", () => {
   it.each([
@@ -135,330 +91,850 @@ describe("CD-27 existing whole-test-file logic observations", () => {
     { name: "physical script test", fileName: "scripts/logic.test.ts", kind: "syntax" },
     { name: "ordinary source", fileName: "src/logic.ts", kind: "skipped" },
     { name: "non-TypeScript test", fileName: "src/logic.test.js", kind: "skipped" },
-  ])("preserves own test-family eligibility without reading for $name", ({ fileName, kind }) => {
-    const file = repoPathSchema.parse(fileName);
+  ])(
+    "preserves own test-family eligibility without reading for $name",
+    async ({ fileName, kind }) => {
+      const loaded = await loadParsePort({
+        peers: defaultTypeScriptPeers({
+          installRoot: `${import.meta.dirname}/../../../../../..`,
+          installForm: "source",
+        }),
+      });
+      assert(loaded.outcome === "ok");
+      const { syntaxApi } = loaded.value;
+      const file = repoPathSchema.parse(fileName);
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: {
+          files: [file],
+          exists: vi.fn().mockReturnValue("present"),
+          disk: EMPTY_DISK,
+          testFiles: { suffixes: ["test", "spec"], folders: [] },
+        },
+        syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+      const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "file-unreadable", file, detail: "unexpected read" },
+      });
+
+      const selection = prepared.value.prepareFile({ file, readText });
+
+      expect(selection).toMatchObject({
+        outcome: "ok",
+        value: { kind },
+      });
+      expect(readText).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    {
+      name: "an if statement",
+      source: "if(x)f();\n",
+      snippet: "if(x)f(); ",
+      form: "branching-with-if",
+    },
+    {
+      name: "a try block",
+      source: "try{}catch(e){}\n",
+      snippet: "try{}catch(e){} ",
+      form: "a-try-block",
+    },
+  ])("emits $form for $name", async ({ source, snippet, form }) => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
     const prepared = check.prepare({
       bindings: [CLAUSE],
       repository: {
-        files: [file],
+        files: [FILE],
         exists: vi.fn().mockReturnValue("present"),
         disk: EMPTY_DISK,
-        testFiles: { suffixes: ["test", "spec"], folders: [] },
+        testFiles: TEST_FILES,
       },
-      syntaxApi: SYNTAX_API,
+      syntaxApi,
     });
     assert(prepared.outcome === "ok");
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
-      outcome: "failed",
-      error: { kind: "file-unreadable", file, detail: "unexpected read" },
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
     });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
 
-    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({
-      outcome: "ok",
-      value: { kind },
-    });
-    expect(readText).not.toHaveBeenCalled();
+    enter({ node: tree.getChildAt(0, tree).getChildAt(0, tree) });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet,
+        remedy: expect.objectContaining({ form }),
+      },
+    ]);
+    expect(anchorAt.mock.calls).toEqual([[{ position: 0 }]]);
   });
 
-  it("emits all structural observations in encounter order with one finding for a multi-binding let statement", () => {
-    const observed = sourceObservations({
-      source: "if(x)f();\ntry{}catch(e){}\nx?y:z;\nlet a,b;\n",
-      bindings: [CLAUSE],
+  it.each([
+    { name: "a ternary", source: "x?y:z;\n", snippet: "x?y:z; ", form: "a-ternary" },
+    {
+      name: "a module-level computing call",
+      source: "r.map(f);\r\n",
+      snippet: "r.map(f);\r ",
+      form: "a-method-that-computes-a-value",
+    },
+    {
+      name: "a module-level mutating call",
+      source: "r.push(1);\r\n",
+      snippet: "r.push(1);\r ",
+      form: "a-method-that-mutates",
+    },
+  ])("emits $form for $name", async ({ source, snippet, form }) => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
-    const statements = observed.tree.getChildAt(0, observed.tree);
-    const letStatement = statements.getChildAt(3, observed.tree);
-    assert(SYNTAX_API.isVariableStatement(letStatement));
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+
+    enter({ node: tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree) });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet,
+        remedy: expect.objectContaining({ form }),
+      },
+    ]);
+    expect(anchorAt.mock.calls).toEqual([[{ position: 0 }]]);
+  });
+
+  it("emits observations in encounter order", async () => {
+    const source = "if(x)f();\ntry{}catch(e){}\n";
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const statements = tree.getChildAt(0, tree);
+    anchorAt
+      .mockReturnValueOnce({ line: 1, column: 0 })
+      .mockReturnValueOnce({ line: 2, column: 0 });
+
+    enter({ node: statements.getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(1, tree) });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "if(x)f(); try{}catch(e){} ",
+        remedy: expect.objectContaining({ form: "branching-with-if" }),
+      },
+      {
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: "try{}catch(e){} ",
+        remedy: expect.objectContaining({ form: "a-try-block" }),
+      },
+    ]);
+    expect(anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 10 }]]);
+  });
+
+  it("emits one finding for a multi-binding let statement and nothing at the end of the run", async () => {
+    const source = "let a,b;\n";
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const letStatement = tree.getChildAt(0, tree).getChildAt(0, tree);
+    assert(syntaxApi.isVariableStatement(letStatement));
     const firstBinding = letStatement.declarationList.declarations[0];
     const secondBinding = letStatement.declarationList.declarations[1];
     assert(firstBinding !== undefined);
     assert(secondBinding !== undefined);
-    observed.anchorAt
-      .mockReturnValueOnce({ line: 1, column: 0 })
-      .mockReturnValueOnce({ line: 2, column: 0 })
-      .mockReturnValueOnce({ line: 3, column: 0 })
-      .mockReturnValueOnce({ line: 4, column: 0 });
 
-    observed.enter({ node: statements.getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(1, observed.tree) });
-    observed.enter({ node: statements.getChildAt(2, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: letStatement });
-    observed.enter({ node: letStatement.declarationList });
-    observed.enter({ node: firstBinding });
-    observed.enter({ node: secondBinding });
+    enter({ node: letStatement });
+    enter({ node: letStatement.declarationList });
+    enter({ node: firstBinding });
+    enter({ node: secondBinding });
+    const findings = observers.finish();
+    const ended = prepared.value.finish();
 
-    expect(observed.observers.finish()).toEqual([
+    expect(findings).toEqual([
       {
         check: ADDRESS,
         anchor: { line: 1, column: 0 },
-        snippet: "if(x)f(); try{}catch(e){} x?y:z; let a,b; ",
-        remedy: expect.objectContaining({ section: "branching-with-if" }),
-      },
-      {
-        check: ADDRESS,
-        anchor: { line: 2, column: 0 },
-        snippet: "try{}catch(e){} x?y:z; let a,b; ",
-        remedy: expect.objectContaining({ section: "a-try-block" }),
-      },
-      {
-        check: ADDRESS,
-        anchor: { line: 3, column: 0 },
-        snippet: "x?y:z; let a,b; ",
-        remedy: expect.objectContaining({ section: "a-ternary" }),
-      },
-      {
-        check: ADDRESS,
-        anchor: { line: 4, column: 0 },
         snippet: "let a,b; ",
-        remedy: expect.objectContaining({ section: "a-let" }),
+        remedy: expect.objectContaining({ form: "a-let" }),
       },
     ]);
-    expect(observed.anchorAt.mock.calls).toEqual([
-      [{ position: 0 }],
-      [{ position: 10 }],
-      [{ position: 26 }],
-      [{ position: 33 }],
-    ]);
-    expect(observed.finish()).toEqual({ outcome: "ok", value: [] });
+    expect(ended).toEqual({ outcome: "ok", value: [] });
   });
 
-  it("retains dynamic and mutation calls at module level and inside a nested callback without a callback gate", () => {
-    const observed = sourceObservations({
-      source: "r.map(f);\r\nr.push(1);\r\nit('',()=>s.filter(f));\r\n",
-      bindings: [CLAUSE],
+  it("retains a picking call inside a nested callback without a callback gate", async () => {
+    const source = "it('',()=>s.filter(f));\r\n";
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
-    const statements = observed.tree.getChildAt(0, observed.tree);
-    const testCall = statements.getChildAt(2, observed.tree).getChildAt(0, observed.tree);
-    assert(SYNTAX_API.isCallExpression(testCall));
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const testCall = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
+    assert(syntaxApi.isCallExpression(testCall));
     const callback = testCall.arguments[1];
     assert(callback !== undefined);
-    assert(SYNTAX_API.isArrowFunction(callback));
-    observed.anchorAt
-      .mockReturnValueOnce({ line: 1, column: 0 })
-      .mockReturnValueOnce({ line: 2, column: 0 })
-      .mockReturnValueOnce({ line: 3, column: 10 });
+    assert(syntaxApi.isArrowFunction(callback));
+    anchorAt.mockReturnValueOnce({ line: 1, column: 10 });
 
-    observed.enter({ node: statements.getChildAt(0, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(1, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: testCall });
-    observed.enter({ node: callback });
-    observed.enter({ node: callback.body });
+    enter({ node: testCall });
+    enter({ node: callback });
+    enter({ node: callback.body });
+    const findings = observers.finish();
 
-    expect(observed.observers.finish()).toEqual([
+    expect(findings).toEqual([
       {
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "r.map(f);\r r.push(1);\r it('',()=>s.filter(f));\r ",
-        remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
-      },
-      {
-        check: ADDRESS,
-        anchor: { line: 2, column: 0 },
-        snippet: "r.push(1);\r it('',()=>s.filter(f));\r ",
-        remedy: expect.objectContaining({ section: "a-method-that-mutates" }),
-      },
-      {
-        check: ADDRESS,
-        anchor: { line: 3, column: 10 },
+        anchor: { line: 1, column: 10 },
         snippet: "s.filter(f));\r ",
-        remedy: expect.objectContaining({ section: "a-method-that-picks-or-tests-an-element" }),
+        remedy: expect.objectContaining({ form: "a-method-that-picks-or-tests-an-element" }),
       },
     ]);
-    expect(observed.anchorAt.mock.calls).toEqual([
-      [{ position: 0 }],
-      [{ position: 11 }],
-      [{ position: 33 }],
-    ]);
+    expect(anchorAt.mock.calls).toEqual([[{ position: 10 }]]);
   });
 
-  it("keeps exactly eighty source characters whole without collapsing whitespace", () => {
-    const observed = sourceObservations({
-      source: "r.map(f);\nabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
+  it("keeps exactly eighty source characters whole without collapsing whitespace", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
       bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
     });
-
-    observed.enter({
-      node: observed.tree
-        .getChildAt(0, observed.tree)
-        .getChildAt(0, observed.tree)
-        .getChildAt(0, observed.tree),
+    assert(prepared.outcome === "ok");
+    const source =
+      "r.map(f);\nabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
     });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
 
-    expect(observed.observers.finish()).toEqual([
+    enter({
+      node: tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree),
+    });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
       {
         check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "r.map(f); abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
-        remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
+        remedy: expect.objectContaining({ form: "a-method-that-computes-a-value" }),
       },
     ]);
-    expect(observed.anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 0 });
+    expect(anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 0 });
   });
 
-  it("preserves computed, alias, declaration-list and conditional-type gaps without duplicating CD25 CD26 or CD10", () => {
-    const observed = sourceObservations({
-      source:
-        "const a=1;\nvar b=2;\nfor(let i=0;i<1;i++){}\nr['map'](f);\nmap(f);\nr.custom();\nvi.fn(()=>1);\nm.mockImplementation(()=>1);\nvi.mock('module');\nthrow failure;\ntype Flag = X extends Y ? A : B;\n",
-      bindings: [CLAUSE],
+  it("preserves the declaration-list gaps without duplicating double-with-a-body, module-or-global-patched or throw-or-catch-in-a-test", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
-    const statements = observed.tree.getChildAt(0, observed.tree);
-    const forStatement = statements.getChildAt(2, observed.tree);
-    assert(SYNTAX_API.isForStatement(forStatement));
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "const a=1;\nvar b=2;\nfor(let i=0;i<1;i++){}\n";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const statements = tree.getChildAt(0, tree);
+    const forStatement = statements.getChildAt(2, tree);
+    assert(syntaxApi.isForStatement(forStatement));
     assert(forStatement.initializer !== undefined);
-    const typeDeclaration = statements.getChildAt(10, observed.tree);
-    assert(SYNTAX_API.isTypeAliasDeclaration(typeDeclaration));
 
-    observed.enter({ node: statements.getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(1, observed.tree) });
-    observed.enter({ node: forStatement });
-    observed.enter({ node: forStatement.initializer });
-    observed.enter({ node: statements.getChildAt(3, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(4, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(5, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(6, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(7, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(8, observed.tree).getChildAt(0, observed.tree) });
-    observed.enter({ node: statements.getChildAt(9, observed.tree) });
-    observed.enter({ node: typeDeclaration.type });
+    enter({ node: statements.getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(1, tree) });
+    enter({ node: forStatement });
+    enter({ node: forStatement.initializer });
+    const findings = observers.finish();
 
-    expect(observed.observers.finish()).toEqual([]);
-    expect(observed.anchorAt).not.toHaveBeenCalled();
+    expect(findings).toEqual([]);
+    expect(anchorAt).not.toHaveBeenCalled();
+  });
+
+  it("preserves the computed and alias gaps without duplicating double-with-a-body, module-or-global-patched or throw-or-catch-in-a-test", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source =
+      "r['map'](f);\nmap(f);\nr.custom();\nvi.fn(()=>1);\nm.mockImplementation(()=>1);\nvi.mock('module');\nthrow failure;\n";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const statements = tree.getChildAt(0, tree);
+
+    enter({ node: statements.getChildAt(0, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(1, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(2, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(3, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(4, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(5, tree).getChildAt(0, tree) });
+    enter({ node: statements.getChildAt(6, tree) });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([]);
+    expect(anchorAt).not.toHaveBeenCalled();
+  });
+
+  it("preserves the conditional-type gap without duplicating double-with-a-body, module-or-global-patched or throw-or-catch-in-a-test", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "type Flag = X extends Y ? A : B;\n";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const statements = tree.getChildAt(0, tree);
+    const typeDeclaration = statements.getChildAt(0, tree);
+    assert(syntaxApi.isTypeAliasDeclaration(typeDeclaration));
+
+    enter({ node: typeDeclaration.type });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([]);
+    expect(anchorAt).not.toHaveBeenCalled();
   });
 });
 
-const firstExpressionOf = (request: {
-  readonly source: string;
-  readonly bindings: readonly CheckBinding[];
-}): {
-  readonly observed: SourceObservations;
-  readonly expression: SyntaxNode;
-} => {
-  const observed = sourceObservations(request);
-  return {
-    observed,
-    expression: observed.tree
-      .getChildAt(0, observed.tree)
-      .getChildAt(0, observed.tree)
-      .getChildAt(0, observed.tree),
-  };
-};
-
 const SECOND_EDITION_EXPRESSIONS = [
-  { name: "nullish coalescing", source: "a ?? b;", section: "a-short-circuit" },
-  { name: "logical or", source: "a || b;", section: "a-short-circuit" },
-  { name: "logical and", source: "a && b;", section: "a-short-circuit" },
-  { name: "nullish assignment", source: "a ??= b;", section: "a-short-circuit" },
-  { name: "logical or assignment", source: "a ||= b;", section: "a-short-circuit" },
-  { name: "logical and assignment", source: "a &&= b;", section: "a-short-circuit" },
-  { name: "optional property access", source: "a?.b;", section: "an-optional-chain-on-a-property" },
+  { name: "nullish coalescing", source: "a ?? b;", form: "a-short-circuit" },
+  { name: "logical or", source: "a || b;", form: "a-short-circuit" },
+  { name: "logical and", source: "a && b;", form: "a-short-circuit" },
+  { name: "nullish assignment", source: "a ??= b;", form: "a-short-circuit" },
+  { name: "logical or assignment", source: "a ||= b;", form: "a-short-circuit" },
+  { name: "logical and assignment", source: "a &&= b;", form: "a-short-circuit" },
+  { name: "optional property access", source: "a?.b;", form: "an-optional-chain-on-a-property" },
   {
     name: "optional element access",
     source: "a?.[0];",
-    section: "an-optional-chain-on-a-property",
+    form: "an-optional-chain-on-a-property",
   },
-  { name: "optional call", source: "f?.(1);", section: "an-optional-call" },
+  { name: "optional call", source: "f?.(1);", form: "an-optional-call" },
   {
     name: "JSON.stringify",
     source: "JSON.stringify(value);",
-    section: "serialising-or-parsing-json",
+    form: "serialising-or-parsing-json",
   },
-  { name: "JSON.parse", source: "JSON.parse(text);", section: "serialising-or-parsing-json" },
-  { name: "Object.assign", source: "Object.assign(target, source);", section: "merging-objects" },
+  { name: "JSON.parse", source: "JSON.parse(text);", form: "serialising-or-parsing-json" },
+  { name: "Object.assign", source: "Object.assign(target, source);", form: "merging-objects" },
   {
     name: "Object.fromEntries",
     source: "Object.fromEntries(pairs);",
-    section: "building-an-object-from-entries",
+    form: "building-an-object-from-entries",
   },
-  { name: "Array.from", source: "Array.from(items);", section: "building-an-array-from-a-length" },
-  { name: "a Math method", source: "Math.max(a, b);", section: "a-math-call" },
+  { name: "Array.from", source: "Array.from(items);", form: "building-an-array-from-a-length" },
+  { name: "a Math method", source: "Math.max(a, b);", form: "a-math-call" },
 ];
 
 describe("CD-27 second-edition logic observations", () => {
   it.each(SECOND_EDITION_EXPRESSIONS)(
-    "flags $name under the second edition with the $section fix",
-    ({ source, section }) => {
-      const { observed, expression } = firstExpressionOf({
-        source,
-        bindings: [SECOND_EDITION_CLAUSE],
+    "flags $name under the second edition with the $form fix",
+    async ({ source, form }) => {
+      const loaded = await loadParsePort({
+        peers: defaultTypeScriptPeers({
+          installRoot: `${import.meta.dirname}/../../../../../..`,
+          installForm: "source",
+        }),
       });
+      assert(loaded.outcome === "ok");
+      const { syntaxApi } = loaded.value;
+      const prepared = check.prepare({
+        bindings: [SECOND_EDITION_CLAUSE],
+        repository: {
+          files: [FILE],
+          exists: vi.fn().mockReturnValue("present"),
+          disk: EMPTY_DISK,
+          testFiles: TEST_FILES,
+        },
+        syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+      const selection = prepared.value.prepareFile({
+        file: FILE,
+        readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+      });
+      assert(selection.outcome === "ok");
+      assert(selection.value.kind === "syntax");
+      const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+      const anchorAt = vi
+        .fn<(request: { readonly position: number }) => Anchor>()
+        .mockReturnValue({ line: 1, column: 0 });
+      const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+      const { enter } = observers;
+      assert.isDefined(enter);
+      const expression = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
 
-      observed.enter({ node: expression });
+      enter({ node: expression });
+      const findings = observers.finish();
 
-      expect(observed.observers.finish()).toEqual([
+      expect(findings).toEqual([
         {
           check: ADDRESS,
           anchor: { line: 1, column: 0 },
           snippet: source,
-          remedy: expect.objectContaining({ section }),
+          remedy: expect.objectContaining({ form }),
         },
       ]);
-      expect(observed.anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 0 });
+      expect(anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 0 });
     },
   );
 
   it.each(SECOND_EDITION_EXPRESSIONS)(
     "keeps $name unflagged under the first edition",
-    ({ source }) => {
-      const { observed, expression } = firstExpressionOf({ source, bindings: [CLAUSE] });
+    async ({ source }) => {
+      const loaded = await loadParsePort({
+        peers: defaultTypeScriptPeers({
+          installRoot: `${import.meta.dirname}/../../../../../..`,
+          installForm: "source",
+        }),
+      });
+      assert(loaded.outcome === "ok");
+      const { syntaxApi } = loaded.value;
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: {
+          files: [FILE],
+          exists: vi.fn().mockReturnValue("present"),
+          disk: EMPTY_DISK,
+          testFiles: TEST_FILES,
+        },
+        syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+      const selection = prepared.value.prepareFile({
+        file: FILE,
+        readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+      });
+      assert(selection.outcome === "ok");
+      assert(selection.value.kind === "syntax");
+      const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+      const anchorAt = vi
+        .fn<(request: { readonly position: number }) => Anchor>()
+        .mockReturnValue({ line: 1, column: 0 });
+      const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+      const { enter } = observers;
+      assert.isDefined(enter);
+      const expression = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
 
-      observed.enter({ node: expression });
+      enter({ node: expression });
+      const findings = observers.finish();
 
-      expect(observed.observers.finish()).toEqual([]);
+      expect(findings).toEqual([]);
     },
   );
 
-  it("flags a switch statement under the second edition only", () => {
-    const second = sourceObservations({
-      source: "switch (x) {}",
-      bindings: [SECOND_EDITION_CLAUSE],
+  it("flags a switch statement under the second edition", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
-    const first = sourceObservations({ source: "switch (x) {}", bindings: [CLAUSE] });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [SECOND_EDITION_CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "switch (x) {}";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
 
-    second.enter({ node: second.tree.getChildAt(0, second.tree).getChildAt(0, second.tree) });
-    first.enter({ node: first.tree.getChildAt(0, first.tree).getChildAt(0, first.tree) });
+    enter({ node: tree.getChildAt(0, tree).getChildAt(0, tree) });
+    const findings = observers.finish();
 
-    expect(second.observers.finish()).toEqual([
+    expect(findings).toEqual([
       {
         check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "switch (x) {}",
-        remedy: expect.objectContaining({ section: "a-switch" }),
+        remedy: expect.objectContaining({ form: "a-switch" }),
       },
     ]);
-    expect(first.observers.finish()).toEqual([]);
   });
 
-  it("keeps flagging first-edition logic under the second edition", () => {
-    const { observed, expression } = firstExpressionOf({
-      source: "r.map(f);",
-      bindings: [SECOND_EDITION_CLAUSE],
+  it("keeps a switch statement unflagged under the first edition", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "switch (x) {}";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
 
-    observed.enter({ node: expression });
+    enter({ node: tree.getChildAt(0, tree).getChildAt(0, tree) });
+    const findings = observers.finish();
 
-    expect(observed.observers.finish()).toEqual([
+    expect(findings).toEqual([]);
+  });
+
+  it("keeps flagging first-edition logic under the second edition", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [SECOND_EDITION_CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "r.map(f);";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const expression = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
+
+    enter({ node: expression });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
       {
         check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "r.map(f);",
-        remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
+        remedy: expect.objectContaining({ form: "a-method-that-computes-a-value" }),
       },
     ]);
   });
 
-  it("attributes a second-edition hit only to the bindings running the second edition", () => {
-    const { observed, expression } = firstExpressionOf({
-      source: "a ?? b;",
-      bindings: [CLAUSE, TEAM_SECOND_EDITION_CLAUSE],
+  it("attributes a second-edition hit only to the bindings running the second edition", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [CLAUSE, TEAM_SECOND_EDITION_CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const source = "a ?? b;";
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const expression = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
 
-    observed.enter({ node: expression });
+    enter({ node: expression });
+    const findings = observers.finish();
 
-    expect(observed.observers.finish()).toEqual([
+    expect(findings).toEqual([
       {
         check: TEAM_ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "a ?? b;",
-        remedy: expect.objectContaining({ section: "a-short-circuit" }),
+        remedy: expect.objectContaining({ form: "a-short-circuit" }),
       },
     ]);
   });
@@ -474,107 +950,201 @@ describe("CD-27 second-edition logic observations", () => {
     { name: "an asymmetric matcher", source: "expect.stringContaining('x');" },
     { name: "arithmetic", source: "a + b;" },
     { name: "a comparison", source: "a === b;" },
-  ])("keeps $name unflagged under the second edition", ({ source }) => {
-    const { observed, expression } = firstExpressionOf({
-      source,
-      bindings: [SECOND_EDITION_CLAUSE],
+  ])("keeps $name unflagged under the second edition", async ({ source }) => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
     });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const prepared = check.prepare({
+      bindings: [SECOND_EDITION_CLAUSE],
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const expression = tree.getChildAt(0, tree).getChildAt(0, tree).getChildAt(0, tree);
 
-    observed.enter({ node: expression });
+    enter({ node: expression });
+    const findings = observers.finish();
 
-    expect(observed.observers.finish()).toEqual([]);
+    expect(findings).toEqual([]);
   });
 });
 
-const ownPackageHits = (request: {
-  readonly files: readonly RepoPath[];
-  readonly texts: Readonly<Record<string, string>>;
-  readonly source: string;
-}): readonly PieceHit[] => {
-  const prepared = check.prepare({
-    bindings: [CLAUSE],
-    repository: {
-      files: request.files,
-      exists: vi.fn().mockReturnValue("present"),
-      disk: textsDisk({ root: "/repo", texts: request.texts }),
-      testFiles: { suffixes: ["test", "spec"], folders: [] },
-    },
-    syntaxApi: SYNTAX_API,
-  });
-  assert(prepared.outcome === "ok");
-  const selected = prepared.value.prepareFile({
-    file: FILE,
-    readText: vi
-      .fn<WalkerFile["readText"]>()
-      .mockReturnValue({ outcome: "ok", value: request.source }),
-  });
-  assert(selected.outcome === "ok");
-  assert(selected.value.kind === "syntax");
-  const tree = SYNTAX_API.createSourceFile(
-    FILE,
-    request.source,
-    SYNTAX_API.ScriptTarget.Latest,
-    true,
-  );
-  const observers = selected.value.begin({
-    sourceFile: tree,
-    anchorAt: vi
-      .fn<(request: { readonly position: number }) => Anchor>()
-      .mockReturnValue({ line: 2, column: 0 }),
-  });
-  const { enter } = observers;
-  assert.isDefined(enter);
-  const call = tree.statements[1];
-  assert.isDefined(call);
-  assert(SYNTAX_API.isExpressionStatement(call));
-  enter({ node: call.expression });
-  return observers.finish();
-};
-
-const FLAGGED_JOIN: readonly PieceHit[] = [
-  {
-    check: ADDRESS,
-    anchor: { line: 2, column: 0 },
-    snippet: 'paths.join({ segments: ["a"] });',
-    remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
-  },
-];
-
 describe("own API imported through a package of the repository", () => {
-  it("names no form for a port imported from a package the repository holds", () => {
-    expect(
-      ownPackageHits({
-        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
-        texts: {
-          "package.json": '{ "name": "app" }',
-          "packages/paths/package.json": '{ "name": "@app/paths" }',
-        },
-        source: 'import { paths } from "@app/paths";\npaths.join({ segments: ["a"] });',
+  it("names no form for a port imported from a package the repository holds", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
       }),
-    ).toEqual([]);
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const source = 'import { paths } from "@app/paths";\npaths.join({ segments: ["a"] });';
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: textsDisk({
+          root: "/repo",
+          texts: {
+            "package.json": '{ "name": "app" }',
+            "packages/paths/package.json": '{ "name": "@app/paths" }',
+          },
+        }),
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const call = tree.statements[1];
+    assert.isDefined(call);
+    assert(syntaxApi.isExpressionStatement(call));
+    anchorAt.mockReturnValue({ line: 2, column: 0 });
+
+    enter({ node: call.expression });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([]);
   });
 
-  it("names no form for a port imported through a subpath import", () => {
-    expect(
-      ownPackageHits({
+  it("names no form for a port imported through a subpath import", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const source = 'import { paths } from "#src/paths";\npaths.join({ segments: ["a"] });';
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
         files: [repoPathOf("package.json"), FILE],
-        texts: { "package.json": '{ "name": "app" }' },
-        source: 'import { paths } from "#src/paths";\npaths.join({ segments: ["a"] });',
-      }),
-    ).toEqual([]);
+        exists: vi.fn().mockReturnValue("present"),
+        disk: textsDisk({ root: "/repo", texts: { "package.json": '{ "name": "app" }' } }),
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const call = tree.statements[1];
+    assert.isDefined(call);
+    assert(syntaxApi.isExpressionStatement(call));
+    anchorAt.mockReturnValue({ line: 2, column: 0 });
+
+    enter({ node: call.expression });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([]);
   });
 
-  it("still flags a port imported from a package the repository does not hold", () => {
-    expect(
-      ownPackageHits({
-        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
-        texts: {
-          "package.json": '{ "name": "app" }',
-          "packages/paths/package.json": '{ "name": "@app/paths" }',
-        },
-        source: 'import { paths } from "path-kit";\npaths.join({ segments: ["a"] });',
+  it("still flags a port imported from a package the repository does not hold", async () => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
       }),
-    ).toEqual(FLAGGED_JOIN);
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
+    const source = 'import { paths } from "path-kit";\npaths.join({ segments: ["a"] });';
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: textsDisk({
+          root: "/repo",
+          texts: {
+            "package.json": '{ "name": "app" }',
+            "packages/paths/package.json": '{ "name": "@app/paths" }',
+          },
+        }),
+        testFiles: TEST_FILES,
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selection = prepared.value.prepareFile({
+      file: FILE,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selection.outcome === "ok");
+    assert(selection.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 1, column: 0 });
+    const observers = selection.value.begin({ sourceFile: tree, anchorAt });
+    const { enter } = observers;
+    assert.isDefined(enter);
+    const call = tree.statements[1];
+    assert.isDefined(call);
+    assert(syntaxApi.isExpressionStatement(call));
+    anchorAt.mockReturnValue({ line: 2, column: 0 });
+
+    enter({ node: call.expression });
+    const findings = observers.finish();
+
+    expect(findings).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: 'paths.join({ segments: ["a"] });',
+        remedy: expect.objectContaining({ form: "a-method-that-computes-a-value" }),
+      },
+    ]);
   });
 });
 
@@ -583,7 +1153,15 @@ describe("the repository's declared test files", () => {
     { fileName: "src/order.spec.ts", kind: "syntax" },
     { fileName: "src/__tests__/order.ts", kind: "syntax" },
     { fileName: "src/order.test.ts", kind: "skipped" },
-  ])("prepares $fileName as $kind under spec and __tests__", ({ fileName, kind }) => {
+  ])("prepares $fileName as $kind under spec and __tests__", async ({ fileName, kind }) => {
+    const loaded = await loadParsePort({
+      peers: defaultTypeScriptPeers({
+        installRoot: `${import.meta.dirname}/../../../../../..`,
+        installForm: "source",
+      }),
+    });
+    assert(loaded.outcome === "ok");
+    const { syntaxApi } = loaded.value;
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
@@ -593,12 +1171,15 @@ describe("the repository's declared test files", () => {
         disk: textsDisk({ root: "/repo", texts: {} }),
         testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
       },
-      syntaxApi: SYNTAX_API,
+      syntaxApi,
     });
     assert(prepared.outcome === "ok");
 
-    expect(
-      prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
-    ).toMatchObject({ outcome: "ok", value: { kind } });
+    const selection = prepared.value.prepareFile({
+      file,
+      readText: vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: "" }),
+    });
+
+    expect(selection).toMatchObject({ outcome: "ok", value: { kind } });
   });
 });

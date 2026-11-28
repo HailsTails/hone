@@ -4,6 +4,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -17,14 +19,14 @@ import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import { readHoneRecords, readingFollowingRenames } from "./read-hone-records.ts";
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -81,7 +83,7 @@ const READING: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const readerGiving = (
@@ -279,7 +281,7 @@ const READING_DEBT_ON_A: RecordsReading = {
   records: [DEBT_ON_A],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 describe("readingFollowingRenames", () => {
@@ -323,7 +325,7 @@ describe("readingFollowingRenames", () => {
         },
       ],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", placements: [] },
     });
   });
 

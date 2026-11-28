@@ -68,19 +68,19 @@ describe("projectCommandOf", () => {
 });
 
 describe("pruneCommandOf", () => {
-  it("runs prune-debt on the repository root with no other option when the check was given none", () => {
-    expect(
-      pruneCommandOf({
-        path: POSIX_PATH,
-        moduleUrl: INSTALLED_ENTRY,
-        repoRoot: absoluteRootOf("/work/shop"),
-        baseRevision: undefined,
-        forfeiture: undefined,
-      }),
-    ).toEqual({
+  it("omits the read-only forfeiture choice from the suggested prune command", () => {
+    const command = pruneCommandOf({
+      path: POSIX_PATH,
+      moduleUrl: INSTALLED_ENTRY,
+      repoRoot: absoluteRootOf("/work/shop"),
+      baseRevision: "pinned",
+      forfeiture: "no-new-findings",
+    });
+
+    expect(command).toEqual({
       outcome: "ok",
       value:
-        "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop",
+        "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop --base-revision pinned",
     });
   });
 

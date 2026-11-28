@@ -1,30 +1,38 @@
 import type { z } from "zod";
 
 import {
+  mapCheckToAddress,
+  mapSymptomToAddress,
+} from "../../../domain/language-layer/catalogue-address.ts";
+import {
+  type Binding,
   type Case,
+  type Check,
+  mapSymptomToAuthorisation,
+  type NamedBan,
   pointedNameOf,
   type Recipe,
   type Symptom,
+  type SymptomAddress,
   type SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
-import {
-  banStandingOf,
-  dependencyOf,
-} from "../../../domain/records/answering/outside-dependency.ts";
+import { banStandingOf } from "../../../domain/records/answering/outside-dependency.ts";
 import type {
+  AuthorisedBinding,
   AuthorisedLocation,
   AuthorisedReach,
-  BoundaryRecord,
   Debt,
   DependencyRecord,
   Deviation,
+  HeldAs,
   HoneRecord,
   OutsideParty,
   Owing,
+  StatedOutsideParty,
   RecordRefusal,
   RecordsAtBase,
-  RuntimeFacility,
   SymptomReach,
+  RecordReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import type { NamedFolderKind } from "../../../domain/records/hone-records/named-folder-kind.ts";
 import type { RecordedReach } from "../../../domain/records/hone-records/recorded-reach.ts";
@@ -36,42 +44,42 @@ import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
 import { ownedNameText, sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import {
   carriedAuthorisedLocationWireSchema,
-  carriedBoundaryRecordWireSchema,
   carriedFormSchema,
   debtWireSchema,
   dependencyRecordWireSchema,
   deviationWireSchema,
   statedAuthorisedLocationWireSchema,
-  statedBoundaryRecordWireSchema,
 } from "../records-wire.ts";
 import { carriedStandingOf } from "./carried-standing.ts";
+import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 
 type Resolution<Value> = Result<Value, readonly RecordRefusal[]>;
 
-type RecordedSymptom = { readonly symptom: Symptom; readonly reach: AuthorisedReach };
+type RecordedSymptom = { readonly symptom: Symptom; readonly reach: RecordReach };
 
-type DebtSymptom = { readonly symptom: Symptom; readonly reach: SymptomReach };
+type AuthorisedSymptom = { readonly symptom: Symptom; readonly reach: AuthorisedReach };
 
-export type Resolving = {
-  readonly catalogue: SymptomCatalogue;
+type DebtSymptom = { readonly symptom: SymptomAddress; readonly reach: SymptomReach };
+
+export type RecordLookups = Pick<
+  SymptomCatalogue,
+  "symptoms" | "checks" | "recipes" | "cases" | "namedBans"
+>;
+
+export type Resolving = RecordLookups & {
   readonly base: RecordsAtBase;
   readonly file: RepoPath;
-  readonly entry: z.core.util.JSONType;
+  readonly entry: ReadonlyJsonValue;
 };
 
 export type FiledUnder =
   | { readonly kind: NamedFolderKind; readonly ruleSet: RuleSetIdentity }
   | { readonly kind: SingleFileKind };
 
-const RUNTIME_PREFIX = "runtime:";
-
-const NPM_PREFIX = "npm:";
-
-const SCHEME_MARK = /^[a-z][a-z0-9+.-]*:/;
-
-const RUNTIME_FACILITIES: readonly RuntimeFacility[] = ["clock", "random", "process", "json"];
+const SCHEME_SEPARATOR = ":";
 
 const resolved = <Value>(found: Value): Resolution<Value> => ({ outcome: "ok", value: found });
 
@@ -85,23 +93,26 @@ const refusalsOf = (resolution: Resolution<unknown>): readonly RecordRefusal[] =
 
 const formOf = <Output>(request: {
   readonly schema: z.ZodType<Output>;
-  readonly entry: z.core.util.JSONType;
+  readonly entry: ReadonlyJsonValue;
 }): Resolution<Output> => {
   const parsed = request.schema.safeParse(request.entry);
   return parsed.success
     ? resolved(parsed.data)
-    : refusedWith({ kind: "form-refused", issues: parsed.error.issues });
+    : refusedWith({
+        kind: "form-refused",
+        issues: mapZodIssuesToRecordIssues({ issues: parsed.error.issues }),
+      });
 };
 
-const carriedForm = (request: { readonly entry: z.core.util.JSONType }): "carried" | "stated" =>
+const carriedForm = (request: { readonly entry: ReadonlyJsonValue }): HeldAs =>
   carriedFormSchema.safeParse(request.entry).success ? "carried" : "stated";
 
 const symptomNamed = (request: {
-  readonly catalogue: SymptomCatalogue;
+  readonly symptoms: readonly Symptom[];
   readonly ruleSet: RuleSetIdentity;
   readonly name: string;
 }): Resolution<Symptom> => {
-  const symptom = request.catalogue.symptoms.find(
+  const symptom = request.symptoms.find(
     (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
   );
   return symptom === undefined
@@ -110,11 +121,11 @@ const symptomNamed = (request: {
 };
 
 const recipeNamed = (request: {
-  readonly catalogue: SymptomCatalogue;
+  readonly recipes: readonly Recipe[];
   readonly ruleSet: RuleSetIdentity;
   readonly name: string;
 }): Resolution<Recipe> => {
-  const recipe = request.catalogue.recipes.find(
+  const recipe = request.recipes.find(
     (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
   );
   return recipe === undefined
@@ -135,11 +146,11 @@ const owedWithin = (request: { readonly case: Case; readonly owes: string }): Ow
 };
 
 export const owedBy = (request: {
-  readonly catalogue: SymptomCatalogue;
+  readonly cases: readonly Case[];
   readonly case: string;
   readonly owes: string;
 }): Owing => {
-  const found = request.catalogue.cases.find((candidate) => candidate.name === request.case);
+  const found = request.cases.find((candidate) => candidate.name === request.case);
   return found === undefined
     ? {
         matches: "not-the-catalogue",
@@ -164,64 +175,49 @@ const placedIn = (request: {
 };
 
 const notBanned = (request: {
-  readonly catalogue: SymptomCatalogue;
+  readonly namedBans: readonly NamedBan[];
   readonly dependency: string;
 }): Resolution<string> =>
-  banStandingOf({ namedBans: request.catalogue.namedBans, dependency: request.dependency }) ===
-  "banned"
+  banStandingOf({ namedBans: request.namedBans, dependency: request.dependency }) === "banned"
     ? refusedWith({ kind: "named-ban", dependency: request.dependency })
     : resolved(request.dependency);
 
-const runtimePartyOf = (request: { readonly text: string }): Resolution<OutsideParty> => {
-  const facility = RUNTIME_FACILITIES.find(
-    (candidate) => `${RUNTIME_PREFIX}${candidate}` === request.text,
-  );
-  return facility === undefined
-    ? refusedWith({ kind: "unknown-runtime-facility", outsideParty: request.text })
-    : resolved({ kind: "runtime", facility });
-};
-
-const outsidePartyOf = (request: { readonly text: string }): Resolution<OutsideParty> => {
-  if (request.text.startsWith(RUNTIME_PREFIX)) {
-    return runtimePartyOf(request);
+const mapTextToOutsideParty = (request: { readonly text: string }): OutsideParty => {
+  if (request.text.endsWith(SCHEME_SEPARATOR)) {
+    return { kind: "scheme", scheme: request.text };
   }
-  if (!request.text.startsWith(NPM_PREFIX) && SCHEME_MARK.test(request.text)) {
-    return resolved({ kind: "scheme-module", specifier: request.text });
-  }
-  return resolved({
-    kind: "package",
-    specifier: request.text,
-    dependency: dependencyOf({ specifier: request.text }),
-  });
+  return request.text.includes(SCHEME_SEPARATOR)
+    ? { kind: "scheme-module", specifier: request.text }
+    : { kind: "package", dependency: request.text };
 };
 
 const checkReachOf = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly symptom: Symptom;
+  readonly checks: readonly Check[];
+  readonly symptom: SymptomAddress;
   readonly check: string;
-}): AuthorisedReach => {
-  const check = request.catalogue.checks.find(
+}): RecordReach => {
+  const check = request.checks.find(
     (candidate) =>
       sameOwnedName({ left: candidate.symptom, right: request.symptom }) === "same" &&
       candidate.name === request.check,
   );
   return check === undefined
     ? { reaches: "unknown-check", check: request.check }
-    : { reaches: "one-check", check };
+    : { reaches: "one-check", check: mapCheckToAddress({ check }) };
 };
 
 const reachOf = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly symptom: Symptom;
+  readonly checks: readonly Check[];
+  readonly symptom: SymptomAddress;
   readonly recorded: RecordedReach;
-}): AuthorisedReach => {
+}): RecordReach => {
   const { recorded } = request;
   switch (recorded.reaches) {
     case "whole-symptom":
       return { reaches: "whole-symptom" };
     case "one-check":
       return checkReachOf({
-        catalogue: request.catalogue,
+        checks: request.checks,
         symptom: request.symptom,
         check: recorded.check,
       });
@@ -229,8 +225,8 @@ const reachOf = (request: {
 };
 
 const debtReachOf = (request: {
-  readonly symptom: Symptom;
-  readonly reach: AuthorisedReach;
+  readonly symptom: SymptomAddress;
+  readonly reach: RecordReach;
 }): Resolution<SymptomReach> => {
   const { reach } = request;
   switch (reach.reaches) {
@@ -254,7 +250,7 @@ const symptomFiledAt = (
   },
 ): Resolution<RecordedSymptom> => {
   const symptom = symptomNamed({
-    catalogue: request.catalogue,
+    symptoms: request.symptoms,
     ruleSet: request.ruleSet,
     name: request.recorded.symptom,
   });
@@ -270,7 +266,7 @@ const symptomFiledAt = (
   return resolved({
     symptom: symptom.value,
     reach: reachOf({
-      catalogue: request.catalogue,
+      checks: request.checks,
       symptom: symptom.value,
       recorded: request.recorded,
     }),
@@ -287,11 +283,14 @@ const debtSymptomFiledAt = (
   const reach = debtReachOf(filed.value);
   return reach.outcome === "failed"
     ? reach
-    : resolved({ symptom: filed.value.symptom, reach: reach.value });
+    : resolved({
+        symptom: mapSymptomToAddress({ symptom: filed.value.symptom }),
+        reach: reach.value,
+      });
 };
 
 const debtHoldingOf = (
-  request: Resolving & { readonly carried: z.core.util.JSONType | undefined },
+  request: Resolving & { readonly carried: ReadonlyJsonValue | undefined },
 ): Resolution<Debt["holding"]> => {
   if (request.carried === undefined) {
     return resolved({ held: "stated" });
@@ -307,7 +306,7 @@ const debtOf = (request: Resolving & { readonly ruleSet: RuleSetIdentity }): Res
   if (form.outcome === "failed") {
     return form;
   }
-  const { answers: recorded, file, note, carried } = form.value;
+  const { answers: recorded, file, note, carried, findings } = form.value;
   const symptom = debtSymptomFiledAt({ ...request, recorded });
   const holding = debtHoldingOf({ ...request, carried });
   if (symptom.outcome === "failed" || holding.outcome === "failed") {
@@ -318,59 +317,152 @@ const debtOf = (request: Resolving & { readonly ruleSet: RuleSetIdentity }): Res
     ...symptom.value,
     file,
     ...(note === undefined ? {} : { note }),
+    ...(findings === undefined ? {} : { findings }),
     holding: holding.value,
   });
 };
 
-const statedAuthorisedLocationOf = (
+const resolveAuthorisedReach = (request: {
+  readonly symptom: Symptom;
+  readonly reach: RecordReach;
+}): Resolution<AuthorisedReach> => {
+  const { reach } = request;
+  switch (reach.reaches) {
+    case "whole-symptom":
+      return refusedWith({ kind: "no-check-named", symptom: request.symptom.name });
+    case "one-check":
+    case "unknown-check":
+      return resolved(reach);
+  }
+};
+
+const resolveAuthorisedSymptom = (
+  request: Resolving & { readonly ruleSet: RuleSetIdentity; readonly recorded: RecordedReach },
+): Resolution<AuthorisedSymptom> => {
+  const filed = symptomFiledAt({ ...request, kind: "authorised-locations" });
+  if (filed.outcome === "failed") {
+    return filed;
+  }
+  const reach = resolveAuthorisedReach(filed.value);
+  return reach.outcome === "failed"
+    ? reach
+    : resolved({ symptom: filed.value.symptom, reach: reach.value });
+};
+
+const resolveAuthorisation = (request: {
+  readonly symptom: Symptom;
+  readonly held: HeldAs;
+}): Resolution<Binding> => {
+  const authorisation = mapSymptomToAuthorisation(request);
+  if (authorisation !== "no-correct-use") {
+    return resolved(authorisation);
+  }
+  return request.held === "carried"
+    ? resolved("check-and-file")
+    : refusedWith({ kind: "no-authorised-correct-use", symptom: request.symptom.name });
+};
+
+const resolveStatedParty = (request: { readonly text: string }): Resolution<StatedOutsideParty> => {
+  const party = mapTextToOutsideParty(request);
+  return party.kind === "scheme"
+    ? refusedWith({ kind: "scheme-party-stated", outsideParty: request.text })
+    : resolved(party);
+};
+
+const resolveCarriedParty = (request: { readonly text: string }): Resolution<OutsideParty> =>
+  resolved(mapTextToOutsideParty(request));
+
+const resolveBinding = <Party extends OutsideParty>(request: {
+  readonly symptom: Symptom;
+  readonly outsideParty: string | undefined;
+  readonly held: HeldAs;
+  readonly resolveParty: (party: { readonly text: string }) => Resolution<Party>;
+}): Resolution<AuthorisedBinding<Party>> => {
+  const authorisation = resolveAuthorisation(request);
+  if (authorisation.outcome === "failed") {
+    return authorisation;
+  }
+  const { outsideParty } = request;
+  if (authorisation.value === "check-and-file") {
+    return outsideParty === undefined
+      ? resolved({ binds: "check-and-file" })
+      : refusedWith({ kind: "outside-party-not-bound", symptom: request.symptom.name });
+  }
+  if (outsideParty === undefined) {
+    return refusedWith({ kind: "outside-party-missing", symptom: request.symptom.name });
+  }
+  const party = request.resolveParty({ text: outsideParty });
+  return party.outcome === "failed"
+    ? party
+    : resolved({ binds: "check-file-and-outside-party", outsideParty: party.value });
+};
+
+const resolveStatedAuthorisedLocation = (
   request: Resolving & { readonly ruleSet: RuleSetIdentity },
 ): Resolution<AuthorisedLocation> => {
   const form = formOf({ schema: statedAuthorisedLocationWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
   }
-  const symptom = symptomFiledAt({
-    ...request,
-    kind: "authorised-locations",
-    recorded: form.value.answers,
+  const filed = resolveAuthorisedSymptom({ ...request, recorded: form.value.answers });
+  if (filed.outcome === "failed") {
+    return filed;
+  }
+  const binding = resolveBinding({
+    symptom: filed.value.symptom,
+    outsideParty: form.value.outsideParty,
+    held: "stated",
+    resolveParty: resolveStatedParty,
   });
-  if (symptom.outcome === "failed") {
-    return symptom;
+  if (binding.outcome === "failed") {
+    return binding;
   }
   return resolved({
     kind: "authorised-location",
-    ...symptom.value,
+    symptom: mapSymptomToAddress({ symptom: filed.value.symptom }),
+    reach: filed.value.reach,
     file: form.value.file,
     holding: {
       held: "stated",
-      owing: owedBy({ catalogue: request.catalogue, case: form.value.case, owes: form.value.owes }),
+      binding: binding.value,
+      owing: owedBy({ cases: request.cases, case: form.value.case, owes: form.value.owes }),
       whyChain: form.value.whyChain,
     },
   });
 };
 
-const carriedAuthorisedLocationOf = (
+const resolveCarriedAuthorisedLocation = (
   request: Resolving & { readonly ruleSet: RuleSetIdentity },
 ): Resolution<AuthorisedLocation> => {
   const form = formOf({ schema: carriedAuthorisedLocationWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
   }
-  const symptom = symptomFiledAt({
-    ...request,
-    kind: "authorised-locations",
-    recorded: form.value.answers,
-  });
+  const filed = resolveAuthorisedSymptom({ ...request, recorded: form.value.answers });
+  const binding =
+    filed.outcome === "failed"
+      ? filed
+      : resolveBinding({
+          symptom: filed.value.symptom,
+          outsideParty: form.value.outsideParty,
+          held: "carried",
+          resolveParty: resolveCarriedParty,
+        });
   const standing = carriedStandingOf(request);
-  if (symptom.outcome === "failed" || standing.outcome === "failed") {
-    return { outcome: "failed", error: [...refusalsOf(symptom), ...refusalsOf(standing)] };
+  if (filed.outcome === "failed" || binding.outcome === "failed" || standing.outcome === "failed") {
+    return {
+      outcome: "failed",
+      error: [...refusalsOf(binding), ...refusalsOf(standing)],
+    };
   }
   return resolved({
     kind: "authorised-location",
-    ...symptom.value,
+    symptom: mapSymptomToAddress({ symptom: filed.value.symptom }),
+    reach: filed.value.reach,
     file: form.value.file,
     holding: {
       held: "carried",
+      binding: binding.value,
       entry: form.value.carried,
       lacks: ["case", "owes", "whyChain"],
       standing: standing.value,
@@ -382,53 +474,8 @@ const authorisedLocationOf = (
   request: Resolving & { readonly ruleSet: RuleSetIdentity },
 ): Resolution<AuthorisedLocation> =>
   carriedForm(request) === "carried"
-    ? carriedAuthorisedLocationOf(request)
-    : statedAuthorisedLocationOf(request);
-
-const statedBoundaryRecordOf = (request: Resolving): Resolution<BoundaryRecord> => {
-  const form = formOf({ schema: statedBoundaryRecordWireSchema, entry: request.entry });
-  if (form.outcome === "failed") {
-    return form;
-  }
-  const { module, outsideParty, ports, conformist } = form.value;
-  const party = outsidePartyOf({ text: outsideParty });
-  return party.outcome === "failed"
-    ? party
-    : resolved({
-        kind: "boundary-record",
-        module,
-        outsideParty: party.value,
-        holding: { held: "stated", ports, ...(conformist === undefined ? {} : { conformist }) },
-      });
-};
-
-const carriedBoundaryRecordOf = (request: Resolving): Resolution<BoundaryRecord> => {
-  const form = formOf({ schema: carriedBoundaryRecordWireSchema, entry: request.entry });
-  if (form.outcome === "failed") {
-    return form;
-  }
-  const party = outsidePartyOf({ text: form.value.outsideParty });
-  const standing = carriedStandingOf(request);
-  if (party.outcome === "failed" || standing.outcome === "failed") {
-    return { outcome: "failed", error: [...refusalsOf(party), ...refusalsOf(standing)] };
-  }
-  return resolved({
-    kind: "boundary-record",
-    module: form.value.module,
-    outsideParty: party.value,
-    holding: {
-      held: "carried",
-      entry: form.value.carried,
-      lacks: ["ports"],
-      standing: standing.value,
-    },
-  });
-};
-
-const boundaryRecordOf = (request: Resolving): Resolution<BoundaryRecord> =>
-  carriedForm(request) === "carried"
-    ? carriedBoundaryRecordOf(request)
-    : statedBoundaryRecordOf(request);
+    ? resolveCarriedAuthorisedLocation(request)
+    : resolveStatedAuthorisedLocation(request);
 
 const recipeReasonHeld = (request: {
   readonly recipe: Recipe;
@@ -446,7 +493,7 @@ const deviationOf = (
     return form;
   }
   const { recipe: name, file, recipeReason, reasonFails, evidence, ruleHolds } = form.value;
-  const found = recipeNamed({ catalogue: request.catalogue, ruleSet: request.ruleSet, name });
+  const found = recipeNamed({ recipes: request.recipes, ruleSet: request.ruleSet, name });
   const recipe =
     found.outcome === "failed" ? found : recipeReasonHeld({ recipe: found.value, recipeReason });
   const placed = placedIn({
@@ -474,7 +521,7 @@ const dependencyRecordOf = (request: Resolving): Resolution<DependencyRecord> =>
     return form;
   }
   const { nativeWay, whyNotEnough, peerRisk } = form.value;
-  const dependency = notBanned({ catalogue: request.catalogue, dependency: form.value.dependency });
+  const dependency = notBanned({ namedBans: request.namedBans, dependency: form.value.dependency });
   return dependency.outcome === "failed"
     ? dependency
     : resolved({
@@ -497,8 +544,6 @@ export const recordOf = (
       return authorisedLocationOf({ ...request, ruleSet: filedUnder.ruleSet });
     case "deviations":
       return deviationOf({ ...request, ruleSet: filedUnder.ruleSet });
-    case "boundary-records":
-      return boundaryRecordOf(request);
     case "dependency-records":
       return dependencyRecordOf(request);
   }

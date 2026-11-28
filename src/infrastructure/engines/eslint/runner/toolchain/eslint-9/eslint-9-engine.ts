@@ -1,15 +1,13 @@
 import * as typescriptParser from "@typescript-eslint/parser";
-import { ESLint } from "eslint-9";
+import * as eslint9 from "eslint-9";
 import { builtinRules } from "eslint-9/use-at-your-own-risk";
 import { z } from "zod";
 
 import type { ModuleLoaderPort } from "../../../../../../application/ports/host/module-loader-port.ts";
 import type { SourceCase } from "../../../../../../domain/rule-set/rule-set-types.ts";
 import type { RunnerClause } from "../../../../../../domain/runner/runner-module-types.ts";
-import {
-  eslintPieceSettingsSchema,
-  ruleOptionsOf,
-} from "../../pieces/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema } from "../../../../protocol/plugin-settings/eslint-piece-settings-schema.ts";
+import { readLegacyEslintCheckOptions } from "../../pieces/check-options.ts";
 import {
   type LoadedEslintPlugin,
   eslintPluginModuleSchema,
@@ -17,11 +15,11 @@ import {
 import { defaultNativeRuleSources, type NativeRuleSources } from "../../pieces/native-rules.ts";
 import { defaultEslintToolchainModules, type EslintToolchainModules } from "../eslint-toolchain.ts";
 
-export const ESLINT_9_VERSION = ESLint.version;
+export const ESLINT_9_VERSION = eslint9.ESLint.version;
 
 export const eslint9ToolchainModules: EslintToolchainModules = {
   ...defaultEslintToolchainModules,
-  eslint: () => Promise.resolve({ ESLint }),
+  eslint: () => Promise.resolve(eslint9),
 };
 
 type ConformanceRow = {
@@ -43,7 +41,7 @@ const ESLINT_9_SOURCES: NativeRuleSources = {
 
 const nativeRulePieceSchema = z.object({
   createPlugin: z.function({
-    input: [z.custom<NativeRuleSources>((value) => value === ESLINT_9_SOURCES)],
+    input: [z.custom<NativeRuleSources>((sources) => sources === ESLINT_9_SOURCES)],
     output: z.unknown(),
   }),
 });
@@ -79,7 +77,7 @@ const pluginUnderEslint9 = async (request: {
 };
 
 const linesFlagged = async (request: {
-  readonly eslint: ESLint;
+  readonly eslint: eslint9.ESLint;
   readonly sourceCase: SourceCase;
 }): Promise<readonly number[]> => {
   const [lintResult] = await request.eslint.lintText(request.sourceCase.source, {
@@ -88,16 +86,22 @@ const linesFlagged = async (request: {
   return distinctSorted(lintResult?.messages.map((message) => message.line) ?? []);
 };
 
-const sameLines = (left: readonly number[], right: readonly number[]): boolean =>
-  left.length === right.length && left.every((line, index) => line === right[index]);
+const compareLines = (left: readonly number[], right: readonly number[]): "same" | "different" =>
+  left.length === right.length && left.every((line, index) => line === right[index])
+    ? "same"
+    : "different";
 
 export const eslint9CaseMismatches = async (request: {
   readonly row: ConformanceRow;
 }): Promise<readonly CaseMismatch[]> => {
   const settings = eslintPieceSettingsSchema.parse(request.row.clause.settings);
   const { pluginNamespace, pluginModule, rule } = settings;
-  const options = ruleOptionsOf({ settings, edition: request.row.clause.edition });
-  const eslint = new ESLint({
+  const options = readLegacyEslintCheckOptions({
+    address: request.row.clause.address,
+    settings,
+    edition: request.row.clause.edition,
+  });
+  const eslint = new eslint9.ESLint({
     overrideConfigFile: true,
     overrideConfig: [
       {
@@ -119,5 +123,7 @@ export const eslint9CaseMismatches = async (request: {
       flaggedLines: await linesFlagged({ eslint, sourceCase }),
     })),
   );
-  return outcomes.filter((outcome) => !sameLines(outcome.expectedLines, outcome.flaggedLines));
+  return outcomes.filter(
+    (outcome) => compareLines(outcome.expectedLines, outcome.flaggedLines) === "different",
+  );
 };

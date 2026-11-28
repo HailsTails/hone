@@ -3425,7 +3425,7 @@ describe("package projection slices, a run that cannot finish", () => {
 });
 
 describe("versionOneProjectionOver", () => {
-  it("inspects the missing legacy projection and exposes the selected legacy rule without writing", async () => {
+  it("names the legacy projection file and the selected legacy rule without reading the file or writing", async () => {
     const write = vi.fn();
     const remove = vi.fn();
     const projection = versionOneProjectionOver({
@@ -3446,7 +3446,7 @@ describe("versionOneProjectionOver", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        files: [{ file: PROJECTION_FILE, state: "missing" }],
+        files: [PROJECTION_FILE],
         ruleIds: new Map([["CD-14#class-syntax", RULE_ID]]),
       },
     });

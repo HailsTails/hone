@@ -1,15 +1,26 @@
+import { gatheredOutcomes } from "../../gathered-outcomes.ts";
 import type { FoundCheck } from "../../language-layer/check-address.ts";
-import type { Check, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
+import {
+  mapAddressToSymptom,
+  type RuleContent,
+  type SymptomUnheld,
+} from "../../language-layer/rule-content.ts";
+import {
+  type Check,
+  mapCheckToPartyNaming,
+  type Recipe,
+  type SymptomAddress,
+  type SymptomCatalogue,
+} from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
-import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import type { Result } from "../../result.ts";
 import { sameOwnedName } from "../../rule-set/rule-set-identity.ts";
 import type {
-  AuthorisedReach,
-  BoundaryRecord,
+  AuthorisedBinding,
   Deviation,
   HoneRecord,
   OutsideParty,
-  RuntimeFacility,
+  RecordReach,
 } from "../hone-records/hone-record.ts";
 import { banStandingOf, dependencyOf } from "./outside-dependency.ts";
 
@@ -18,28 +29,26 @@ export type PartyReport =
   | { readonly reported: "not-reported" };
 
 export type Site = {
-  readonly symptom: Symptom;
+  readonly symptom: SymptomAddress;
   readonly check: FoundCheck;
   readonly file: RepoPath;
   readonly party: PartyReport;
 };
 
-export type Holding = "holds" | "does-not-hold";
+export type ResolvedSite = Site & { readonly recipes: readonly Recipe[] };
 
-const FOLDER_SEPARATOR = "/";
+type RecipeContent = { readonly content: RuleContent<"recipes"> };
 
-export const IMPORTED_PARTY_SYMPTOMS: readonly string[] = [
-  "outside-import-past-a-boundary",
-  "library-class-built-in-place",
-  "outside-type-in-a-signature",
-];
-
-export const RUNTIME_REACH: Readonly<Record<RuntimeFacility, readonly string[]>> = {
-  clock: ["date-used-directly"],
-  random: ["ambient-randomness"],
-  process: ["process-global-used-in-place"],
-  json: ["text-past-its-reader"],
+export const createResolvedSite = (
+  request: RecipeContent & { readonly site: Site },
+): Result<ResolvedSite, SymptomUnheld> => {
+  const symptom = mapAddressToSymptom({ content: request.content, symptom: request.site.symptom });
+  return symptom.outcome === "failed"
+    ? symptom
+    : { outcome: "ok", value: { ...request.site, recipes: symptom.value.recipes } };
 };
+
+export type Holding = "holds" | "does-not-hold";
 
 const everyHolds = (request: { readonly holdings: readonly Holding[] }): Holding =>
   request.holdings.every((holding) => holding === "holds") ? "holds" : "does-not-hold";
@@ -47,22 +56,13 @@ const everyHolds = (request: { readonly holdings: readonly Holding[] }): Holding
 const sameName = (request: { readonly left: string; readonly right: string }): Holding =>
   request.left === request.right ? "holds" : "does-not-hold";
 
-const namedIn = (request: { readonly name: string; readonly names: readonly string[] }): Holding =>
-  request.names.includes(request.name) ? "holds" : "does-not-hold";
-
-const toolSymptomNamedIn = (request: {
-  readonly symptom: Symptom;
-  readonly names: readonly string[];
-}): Holding =>
-  request.symptom.ruleSet === TOOL_RULE_SET
-    ? namedIn({ name: request.symptom.name, names: request.names })
-    : "does-not-hold";
-
-const sameSymptom = (request: { readonly left: Symptom; readonly right: Symptom }): Holding =>
-  sameOwnedName(request) === "same" ? "holds" : "does-not-hold";
+const sameSymptom = (request: {
+  readonly left: SymptomAddress;
+  readonly right: SymptomAddress;
+}): Holding => (sameOwnedName(request) === "same" ? "holds" : "does-not-hold");
 
 const reachesCheck = (request: {
-  readonly reach: AuthorisedReach;
+  readonly reach: RecordReach;
   readonly check: FoundCheck;
 }): Holding => {
   const { reach, check } = request;
@@ -79,8 +79,8 @@ const reachesCheck = (request: {
 };
 
 const reachesSymptom = (request: {
-  readonly symptom: Symptom;
-  readonly reach: AuthorisedReach;
+  readonly symptom: SymptomAddress;
+  readonly reach: RecordReach;
   readonly site: Pick<Site, "symptom" | "check">;
 }): Holding =>
   everyHolds({
@@ -90,35 +90,38 @@ const reachesSymptom = (request: {
     ],
   });
 
-const clearOfOutsideParties = (request: { readonly symptom: Symptom }): Holding =>
-  toolSymptomNamedIn({ symptom: request.symptom, names: IMPORTED_PARTY_SYMPTOMS }) === "holds"
-    ? "does-not-hold"
-    : "holds";
-
-export const reachOf = (request: { readonly party: OutsideParty }): readonly string[] => {
-  switch (request.party.kind) {
-    case "package":
-    case "scheme-module":
-      return IMPORTED_PARTY_SYMPTOMS;
-    case "runtime":
-      return RUNTIME_REACH[request.party.facility];
-  }
-};
-
-const moduleCovers = (request: { readonly module: RepoPath; readonly file: RepoPath }): Holding =>
-  request.file === request.module || request.file.startsWith(`${request.module}${FOLDER_SEPARATOR}`)
+const siteNamesAParty = (request: { readonly check: FoundCheck }): Holding =>
+  request.check.found === "check" &&
+  mapCheckToPartyNaming({ check: request.check.check }) === "names-the-party"
     ? "holds"
     : "does-not-hold";
 
-const recipeOfSymptom = (request: {
+const recipeAmong = (request: {
   readonly record: Deviation;
-  readonly symptom: Symptom;
+  readonly recipes: readonly Recipe[];
 }): Holding =>
-  request.symptom.recipes.some(
+  request.recipes.some(
     (recipe) => sameOwnedName({ left: recipe, right: request.record.recipe }) === "same",
   )
     ? "holds"
     : "does-not-hold";
+
+const checksOfRecipe = (
+  request: RecipeContent & { readonly record: Deviation; readonly checks: readonly Check[] },
+): Result<readonly Check[], SymptomUnheld> =>
+  gatheredOutcomes({
+    outcomes: request.checks.map((check): Result<readonly Check[], SymptomUnheld> => {
+      const symptom = mapAddressToSymptom({ content: request.content, symptom: check.symptom });
+      if (symptom.outcome === "failed") return symptom;
+      return {
+        outcome: "ok",
+        value:
+          recipeAmong({ record: request.record, recipes: symptom.value.recipes }) === "holds"
+            ? [check]
+            : [],
+      };
+    }),
+  });
 
 const importedPartyClearOfBans = (request: {
   readonly party: PartyReport;
@@ -141,107 +144,100 @@ const deviationClearOfBans = (request: {
   readonly site: Site;
   readonly catalogue: SymptomCatalogue;
 }): Holding =>
-  clearOfOutsideParties({ symptom: request.site.symptom }) === "holds"
-    ? "holds"
-    : importedPartyClearOfBans({ party: request.site.party, catalogue: request.catalogue });
+  siteNamesAParty({ check: request.site.check }) === "holds"
+    ? importedPartyClearOfBans({ party: request.site.party, catalogue: request.catalogue })
+    : "holds";
 
-const reportedPartyIs = (request: {
+const partyNamesSpecifier = (request: {
   readonly party: OutsideParty;
   readonly specifier: string;
 }): Holding => {
-  switch (request.party.kind) {
+  const { party, specifier } = request;
+  switch (party.kind) {
     case "package":
-      return sameName({
-        left: dependencyOf({ specifier: request.specifier }),
-        right: request.party.dependency,
-      });
+      return sameName({ left: dependencyOf({ specifier }), right: party.dependency });
     case "scheme-module":
-      return sameName({ left: request.specifier, right: request.party.specifier });
-    case "runtime":
-      return "does-not-hold";
+      return sameName({ left: specifier, right: party.specifier });
+    case "scheme":
+      return specifier.startsWith(party.scheme) ? "holds" : "does-not-hold";
   }
 };
 
-const boundaryPartyNamed = (request: {
-  readonly record: BoundaryRecord;
+const bindingHolds = (request: {
+  readonly binding: AuthorisedBinding;
   readonly site: Site;
 }): Holding => {
-  if (request.record.outsideParty.kind === "runtime") {
-    return "holds";
-  }
-  switch (request.site.party.reported) {
-    case "not-reported":
-      return "does-not-hold";
-    case "specifier":
-      return reportedPartyIs({
-        party: request.record.outsideParty,
-        specifier: request.site.party.specifier,
-      });
+  const { binding, site } = request;
+  switch (binding.binds) {
+    case "check-and-file":
+      return "holds";
+    case "check-file-and-outside-party":
+      return site.party.reported === "specifier"
+        ? partyNamesSpecifier({ party: binding.outsideParty, specifier: site.party.specifier })
+        : "does-not-hold";
   }
 };
 
-export type RecordPlace =
-  | { readonly at: "file"; readonly file: RepoPath }
-  | { readonly at: "module"; readonly module: RepoPath };
+export type ReachedPlace = { readonly check: Check; readonly file: RepoPath };
 
-export type ReachedPlace = { readonly check: Check; readonly place: RecordPlace };
-
-const checksReachedBy = (request: {
-  readonly record: HoneRecord;
-  readonly catalogue: SymptomCatalogue;
-}): readonly Check[] => {
+const checksReachedBy = (
+  request: RecipeContent & {
+    readonly record: HoneRecord;
+    readonly catalogue: SymptomCatalogue;
+  },
+): Result<readonly Check[], SymptomUnheld> => {
   const { record, catalogue } = request;
   switch (record.kind) {
     case "debt":
     case "authorised-location":
-      return catalogue.checks.filter(
-        (check) =>
-          reachesSymptom({
-            symptom: record.symptom,
-            reach: record.reach,
-            site: { symptom: check.symptom, check: { found: "check", check } },
-          }) === "holds",
-      );
+      return {
+        outcome: "ok",
+        value: catalogue.checks.filter(
+          (check) =>
+            reachesSymptom({
+              symptom: record.symptom,
+              reach: record.reach,
+              site: { symptom: check.symptom, check: { found: "check", check } },
+            }) === "holds",
+        ),
+      };
     case "deviation":
-      return catalogue.checks.filter(
-        (check) => recipeOfSymptom({ record, symptom: check.symptom }) === "holds",
-      );
-    case "boundary-record":
-      return catalogue.checks.filter(
-        (check) =>
-          toolSymptomNamedIn({
-            symptom: check.symptom,
-            names: reachOf({ party: record.outsideParty }),
-          }) === "holds",
-      );
+      return checksOfRecipe({ content: request.content, record, checks: catalogue.checks });
     case "dependency-record":
-      return [];
+      return { outcome: "ok", value: [] };
   }
 };
 
-const placeOf = (request: { readonly record: HoneRecord }): RecordPlace | undefined => {
+const mapRecordToFile = (request: { readonly record: HoneRecord }): RepoPath | undefined => {
   const { record } = request;
   switch (record.kind) {
     case "debt":
     case "authorised-location":
     case "deviation":
-      return { at: "file", file: record.file };
-    case "boundary-record":
-      return { at: "module", module: record.module };
+      return record.file;
     case "dependency-record":
       return undefined;
   }
 };
 
-export const placesReachedBy = (request: {
-  readonly record: HoneRecord;
-  readonly catalogue: SymptomCatalogue;
-}): readonly ReachedPlace[] => {
-  const place = placeOf(request);
-  return place === undefined ? [] : checksReachedBy(request).map((check) => ({ check, place }));
+export const placesReachedBy = (
+  request: RecipeContent & {
+    readonly record: HoneRecord;
+    readonly catalogue: SymptomCatalogue;
+  },
+): Result<readonly ReachedPlace[], SymptomUnheld> => {
+  const file = mapRecordToFile(request);
+  if (file === undefined) return { outcome: "ok", value: [] };
+  const checks = checksReachedBy(request);
+  return checks.outcome === "failed"
+    ? checks
+    : { outcome: "ok", value: checks.value.map((check) => ({ check, file })) };
 };
 
-const sitedAt = (request: { readonly record: HoneRecord; readonly site: Site }): Holding => {
+const sitedAt = (request: {
+  readonly record: HoneRecord;
+  readonly site: ResolvedSite;
+}): Holding => {
   const { record, site } = request;
   switch (record.kind) {
     case "debt":
@@ -256,17 +252,7 @@ const sitedAt = (request: { readonly record: HoneRecord; readonly site: Site }):
       return everyHolds({
         holdings: [
           sameName({ left: record.file, right: site.file }),
-          recipeOfSymptom({ record, symptom: site.symptom }),
-        ],
-      });
-    case "boundary-record":
-      return everyHolds({
-        holdings: [
-          moduleCovers({ module: record.module, file: site.file }),
-          toolSymptomNamedIn({
-            symptom: site.symptom,
-            names: reachOf({ party: record.outsideParty }),
-          }),
+          recipeAmong({ record, recipes: site.recipes }),
         ],
       });
     case "dependency-record":
@@ -282,21 +268,17 @@ const partyHolds = (request: {
   const { record } = request;
   switch (record.kind) {
     case "debt":
-    case "authorised-location":
     case "dependency-record":
       return "holds";
+    case "authorised-location":
+      return bindingHolds({ binding: record.holding.binding, site: request.site });
     case "deviation":
       return deviationClearOfBans(request);
-    case "boundary-record":
-      return boundaryPartyNamed({ record, site: request.site });
   }
 };
 
 export const holdsAt = (request: {
   readonly record: HoneRecord;
-  readonly site: Site;
+  readonly site: ResolvedSite;
   readonly catalogue: SymptomCatalogue;
-}): Holding =>
-  everyHolds({
-    holdings: [sitedAt({ record: request.record, site: request.site }), partyHolds(request)],
-  });
+}): Holding => everyHolds({ holdings: [sitedAt(request), partyHolds(request)] });

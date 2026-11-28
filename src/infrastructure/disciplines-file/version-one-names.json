@@ -268,8 +268,8 @@
       "clause": "CD-12#repository-ports",
       "sight": {
         "kind": "method",
-        "recipe": "port-in-the-domain",
-        "outcomeSeenBy": ["port-outside-the-domain", "inner-layer-imports-outer"]
+        "recipe": "port-in-a-module-of-its-own",
+        "outcomeSeenBy": ["port-beside-its-adapter", "inner-layer-imports-outer"]
       },
       "checks": []
     },
@@ -359,7 +359,7 @@
       "sight": {
         "kind": "method",
         "recipe": "composition-root",
-        "outcomeSeenBy": ["adapter-built-outside-the-root", "port-outside-the-domain"]
+        "outcomeSeenBy": ["adapter-built-outside-the-root", "port-beside-its-adapter"]
       },
       "checks": []
     },
@@ -367,7 +367,7 @@
       "clause": "CD-22#middleware-context",
       "sight": {
         "kind": "method",
-        "recipe": "bounded-context-generic",
+        "recipe": "constrained-context-generic",
         "outcomeSeenBy": ["default-for-a-required-value"]
       },
       "checks": []
@@ -628,7 +628,6 @@
   ],
   "recordKinds": {
     "authorised-location": "authorised-location",
-    "boundary-record": "authorised-location",
     "debt": "file-carve-out"
   }
 }

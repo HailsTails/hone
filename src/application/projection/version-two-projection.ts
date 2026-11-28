@@ -1,17 +1,18 @@
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
+import type { ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
 import { type VersionTwoStages, versionTwoInputsOf } from "../run/version-two-run.ts";
 
 export const versionTwoProjectionOver = async (request: {
   readonly stages: VersionTwoStages;
-}): Promise<Result<readonly ProjectedFile[], RunLoadFailure>> => {
+}): Promise<Result<readonly ProjectionEntry[], RunLoadFailure>> => {
   const inputs = versionTwoInputsOf(request);
   if (inputs.outcome === "failed") {
     return inputs;
   }
-  const tree = request.stages.tree({ settings: inputs.value.settings });
+  const { catalogue, settings, records, checks } = inputs.value;
+  const tree = request.stages.tree({ settings });
   return tree.outcome === "failed"
     ? tree
-    : request.stages.projections({ ...inputs.value, tree: tree.value });
+    : request.stages.projections({ catalogue, settings, records, checks, tree: tree.value });
 };

@@ -10,7 +10,6 @@ import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier
 import type { ClauseDefinition, DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { NamedClause, VersionOneNames } from "../../disciplines-file/version-one-names.ts";
-import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
 import {
   installedNamesPathOf,
   installedPiecesFor,
@@ -27,7 +26,7 @@ type InstallSource = {
 
 type MechanicalClause = Extract<ClauseDefinition, { readonly kind: "mechanical" }>;
 
-const MECHANISMS: readonly EngineId[] = ENGINE_REGISTRY.map((engine) => engine.name);
+const MECHANISMS: readonly Exclude<EngineId, "oxlint">[] = ["walker", "eslint"];
 
 const ruleSetInvalid = (request: {
   readonly path: string;

@@ -52,6 +52,7 @@ const CLAIMED_TYPE: Symptom = {
         phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
+      binding: "check-and-file",
     },
   ],
 };
@@ -80,8 +81,7 @@ describe("touchedSetOf", () => {
     const git = gitChanging({ files: [FILE_A] });
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "elsewhere" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "elsewhere" },
         records: [DEBT],
         repoRoot: REPO,
         baseRevision: "origin/main",
@@ -95,8 +95,7 @@ describe("touchedSetOf", () => {
   it("measures the files changed since the base revision when records hold debt", () => {
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records: [DEBT],
         repoRoot: REPO,
         baseRevision: "origin/main",
@@ -109,8 +108,7 @@ describe("touchedSetOf", () => {
   it("says no base revision was given when records hold debt and none was passed", () => {
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records: [DEBT],
         repoRoot: REPO,
         baseRevision: undefined,
@@ -127,8 +125,7 @@ describe("touchedSetOf", () => {
     const git = gitChanging({ files: [FILE_A] });
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records: [],
         repoRoot: REPO,
         baseRevision: "origin/main",
@@ -142,8 +139,7 @@ describe("touchedSetOf", () => {
   it("measures the changed files even when no record is debt, for a command that records debt", () => {
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "this-run" },
-        measuring: "always",
+        scope: { baseScope: "merge-base", measuring: "always" },
         records: [],
         repoRoot: REPO,
         baseRevision: "origin/main",
@@ -157,8 +153,7 @@ describe("touchedSetOf", () => {
     const git = gitChanging({ files: [FILE_A] });
     expect(
       touchedSetOf({
-        assessment: { forfeiture: "elsewhere" },
-        measuring: "always",
+        scope: { baseScope: "elsewhere" },
         records: [],
         repoRoot: REPO,
         baseRevision: "origin/main",
@@ -167,5 +162,29 @@ describe("touchedSetOf", () => {
       }),
     ).toEqual({ measured: "elsewhere" });
     expect(vi.mocked(git.changedSince).mock.calls).toEqual([]);
+  });
+});
+
+it("requires a pinned ancestor for the landing comparison even with an empty ledger", () => {
+  const git = gitChanging({ files: [FILE_A] });
+
+  const touched = touchedSetOf({
+    scope: { baseScope: "pinned-ancestor" },
+    records: [],
+    repoRoot: REPO,
+    baseRevision: "pinned",
+    git,
+    renamed: { measured: "yes", renamed: new Map() },
+  });
+
+  expect(git.changedSince).toHaveBeenCalledExactlyOnceWith({
+    repoRoot: REPO,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+  });
+  expect(touched).toEqual({
+    measured: "pinned-ancestor",
+    paths: new Set([FILE_A]),
+    landingRevision: "pinned",
   });
 });

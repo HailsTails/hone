@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "!"
+  },
+  "settings": {
+    "rule": "no-restricted-syntax",
+    "module": "non-null-assertions-plugin.ts",
+    "pluginNamespace": "hone-claimed-type-non-null-assertions"
+  },
+  "moduleScope": "runner"
+}

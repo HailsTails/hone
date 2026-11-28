@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "identifier"
+  },
+  "settings": {
+    "rule": "naming-convention",
+    "module": "naming-plugin.ts",
+    "pluginNamespace": "hone-name-off-its-casing-naming-convention",
+    "peer": "typescript-eslint"
+  }
+}

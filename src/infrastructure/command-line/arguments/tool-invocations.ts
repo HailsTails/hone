@@ -2,7 +2,10 @@ import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
+import {
+  type CheckForfeiture,
+  FORFEITURE_ASSESSMENTS,
+} from "../../../domain/settings/assessment.ts";
 import {
   BASE_REVISION_OPTION,
   FORFEITURE_OPTION,
@@ -69,7 +72,7 @@ export const upgradeInvocationOf = (request: InvocationRequest): Result<string, 
 export const pruneCommandOf = (
   request: InvocationRequest & {
     readonly baseRevision: string | undefined;
-    readonly forfeiture: ForfeitureAssessment | undefined;
+    readonly forfeiture: CheckForfeiture | undefined;
   },
 ): Result<string, LoadFailure> =>
   toolInvocationOf({
@@ -77,6 +80,9 @@ export const pruneCommandOf = (
     subcommand: PRUNE_DEBT_SUBCOMMAND,
     options: [
       ...optionWords({ name: BASE_REVISION_OPTION.name, value: request.baseRevision }),
-      ...optionWords({ name: FORFEITURE_OPTION.name, value: request.forfeiture }),
+      ...optionWords({
+        name: FORFEITURE_OPTION.name,
+        value: FORFEITURE_ASSESSMENTS.find((forfeiture) => forfeiture === request.forfeiture),
+      }),
     ],
   });

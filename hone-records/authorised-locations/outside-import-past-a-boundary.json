@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/modules/package-manifest-port.ts",
+      "outsideParty": "node:module",
+      "case": "uses-a-system-or-service-outside-the-program",
+      "owes": "external-behaviour-sits-at-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does package-manifest-port.ts import createRequire from node:module?",
+            "because": "It finds where a package's manifest is installed, starting the search at whichever folder the caller names.",
+            "evidence": "src/infrastructure/node/modules/package-manifest-port.ts:8"
+          },
+          {
+            "why": "Why does the caller name the folder the manifest search starts at?",
+            "because": "The speed baseline compares two Hone builds, so it checks that every sample copy loads its own side's build.",
+            "evidence": "delivery/speed-baseline/prepare-sample.ts:44 and delivery/speed-baseline/hone-install-check.ts:11"
+          },
+          {
+            "why": "Why might a sample copy load a build that is not its own side's?",
+            "because": "Nothing is installed in a sample copy: it is a git worktree placed inside its side's install folder, so its packages are found in a folder above it.",
+            "evidence": "delivery/speed-baseline/prepare-sample.ts:76 and delivery/speed-baseline/speed-baseline-places.ts:27"
+          },
+          {
+            "why": "Why does being placed below another folder settle which packages a copy finds?",
+            "because": "Node looks in the node_modules folder of the starting folder, then of each parent folder, until it finds the package.",
+            "evidence": "https://nodejs.org/api/modules.html#loading-from-node_modules-folders"
+          },
+          {
+            "why": "Why ask Node for that lookup rather than walk the parent folders ourselves?",
+            "because": "Node owns that lookup, and module.createRequire gives a require function for a file path the caller chooses.",
+            "evidence": "https://nodejs.org/api/module.html#modulecreaterequirefilename"
+          }
+        ],
+        "rootCause": "Node owns the package lookup and offers it from a chosen path through module.createRequire.",
+        "rootEvidence": "Read 25 Nov 2026: src/infrastructure/node/modules/package-manifest-port.ts:15 calls createRequire(...).resolve, its only use of node:module.",
+        "readback": "Node owns the package lookup and offers it through createRequire; therefore the folders above a sample copy settle which packages it finds; therefore the baseline checks that each copy finds its own side's build; therefore the caller names the folder to search from; therefore package-manifest-port.ts imports createRequire from node:module.",
+        "owner": "HailsTails"
+      }
+    },
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts",
+      "outsideParty": "eslint",
+      "case": "uses-a-system-or-service-outside-the-program",
+      "owes": "external-behaviour-sits-at-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does eslint-instance.ts import types from eslint?",
+            "because": "It constructs the ESLint class it is given and maps its results, and it hands AST, Rule and SourceCode to rules of Hone's own.",
+            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts:692"
+          },
+          {
+            "why": "Why does it construct the class, map its results and hand out the rule types?",
+            "because": "It adapts ESLint's engine to Hone's own port, and the rules that take those types fill ESLint's rule contract.",
+            "evidence": "src/infrastructure/engines/eslint/runner/hone-plugin/checks-plugin.ts:10"
+          },
+          {
+            "why": "Why must the engine be adapted and the rules fill ESLint's contract?",
+            "because": "ESLint runs the rules and returns its results in shapes of its own.",
+            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts:648"
+          },
+          {
+            "why": "Why does Hone meet ESLint's own shapes?",
+            "because": "Hone runs the ESLint the adopter installs over their config, loaded by its toolchain.",
+            "evidence": "src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts:69"
+          },
+          {
+            "why": "Why does the ESLint the adopter installs set those shapes?",
+            "because": "ESLint publishes them as its Node.js API, outside Hone.",
+            "evidence": "https://eslint.org/docs/latest/integrate/nodejs-api"
+          }
+        ],
+        "rootCause": "ESLint publishes its Node.js API declarations outside Hone.",
+        "rootEvidence": "Read 25 Nov 2026: `eslint-instance.ts:2` and `:22` are its only imports from eslint, both types only.",
+        "readback": "ESLint publishes its API declarations outside Hone; therefore the ESLint the adopter installs sets those shapes; therefore Hone meets them; therefore it adapts the engine and its rules fill the contract; therefore eslint-instance.ts constructs the class and hands out the rule types; therefore it imports types from eslint.",
+        "owner": "HailsTails"
+      }
+    },
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/file-system/temporary-directory-port.ts",
+      "outsideParty": "node:os",
+      "case": "uses-a-system-or-service-outside-the-program",
+      "owes": "external-behaviour-sits-at-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does temporary-directory-port.ts import node:os?",
+            "because": "Oxlint reads the measurement config through a file path in host scratch space.",
+            "evidence": "src/infrastructure/engines/oxlint/runner/toolchain/configured-oxlint.ts:240-247"
+          },
+          {
+            "why": "Why place the measurement config in host scratch space?",
+            "because": "The checkout stays read-only during Hone measurement while the adopter projection remains available for native runs.",
+            "evidence": "src/infrastructure/node/file-system/temporary-directory-port.ts:13-20 and src/infrastructure/engines/oxlint/runner/toolchain/configured-oxlint.ts:157-174"
+          },
+          {
+            "why": "Why does a read-only checkout leave the scratch location to the host?",
+            "because": "The available temporary root depends on the machine and the process environment.",
+            "evidence": "https://github.com/nodejs/node/blob/v22.18.0/doc/api/os.md#ostmpdir"
+          },
+          {
+            "why": "Why does the temporary root depend on the process environment?",
+            "because": "Windows and Linux use different precedence and fallback paths when temporary directory overrides are set or absent.",
+            "evidence": "https://github.com/nodejs/node/blob/v22.18.0/doc/api/os.md#ostmpdir"
+          },
+          {
+            "why": "Why are platform precedence and fallback paths delegated to tmpdir?",
+            "because": "Node publishes stable operating-system discovery through tmpdir, so the adapter can follow runtime defaults without duplicating them.",
+            "evidence": "https://github.com/nodejs/node/blob/v22.18.0/doc/api/os.md#ostmpdir"
+          }
+        ],
+        "rootCause": "The Node runtime owns the operating-system temporary directory API and its platform selection.",
+        "rootEvidence": "Read the Node 22.18.0 os.tmpdir contract and src/infrastructure/node/file-system/temporary-directory-port.ts:2,13. The contract gives platform-specific roots and the port delegates their selection to tmpdir.",
+        "readback": "Node owns operating-system temporary directory discovery, therefore its tmpdir supplies the platform precedence and fallback paths, therefore host scratch follows the runtime default, therefore the measurement can use an external path while the checkout stays read-only, therefore temporary-directory-port.ts imports node:os.",
+        "owner": "HailsTails"
+      }
+    },
+    {
+      "answers": "outside-import-past-a-boundary#import-or-require",
+      "file": "src/infrastructure/node/file-system/temporary-directory-port.ts",
+      "outsideParty": "node:fs",
+      "case": "uses-a-system-or-service-outside-the-program",
+      "owes": "external-behaviour-sits-at-a-boundary",
+      "whyChain": {
+        "whys": [
+          {
+            "why": "Why does temporary-directory-port.ts import node:fs?",
+            "because": "The host adapter canonicalizes paths, allocates a fresh scratch directory, and cleans it up after measurement.",
+            "evidence": "src/infrastructure/node/file-system/temporary-directory-port.ts:13-26"
+          },
+          {
+            "why": "Why require canonical paths and one fresh scratch directory?",
+            "because": "Link or junction aliases can point a lexical path into the checkout, and concurrent lint calls need independent directory lifetimes.",
+            "evidence": "src/infrastructure/node/file-system/temporary-directory-port.ts:13-22 and https://github.com/nodejs/node/blob/v22.18.0/doc/api/fs.md#fsrealpathsyncpath-options"
+          },
+          {
+            "why": "Why do checkout aliases and independent directory lifetimes matter to lint?",
+            "because": "Each invocation writes one external JSON rules config while the adopter checkout stays read-only.",
+            "evidence": "src/infrastructure/engines/oxlint/runner/toolchain/configured-oxlint.ts:240-248"
+          },
+          {
+            "why": "Why does each invocation write an external JSON rules config?",
+            "because": "Generated debt switches in the developer configuration would withhold the findings Hone Answering needs to judge existing records.",
+            "evidence": "src/infrastructure/engines/oxlint/runner/projection/oxlint-projection.ts and src/infrastructure/engines/oxlint/runner/toolchain/configured-oxlint.ts:235-248"
+          },
+          {
+            "why": "Why can generated debt switches withhold the findings?",
+            "because": "The Oxlint CLI reads rule severity and per-file overrides from a persisted config, so the evidence invocation needs a separate configuration file.",
+            "evidence": "https://github.com/oxc-project/oxc/blob/oxlint_v1.95.0/crates/oxc_linter/src/config/config_builder.rs"
+          }
+        ],
+        "rootCause": "The pinned Oxlint CLI owns file-based configuration and per-file rule severity, which requires distinct configured evidence for recorded debt.",
+        "rootEvidence": "Read https://github.com/oxc-project/oxc/blob/oxlint_v1.95.0/crates/oxc_linter/src/config/config_builder.rs and src/infrastructure/engines/oxlint/runner/toolchain/configured-oxlint.ts:157-183. The original configuration determines file reach, and the separate evidence invocation passes the selected rules by configuration pathname.",
+        "readback": "The pinned Oxlint CLI owns file-based configuration and per-file rule severity, therefore generated debt switches stay in developer configuration, therefore the evidence invocation gets one external JSON config, therefore the adapter verifies physical paths and owns one scratch directory lifetime, therefore temporary-directory-port.ts imports node:fs.",
+        "owner": "HailsTails"
+      }
+    }
+  ]
+}

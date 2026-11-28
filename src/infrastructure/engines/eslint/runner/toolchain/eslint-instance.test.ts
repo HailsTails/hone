@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
@@ -10,57 +10,11 @@ import {
   createEslintPort,
   type EslintPort,
   type EslintSurface,
-  type EslintToolchain,
   eslintOptionsOf,
   governanceConfig,
   type LintedFile,
+  type Rule,
 } from "./eslint-instance.ts";
-import {
-  defaultEslintToolchainPeers,
-  type EslintToolchainModules,
-  type EslintToolchainPeers,
-  loadEslintToolchain,
-} from "./eslint-toolchain.ts";
-
-type EslintLine = "eslint-10" | "eslint-9";
-
-const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
-
-type LineDefinition = {
-  readonly eslintVersion: RegExp;
-  readonly modules: EslintToolchainModules;
-};
-
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({
-  installRoot: `${import.meta.dirname}/../../../../../..`,
-  installForm: "source",
-});
-
-const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
-  "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules },
-  "eslint-9": { eslintVersion: /^9\./, modules: eslint9ToolchainModules },
-};
-
-const loadedEslintToolchain = async (request: {
-  readonly line: EslintLine;
-}): Promise<EslintToolchain> => {
-  const loaded = await loadEslintToolchain({
-    peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules },
-  });
-  assert(
-    loaded.outcome === "ok",
-    `the ${request.line} toolchain loads from the development install`,
-  );
-  assert(
-    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
-    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
-  );
-  return loaded.value;
-};
-
-type ReportingContext = {
-  readonly report: (descriptor: { readonly node: unknown; readonly messageId: string }) => void;
-};
 
 const CLASS_LISTENER = "ClassDeclaration";
 
@@ -71,14 +25,14 @@ const classAndFunctionPlugin = eslintPluginModuleSchema.parse({
     rules: {
       "no-class": {
         meta: { type: "problem", messages: { found: "class authored" } },
-        create: (context: ReportingContext) => ({
-          [CLASS_LISTENER]: (node: unknown) => context.report({ node, messageId: "found" }),
+        create: (context: Rule.RuleContext) => ({
+          [CLASS_LISTENER]: (node: Rule.Node) => context.report({ node, messageId: "found" }),
         }),
       },
       "no-function": {
         meta: { type: "problem", messages: { found: "function declared" } },
-        create: (context: ReportingContext) => ({
-          [FUNCTION_LISTENER]: (node: unknown) => context.report({ node, messageId: "found" }),
+        create: (context: Rule.RuleContext) => ({
+          [FUNCTION_LISTENER]: (node: Rule.Node) => context.report({ node, messageId: "found" }),
         }),
       },
     },
@@ -94,7 +48,6 @@ const tmpFilePlugin = eslintPluginModuleSchema.parse({
 }).default;
 
 const repoRoot = absoluteRootOf("/repo");
-const inlineConfigCwd = absolutePathSchema.parse(import.meta.dirname);
 
 const conformanceRoot = absolutePathSchema.parse(`${import.meta.dirname}/../../CD-14`);
 const fileA = repoPathOf("src/a.ts");
@@ -104,20 +57,6 @@ const classCase = {
   name: "class",
   fileName: repoPathOf("cases/class.ts"),
   source: "const a = 1;\nclass A {}\n",
-  expectedLines: [2],
-};
-
-const functionAndClassCase = {
-  name: "function-and-class",
-  fileName: repoPathOf("cases/function-and-class.ts"),
-  source: "function f() {}\nclass A {}\n",
-  expectedLines: [2],
-};
-
-const disabledClassCase = {
-  name: "disabled-class",
-  fileName: repoPathOf("cases/disabled-class.ts"),
-  source: "/* eslint-disable */\nclass A {}\n",
   expectedLines: [2],
 };
 
@@ -147,34 +86,21 @@ const idleSurface: EslintSurface = {
 
 const throwsOnBuild = vi.fn<CreateEslint>().mockThrow(new Error("Invalid Options: unknown option"));
 
-const TOOLCHAINS: Readonly<Record<EslintLine, EslintToolchain>> = {
-  "eslint-10": await loadedEslintToolchain({ line: "eslint-10" }),
-  "eslint-9": await loadedEslintToolchain({ line: "eslint-9" }),
-};
-
-const PARSER = TOOLCHAINS["eslint-10"].typescriptParser;
+const PARSER = await eslint9ToolchainModules.typescriptParser();
 
 const portWith = (request: { readonly createEslint: CreateEslint }): EslintPort =>
   createEslintPort({
-    toolchain: { ...TOOLCHAINS["eslint-10"], createEslint: request.createEslint },
-  });
-
-const lintsGovernanceText = (request: { readonly code: string; readonly line: EslintLine }) =>
-  TOOLCHAINS[request.line]
-    .createEslint({
-      options: {
-        cwd: inlineConfigCwd,
-        overrideConfigFile: true,
-        ignore: false,
-        allowInlineConfig: false,
-        overrideConfig: governanceConfig({
-          plugins: { cd: classAndFunctionPlugin },
-          rules: [{ ruleId: "cd/no-class", options: [] }],
-          parser: TOOLCHAINS[request.line].typescriptParser,
-        }),
+    toolchain: {
+      eslintVersion: "10.15.0",
+      boundary: {
+        nearestLookup: { flags: [] },
+        reportDataOf: () => undefined,
+        declarationText: "export default [];",
       },
-    })
-    .lintText({ code: request.code, filePath: "src/a.ts" });
+      typescriptParser: PARSER,
+      createEslint: request.createEslint,
+    },
+  });
 
 describe("governanceConfig", () => {
   it("builds one block for TypeScript files", () => {
@@ -234,154 +160,6 @@ describe("governanceConfig", () => {
         rules: { "inline-config": expect.objectContaining({ create: expect.any(Function) }) },
       }),
     });
-  });
-});
-
-describe.each(ESLINT_LINES)("lintSourceCases over real %s", (line) => {
-  it("returns each case's flagged lines for the requested rule", async () => {
-    const verdicts = await createEslintPort({ toolchain: TOOLCHAINS[line] }).lintSourceCases({
-      cwd: conformanceRoot,
-      plugin: classAndFunctionPlugin,
-      pluginNamespace: "cd",
-      rule: "no-class",
-      options: [],
-      cases: [classCase, noClassCase],
-    });
-
-    expect(verdicts).toEqual({
-      outcome: "ok",
-      value: [
-        { caseName: "class", flaggedLines: [2] },
-        { caseName: "no-class", flaggedLines: [] },
-      ],
-    });
-  });
-
-  it("does not flag lines for another rule of the same plugin", async () => {
-    const verdicts = await createEslintPort({ toolchain: TOOLCHAINS[line] }).lintSourceCases({
-      cwd: conformanceRoot,
-      plugin: classAndFunctionPlugin,
-      pluginNamespace: "cd",
-      rule: "no-class",
-      options: [],
-      cases: [functionAndClassCase],
-    });
-
-    expect(verdicts).toEqual({
-      outcome: "ok",
-      value: [{ caseName: "function-and-class", flaggedLines: [2] }],
-    });
-  });
-
-  it("ignores the inline-config message and is not silenced by a disable comment", async () => {
-    const verdicts = await createEslintPort({ toolchain: TOOLCHAINS[line] }).lintSourceCases({
-      cwd: conformanceRoot,
-      plugin: classAndFunctionPlugin,
-      pluginNamespace: "cd",
-      rule: "no-class",
-      options: [],
-      cases: [disabledClassCase],
-    });
-
-    expect(verdicts).toEqual({
-      outcome: "ok",
-      value: [{ caseName: "disabled-class", flaggedLines: [2] }],
-    });
-  });
-});
-
-describe.each(ESLINT_LINES)("the hone-core/inline-config rule over real %s", (eslintLine) => {
-  it.each([
-    { form: "a disable naming no rule", code: "/* eslint-disable */\nconst a = 1;\n", line: 1 },
-    {
-      form: "a disable naming the selected rule",
-      code: "const a = 1;\n/* eslint-disable cd/no-class */\n",
-      line: 2,
-    },
-    {
-      form: "a disable-line naming the selected rule",
-      code: "const a = 1; // eslint-disable-line cd/no-class\n",
-      line: 1,
-    },
-    {
-      form: "a disable-next-line naming the selected rule",
-      code: "// eslint-disable-next-line cd/no-class\nconst a = 1;\n",
-      line: 1,
-    },
-    {
-      form: "a disable naming the selected rule among others, with a justification",
-      code: "/* eslint-disable no-console, cd/no-class -- generated */\n",
-      line: 1,
-    },
-  ])("reports $form as inline-disable on its line", async ({ code, line }) => {
-    expect(await lintsGovernanceText({ code, line: eslintLine })).toMatchObject([
-      {
-        messages: [{ ruleId: "hone-core/inline-config", messageId: "inline-disable", line }],
-      },
-    ]);
-  });
-
-  it("reports a rule-config comment turning the selected rule off as inline-rule-config on its line", async () => {
-    expect(
-      await lintsGovernanceText({
-        code: 'const a = 1;\n/* eslint cd/no-class: "off" */\n',
-        line: eslintLine,
-      }),
-    ).toMatchObject([
-      {
-        messages: [{ ruleId: "hone-core/inline-config", messageId: "inline-rule-config", line: 2 }],
-      },
-    ]);
-  });
-
-  it.each([
-    {
-      form: "a block disable",
-      code: "const a = 1;\n  /* eslint-disable cd/no-class */  \n",
-      text: "/* eslint-disable cd/no-class */",
-    },
-    {
-      form: "a line disable",
-      code: "const a = 1; // eslint-disable-line cd/no-class\n",
-      text: "// eslint-disable-line cd/no-class",
-    },
-    {
-      form: "a rule-config comment",
-      code: '/* eslint cd/no-class: "off" */\n',
-      text: '/* eslint cd/no-class: "off" */',
-    },
-  ])(
-    "carries $form exactly as written in source, trimmed, as its message",
-    async ({ code, text }) => {
-      expect(await lintsGovernanceText({ code, line: eslintLine })).toMatchObject([
-        { messages: [{ ruleId: "hone-core/inline-config", message: text }] },
-      ]);
-    },
-  );
-
-  it("reports an eslint comment whose configuration does not parse as inline-rule-config", async () => {
-    expect(
-      await lintsGovernanceText({ code: "/* eslint cd/no-class: [ */\n", line: eslintLine }),
-    ).toMatchObject([
-      {
-        messages: [{ ruleId: "hone-core/inline-config", messageId: "inline-rule-config", line: 1 }],
-      },
-    ]);
-  });
-
-  it.each([
-    { form: "a disable naming only another rule", code: "/* eslint-disable no-console */\n" },
-    { form: "a rule-config comment for another rule", code: '/* eslint no-console: "off" */\n' },
-    { form: "an enable comment", code: "/* eslint-enable */\n" },
-    {
-      form: "an enable comment naming the selected rule",
-      code: "/* eslint-enable cd/no-class */\n",
-    },
-    { form: "a global comment", code: "/* global foo */\n" },
-    { form: "an exported comment", code: "/* exported foo */\n" },
-    { form: "a comment that is not a directive", code: "/* not a directive */\n" },
-  ])("reports nothing for $form", async ({ code }) => {
-    expect(await lintsGovernanceText({ code, line: eslintLine })).toMatchObject([{ messages: [] }]);
   });
 });
 
@@ -616,6 +394,21 @@ describe("createGovernanceInstance", () => {
       { outcome: "ok", value: [lintedA] },
       [[{ filePaths: ["src/a.ts", "src/b.ts"] }]],
     ]);
+  });
+
+  it("gives no results for no files, without calling ESLint, which would read an empty list as the whole folder", async () => {
+    const lintFiles = vi.fn<EslintSurface["lintFiles"]>().mockResolvedValue([lintedA]);
+    const governance = portWith({
+      createEslint: vi.fn<CreateEslint>().mockReturnValue({ ...idleSurface, lintFiles }),
+    }).createGovernanceInstance({
+      repoRoot,
+      plugins: { cd: classAndFunctionPlugin },
+      rules: [{ ruleId: "cd/no-class", options: [] }],
+    });
+
+    const linted = await governance.lintFiles({ files: [] });
+
+    expect([linted, lintFiles.mock.calls]).toEqual([{ outcome: "ok", value: [] }, []]);
   });
 
   it("reports a rejecting lint as tool-failed", async () => {

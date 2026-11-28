@@ -27,6 +27,7 @@ export type ClauseSettingDeclarations = { readonly [key: string]: ClauseSettingD
 export type PieceSettings = { readonly [key: string]: ReadonlyJsonValue };
 
 export type ImplementingCheck = { readonly symptom: string; readonly check: string };
+export type PieceModuleScope = "piece" | "shared" | "runner";
 
 export type AuthoredPieceDeclaration =
   | {
@@ -35,6 +36,7 @@ export type AuthoredPieceDeclaration =
       readonly checkSettings?: ClauseSettingDeclarations;
       readonly anchor: AnchorKind;
       readonly settings: PieceSettings;
+      readonly moduleScope?: PieceModuleScope;
       readonly forms?: { readonly [form: string]: ImplementingCheck };
       readonly editions?: readonly string[] | undefined;
     }

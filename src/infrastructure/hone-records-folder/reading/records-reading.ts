@@ -1,7 +1,5 @@
-import type { z } from "zod";
-
 import type { RecordsReader } from "../../../application/ports/records/records-reader.ts";
-import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   BaseMeasurement,
   HoneRecord,
@@ -23,13 +21,15 @@ import { recordsFileStandingOf } from "../../../domain/records/hone-records/reco
 import type { Result } from "../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
-import { type FiledUnder, recordOf } from "./record-resolution.ts";
+import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
+import { type FiledUnder, type RecordLookups, recordOf } from "./record-resolution.ts";
 
 type PlacedEntry = {
   readonly place: RecordPlace;
   readonly filedUnder: FiledUnder;
-  readonly entry: z.core.util.JSONType;
+  readonly entry: ReadonlyJsonValue;
 };
 
 type Judged =
@@ -37,12 +37,10 @@ type Judged =
   | { readonly placed: "refused"; readonly refused: RefusedRecord };
 
 const ruleSetsReadOf = (request: {
-  readonly catalogue: SymptomCatalogue;
+  readonly symptoms: readonly Symptom[];
 }): ReadonlySet<RuleSetName> =>
   new Set(
-    request.catalogue.symptoms.flatMap(({ ruleSet }) =>
-      ruleSet === TOOL_RULE_SET ? [] : [ruleSet.name],
-    ),
+    request.symptoms.flatMap(({ ruleSet }) => (ruleSet === TOOL_RULE_SET ? [] : [ruleSet.name])),
   );
 
 const entriesOf = (request: {
@@ -68,7 +66,11 @@ const entriesOf = (request: {
   if (!parsed.success) {
     return {
       outcome: "failed",
-      error: { kind: "document-refused", file, issues: parsed.error.issues },
+      error: {
+        kind: "document-refused",
+        file,
+        issues: mapZodIssuesToRecordIssues({ issues: parsed.error.issues }),
+      },
     };
   }
   return {
@@ -86,12 +88,12 @@ const entriesOf = (request: {
 
 const judgedEntry = (request: {
   readonly placed: PlacedEntry;
-  readonly catalogue: SymptomCatalogue;
+  readonly lookups: RecordLookups;
   readonly base: RecordsAtBase;
 }): Judged => {
   const { place, filedUnder, entry } = request.placed;
   const record = recordOf({
-    catalogue: request.catalogue,
+    ...request.lookups,
     base: request.base,
     file: place.file,
     entry,
@@ -158,37 +160,25 @@ const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): rea
   );
 };
 
-const recordsHeldAtBase = (request: {
-  readonly documents: readonly RecordsDocument[];
-  readonly catalogue: SymptomCatalogue;
-  readonly base: RecordsAtBase;
-}): readonly HoneRecord[] => {
-  const ruleSetsRead = ruleSetsReadOf(request);
-  return request.documents.flatMap((document) => {
-    const listed = entriesOf({ document, ruleSetsRead });
-    return listed.outcome === "failed"
-      ? []
-      : listed.value.flatMap((placed) => {
-          const judged = judgedEntry({ placed, catalogue: request.catalogue, base: request.base });
-          return judged.placed === "record" ? [judged.record.record] : [];
-        });
-  });
-};
-
 const baseMeasurementOf = (request: {
   readonly base: RecordsAtBase;
-  readonly catalogue: SymptomCatalogue;
-}): BaseMeasurement =>
-  request.base.measured === "yes"
-    ? {
-        measured: "yes",
-        held: recordsHeldAtBase({
-          documents: request.base.documents,
-          catalogue: request.catalogue,
-          base: request.base,
-        }),
-      }
-    : { measured: "no", base: request.base.base };
+  readonly lookups: RecordLookups;
+}): BaseMeasurement => {
+  const { base, lookups } = request;
+  if (base.measured === "no") return { measured: "no", base: base.base };
+  const ruleSetsRead = ruleSetsReadOf(lookups);
+  const listed = base.documents.map((document) => entriesOf({ document, ruleSetsRead }));
+  const judged = listed.flatMap((entries) =>
+    entries.outcome === "ok"
+      ? entries.value.map((placed) => judgedEntry({ placed, lookups, base }))
+      : [],
+  );
+  const incomplete =
+    listed.some((entries) => entries.outcome === "failed") ||
+    judged.some((entry) => entry.placed === "refused");
+  const placements = judged.flatMap((entry) => (entry.placed === "record" ? [entry.record] : []));
+  return incomplete ? { measured: "partial", placements } : { measured: "yes", placements };
+};
 
 const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNote[] => {
   const { place, record } = request.placed;
@@ -200,7 +190,7 @@ const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNot
 const readingOf = (request: {
   readonly judged: readonly Judged[];
   readonly base: RecordsAtBase;
-  readonly catalogue: SymptomCatalogue;
+  readonly lookups: RecordLookups;
 }): RecordsReading => {
   const records = request.judged.flatMap((judged) =>
     judged.placed === "record" ? [judged.record] : [],
@@ -215,29 +205,40 @@ const readingOf = (request: {
   };
 };
 
-export const recordsReadingOf = (request: {
-  readonly documents: readonly RecordsDocument[];
-  readonly catalogue: SymptomCatalogue;
-  readonly base: RecordsAtBase;
-}): Result<RecordsReading, readonly RecordsDocumentRefusal[]> => {
-  const ruleSetsRead = ruleSetsReadOf(request);
-  const entries = request.documents.map((document) => entriesOf({ document, ruleSetsRead }));
+export const readRecords = (
+  request: RecordLookups & {
+    readonly documents: readonly RecordsDocument[];
+    readonly base: RecordsAtBase;
+  },
+): Result<RecordsReading, readonly RecordsDocumentRefusal[]> => {
+  const { documents, base, ...lookups } = request;
+  const ruleSetsRead = ruleSetsReadOf(lookups);
+  const entries = documents.map((document) => entriesOf({ document, ruleSetsRead }));
   const refusals = entries.flatMap((listed) => (listed.outcome === "failed" ? [listed.error] : []));
   if (refusals.length > 0) {
     return { outcome: "failed", error: refusals };
   }
   const placed = entries.flatMap((listed) => (listed.outcome === "ok" ? listed.value : []));
-  const judged = placed.map((entry) =>
-    judgedEntry({ placed: entry, catalogue: request.catalogue, base: request.base }),
-  );
+  const judged = placed.map((entry) => judgedEntry({ placed: entry, lookups, base }));
   return {
     outcome: "ok",
     value: readingOf({
       judged: withoutDuplicates({ judged }),
-      base: request.base,
-      catalogue: request.catalogue,
+      base,
+      lookups,
     }),
   };
 };
 
-export const recordsReader: RecordsReader = { recordsReadingOf };
+export const recordsReader: RecordsReader = {
+  recordsReadingOf: ({ documents, catalogue, base }) =>
+    readRecords({
+      documents,
+      base,
+      symptoms: catalogue.symptoms,
+      checks: catalogue.checks,
+      recipes: catalogue.recipes,
+      cases: catalogue.cases,
+      namedBans: catalogue.namedBans,
+    }),
+};

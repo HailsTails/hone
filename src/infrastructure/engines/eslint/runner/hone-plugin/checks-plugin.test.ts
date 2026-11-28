@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  Symptom,
-} from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import type { Engine } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import cd27Plugin from "../../../protocol/plugin-rules/test-modifiers.ts";
 import cd2Plugin from "../../claimed-type/non-null-assertions/eslint-plugin.ts";
 import cd40Plugin from "../../positional-parameters/parameter-count/eslint-plugin.ts";
-import cd27Plugin from "../../test-switched-off/focused-tests/eslint-plugin.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
+import type { PluginCheck } from "./check-rule-id.ts";
 import { checksPluginOf, inSymptomWords, reportInSymptomWords } from "./checks-plugin.ts";
 
 const DECLARATION_TEXT =
@@ -34,73 +28,22 @@ const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
 
 const ESLINT: Engine = { name: "eslint" };
 
-const TEST_SWITCHED_OFF: Symptom = {
-  ruleSet: "hone",
-  name: "test-switched-off",
-  title: "Test switched off",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const POSITIONAL_PARAMETERS: Symptom = {
-  ruleSet: "hone",
-  name: "positional-parameters",
-  title: "Positional parameters",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const SKIPPED_TESTS_CHECK: Check = {
+const SKIPPED_TESTS_CHECK: PluginCheck = {
   name: "skipped-tests",
-  symptom: TEST_SWITCHED_OFF,
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("skipped-tests"),
-  },
+  symptom: { ruleSet: "hone", name: "test-switched-off", title: "Test switched off" },
   engines: [ESLINT],
-  forms: [],
 };
 
-const NON_NULL_ASSERTIONS_CHECK: Check = {
+const NON_NULL_ASSERTIONS_CHECK: PluginCheck = {
   name: "non-null-assertions",
-  symptom: CLAIMED_TYPE,
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-2"),
-    clause: clauseIdOf("non-null-assertions"),
-  },
+  symptom: { ruleSet: "hone", name: "claimed-type", title: "Claimed type" },
   engines: [ESLINT],
-  forms: [],
 };
 
-const PARAMETER_COUNT_CHECK: Check = {
+const PARAMETER_COUNT_CHECK: PluginCheck = {
   name: "parameter-count",
-  symptom: POSITIONAL_PARAMETERS,
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-40"),
-    clause: clauseIdOf("parameter-count"),
-  },
+  symptom: { ruleSet: "hone", name: "positional-parameters", title: "Positional parameters" },
   engines: [ESLINT],
-  forms: [],
 };
 
 const CD_2_SOURCE = {

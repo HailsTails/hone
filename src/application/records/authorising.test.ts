@@ -7,6 +7,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type {
   RecordPlace,
@@ -82,14 +84,14 @@ const DECLARED_NOT_ASSERTED: Rule = {
   standing: "accepted",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -115,15 +117,19 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+  correctUses: [
+    { situation: "a schema proves the type", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+  ],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -212,7 +218,7 @@ const editorAdding = (request: {
 
 const readerRefusing = (
   refused: readonly { readonly place: RecordPlace; readonly refusals: readonly RecordRefusal[] }[],
-): RecordsReader => ({
+): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {
@@ -235,6 +241,8 @@ const EDIT_FAILURE: RecordsEditFailure = {
   kind: "records-documents",
   refusals: NOT_A_RECORDS_DOCUMENT,
 };
+
+type RefusalRow = { readonly refusal: RecordRefusal };
 
 describe("the authorised location a person's arguments write", () => {
   it("writes one record from the arguments, with the why chain the person gave", () => {
@@ -293,6 +301,216 @@ describe("the authorised location a person's arguments write", () => {
           entry: { ...WEBHOOK_ENTRY, answers: "claimed-type#cast-expressions" },
         },
       ],
+    });
+  });
+
+  it("hands the editor the outside party a symptom that binds one is authorised for", () => {
+    const outsideImport: Symptom = {
+      ...CLAIMED_TYPE,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const recordsEditor = editorAdding({
+      added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] },
+      place: ADDED_PLACE,
+    });
+    authorisingOf({
+      request: {
+        ...REQUEST,
+        answers: {
+          ruleSet: TOOL_RULE_SET,
+          name: "outside-import-past-a-boundary#import-or-require",
+        },
+        outsideParty: "stripe",
+      },
+      documents: [],
+      catalogue: { ...REPORT_CATALOGUE, symptoms: [CLAIMED_TYPE, outsideImport] },
+      recordsReader: READER_REFUSING_NOTHING,
+      recordsEditor,
+    });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith({
+      documents: [],
+      additions: [
+        {
+          file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+          entry: {
+            ...WEBHOOK_ENTRY,
+            answers: "outside-import-past-a-boundary#import-or-require",
+            outsideParty: "stripe",
+          },
+        },
+      ],
+    });
+  });
+
+  it("hands the reader a location without an outside party as given, and refuses it as the reader does on a symptom that binds one", () => {
+    const outsideImport: Symptom = {
+      ...CLAIMED_TYPE,
+      name: "outside-import-past-a-boundary",
+      title: "Outside import past a boundary",
+      correctUses: [
+        {
+          situation: "the adapter for that outside party",
+          kind: AUTHORISED_LOCATION,
+          binding: "check-file-and-outside-party",
+        },
+      ],
+    };
+    const recordsEditor = editorAdding({
+      added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] },
+      place: ADDED_PLACE,
+    });
+    const refusal: RecordRefusal = {
+      kind: "outside-party-missing",
+      symptom: "outside-import-past-a-boundary",
+    };
+
+    const authorising = authorisingOf({
+      request: {
+        ...REQUEST,
+        answers: {
+          ruleSet: TOOL_RULE_SET,
+          name: "outside-import-past-a-boundary#import-or-require",
+        },
+      },
+      documents: [],
+      catalogue: { ...REPORT_CATALOGUE, symptoms: [CLAIMED_TYPE, outsideImport] },
+      recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [refusal] }]),
+      recordsEditor,
+    });
+
+    expect({ authorising, edited: vi.mocked(recordsEditor.documentsWithAdded).mock.calls }).toEqual(
+      {
+        authorising: { outcome: "ok", value: { judged: "refused", refusals: [refusal] } },
+        edited: [
+          [
+            {
+              documents: [],
+              additions: [
+                {
+                  file: repoPathOf(
+                    "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+                  ),
+                  entry: {
+                    ...WEBHOOK_ENTRY,
+                    answers: "outside-import-past-a-boundary#import-or-require",
+                  },
+                },
+              ],
+            },
+          ],
+        ],
+      },
+    );
+  });
+
+  it("hands the reader a location naming an outside party as given, and refuses it as the reader does on a symptom that binds none", () => {
+    const recordsEditor = editorAdding({
+      added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] },
+      place: ADDED_PLACE,
+    });
+    const refusal: RecordRefusal = { kind: "outside-party-not-bound", symptom: "claimed-type" };
+
+    const authorising = authorisingOf({
+      request: {
+        ...REQUEST,
+        answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type#cast-expressions" },
+        outsideParty: "stripe",
+      },
+      documents: [],
+      catalogue: REPORT_CATALOGUE,
+      recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [refusal] }]),
+      recordsEditor,
+    });
+
+    expect({ authorising, edited: vi.mocked(recordsEditor.documentsWithAdded).mock.calls }).toEqual(
+      {
+        authorising: { outcome: "ok", value: { judged: "refused", refusals: [refusal] } },
+        edited: [
+          [
+            {
+              documents: [],
+              additions: [
+                {
+                  file: repoPathOf("hone-records/authorised-locations/claimed-type.json"),
+                  entry: {
+                    ...WEBHOOK_ENTRY,
+                    answers: "claimed-type#cast-expressions",
+                    outsideParty: "stripe",
+                  },
+                },
+              ],
+            },
+          ],
+        ],
+      },
+    );
+  });
+
+  it("hands the reader a location on a symptom with no authorised-location correct use, and refuses it as the reader does", () => {
+    const loopKeyword: Symptom = {
+      ...CLAIMED_TYPE,
+      name: "loop-keyword",
+      title: "Loop keyword",
+      correctUses: [],
+    };
+    const recordsEditor = editorAdding({
+      added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] },
+      place: ADDED_PLACE,
+    });
+    const refusal: RecordRefusal = { kind: "no-authorised-correct-use", symptom: "loop-keyword" };
+
+    const authorising = authorisingOf({
+      request: { ...REQUEST, answers: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" } },
+      documents: [],
+      catalogue: { ...REPORT_CATALOGUE, symptoms: [CLAIMED_TYPE, loopKeyword] },
+      recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [refusal] }]),
+      recordsEditor,
+    });
+
+    expect({ authorising, edited: vi.mocked(recordsEditor.documentsWithAdded).mock.calls }).toEqual(
+      {
+        authorising: { outcome: "ok", value: { judged: "refused", refusals: [refusal] } },
+        edited: [
+          [
+            {
+              documents: [],
+              additions: [
+                {
+                  file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
+                  entry: { ...WEBHOOK_ENTRY, answers: "loop-keyword" },
+                },
+              ],
+            },
+          ],
+        ],
+      },
+    );
+  });
+
+  it.each<RefusalRow>([
+    { refusal: { kind: "no-check-named", symptom: "claimed-type" } },
+    { refusal: { kind: "scheme-party-stated", outsideParty: "node:" } },
+    { refusal: { kind: "no-authorised-correct-use", symptom: "claimed-type" } },
+  ])("refuses what the reading refuses as $refusal.kind, and writes nothing", ({ refusal }) => {
+    const authorising = authorisingOf({
+      request: REQUEST,
+      documents: [],
+      catalogue: REPORT_CATALOGUE,
+      recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [refusal] }]),
+      recordsEditor: EDITOR_WRITING_WEBHOOK,
+    });
+
+    expect(authorising).toEqual({
+      outcome: "ok",
+      value: { judged: "refused", refusals: [refusal] },
     });
   });
 

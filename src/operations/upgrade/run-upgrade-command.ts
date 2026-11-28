@@ -4,7 +4,10 @@ import type { DirectoryRemovalPort } from "../../application/ports/file-system/d
 import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
 import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
+import type { RecordsEditor } from "../../application/ports/records/records-editor.ts";
+import type { RecordsReader } from "../../application/ports/records/records-reader.ts";
 import type {
   RecordsOnDiskOf,
   VersionOneRead,
@@ -17,7 +20,12 @@ import type {
   ProofCarriedOver,
   ProofRefusal,
 } from "../../application/ports/upgrade/proof-outcome.ts";
-import type { ProofRunsOf, ProofWritten } from "../../application/ports/upgrade/proof-runs.ts";
+import type {
+  CheckReportPointers,
+  ProofRunsOf,
+  ProofWritten,
+} from "../../application/ports/upgrade/proof-runs.ts";
+import type { SmoothingCommands } from "../../application/ports/upgrade/smoothing-commands.ts";
 import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-carried-over.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
@@ -31,8 +39,8 @@ import type {
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import {
+  versionTwoInputsOf,
   type VersionTwoRun,
-  type VersionTwoStages,
   versionTwoRunOver,
 } from "../../application/run/version-two-run.ts";
 import {
@@ -40,16 +48,25 @@ import {
   plannedProjectionOf,
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
+import type { FoundTreeChanges } from "../../application/upgrade/found-tree/found-tree-git.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import { proofEffectsOver } from "../../application/upgrade/proof-writes/applied-effects.ts";
 import type { ProofQueries } from "../../application/upgrade/proof-writes/proof-writes.ts";
+import {
+  createRecordedFileText,
+  type RecordedFileText,
+} from "../../application/upgrade/proof-writes/recorded-file-text.ts";
 import type { ProjectionFilesOf } from "../../application/upgrade/proof/upgrade-plan.ts";
 import type {
   RuleSetLayoutRemoval,
   UpgradeProofRequest,
 } from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { VersionOneProjectionsOf } from "../../application/upgrade/proof/version-one-projections-reading.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
-import { createUpgradeBefore } from "../../application/upgrade/record-answers/upgrade-before.ts";
+import {
+  createUpgradeBefore,
+  type UpgradeBefore,
+} from "../../application/upgrade/record-answers/upgrade-before.ts";
 import type { VersionOneCheckInput } from "../../application/upgrade/record-answers/version-one-check-input.ts";
 import {
   type TeamLayoutPlan,
@@ -66,6 +83,11 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
+import {
+  createSmoothingCommands,
+  type FoundTreeReach,
+  type SmoothingCommandsRequest,
+} from "./smoothing-commands.ts";
 
 export type UpgradePorts = PlannedProjectionPorts & {
   readonly directory: DirectoryPort;
@@ -75,6 +97,8 @@ export type UpgradePorts = PlannedProjectionPorts & {
   readonly entryKind: EntryKindPort;
   readonly loadFailureDetail: LoadFailureDetail;
   readonly versionOneProjectionOf: VersionOneProjectionPortOf;
+  readonly recordsReader: RecordsReader;
+  readonly recordsEditor: RecordsEditor;
 };
 
 export type UpgradeInput = {
@@ -96,7 +120,8 @@ export type UpgradeInput = {
   readonly proofOf: (
     request: UpgradeProofRequest,
   ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
-  readonly foundTreeStages: (request: ProofWritten) => VersionTwoStages;
+  readonly foundTreeReach: (request: FoundTreeChanges) => FoundTreeReach;
+  readonly pointers: CheckReportPointers;
 };
 
 type Prepared = {
@@ -222,25 +247,55 @@ const projectionFilesFor = (request: UpgradeInput): ProjectionFilesOf =>
     namedEngine: request.ports.namedEngine,
   });
 
-const versionTwoRunFor = (request: {
-  readonly foundTreeStages: UpgradeInput["foundTreeStages"];
+const versionTwoRunFor = async (request: {
+  readonly reach: SmoothingCommandsRequest["reach"];
   readonly proofWritten: ProofWritten;
-}): Promise<Result<VersionTwoRun, RunLoadFailure>> =>
-  versionTwoRunOver({
-    stages: request.foundTreeStages(request.proofWritten),
-    arguments: {
-      forfeiture: undefined,
-      reportOutput: undefined,
+}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const { stages } = request.reach(request.proofWritten);
+  const inputs = versionTwoInputsOf({ stages });
+  if (inputs.outcome === "failed") return inputs;
+  return versionTwoRunOver({
+    stages,
+    inputs: inputs.value,
+    plan: {
+      ...inputs.value.settings.runSettings,
       measuring: "when-debt-held",
     },
   });
+};
 
-const proofRequestOf = (
-  request: UpgradeInput & {
-    readonly prepared: Prepared;
-    readonly ruleSetLayout: RuleSetLayoutRemoval;
-  },
-): UpgradeProofRequest => {
+const createReachOverLayout =
+  (
+    request: Pick<UpgradeInput, "foundTreeReach"> & {
+      readonly layout: Pick<TeamLayoutPlan, "files" | "removed">;
+    },
+  ): SmoothingCommandsRequest["reach"] =>
+  ({ written }) =>
+    request.foundTreeReach({
+      written: [...request.layout.files.map(({ file }) => file), ...written],
+      removed: request.layout.removed,
+    });
+
+const createUpgradeSmoothing = (
+  request: Pick<UpgradeInput, "located" | "ports" | "pointers"> &
+    Pick<SmoothingCommandsRequest, "reach">,
+): SmoothingCommands =>
+  createSmoothingCommands({
+    reach: request.reach,
+    repoRoot: request.located.repoRoot,
+    recordsReader: request.ports.recordsReader,
+    recordsEditor: request.ports.recordsEditor,
+    projectCommand: request.pointers.projectCommand,
+  });
+
+type PreparedInput = Pick<UpgradeInput, "command" | "ports" | "located"> & {
+  readonly prepared: Prepared;
+};
+
+const createVersionOneBefore = (
+  request: PreparedInput &
+    Pick<UpgradeInput, "measureVersionOne"> & { readonly projectionFileText: FileTextPort },
+): UpgradeBefore => {
   const { ports, command, located, prepared } = request;
   const at = {
     fileText: command.fileText,
@@ -252,17 +307,55 @@ const proofRequestOf = (
     moduleExtension: prepared.check.moduleExtension,
     toolRecordKinds: toolRecordKindsOf(prepared),
   };
-  const before = createUpgradeBefore({
+  return createUpgradeBefore({
     measureVersionOne: request.measureVersionOne,
     check: prepared.check,
     selection: prepared.read.reading.selection,
     catalogues: prepared.catalogues,
-    engine: ports.namedEngine,
     sources: ports.settingsSourcesOf(at),
     readPiece: ports.checkPieceSourceOf(at),
-    projection: ports.versionOneProjectionOf({ ...at, modules: command.modules }),
+    projection: ports.versionOneProjectionOf({
+      ...at,
+      fileText: request.projectionFileText,
+      modules: command.modules,
+    }),
     loadFailureDetail: ports.loadFailureDetail,
   });
+};
+
+const createVersionOneProjections = (
+  request: PreparedInput & {
+    readonly before: Pick<UpgradeBefore, "prepareProjections">;
+    readonly writes: RecordedFileText["writes"];
+  },
+): VersionOneProjectionsOf => {
+  const { ports, command, located, prepared } = request;
+  return versionOneProjectionsOfRepository({
+    writes: request.writes,
+    project: () =>
+      request.before.prepareProjections(prepared.read.reading.heads.map(({ record }) => record)),
+    loadFailureDetail: ports.loadFailureDetail,
+    fileText: command.fileText,
+    path: command.path,
+    repoRoot: located.repoRoot,
+    trackedPaths: prepared.trackedPaths,
+  });
+};
+
+const proofRequestOf = (
+  request: UpgradeInput & {
+    readonly prepared: Prepared;
+    readonly ruleSetLayout: RuleSetLayoutRemoval;
+    readonly layoutFiles: TeamLayoutPlan["files"];
+  },
+): UpgradeProofRequest => {
+  const { ports, command, located, prepared, ruleSetLayout, layoutFiles } = request;
+  const reach = createReachOverLayout({
+    foundTreeReach: request.foundTreeReach,
+    layout: { files: layoutFiles, removed: ruleSetLayout.removed },
+  });
+  const recorded = createRecordedFileText({ fileText: command.fileText });
+  const before = createVersionOneBefore({ ...request, projectionFileText: recorded.fileText });
   return {
     queries: proofQueriesOf(request),
     effects: proofEffectsOf(request),
@@ -272,25 +365,22 @@ const proofRequestOf = (
     }),
     runs: request.proofRunsOf({
       versionOne: before.report,
-      versionTwo: (proofWritten) =>
-        versionTwoRunFor({ foundTreeStages: request.foundTreeStages, proofWritten }),
+      versionTwo: (proofWritten) => versionTwoRunFor({ reach, proofWritten }),
+      pointers: request.pointers,
     }),
+    smoothing: createUpgradeSmoothing({ ...request, reach }),
     reading: prepared.read.reading,
     versionOneFiles: prepared.read.versionOneFiles,
-    ruleSetLayout: request.ruleSetLayout,
+    ruleSetLayout,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
     trackedPaths: prepared.trackedPaths,
     projectionFilesOf: projectionFilesFor(request),
     settingsFormat: ports.settingsFormat,
-    versionOneProjectionsOf: versionOneProjectionsOfRepository({
-      project: () =>
-        before.prepareProjections(prepared.read.reading.heads.map(({ record }) => record)),
-      loadFailureDetail: ports.loadFailureDetail,
-      fileText: command.fileText,
-      path: command.path,
-      repoRoot: located.repoRoot,
-      trackedPaths: prepared.trackedPaths,
+    versionOneProjectionsOf: createVersionOneProjections({
+      ...request,
+      before,
+      writes: recorded.writes,
     }),
   };
 };
@@ -381,6 +471,7 @@ export const upgradeOf = async (
           ...request,
           prepared: { ...prepared.value, catalogues },
           ruleSetLayout: { removed: plan.value.removed, folders: plan.value.folders },
+          layoutFiles: plan.value.files,
         }),
       ),
   });

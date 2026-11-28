@@ -7,10 +7,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts"
     },
     {
@@ -23,51 +19,7 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/application/run/engines/named-engines-run.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/application/upgrade/proof-comparison/after-sections.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/application/upgrade/record-answers/named-version-one-engine-pass.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/domain/report/run-load-failure.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/item-folders/read-item-folder-catalogue.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/rule-sets/install-discipline.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/rule-sets/installed-pieces.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/symptom-catalogues/bound-catalogue.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
     },
     {
       "answers": "long-function#function-length",
@@ -75,15 +27,7 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/compiler-overrides.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/hone-config-file/settings-file.test.ts"
     },
     {
       "answers": "long-function#function-length",
@@ -91,7 +35,35 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/printed-report/upgrade/upgrade-refusal-text.ts"
+      "file": "src/application/run/engines/engine-checks.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/domain/records/hone-records/record-listings.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/domain/records/upgrade/base-standing-documents.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/infrastructure/discipline-exceptions-folder/found-tree-records-source.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/infrastructure/engines/walker/throw-between-our-units/throw-statement/throws-in-production.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/application/upgrade/smoothing/smoothing-effects.test.ts"
+    },
+    {
+      "answers": "long-function#function-length",
+      "file": "src/infrastructure/node/process/execution-port.test.ts"
     }
   ]
 }

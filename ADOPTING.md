@@ -73,7 +73,7 @@ Options for one run go after the script name. npm needs `--` before them, as in 
 
 `hone --help` lists the commands, and `hone <command> --help` gives each one's options and exit codes.
 
-Hone runs on the toolchain the repository already uses, which the package declares as `peerDependencies`: `typescript` is required, because every check on the `walker` engine needs it, and the ESLint packages are optional, needed only for checks on the `eslint` engine. The supported ranges are those in the installed package's `package.json`. Declare `typescript` yourself at the repository root, at the version the repository already uses, rather than let the package manager choose or skip it. A package that is missing or out of range is named when the check runs; add it at a version inside its range, without moving ESLint or TypeScript to another major for Hone's sake.
+Hone runs on the toolchain the repository already uses, which the package declares as `peerDependencies`: `typescript` is required, because every check on the `walker` engine needs it, and the ESLint and Oxlint packages are optional peers. The supported ranges are those in the installed package's `package.json`. Declare `typescript` yourself at the repository root, at the version the repository already uses, rather than let the package manager choose or skip it. A package that is missing or out of range is named when the check runs; add it at a version inside its range, without moving ESLint or TypeScript to another major for Hone's sake.
 
 Hone finds these by Node's resolution upward from where the package is installed, so in a monorepo they must resolve from the repository root: declare them in the root `package.json` (with pnpm, `pnpm add -Dw` at the versions the packages already use), even where packages also declare their own. Yarn Plug'n'Play is not supported, because Hone resolves the toolchain through `node_modules`.
 
@@ -103,9 +103,9 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 }
 ```
 
-- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker` or `eslint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
+- `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker`, `eslint` or `oxlint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
 - Listing a check adopts it. Only a listed check runs. A check of a symptom that a listed check sees, listed nowhere, is offered under `available` and never fails the run. The symptom [Strictness weakened](rules/typescript/symptoms.md#strictness-weakened) has seven checks, one per compiler flag; list the ones you want. Checks that are one rule today run together: listing one of the six test-body checks without the others stops the run with `checks-run-together` naming them.
-- A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker` or `eslint` but `authored-class-or-this#static-members-only` only on `eslint`, so adopting that symptom means adopting the ESLint engine for at least that check; see [README.md](README.md#adopting-the-eslint-mechanism). If ESLint cannot work in this repository, list such a check as `"not-run"`, as below.
+- A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker`, `eslint` or `oxlint`. Its `static-members-only` check runs on `eslint` or `oxlint`.
 - A check's value in `checks` is one of three:
   - an engine id, such as `walker`: the check runs and its findings fail the run;
   - `"not-run"`: the check is adopted, but its engine is not run; the report lists it under `not-run`;
@@ -113,14 +113,14 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 - A `"not-run"` or `"not-adopted"` check is never run and never projected, not even as `"off"`, and its engine is not loaded unless another check uses it, so a repository that lists every ESLint check this way needs no ESLint installed. Both leave the run a whole assessment.
 - When a check cannot simply run clean, [the spirit of the rules](rules/SPIRIT.md#not-adopted-not-run-carved-out-escaped) names three declared states. Choose one deliberately, with reasons:
   - Not adopted: the rule does not apply to this codebase; a tech lead declares that, in the open. Set the check to `"not-adopted"`.
-  - Adopted, engine not run: the rule binds, but its check is not a true measure of the rule's intent here, or cannot work here for a technical reason. The check is set aside; the intent is still owed, through review. Set the check to `"not-run"`. The ESLint-only checks of `name-off-its-casing` in a repository without ESLint are the usual case: `"name-off-its-casing#naming-convention": "not-run", "name-off-its-casing#filename-case": "not-run"`.
+  - Adopted, engine not run: the rule binds, but its check is not a true measure of the rule's intent here, or cannot work here for a technical reason. The check is set aside; the intent is still owed, through review. Set the check to `"not-run"`. For example, `"name-off-its-casing#naming-convention": "not-run", "name-off-its-casing#filename-case": "not-run"`.
   - Debt: the rule binds and its check is sound, but the codebase has debt it cannot address right now. Keep the check's engine, so it still runs, and record the debt file by file as debt records, which `hone record-debt` writes for you (step 7a).
 - `exclude` lists folders or exact files that no engine checks, as repository paths with forward slashes; an entry containing `*` is refused, because globs are not supported. A folder entry excludes everything under it. It is the only way to narrow what Hone checks: there is no include list, and every tracked file outside `exclude` is checked, including any folder added later. Use it for generated or third-party code, and, to check only part of a repository, list every other folder. The ESLint engine lints every tracked TypeScript file outside `exclude`, including any the repository's own ESLint config ignores: an ignore in that config does not narrow what Hone checks, and each selected check lists such a file under `unrecorded` until the ignore is removed or the file is listed in `exclude`.
 - `checkSettings` gives a check the settings its check page lists, keyed by check address. See [README.md](README.md#honeconfigjson).
 - `checkEditions` stays out, or `"pinned"`, unless you want stricter checks as soon as they ship. When Hone tightens a check, the stricter check arrives as a new edition, listed on the check's page, and becomes the default only in a major release. `"latest"` runs the newest edition of every listed check, so a minor upgrade can add findings. To take one check's newer edition only, give it `"edition"` in its `checkSettings` entry.
 - `ruleSets` stays `{}` unless you write disciplines of your own; see [docs/extending.md](docs/extending.md).
 
-Adopting a symptom with a check whose only engine is `eslint` needs the ESLint engine, or that check listed as `"not-run"`.
+Each check can be selected on any mechanism listed on the checks page.
 
 Starting with a few disciplines and adding more once the run passes is easier than fixing everything at once.
 
@@ -132,7 +132,7 @@ Skip this if every listed check runs on the `walker`. Otherwise, after writing `
 npm run --silent hone:project
 ```
 
-It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
+It writes `hone.eslint.mjs` and `hone.eslint.d.mts`, which types it for a TypeScript config and which the projection leaves out of the checks' rules. Add both to your formatter's ignore list: Hone compares each with what `hone project` writes. Spread its default export last in the repository's flat config. The projection sets rules only, so the config must also parse TypeScript, with the `@typescript-eslint/parser` that step 2 installs; without it the repository's own `eslint` run fails on the first type annotation while Hone's check still passes. A repository with no ESLint config yet can start from this `eslint.config.mjs`:
 
 ```js
 import typescriptParser from "@typescript-eslint/parser";
@@ -179,7 +179,25 @@ Run the tool's configure step (for sku, any sku command or `sku configure`) befo
 
 Use `"nearest-to-file"` when ESLint runs per package, with ESLint 10, or with ESLint 9 and `--flag v10_config_lookup_from_file`. Use `"repository-root"` for one ESLint 9 run from the repository root, whose root `eslint.config.*` then applies to every file. To confirm the setting, lint a package file the way the team does (for example `pnpm exec eslint packages/a/src/x.ts` from where the lint script runs) and check that it reports the same finding the Hone check lists for that file.
 
+The `"ts"` projection kind is for a TypeScript `eslint.config.ts`, which ESLint loads through jiti installed at the repository root. To take it, set the kind in `hone.config.json`, run `hone:project`, which writes one typed `hone.eslint.ts` at each config root, change each config's import to `./hone.eslint.js`, and commit:
+
+```json
+{ "eslintProjectionKind": "ts" }
+```
+
+```ts
+import projection from "./hone.eslint.js";
+```
+
 Commit the projection, every slice and the configs. Hone's check reads this configuration and fails if the projection or a slice is missing, not in effect, or out of date, so re-run `hone:project` whenever `hone.config.json` or `hone-records` changes or Hone is updated. The repository's ESLint must resolve `@hailstails/hone` from the repository root. [README.md](README.md#adopting-the-eslint-mechanism) has the details.
+
+### 4b. Set up Oxlint for `oxlint` checks
+
+Install Oxlint in the repository root with `pnpm add -D oxlint@^1.95.0`. Select `"oxlint"` under `checks` in `hone.config.json` for any of the sixteen built-in checks that list Oxlint. Explicit any, parameter count and parameter reassignment use native rules. The other checks use Oxlint’s JavaScript plugin support. Static members and naming use TypeScript-ESLint’s rule library and require compatible `eslint`, `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` peers. The Oxlint naming binding supports syntax-only selectors.
+
+Run `hone project` and commit every `hone.oxlint.json` it writes. Add `"./hone.oxlint.json"` to `extends` in the existing JSON or JSONC Oxlint configuration beside each projection. In an auto-discovered `oxlint.config.ts` or `oxlint.config.mts`, import the projection as JSON and include the resulting object in `extends`. Hone uses Oxlint’s standard config filenames for discovery. Keep using your existing Oxlint commands.
+
+Hone projects its selected TypeScript checks and recorded exceptions into the root and package configurations. `hone check` uses Oxlint with those configurations and reports missing, stale, or ineffective projections. Track each configuration that governs the selected files and rerun `hone project` when the selection or records change.
 
 ## 5. Run the check
 
@@ -289,21 +307,10 @@ To print less, set `"reportOutput"` in `hone.config.json`, or pass `--report-out
 Before recording anything, take the chain in [the spirit of the rules](rules/SPIRIT.md#when-the-check-is-red): measure the sites for each failing check, ask what each group points at using the `symptoms` section of the report, the "May indicate" and "Breach usually sits" lines of each symptom on [the symptoms page](rules/typescript/symptoms.md) and the check's section in `disciplines.assessment.md` (step 5a), then decide. Fix the cause where you can; a record is not the first move. Where a finding is correct in a place, or owed and cannot be fixed yet, answer it with a record in `<repo>/hone-records`, one file for each kind and symptom or recipe:
 
 - **Debt** is known debt in one file: `hone-records/debt/<symptom>.json` with the symptom's name as `answers`, or `<symptom>#<check>` to reach one check of it, and the `file`. It is forfeited, and fails the run, as soon as that file changes since `--base-revision`. An `eslint-disable` comment or a `@ts-expect-error`, `@ts-ignore` or `@ts-nocheck` directive in a file is held only by a record on its check and file: until one holds it, such a comment is `unrecorded` and fails the run; once held, it is listed under `held` with the record that holds it. Step 7a writes that debt for the findings and for such comments.
-- **An authorised location** says the symptom is correct in that file, for example the single adapter that reads the real clock when the catalogue lists that case: `hone-records/authorised-locations/<symptom>.json`. `hone authorise` writes one from the arguments it is given, with the why-chain the person supplies.
-- **A boundary record** says a module is where an outside party is met, such as the clock adapter, in `hone-records/boundary-records.json`:
-
-  ```json
-  {
-    "version": 2,
-    "records": [
-      { "module": "src/clock.ts", "outsideParty": "runtime:clock", "ports": ["Clock"] }
-    ]
-  }
-  ```
-
+- **An authorised location** says a check's finding is correct in that file, such as `date-used-directly#clock-sources` in `src/clock.ts`, the single adapter that reads the real clock: `hone-records/authorised-locations/<symptom>.json`. `hone authorise` writes one from the arguments it is given, with the why-chain the person supplies. For Outside import past a boundary it also takes `--outside-party`, the package or `node:` module the adapter is for.
 - **A deviation** says why a file does not follow a recipe the catalogue gives, in `hone-records/deviations/<recipe>.json`. **A dependency record** says why a package is used where the platform's own way exists, in `hone-records/dependency-records.json`.
 
-Which kind answers a finding is in the `symptoms` section of the report: each symptom's note lists the situations that are correct uses of it and the record kind that expresses each. [README.md](README.md#hone-records) gives every kind's fields. A record that answers nothing is `stale` and fails the run, except a dependency record, which no check reads yet and so is never stale, so record only what a finding needs: debt while the check still finds it, a location or boundary where the symptom is correct. If the check is not a true measure of the rule here, or cannot work here, list it as `"not-run"` instead; if the rule does not apply, list it as `"not-adopted"` (step 4).
+Which kind answers a finding is in the `symptoms` section of the report: each symptom's note lists the situations that are correct uses of it and the record kind that expresses each. [README.md](README.md#hone-records) gives every kind's fields. A record that answers nothing is `stale` and fails the run, except a dependency record, which no check reads yet and so is never stale, so record only what a finding needs: debt while the check still finds it, a location where the symptom is correct. If the check is not a true measure of the rule here, or cannot work here, list it as `"not-run"` instead; if the rule does not apply, list it as `"not-adopted"` (step 4).
 
 An authorised location needs its `case`, its `owes` and a `whyChain` shaped like this, with exactly five steps in `whys`; debt needs none:
 
@@ -333,17 +340,19 @@ Existing debt needs no chain and no case: a debt record names only its symptom a
 
 A repository with existing code usually has more findings than the change that adopts Hone can fix. `hone record-debt` writes a debt record for each symptom, check and file the check finds broken, and for each inline disable or TypeScript directive that hides one, so the first passing run does not wait on hundreds of records written by hand. Do this after the assessment (step 5a), and after fixing what you are going to fix in this change.
 
-1. **Decide the permanent exceptions first.** List each file or folder that breaks a check on purpose and always will, such as the one adapter that reads the real clock. Those are not debt. They get an authorised location with its `whyChain`, or a boundary record, written by a person, so keep them out of the generated records with `--leave`.
+1. **Decide the permanent exceptions first.** List each file or folder that breaks a check on purpose and always will, such as the one adapter that reads the real clock. Those are not debt. They get an authorised location with its `whyChain`, written by a person, so keep them out of the generated records with `--leave`.
 2. **Leave `hone.config.json` as it is.** Debt needs no why-chain and no case, so the command needs no setting and never sets one. The same command records debt a later change uncovers, such as a newly listed check or a newer edition: run it again against the branch's base.
 3. **Finish every source file this change edits.** Forfeiture is assessed against the branch's base, the revision your pre-push hook and CI pass to the check (step 5), such as `origin/main`, not against the commit you run from. A file the adopting change edits has changed since that base, so a record for it is forfeited there, even after you commit the edit; the command writes none for such a file and says so. In each file this change edits, fix every finding of each check, or take the edit out of this change and make it later in a change that fixes the file. A file this change adds has no record to lose: point 4 reports it `touched`.
 4. **Run it once, with the branch's base as `--base-revision`**, one `--leave` for each path from point 1. Fetch the base first, so the revision is current:
 
    ```bash
    git fetch origin
-   node_modules/.bin/hone record-debt --repo . --base-revision origin/main --leave src/clock.ts --leave src/adapters
+   npm run --silent hone:record-debt -- --base-revision origin/main --leave src/clock.ts --leave src/adapters
    ```
 
-   It prints one line per finding and per native exception, saying what it recorded and, for each it did not, why and what to do instead. Files under a `--leave` path need their authorised locations or boundary records from point 1 written now. Files this change created or changed need fixing.
+   Add the script to the root `package.json` first: `"hone:record-debt": "hone record-debt --repo ."`. With pnpm the options follow the script name directly.
+
+   It prints one line per finding and per native exception, saying what it recorded and, for each it did not, why and what to do instead. Files under a `--leave` path need their authorised locations from point 1 written now. Files this change created or changed need fixing.
 5. **Re-project and check against the same base.** With any `eslint` check, run `npm run --silent hone:project`. Then run `npm run --silent hone:check -- --forfeiture this-run --base-revision origin/main` (with pnpm, `pnpm run --silent hone:check --forfeiture this-run --base-revision origin/main`). `--forfeiture this-run` makes this run assess forfeiture whatever `forfeiture` says, as the run that assesses it for your repository does: the pre-push hook with `"forfeiture": "elsewhere"` (step 5), or CI without it. A `forfeited` line names a file this change edits: go back to point 3 for it. A check against `HEAD` hides those lines, because nothing has changed since `HEAD`, and the hook or CI then fails where this run passed. What stays under `unrecorded` is what no record can hold; point 4's line for each says what to do.
 6. **Review the diff.** Nothing takes effect until you commit it. Each generated record is debt holding only its symptom, check and file: inherited debt that nobody has reviewed, and the reviewer of the adopting change reads it as that. Note them in each check's Debt line in `disciplines.assessment.md`.
 
@@ -384,9 +393,9 @@ To use an agent, give it the lens file, the rule items that name it, the change 
 
 ## 10. Update and remove
 
-To update, on a branch, read [the changelog](https://github.com/HailsTails/hone/blob/main/CHANGELOG.md) for each version since yours, then install the new version exactly as step 2 does, with `npm install --save-dev --save-exact @hailstails/hone@<version>` or `pnpm add -D --save-exact @hailstails/hone@<version>`. Compare the installed rule pages under `node_modules/@hailstails/hone/rules/` with the old ones, re-run `hone:project` if any check is on `eslint`, run the check, and commit `package.json` and the lockfile with a message naming the new version. With a tarball, replace it with the newer one and install that instead. Rule text can change between versions, so read the changed pages. Version 2 reads different files from version 1: a repository on version 1 runs `hone upgrade` once after installing version 2, as [MIGRATING.md section 20](MIGRATING.md#20-moving-from-version-1-to-version-2) says, before it runs the check.
+To update, on a branch, read [the changelog](https://github.com/HailsTails/hone/blob/main/CHANGELOG.md) for each version since yours, then install the new version exactly as step 2 does, in the root and in every workspace package that pins `@hailstails/hone`, with `npm install --save-dev --save-exact @hailstails/hone@<version>` or `pnpm add -D --save-exact @hailstails/hone@<version>`. Compare the installed rule pages under `node_modules/@hailstails/hone/rules/` with the old ones, re-run `hone:project` if any check is on `eslint`, run the check, and commit `package.json` and the lockfile with a message naming the new version. With a tarball, replace it with the newer one and install that instead. Rule text can change between versions, so read the changed pages. Version 2 reads different files from version 1: a repository on version 1 runs `hone upgrade` once after installing version 2, as [MIGRATING.md section 20](MIGRATING.md#20-moving-from-version-1-to-version-2) says, before it runs the check.
 
-To remove, run `npm uninstall @hailstails/hone`, delete the two `hone:` scripts, any vendored tarball, `hone.config.json`, `hone-records`, `disciplines.assessment.md` and, with `eslint` checks, `hone.eslint.mjs`, `hone.eslint.d.mts`, every package slice and their spread in the flat config, and take the check out of the validation script.
+To remove, run `npm uninstall @hailstails/hone`, delete the `hone:` scripts, any vendored tarball, `hone.config.json`, `hone-records`, `disciplines.assessment.md` and, with `eslint` checks, `hone.eslint.mjs`, `hone.eslint.d.mts`, every package slice and their spread in the flat config, and take the check out of the validation script.
 
 ## Known gaps
 

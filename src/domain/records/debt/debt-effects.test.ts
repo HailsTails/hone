@@ -10,6 +10,7 @@ import type {
   RecordKind,
   Rule,
   Symptom,
+  AuthorisedLocationKind,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
@@ -93,14 +94,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -124,7 +118,14 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLAIMED_TYPE: Symptom = {
@@ -141,12 +142,19 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-17"),
@@ -154,11 +162,13 @@ const CLOCK_CHECK: Check = {
   },
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -166,6 +176,7 @@ const CAST_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");

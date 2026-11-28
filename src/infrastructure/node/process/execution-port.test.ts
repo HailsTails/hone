@@ -15,21 +15,29 @@ describe("createExecutionPort", () => {
   it("binds policy and environment once and snapshots inputs across direct argv runs", () => {
     const ambientEnvironment = { PATH: "original search path", UNUSED: undefined };
     const childEnvironment = { PATH: "child search path", MODE: "isolated" };
-    const environment = vi.fn<ExecutionPolicy["environment"]>().mockReturnValue(childEnvironment);
+    const environment = vi
+      .fn<ExecutionPolicy<"passed-through", "opened">["environment"]>()
+      .mockReturnValue(childEnvironment);
     const policy = {
       executable: "node",
       environment,
       timeoutMilliseconds: 60000,
       maximumOutputBytes: 16777216,
-    };
-    const spawn = vi.fn<ExecutionSpawn>().mockReturnValue({
+      stdout: "passed-through",
+      replyPipe: "opened",
+    } satisfies ExecutionPolicy<"passed-through", "opened">;
+    const spawn = vi.fn<ExecutionSpawn<"passed-through", "opened">>().mockReturnValue({
       outcome: "ok",
-      value: { status: 7, stdout: "diagnostics", stderr: "warnings" },
+      value: { status: 7, stderr: "warnings", reply: "measured" },
     });
     const execution = createExecutionPort({ spawn, policy, ambientEnvironment });
     const commandArguments = ["tool entry.mjs", "--label=a & b"];
 
-    const first = execution.run({ arguments: commandArguments, cwd: WORKING_DIRECTORY });
+    const first = execution.run({
+      arguments: commandArguments,
+      cwd: WORKING_DIRECTORY,
+      input: "the request",
+    });
     Object.assign(ambientEnvironment, { PATH: "changed ambient" });
     Object.assign(childEnvironment, { PATH: "changed child" });
     Object.assign(policy, { executable: "other", timeoutMilliseconds: 1, maximumOutputBytes: 1 });
@@ -38,12 +46,9 @@ describe("createExecutionPort", () => {
 
     expect(first).toEqual({
       outcome: "ok",
-      value: { status: 7, stdout: "diagnostics", stderr: "warnings" },
+      value: { status: 7, stderr: "warnings", reply: "measured" },
     });
-    expect(second).toEqual({
-      outcome: "ok",
-      value: { status: 7, stdout: "diagnostics", stderr: "warnings" },
-    });
+    expect(second).toEqual(first);
     expect(environment).toHaveBeenCalledExactlyOnceWith({
       ambient: { PATH: "original search path", UNUSED: undefined },
     });
@@ -51,9 +56,12 @@ describe("createExecutionPort", () => {
       executable: "node",
       arguments: ["tool entry.mjs", "--label=a & b"],
       cwd: WORKING_DIRECTORY,
+      input: "the request",
       environment: { PATH: "child search path", MODE: "isolated" },
       timeoutMilliseconds: 60000,
       maximumOutputBytes: 16777216,
+      stdout: "passed-through",
+      replyPipe: "opened",
     });
     expect(spawn).toHaveBeenNthCalledWith(2, {
       executable: "node",
@@ -61,6 +69,8 @@ describe("createExecutionPort", () => {
       environment: { PATH: "child search path", MODE: "isolated" },
       timeoutMilliseconds: 60000,
       maximumOutputBytes: 16777216,
+      stdout: "passed-through",
+      replyPipe: "opened",
     });
     expect(spawn).toHaveBeenCalledTimes(2);
   });
@@ -72,11 +82,13 @@ describe("createExecutionPort", () => {
     { executable: "node", timeoutMilliseconds: 0, maximumOutputBytes: 1024 },
     { executable: "node", timeoutMilliseconds: 1.5, maximumOutputBytes: 1024 },
   ])("refuses invalid fixed policy before any spawn: %j", (invalidPolicy) => {
-    const environment = vi.fn<ExecutionPolicy["environment"]>().mockReturnValue({});
-    const spawn = vi.fn<ExecutionSpawn>();
+    const environment = vi
+      .fn<ExecutionPolicy<"captured", "none">["environment"]>()
+      .mockReturnValue({});
+    const spawn = vi.fn<ExecutionSpawn<"captured", "none">>();
     const execution = createExecutionPort({
       spawn,
-      policy: { ...invalidPolicy, environment },
+      policy: { ...invalidPolicy, environment, stdout: "captured", replyPipe: "none" },
       ambientEnvironment: {},
     });
 
@@ -98,14 +110,16 @@ describe("createExecutionPort", () => {
   });
 
   it("retains a construction-time environment binding failure across runs without spawning", () => {
-    const policy: ExecutionPolicy = {
+    const policy: ExecutionPolicy<"captured", "none"> = {
       executable: "node",
       environment: () => expect.fail("environment binding failed"),
       timeoutMilliseconds: undefined,
       maximumOutputBytes: 1024,
+      stdout: "captured",
+      replyPipe: "none",
     };
     const environment = vi.spyOn(policy, "environment");
-    const spawn = vi.fn<ExecutionSpawn>().mockReturnValue({
+    const spawn = vi.fn<ExecutionSpawn<"captured", "none">>().mockReturnValue({
       outcome: "ok",
       value: { status: 0, stdout: "", stderr: "" },
     });
@@ -147,16 +161,20 @@ describe("createExecutionPort", () => {
         code: "ENOBUFS",
         signal: "SIGKILL",
       },
-    } satisfies ReturnType<ExecutionSpawn>;
-    const spawn = vi.fn<ExecutionSpawn>().mockReturnValue(failure);
+    } satisfies ReturnType<ExecutionSpawn<"captured", "none">>;
+    const spawn = vi.fn<ExecutionSpawn<"captured", "none">>().mockReturnValue(failure);
 
     const executionOutcome = createExecutionPort({
       spawn,
       policy: {
         executable: "git",
-        environment: vi.fn<ExecutionPolicy["environment"]>().mockReturnValue({}),
+        environment: vi
+          .fn<ExecutionPolicy<"captured", "none">["environment"]>()
+          .mockReturnValue({}),
         timeoutMilliseconds: undefined,
         maximumOutputBytes: 268435456,
+        stdout: "captured",
+        replyPipe: "none",
       },
       ambientEnvironment: {},
     }).run({ arguments: ["status", "--porcelain"] });
@@ -168,6 +186,8 @@ describe("createExecutionPort", () => {
       environment: {},
       timeoutMilliseconds: undefined,
       maximumOutputBytes: 268435456,
+      stdout: "captured",
+      replyPipe: "none",
     });
   });
 });
@@ -190,6 +210,8 @@ describe("createExecutionSpawn", () => {
       environment: { PATH: "child path", OPTIONAL: undefined },
       timeoutMilliseconds: 60000,
       maximumOutputBytes: 16777216,
+      stdout: "captured",
+      replyPipe: "none",
     });
 
     expect(spawnOutcome).toEqual({
@@ -204,17 +226,99 @@ describe("createExecutionSpawn", () => {
         cwd: WORKING_DIRECTORY,
         env: { PATH: "child path", OPTIONAL: undefined },
         windowsHide: true,
+        stdio: ["pipe", "pipe", "pipe"],
         timeout: 60000,
         killSignal: "SIGKILL",
         maxBuffer: 16777216,
       }),
     });
     expect(spawnProvider).not.toHaveBeenCalledWith(
+      expect.objectContaining({ options: expect.objectContaining({ input: expect.anything() }) }),
+    );
+    expect(spawnProvider).not.toHaveBeenCalledWith(
       expect.objectContaining({ options: expect.objectContaining({ shell: true }) }),
     );
     expect(spawnProvider).not.toHaveBeenCalledWith(
       expect.objectContaining({ options: expect.objectContaining({ detached: true }) }),
     );
+  });
+
+  it("passes output through and reads the reply from its own pipe when the policy opens one", () => {
+    const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockReturnValue({
+      pid: 42,
+      output: [null, null, "warnings", '{"outcome":"measured","runs":[]}'],
+      stdout: "",
+      stderr: "warnings",
+      status: 0,
+      signal: null,
+    });
+
+    const spawnOutcome = createExecutionSpawn({ spawnProvider })({
+      executable: "node",
+      arguments: ["measure.mjs"],
+      input: "the request",
+      environment: {},
+      timeoutMilliseconds: undefined,
+      maximumOutputBytes: 1024,
+      stdout: "passed-through",
+      replyPipe: "opened",
+    });
+
+    expect(spawnOutcome).toEqual({
+      outcome: "ok",
+      value: {
+        status: 0,
+        stderr: "warnings",
+        reply: '{"outcome":"measured","runs":[]}',
+      },
+    });
+    expect(spawnProvider).toHaveBeenCalledExactlyOnceWith({
+      command: "node",
+      commandArguments: ["measure.mjs"],
+      options: {
+        encoding: "utf8",
+        input: "the request",
+        env: {},
+        stdio: ["pipe", "inherit", "pipe", "pipe"],
+        windowsHide: true,
+        timeout: undefined,
+        killSignal: "SIGKILL",
+        maxBuffer: 1024,
+      },
+    });
+  });
+
+  it("fails as a host failure when the policy opens a reply pipe the process left unreadable", () => {
+    const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockReturnValue({
+      pid: 42,
+      output: [null, null, "warnings", null],
+      stdout: "",
+      stderr: "warnings",
+      status: 0,
+      signal: null,
+    });
+
+    const spawnOutcome = createExecutionSpawn({ spawnProvider })({
+      executable: "node",
+      arguments: ["measure.mjs"],
+      environment: {},
+      timeoutMilliseconds: undefined,
+      maximumOutputBytes: 1024,
+      stdout: "passed-through",
+      replyPipe: "opened",
+    });
+
+    expect(spawnOutcome).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "host-failed",
+        detail: "the process exited without a readable reply pipe",
+        stdout: "",
+        stderr: "warnings",
+        code: undefined,
+        signal: undefined,
+      },
+    });
   });
 
   it.each([
@@ -241,6 +345,8 @@ describe("createExecutionSpawn", () => {
           environment: {},
           timeoutMilliseconds: undefined,
           maximumOutputBytes: 1024,
+          stdout: "captured",
+          replyPipe: "none",
         }),
       ).toEqual({
         outcome: "failed",
@@ -273,6 +379,8 @@ describe("createExecutionSpawn", () => {
         environment: {},
         timeoutMilliseconds: undefined,
         maximumOutputBytes: 1024,
+        stdout: "captured",
+        replyPipe: "none",
       }),
     ).toEqual({
       outcome: "failed",
@@ -303,6 +411,8 @@ describe("createExecutionSpawn", () => {
         environment: {},
         timeoutMilliseconds: undefined,
         maximumOutputBytes: 1024,
+        stdout: "captured",
+        replyPipe: "none",
       }),
     ).toEqual({
       outcome: "failed",
@@ -333,6 +443,8 @@ describe("createExecutionSpawn", () => {
         environment: {},
         timeoutMilliseconds: undefined,
         maximumOutputBytes: 1024,
+        stdout: "captured",
+        replyPipe: "none",
       }),
     ).toEqual({
       outcome: "failed",

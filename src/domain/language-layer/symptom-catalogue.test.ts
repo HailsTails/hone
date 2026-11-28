@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../finding/governance.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
+import type { Specific } from "./authored-item-types.ts";
 import {
+  type Binding,
   type Case,
+  type ClauseAndRemedy,
   type Principle,
   type Recipe,
   type RecordKind,
@@ -15,7 +17,12 @@ import {
   type SymptomCatalogue,
   type SymptomReading,
   indicatedNamesOf,
+  mapCheckToPartyNaming,
+  mapSpecificsToBinding,
+  mapSymptomToAuthorisation,
   symptomReadingOf,
+  type AuthorisedLocationKind,
+  type UnboundRecordKind,
 } from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
@@ -64,14 +71,14 @@ const RESULT_UNION: Recipe = {
   reason: { text: '"it makes the output clear"', standing: "accepted" },
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -117,7 +124,7 @@ const CATALOGUE: SymptomCatalogue = {
         discipline: disciplineIdOf("CD-44"),
         clause: clauseIdOf("parameter-reassignment"),
       },
-      sight: { kind: "one-symptom", symptom: REBINDING },
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
       clause: {
@@ -128,8 +135,11 @@ const CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "branching-with-if", symptom: BRANCH_IN_A_TEST },
-          { section: "a-let", symptom: REBINDING },
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+          { form: "a-let", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
         ],
       },
     },
@@ -139,7 +149,11 @@ const CATALOGUE: SymptomCatalogue = {
         discipline: disciplineIdOf("CD-9"),
         clause: clauseIdOf("result-failures"),
       },
-      sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] },
+      sight: {
+        kind: "method",
+        recipe: RESULT_UNION,
+        outcomeSeenBy: [{ ruleSet: TOOL_RULE_SET, name: "rebinding" }],
+      },
     },
     {
       clause: {
@@ -156,7 +170,7 @@ const CATALOGUE: SymptomCatalogue = {
 
 type ReadingRow = {
   readonly name: string;
-  readonly finding: Pick<Finding, "clause" | "remedy">;
+  readonly finding: ClauseAndRemedy;
   readonly reading: SymptomReading;
 };
 
@@ -171,19 +185,19 @@ describe("symptomReadingOf", () => {
           clause: clauseIdOf("parameter-reassignment"),
         },
       },
-      reading: { reading: "named", symptom: REBINDING },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
-      name: "names the symptom of the form a by-form clause's finding gives as its section",
+      name: "names the symptom of the form a by-form clause's finding gives as its form",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write one test per case", page: "CHECKS.md", section: "branching-with-if" },
+        remedy: { fix: "write one test per case", form: "branching-with-if" },
       },
-      reading: { reading: "named", symptom: BRANCH_IN_A_TEST },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" } },
     },
     {
       name: "names another form's symptom for another section of the same clause",
@@ -193,24 +207,24 @@ describe("symptomReadingOf", () => {
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" },
+        remedy: { fix: "write the values out", form: "a-let" },
       },
-      reading: { reading: "named", symptom: REBINDING },
+      reading: { reading: "named", symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" } },
     },
     {
-      name: "is not in the catalogue for a by-form clause's section the catalogue does not list",
+      name: "is not in the catalogue for a by-form clause's form the catalogue does not list",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,
           discipline: disciplineIdOf("CD-27"),
           clause: clauseIdOf("test-body-logic"),
         },
-        remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" },
+        remedy: { fix: "write it out", form: "a-new-form" },
       },
       reading: { reading: "not-in-catalogue" },
     },
     {
-      name: "is not in the catalogue for a by-form clause's finding with no section",
+      name: "is not in the catalogue for a by-form clause's finding with no form",
       finding: {
         clause: {
           ruleSet: TOOL_RULE_SET,
@@ -286,5 +300,101 @@ describe("indicatedNamesOf", () => {
         },
       }),
     ).toEqual(["no-hidden-effects", "straight-through-tests"]);
+  });
+});
+
+type BindingRow = {
+  readonly specifics: readonly Specific[];
+  readonly binding: Binding;
+};
+
+describe("mapSpecificsToBinding", () => {
+  it.each<BindingRow>([
+    { specifics: [], binding: "check-and-file" },
+    { specifics: ["outside-party"], binding: "check-file-and-outside-party" },
+  ])("binds $binding for the specifics $specifics", ({ specifics, binding }) => {
+    const bound = mapSpecificsToBinding({ specifics });
+
+    expect(bound).toBe(binding);
+  });
+});
+
+describe("mapSymptomToAuthorisation", () => {
+  it("gives no correct use for a symptom no authorised location answers", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: { ...REBINDING, correctUses: [{ situation: "a migration", kind: DEBT }] },
+    });
+
+    expect(authorisation).toBe("no-correct-use");
+  });
+
+  it("binds the check and file for an authorised-location correct use that binds nothing more", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: {
+        ...REBINDING,
+        correctUses: [
+          { situation: "a test", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+        ],
+      },
+    });
+
+    expect(authorisation).toBe("check-and-file");
+  });
+
+  it("binds the outside party too for an authorised-location correct use that binds it", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: {
+        ...REBINDING,
+        correctUses: [
+          {
+            situation: "the adapter",
+            kind: AUTHORISED_LOCATION,
+            binding: "check-file-and-outside-party",
+          },
+        ],
+      },
+    });
+
+    expect(authorisation).toBe("check-file-and-outside-party");
+  });
+});
+
+describe("mapCheckToPartyNaming", () => {
+  it("reads a check whose findings name no specific as naming no party", () => {
+    const naming = mapCheckToPartyNaming({
+      check: {
+        name: "parameter-reassignment",
+        symptom: REBINDING,
+        page: "rebinding/parameter-reassignment.md",
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+        forms: [],
+        findingSpecifics: [],
+      },
+    });
+
+    expect(naming).toBe("names-no-party");
+  });
+
+  it("reads a check whose findings name the outside party as naming it", () => {
+    const naming = mapCheckToPartyNaming({
+      check: {
+        name: "parameter-reassignment",
+        symptom: REBINDING,
+        page: "rebinding/parameter-reassignment.md",
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+        forms: [],
+        findingSpecifics: ["outside-party"],
+      },
+    });
+
+    expect(naming).toBe("names-the-party");
   });
 });

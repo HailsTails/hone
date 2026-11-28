@@ -36,7 +36,7 @@ Two tests for a rule:
 
 ## Names, not numbers
 
-Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Selections, records and findings still use the numbered clause addresses; each check's mechanics are on its own page under its symptom.
+Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Each check's mechanics are on its own page under its symptom.
 
 [Every CD](numbers.md#every-numbered-discipline) lists each numbered discipline with its title, clauses, files checked and review lens.
 
@@ -169,6 +169,10 @@ Where a reason is marked **proposed**, it is not yet accepted.
 
 Outside dependency: what was called a package. An internal package is our own code.
 
+## Recipes: Examples
+
+A recipe's examples show the method. Each names the check and form it answers. The first block is a flagged form, and each block after it is the method applied. Every block after the first passes every check Hone ships at every edition, and compiles under the compiler options [strictness-weakened](typescript/symptoms/strictness-weakened.md) requires. Statements outside an `it` stand for the body of one test. `assert`, `expect`, `it` and `vi` come from `vitest`, and a `declare const` line stands for the unit under test or what it is handed.
+
 ## Recipes: No hidden effects
 
 The principle decides.
@@ -274,8 +278,6 @@ They have two editions. Edition 1 runs by default. Edition 2 adds what each chec
   "CD-27#test-body-logic": { "edition": "2" }
 }
 ```
-
-Each check's "Allowed forms in a test" sections show a flagged form first, then the forms to write instead. Every form to write instead passes every audit and ESLint clause Hone ships, at each edition its check declares, and compiles under the compiler options [strictness-weakened](typescript/symptoms/strictness-weakened.md) requires. A test reads each check's page and holds every block on it to that. `assert`, `expect`, `it` and `vi` come from `vitest`, and a `declare const` line stands for the unit under test.
 
 ## Checks: Settings
 

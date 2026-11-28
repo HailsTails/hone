@@ -24,6 +24,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -311,29 +313,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -358,7 +353,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -378,7 +378,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -396,7 +396,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -420,25 +426,31 @@ const CAST_EXPRESSIONS = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
   symptom: BRANCH_IN_A_TEST,
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -451,8 +463,8 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -461,7 +473,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [{ form: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
       },
     },
     { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
@@ -485,6 +497,7 @@ const settingsWith = (request: {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: request.forfeiture } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 });
@@ -493,7 +506,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const HELD_DEBT: PlacedRecord = {
@@ -520,6 +533,8 @@ const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun 
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -644,7 +659,7 @@ const ranWith = async (request: {
     exitWith: vi.fn<ProcessPort["exitWith"]>(),
   };
   const command = request.handler({
-    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+    namedEngine: { load: vi.fn() },
     gitTree: gitTreeStub(),
     directory: held.directory,
     fileRemoval: held.fileRemoval,
@@ -701,7 +716,9 @@ describe("versionTwoRecordDebtCommandOf", () => {
         },
       }),
     );
-    expect(stages.touched).toHaveBeenCalledWith(expect.objectContaining({ measuring: "always" }));
+    expect(stages.touched).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "always" } }),
+    );
   });
 
   it("writes the debt the run found and prints it recorded, exit 0", async () => {
@@ -731,7 +748,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
           value: {
             ...NO_RECORDS,
             records: [HELD_DEBT],
-            base: { measured: "yes", held: [HELD_DEBT.record] },
+            base: { measured: "yes", placements: [HELD_DEBT] },
           },
         }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
@@ -778,8 +795,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "this-run" },
-      measuring: "always",
+      scope: { baseScope: "merge-base", measuring: "always" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -806,8 +822,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "elsewhere" },
-      measuring: "always",
+      scope: { baseScope: "elsewhere" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -997,7 +1012,13 @@ claimed-type#cast-expressions unrecordable src/a.ts: an entry in the suppression
       stages: stagesGiving({
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [CAST] }), projection: "out-of-date" }],
+          value: [
+            {
+              ...runOf({ hits: [CAST] }),
+              projection: "out-of-date",
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
       }),
       held: nothingHeld(),
@@ -1071,6 +1092,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
               address: "claimed-type#cast-expressions",
               ruleSet: TOOL_RULE_SET,
               engine: ESLINT,
+              checkOptions: { kind: "none" },
               pieceRoot: "/install/cast",
               settings: {},
               checkSettings: {},
@@ -1110,7 +1132,14 @@ describe("versionTwoPruneDebtCommandOf", () => {
 
   it("keeps the debt, printing nothing, when the engine measuring its check was not in effect, since nothing was measured to show it stale", async () => {
     expect(
-      await prunedWhileEngineRan({ run: { ...runOf({ hits: [] }), projection: "not-included" } }),
+      await prunedWhileEngineRan({
+        run: {
+          ...runOf({ hits: [] }),
+          projection: "not-included",
+          recovery: { kind: "include-projection" },
+          projectionFile: repoPathOf("hone.eslint.mjs"),
+        },
+      }),
     ).toEqual({
       writes: [[{ text: "" }]],
       exits: [[{ code: 0 }]],
@@ -1118,16 +1147,22 @@ describe("versionTwoPruneDebtCommandOf", () => {
     });
   });
 
-  it("keeps the debt when a package slice is missing, so the engine linted nothing under a current root projection", async () => {
+  it("refuses, keeping the debt, when a package slice is missing, naming the project command that writes it", async () => {
     const missingSlice: ChecksSliceProblem = {
-      slice: repoPathOf("packages/a/hone.eslint.mjs"),
+      file: repoPathOf("packages/a/hone.eslint.mjs"),
       state: "missing",
     };
     expect(
       await prunedWhileEngineRan({ run: { ...runOf({ hits: [] }), slices: [missingSlice] } }),
     ).toEqual({
-      writes: [[{ text: "" }]],
-      exits: [[{ code: 0 }]],
+      writes: [
+        [
+          {
+            text: "load failure: projection-stale eslint missing packages/a/hone.eslint.mjs: that slice is not written; run node /install/src/hone.ts project --repo /repo and commit every file it writes\n",
+          },
+        ],
+      ],
+      exits: [[{ code: 2 }]],
       removed: [],
     });
   });
@@ -1148,7 +1183,14 @@ describe("versionTwoPruneDebtCommandOf", () => {
           .mockReturnValue({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [] }), projection: "not-included" }],
+          value: [
+            {
+              ...runOf({ hits: [] }),
+              projection: "not-included",
+              recovery: { kind: "include-projection" },
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
         renamed: vi
           .fn<VersionTwoStages["renamed"]>()
@@ -1190,7 +1232,14 @@ describe("versionTwoPruneDebtCommandOf", () => {
           .mockReturnValue({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } }),
         engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
           outcome: "ok",
-          value: [{ ...runOf({ hits: [] }), projection: "not-included" }],
+          value: [
+            {
+              ...runOf({ hits: [] }),
+              projection: "not-included",
+              recovery: { kind: "include-projection" },
+              projectionFile: repoPathOf("hone.eslint.mjs"),
+            },
+          ],
         }),
       }),
       held: debtHeld({ text: DEBT_DOCUMENT }),
@@ -1233,7 +1282,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
       exits: [[{ code: 0 }]],
     });
     expect(stages.touched).toHaveBeenCalledWith(
-      expect.objectContaining({ measuring: "when-debt-held" }),
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "when-debt-held" } }),
     );
   });
 
@@ -1275,13 +1324,13 @@ const ACCEPTED_ROOT_CAUSE =
 
 const ACCEPTED_ARGUMENTS = authoriseArgumentsFor({
   repo: "/repo",
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   rootCause: ACCEPTED_ROOT_CAUSE,
 });
 
 const REFUSED_ARGUMENTS = authoriseArgumentsFor({
   repo: "/repo",
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   rootCause: "no",
 });
 
@@ -1308,7 +1357,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       handler: versionTwoAuthoriseCommandOf,
       arguments: authoriseArgumentsFor({
         repo: "/repo",
-        answers: "acme/team-cast",
+        answers: "acme/team-cast#casts",
         rootCause: ACCEPTED_ROOT_CAUSE,
       }),
       stages: stagesGiving({
@@ -1328,7 +1377,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       held: nothingHeld(),
     });
     expect({ writes: ran.writes, exits: ran.exits }).toEqual({
-      writes: [[{ text: "acme/team-cast authorised src/a.ts\n" }]],
+      writes: [[{ text: "acme/team-cast#casts authorised src/a.ts\n" }]],
       exits: [[{ code: 0 }]],
     });
     expect(ran.written).toEqual([
@@ -1349,7 +1398,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       held: nothingHeld(),
     });
     expect({ writes: ran.writes, exits: ran.exits }).toEqual({
-      writes: [[{ text: "claimed-type authorised src/a.ts\n" }]],
+      writes: [[{ text: "claimed-type#cast-expressions authorised src/a.ts\n" }]],
       exits: [[{ code: 0 }]],
     });
     expect(ran.written).toEqual([
@@ -1380,7 +1429,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
     expect(second.writes).toEqual([
       [
         {
-          text: `claimed-type already-authorised src/a.ts: ${AUTHORISED_FILE} already holds this record\n`,
+          text: `claimed-type#cast-expressions already-authorised src/a.ts: ${AUTHORISED_FILE} already holds this record\n`,
         },
       ],
     ]);
@@ -1396,7 +1445,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
     });
     expect(ran.exits).toEqual([[{ code: 0 }]]);
     expect(ran.writes).toEqual([
-      [{ text: expect.stringMatching(/^claimed-type refused src\/a\.ts: /) }],
+      [{ text: expect.stringMatching(/^claimed-type#cast-expressions refused src\/a\.ts: /) }],
     ]);
     expect(ran.written).toEqual([]);
   });

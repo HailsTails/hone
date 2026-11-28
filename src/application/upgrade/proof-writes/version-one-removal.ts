@@ -118,34 +118,27 @@ const foldersToTryOf = (request: {
     ]),
   ].toSorted((left, right) => right.length - left.length);
 
-const removalEffectOf = (request: {
-  readonly kind: "file" | "folder-if-empty";
-  readonly path: AbsolutePath;
-}): ProofEffect =>
-  request.kind === "file"
-    ? { kind: "remove-file", path: request.path }
-    : { kind: "remove-directory-if-empty", path: request.path };
-
-const fileEffectsOf = (request: {
-  readonly paths: readonly AbsolutePath[];
-}): readonly ProofEffect[] => request.paths.map((path) => removalEffectOf({ kind: "file", path }));
-
-const folderEffectsOf = (request: {
+const createFileRemovals = (request: {
   readonly paths: readonly AbsolutePath[];
 }): readonly ProofEffect[] =>
-  request.paths.map((path) => removalEffectOf({ kind: "folder-if-empty", path }));
+  request.paths.map((path): ProofEffect => ({ kind: "remove-file", path }));
+
+const createFolderRemovals = (request: {
+  readonly paths: readonly AbsolutePath[];
+}): readonly ProofEffect[] =>
+  request.paths.map((path): ProofEffect => ({ kind: "remove-directory-if-empty", path }));
 
 export const removalEffectsOf = (request: {
   readonly path: RemovalPath;
   readonly removal: VersionOneRemoval;
 }): readonly ProofEffect[] => [
-  ...fileEffectsOf({ paths: request.removal.recordsFiles }),
-  ...folderEffectsOf({ paths: foldersToTryOf(request) }),
-  ...fileEffectsOf({ paths: request.removal.projections }),
-  ...fileEffectsOf({ paths: request.removal.declarations }),
-  ...fileEffectsOf({ paths: [request.removal.settings] }),
-  ...fileEffectsOf({ paths: request.removal.ruleSetFiles }),
-  ...folderEffectsOf({ paths: request.removal.ruleSetFolders }),
+  ...createFileRemovals({ paths: request.removal.recordsFiles }),
+  ...createFolderRemovals({ paths: foldersToTryOf(request) }),
+  ...createFileRemovals({ paths: request.removal.projections }),
+  ...createFileRemovals({ paths: request.removal.declarations }),
+  ...createFileRemovals({ paths: [request.removal.settings] }),
+  ...createFileRemovals({ paths: request.removal.ruleSetFiles }),
+  ...createFolderRemovals({ paths: request.removal.ruleSetFolders }),
 ];
 
 const removedOf = (request: { readonly settled: readonly SettledEffect[] }): Removed => ({

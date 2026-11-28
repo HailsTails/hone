@@ -13,8 +13,6 @@ const REPO = absoluteRootOf("/repo");
 const DEBT_TEXT =
   '{ "version": 2, "records": [{ "answers": "claimed-type", "file": "src/a.ts" }] }';
 
-const BOUNDARIES_TEXT = '{ "version": 2, "records": [] }';
-
 const portsWith = (request: {
   readonly exists: FileTextPort["exists"];
   readonly read: FileTextPort["read"];
@@ -48,17 +46,18 @@ describe("createRecordsFolder, read", () => {
   });
 
   it("reads each records file under its repository path, in path order, as the JSON it holds", () => {
+    const dependenciesText = '{ "version": 2, "records": [] }';
     const read = vi
       .fn<FileTextPort["read"]>()
-      .mockReturnValueOnce({ outcome: "ok", value: BOUNDARIES_TEXT })
-      .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT });
+      .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: dependenciesText });
     const list = vi
       .fn<DirectoryPort["list"]>()
       .mockReturnValueOnce({
         outcome: "ok",
         value: [
           { name: "debt", kind: "directory" },
-          { name: "boundary-records.json", kind: "file" },
+          { name: "dependency-records.json", kind: "file" },
         ],
       })
       .mockReturnValueOnce({ outcome: "ok", value: [{ name: "claimed-type.json", kind: "file" }] });
@@ -75,17 +74,17 @@ describe("createRecordsFolder, read", () => {
       read: {
         outcome: "ok",
         value: [
-          { file: "hone-records/boundary-records.json", document: { version: 2, records: [] } },
           {
             file: "hone-records/debt/claimed-type.json",
             document: { version: 2, records: [{ answers: "claimed-type", file: "src/a.ts" }] },
           },
+          { file: "hone-records/dependency-records.json", document: { version: 2, records: [] } },
         ],
       },
       listed: [[{ path: "/repo/hone-records" }], [{ path: "/repo/hone-records/debt" }]],
       readFrom: [
-        [{ path: "/repo/hone-records/boundary-records.json" }],
         [{ path: "/repo/hone-records/debt/claimed-type.json" }],
+        [{ path: "/repo/hone-records/dependency-records.json" }],
       ],
     });
   });
@@ -139,7 +138,7 @@ describe("createRecordsFolder, read", () => {
           .mockReturnValueOnce({ outcome: "ok", value: [{ name: "acme", kind: "directory" }] })
           .mockReturnValueOnce({
             outcome: "ok",
-            value: [{ name: "boundary-records.json", kind: "file" }],
+            value: [{ name: "dependency-records.json", kind: "file" }],
           }),
         ...UNUSED_BASE,
       }),
@@ -147,7 +146,7 @@ describe("createRecordsFolder, read", () => {
     });
     expect(folder.read()).toEqual({
       outcome: "failed",
-      error: { kind: "not-a-records-file", file: "hone-records/acme/boundary-records.json" },
+      error: { kind: "not-a-records-file", file: "hone-records/acme/dependency-records.json" },
     });
   });
 

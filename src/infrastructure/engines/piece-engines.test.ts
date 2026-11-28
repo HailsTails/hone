@@ -30,7 +30,9 @@ const TEAM_CHECKS: readonly CheckContent[] = [
   {
     name: "clock-sources",
     symptom: DATE_USED_DIRECTLY,
+    page: "date-used-directly/clock-sources.md",
     forms: [],
+    findingSpecifics: [],
     clause: {
       ruleSet: { name: ruleSetNameOf("team") },
       discipline: disciplineIdOf("CD-17"),
@@ -40,7 +42,9 @@ const TEAM_CHECKS: readonly CheckContent[] = [
   {
     name: "timers",
     symptom: DATE_USED_DIRECTLY,
+    page: "date-used-directly/timers.md",
     forms: [],
+    findingSpecifics: [],
     clause: {
       ruleSet: { name: ruleSetNameOf("team") },
       discipline: disciplineIdOf("CD-17"),
@@ -54,101 +58,141 @@ const TIMERS_WALKER = "/repo/team-rules/engines/walker/date-used-directly/timers
 const CLOCK_ESLINT = "/repo/team-rules/engines/eslint/date-used-directly/clock-sources/piece.json";
 const PIECE = '{ "version": 2, "anchor": { "kind": "file" }, "settings": {} }';
 
-const readBindings = (request: {
-  readonly files: ReadonlyMap<string, ReturnType<FileTextPort["read"]>>;
-  readonly checkFiles?: (fileText: FileTextPort) => void;
-}) => {
-  const fileText: FileTextPort = {
-    exists: vi.fn<FileTextPort["exists"]>(({ path }) =>
-      request.files.has(path) ? "present" : "absent",
-    ),
-    read: vi.fn<FileTextPort["read"]>(
-      ({ path }) =>
-        request.files.get(path) ?? {
-          outcome: "failed",
-          error: { kind: "unreadable", path, detail: "ENOENT" },
-        },
-    ),
-    write: vi.fn<FileTextPort["write"]>(),
-  };
-  const result = createEngineBindingsRepository({
-    fileText,
-    path: PATH,
-    ruleSetRoot: TEAM,
-    installRoot: INSTALL,
-  }).read({ checks: TEAM_CHECKS });
-  request.checkFiles?.(fileText);
-  return result;
-};
-
-const found = (text: string): ReturnType<FileTextPort["read"]> => ({ outcome: "ok", value: text });
+const PIECE_READ: ReturnType<FileTextPort["read"]> = { outcome: "ok", value: PIECE };
 
 describe("createEngineBindingsRepository", () => {
   it("gives each named check the engines with pieces in registry order, passing over missing pieces", () => {
-    expect(
-      readBindings({
-        files: new Map([
-          [CLOCK_WALKER, found(PIECE)],
-          [TIMERS_WALKER, found(PIECE)],
-          [CLOCK_ESLINT, found(PIECE)],
-        ]),
-      }),
-    ).toEqual({
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present")
+        .mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue(PIECE_READ),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const repository = createEngineBindingsRepository({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM,
+      installRoot: INSTALL,
+    });
+
+    const bindings = repository.read({ checks: TEAM_CHECKS });
+
+    expect(bindings).toEqual({
       outcome: "ok",
       value: new Map([
         ["date-used-directly#clock-sources", [{ name: "walker" }, { name: "eslint" }]],
         ["date-used-directly#timers", [{ name: "walker" }]],
       ]),
     });
+    expect(fileText.read).toHaveBeenNthCalledWith(1, { path: CLOCK_WALKER });
+    expect(fileText.read).toHaveBeenNthCalledWith(2, { path: TIMERS_WALKER });
+    expect(fileText.read).toHaveBeenNthCalledWith(3, { path: CLOCK_ESLINT });
   });
 
   it("locates a team's pieces under the team's own rule-set root", () => {
-    expect(
-      readBindings({
-        files: new Map([[CLOCK_ESLINT, found(PIECE)]]),
-        checkFiles: ({ exists, read }) => {
-          expect(exists).toHaveBeenCalledWith({ path: CLOCK_WALKER });
-          expect(read).toHaveBeenCalledExactlyOnceWith({ path: CLOCK_ESLINT });
-        },
-      }),
-    ).toEqual({
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("absent")
+        .mockReturnValueOnce("absent")
+        .mockReturnValueOnce("present")
+        .mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue(PIECE_READ),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const repository = createEngineBindingsRepository({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM,
+      installRoot: INSTALL,
+    });
+
+    const bindings = repository.read({ checks: TEAM_CHECKS });
+
+    expect(bindings).toEqual({
       outcome: "ok",
       value: new Map([["date-used-directly#clock-sources", [{ name: "eslint" }]]]),
     });
+    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: CLOCK_WALKER });
+    expect(fileText.read).toHaveBeenCalledExactlyOnceWith({ path: CLOCK_ESLINT });
   });
 
   it("gives no bindings and reads no pieces when no named declarations exist", () => {
-    expect(
-      readBindings({
-        files: new Map(),
-        checkFiles: ({ read }) => expect(read).not.toHaveBeenCalled(),
-      }),
-    ).toEqual({ outcome: "ok", value: new Map() });
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>(),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const repository = createEngineBindingsRepository({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM,
+      installRoot: INSTALL,
+    });
+
+    const bindings = repository.read({ checks: TEAM_CHECKS });
+
+    expect(bindings).toEqual({ outcome: "ok", value: new Map() });
+    expect(fileText.read).not.toHaveBeenCalled();
   });
 
   it("fails file-malformed naming a piece whose file is not a named declaration", () => {
-    expect(
-      readBindings({ files: new Map([[CLOCK_WALKER, found('{ "version": 2 }')]]) }),
-    ).toMatchObject({
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValue("absent"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValue({ outcome: "ok", value: '{ "version": 2 }' }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const repository = createEngineBindingsRepository({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM,
+      installRoot: INSTALL,
+    });
+
+    const bindings = repository.read({ checks: TEAM_CHECKS });
+
+    expect(bindings).toMatchObject({
       outcome: "failed",
       error: { kind: "file-malformed", path: CLOCK_WALKER },
     });
   });
 
   it("fails file-unreadable with the named declaration path and the read failure", () => {
-    expect(
-      readBindings({
-        files: new Map([
-          [
-            CLOCK_WALKER,
-            {
-              outcome: "failed",
-              error: { kind: "unreadable", path: CLOCK_WALKER, detail: "EACCES" },
-            },
-          ],
-        ]),
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "unreadable", path: CLOCK_WALKER, detail: "EACCES" },
       }),
-    ).toEqual({
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+
+    const repository = createEngineBindingsRepository({
+      fileText,
+      path: PATH,
+      ruleSetRoot: TEAM,
+      installRoot: INSTALL,
+    });
+
+    const bindings = repository.read({ checks: TEAM_CHECKS });
+
+    expect(bindings).toEqual({
       outcome: "failed",
       error: {
         kind: "file-unreadable",

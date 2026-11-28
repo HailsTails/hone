@@ -8,7 +8,7 @@ export type RecordsUnmeasured = {
   readonly base: BaseRevisionAvailability;
 };
 
-const forfeitureUnmeasured = (request: {
+export const unmeasuredDebtForfeiture = (request: {
   readonly records: readonly PlacedRecord[];
   readonly touched: TouchedSet;
 }): readonly RecordsUnmeasured[] =>
@@ -32,7 +32,7 @@ export const carriedJudgementOf = (request: {
   if (carried === 0) {
     return { judgement: "nothing-carried" };
   }
-  if (request.base.measured === "yes") {
+  if (request.base.measured !== "no") {
     return { judgement: "judged" };
   }
   const leftToAnotherRun =
@@ -42,7 +42,7 @@ export const carriedJudgementOf = (request: {
     : { judgement: "unmeasured", base: request.base.base };
 };
 
-const importUnmeasured = (request: {
+export const unmeasuredCarriedRecords = (request: {
   readonly records: readonly PlacedRecord[];
   readonly base: BaseMeasurement;
   readonly touched: TouchedSet;
@@ -52,12 +52,3 @@ const importUnmeasured = (request: {
     ? [{ kind: "import-unmeasured", base: judgement.base }]
     : [];
 };
-
-export const recordsUnmeasuredOf = (request: {
-  readonly records: readonly PlacedRecord[];
-  readonly base: BaseMeasurement;
-  readonly touched: TouchedSet;
-}): readonly RecordsUnmeasured[] => [
-  ...forfeitureUnmeasured(request),
-  ...importUnmeasured(request),
-];

@@ -2,6 +2,7 @@ import type { CheckAddressText } from "../../../domain/language-layer/check-addr
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { CheckedTree } from "../../../domain/repository/checked-tree.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
@@ -16,7 +17,7 @@ import type { ProjectionRequest } from "../../ports/engine/runner-module.ts";
 import type { EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 import type { CheckedVersionOneProjection } from "../../ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPort } from "../../ports/upgrade/version-one-projection-port.ts";
-import { checkedTreeOf, type CheckedTree } from "../../run/checked-tree-of.ts";
+import { checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { foundTreeCheckReachOf } from "../found-tree/found-tree-reach.ts";
 import {
   exceptionBaselineOf,
@@ -34,13 +35,7 @@ import { versionOneProofReportOf } from "./version-one-proof-report.ts";
 
 type BeforeInput = Pick<
   NamedVersionOnePassRequest,
-  | "engine"
-  | "sources"
-  | "readPiece"
-  | "selection"
-  | "catalogues"
-  | "loadFailureDetail"
-  | "measureVersionOne"
+  "sources" | "readPiece" | "selection" | "catalogues" | "loadFailureDetail" | "measureVersionOne"
 > & {
   readonly check: VersionOneCheckInput;
   readonly projection: VersionOneProjectionPort;
@@ -100,13 +95,6 @@ const checkedProjectionOf = async (
       }),
     );
   }
-  const invalid = inspected.value.files.find(({ state }) => state !== "current");
-  if (invalid !== undefined && invalid.state !== "current") {
-    return {
-      outcome: "failed",
-      error: { kind: "projection-not-current", file: invalid.file, state: invalid.state },
-    };
-  }
   const names = versionOneNamesOf({
     selected: request.ready.selected.selection.selected,
     catalogues: request.catalogues,
@@ -127,9 +115,7 @@ const checkedProjectionOf = async (
     value: {
       settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
       projectionFile: PROJECTION,
-      packageFiles: inspected.value.files.flatMap(({ file }) =>
-        file === PROJECTION ? [] : [file],
-      ),
+      packageFiles: inspected.value.files.filter((file) => file !== PROJECTION),
       rules: new Map(rules.value),
     },
   };
@@ -138,7 +124,6 @@ const checkedProjectionOf = async (
 const namedPassOf = (request: BeforeInput & { readonly ready: Ready }): EnginePass =>
   createNamedVersionOneEnginePass({
     ...request.check,
-    engine: request.engine,
     measureVersionOne: request.measureVersionOne,
     selected: request.ready.selected.selection.selected,
     selection: request.selection,
@@ -151,7 +136,7 @@ const namedPassOf = (request: BeforeInput & { readonly ready: Ready }): EnginePa
     checkProjection: ({ records }) => checkedProjectionOf({ ...request, records }),
   });
 
-type UpgradeBefore = {
+export type UpgradeBefore = {
   readonly enginePass: EnginePass;
   readonly report: () => Promise<Result<CheckReport, LoadFailure>>;
   readonly prepareProjections: (

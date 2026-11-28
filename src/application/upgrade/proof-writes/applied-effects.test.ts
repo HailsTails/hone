@@ -3,9 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
-import type { FileCreationPort } from "../../ports/file-system/file-creation-port.ts";
+import type {
+  FileCreationFailure,
+  FileCreationPort,
+} from "../../ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { Unrestored } from "../../ports/upgrade/proof-outcome.ts";
 import { appliedEffects, proofEffectsOver, undoneWrites } from "./applied-effects.ts";
 
 const FOLDER = absoluteRootOf("/repo/hone-records");
@@ -13,6 +17,12 @@ const FOLDER = absoluteRootOf("/repo/hone-records");
 const FILE = absoluteRootOf("/repo/hone.config.json");
 
 const ok = { outcome: "ok", value: undefined } as const;
+
+type RestoreRow = {
+  readonly name: string;
+  readonly failure: FileCreationFailure;
+  readonly unrestored: readonly Unrestored[];
+};
 
 describe("appliedEffects", () => {
   it("applies every effect through its port, in order, and says all were applied", () => {
@@ -221,6 +231,90 @@ describe("undoneWrites", () => {
       [[{ path: FILE }]],
       [[{ path: FOLDER }]],
     ]);
+  });
+});
+
+describe("undoneWrites of a removed file", () => {
+  it("puts it back with its original text", () => {
+    const createNew = vi.fn<FileCreationPort["createNew"]>().mockReturnValue(ok);
+    const ports = {
+      fileText: { write: vi.fn<FileTextPort["write"]>() },
+      fileCreation: { createNew },
+      fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
+      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+    };
+
+    const undone = undoneWrites({
+      ports,
+      writes: [{ kind: "file-removed", path: FILE, original: "old" }],
+    });
+
+    expect(undone).toEqual([]);
+    expect(createNew).toHaveBeenCalledExactlyOnceWith({ path: FILE, text: "old" });
+  });
+
+  it.each<RestoreRow>([
+    {
+      name: "it cannot be created",
+      failure: { kind: "uncreatable", path: FILE, detail: "EACCES" },
+      unrestored: [{ written: "file-removed", path: FILE, detail: "EACCES" }],
+    },
+    {
+      name: "another file took its place",
+      failure: { kind: "already-exists", path: FILE },
+      unrestored: [
+        { written: "file-removed", path: FILE, detail: "/repo/hone.config.json already exists" },
+      ],
+    },
+  ])("names it when $name", ({ failure, unrestored }) => {
+    const ports = {
+      fileText: { write: vi.fn<FileTextPort["write"]>() },
+      fileCreation: {
+        createNew: vi
+          .fn<FileCreationPort["createNew"]>()
+          .mockReturnValue({ outcome: "failed", error: failure }),
+      },
+      fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
+      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+    };
+
+    const undone = undoneWrites({
+      ports,
+      writes: [{ kind: "file-removed", path: FILE, original: "old" }],
+    });
+
+    expect(undone).toEqual(unrestored);
+  });
+});
+
+describe("appliedEffects on a restorable removal", () => {
+  it("removes the file through the removal port", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(ok);
+    const ports = {
+      fileText: { write: vi.fn<FileTextPort["write"]>() },
+      fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
+      fileRemoval: { remove },
+      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+    };
+
+    const applied = appliedEffects({
+      ports,
+      effects: [{ kind: "remove-restorable-file", path: FILE, original: "old" }],
+    });
+
+    expect(applied).toEqual({
+      outcome: "all-applied",
+      settled: [
+        {
+          effect: { kind: "remove-restorable-file", path: FILE, original: "old" },
+          outcome: "applied",
+        },
+      ],
+    });
+    expect(remove).toHaveBeenCalledExactlyOnceWith({ path: FILE });
   });
 });
 

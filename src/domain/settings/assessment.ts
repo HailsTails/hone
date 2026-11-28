@@ -2,18 +2,25 @@ import { NOT_ADOPTED, NOT_RUN } from "../rule-set/identifiers.ts";
 
 export const FORFEITURE_ASSESSMENTS = ["this-run", "elsewhere"] as const;
 
+export const CHECK_FORFEITURE_ASSESSMENTS = [...FORFEITURE_ASSESSMENTS, "no-new-findings"] as const;
+
 export type ForfeitureAssessment = (typeof FORFEITURE_ASSESSMENTS)[number];
+export type CheckForfeiture = (typeof CHECK_FORFEITURE_ASSESSMENTS)[number];
 
-export type Assessment = { readonly forfeiture: ForfeitureAssessment };
-
-export type AssessmentRequest = {
-  readonly [Concern in keyof Assessment]: Assessment[Concern] | undefined;
+export type Assessment<Policy extends CheckForfeiture = ForfeitureAssessment> = {
+  readonly forfeiture: Policy;
 };
 
-export const assessmentInEffect = (request: {
-  readonly requested: AssessmentRequest;
+export type AssessmentRequest<
+  Policy extends CheckForfeiture | undefined = ForfeitureAssessment | undefined,
+> = {
+  readonly forfeiture: Policy;
+};
+
+export const assessmentInEffect = <Policy extends CheckForfeiture | undefined>(request: {
+  readonly requested: AssessmentRequest<Policy>;
   readonly configured: Assessment;
-}): Assessment => ({
+}): Assessment<NonNullable<Policy> | ForfeitureAssessment> => ({
   forfeiture: request.requested.forfeiture ?? request.configured.forfeiture,
 });
 

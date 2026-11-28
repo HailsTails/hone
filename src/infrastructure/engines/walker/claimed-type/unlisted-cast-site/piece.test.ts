@@ -10,6 +10,7 @@ import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts
 import { createPathPort } from "../../../../node/path-port.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
 import { walkerPieceSettingsSchema } from "../../runner/pieces/walker-check-schema.ts";
+import type { TypeScriptParsePort } from "../../runner/toolchain/typescript-parse.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
@@ -23,13 +24,6 @@ const loadedParsePort = await loadParsePort({
     installForm: "source",
   }),
 });
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const defaultParsePort = loadedParsePort.value;
-
 const EXPECTATION = "@ts-expect-" + "error";
 const IGNORE = "@ts-" + "ignore";
 const NOCHECK = "@ts-" + "nocheck";
@@ -61,12 +55,12 @@ const modules: ModuleLoaderPort = {
   load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: { check } }),
 };
 
-const castFreeRun = () =>
+const castFreeRun = (parse: TypeScriptParsePort) =>
   createWalkerRunner({
     fileText,
     modules,
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
-    parse: defaultParsePort,
+    parse,
     entryKind: { kindOf: () => "absent" },
   }).run({
     repoRoot: absoluteRootOf("/repo"),
@@ -97,7 +91,15 @@ describe("CD-2 audit piece.json", () => {
   });
 
   it("reports each directive in a cast-free test file as an inline disable of cast-expressions, tracked reference or not, and none in a generated folder", async () => {
-    expect(await castFreeRun()).toEqual({
+    assert(
+      loadedParsePort.outcome === "ok",
+      "the typescript line loads from the development install",
+    );
+    expect(loadedParsePort.value.syntaxApi.version).toMatch(/^6\./);
+
+    const report = await castFreeRun(loadedParsePort.value);
+
+    expect(report).toEqual({
       outcome: "ok",
       value: {
         projection: "none",
@@ -112,6 +114,7 @@ describe("CD-2 audit piece.json", () => {
           expectationOn({ line: 6, text: `// ${IGNORE}` }),
         ],
         measured: [{ check: ADDRESS, file: TEST_FILE }],
+        inapplicable: [{ check: ADDRESS, file: GENERATED_FILE }],
       },
     });
   });

@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "rule": "unread-parameter",
+    "pluginNamespace": "hone-wide-input-unread-parameter",
+    "module": "unread-parameter.ts"
+  },
+  "moduleScope": "shared"
+}

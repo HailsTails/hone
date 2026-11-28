@@ -7,6 +7,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../language-layer/symptom-catalogue.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
@@ -22,14 +24,14 @@ import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -74,25 +76,31 @@ const LAYERING_CLAUSE: ClauseAddress = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -110,8 +118,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -141,6 +149,13 @@ const LISTED_TEST_BODY: readonly ListedCheck[] = [
 const LISTED_LOOPS: ListedCheck = {
   address: { ruleSet: "hone", check: "loop-keyword#loops" },
   state: { state: "not-adopted" },
+};
+
+type RefusalRow = {
+  readonly name: string;
+  readonly checks: readonly ListedCheck[];
+  readonly checkSettings: readonly GivenCheckSettings[];
+  readonly refusal: CheckChoiceRefusal;
 };
 
 describe("namedCheckChoicesOf", () => {
@@ -287,9 +302,11 @@ describe("namedCheckChoicesOf", () => {
     const rebindingLayering: Check = {
       name: "layering",
       symptom: REBINDING,
+      page: "rebinding/layering.md",
       clause: LAYERING_CLAUSE,
       engines: [WALKER],
       forms: [],
+      findingSpecifics: [],
     };
     const grown: readonly RuleSetCatalogue[] = [
       {
@@ -330,13 +347,6 @@ describe("namedCheckChoicesOf", () => {
       },
     });
   });
-
-  type RefusalRow = {
-    readonly name: string;
-    readonly checks: readonly ListedCheck[];
-    readonly checkSettings: readonly GivenCheckSettings[];
-    readonly refusal: CheckChoiceRefusal;
-  };
 
   it.each<RefusalRow>([
     {

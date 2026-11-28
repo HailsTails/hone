@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
-import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import type {
+  CatalogueFile,
+  SymptomWire,
+} from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { checkTodayOf } from "./check-today.ts";
 
-type Symptom = CatalogueFile["symptoms"][number];
-
-const CHECKED: Symptom = {
+const CHECKED: SymptomWire = {
   name: "checked",
   title: "Checked",
   group: "Group",
@@ -20,22 +21,27 @@ const CHECKED: Symptom = {
   correctUses: [],
 };
 
-const PERSON_FIRST: Symptom = {
+const PERSON_FIRST: SymptomWire = {
   ...CHECKED,
   name: "person-first",
   title: "Person first",
   seenBy: ["person", "types"],
 };
 
-const REVIEWED: Symptom = { ...CHECKED, name: "reviewed", title: "Reviewed", seenBy: ["types"] };
+const REVIEWED: SymptomWire = {
+  ...CHECKED,
+  name: "reviewed",
+  title: "Reviewed",
+  seenBy: ["types"],
+};
 
-const SEEN_ONLY_BY_A_CHECKED_CLAUSE: Symptom = {
+const SEEN_ONLY_BY_A_CHECKED_CLAUSE: SymptomWire = {
   ...CHECKED,
   name: "seen-only-by-a-checked-clause",
   title: "Seen only by a checked clause",
 };
 
-const UNSEEN: Symptom = { ...CHECKED, name: "unseen", title: "Unseen" };
+const UNSEEN: SymptomWire = { ...CHECKED, name: "unseen", title: "Unseen" };
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -55,7 +61,7 @@ const FILE: CatalogueFile = {
       },
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "Form", symptom: "seen-only-by-a-checked-clause" }],
+        forms: [{ form: "Form", symptom: "seen-only-by-a-checked-clause" }],
       },
     },
     {

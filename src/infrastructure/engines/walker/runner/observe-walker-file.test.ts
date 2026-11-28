@@ -7,28 +7,17 @@ import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { observeWalkerFile } from "./observe-walker-file.ts";
 import type { PieceHit, SourceObservers, WalkerFile } from "./pieces/walker-piece.ts";
 import type { LoadedPreparedWalkerCheck, PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
-import type {
-  CommentRange,
-  SyntaxNode,
-  SyntaxTree,
-  TypeScriptParsePort,
+import {
+  defaultTypeScriptModules,
+  type SyntaxNode,
+  type SyntaxTree,
+  type TypeScriptParsePort,
 } from "./toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 
 const FILE = repoPathOf("src/example.tsx");
 const SOURCE = "{ { /* note */ } }\n";
-const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({
-    installRoot: `${import.meta.dirname}/../../../../..`,
-    installForm: "source",
-  }),
-});
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const SYNTAX_API = loadedParsePort.value.syntaxApi;
+const { default: SYNTAX_API } = await defaultTypeScriptModules.typescript();
 const TREE = SYNTAX_API.createSourceFile(FILE, SOURCE, SYNTAX_API.ScriptTarget.Latest, true);
 const OUTER_BLOCK = TREE.getChildAt(0, TREE).getChildAt(0, TREE);
 const INNER_BLOCK = OUTER_BLOCK.getChildAt(1, TREE).getChildAt(0, TREE);
@@ -102,30 +91,28 @@ const parseFixture = (): TypeScriptParsePort => ({
     .mockReturnValue([]),
 });
 
-type ObserverEvent =
-  | { readonly piece: string; readonly phase: "enter" | "leave"; readonly node: SyntaxNode }
-  | { readonly piece: string; readonly phase: "comment"; readonly range: CommentRange }
-  | { readonly piece: string; readonly phase: "finish" };
-
-const recordingObservers = (request: {
-  readonly label: string;
-  readonly observe: (event: ObserverEvent) => void;
-  readonly hits: readonly PieceHit[];
-}): SourceObservers => ({
-  enter: ({ node }) => {
-    request.observe({ piece: request.label, phase: "enter", node });
-  },
-  leave: ({ node }) => {
-    request.observe({ piece: request.label, phase: "leave", node });
-  },
-  comment: ({ range }) => {
-    request.observe({ piece: request.label, phase: "comment", range });
-  },
-  finish: () => {
-    request.observe({ piece: request.label, phase: "finish" });
-    return request.hits;
-  },
-});
+const createObservationStream = () => {
+  const observe = vi.fn();
+  const createObservers = (request: {
+    readonly label: string;
+    readonly hits: readonly PieceHit[];
+  }): SourceObservers => ({
+    enter: ({ node }) => {
+      observe({ piece: request.label, phase: "enter", node });
+    },
+    leave: ({ node }) => {
+      observe({ piece: request.label, phase: "leave", node });
+    },
+    comment: ({ range }) => {
+      observe({ piece: request.label, phase: "comment", range });
+    },
+    finish: () => {
+      observe({ piece: request.label, phase: "finish" });
+      return request.hits;
+    },
+  });
+  return { observe, createObservers };
+};
 
 const documentedSourceFixture = (): {
   readonly source: string;
@@ -144,12 +131,13 @@ const documentedSourceFixture = (): {
   const declaration = declarations.getChildAt(1, tree).getChildAt(0, tree);
   const identifier = declaration.getChildAt(0, tree);
   const objectLiteral = declaration.getChildAt(2, tree);
-  const children = new Map<SyntaxNode, readonly SyntaxNode[]>([
-    [tree, [statement, tree.endOfFileToken]],
-    [statement, [declarations]],
-    [declarations, [declaration]],
-    [declaration, [identifier, objectLiteral]],
-  ]);
+  const children = vi
+    .fn<TypeScriptParsePort["children"]>()
+    .mockReturnValueOnce([statement, tree.endOfFileToken])
+    .mockReturnValueOnce([declarations])
+    .mockReturnValueOnce([declaration])
+    .mockReturnValueOnce([identifier, objectLiteral])
+    .mockReturnValue([]);
   return {
     source,
     tree,
@@ -161,10 +149,70 @@ const documentedSourceFixture = (): {
     parse: {
       syntaxApi: SYNTAX_API,
       parse: vi.fn().mockReturnValue(tree),
-      children: ({ node }) => children.get(node) ?? [],
+      children,
     },
   };
 };
+
+const createSharedSourcePieces = () => {
+  const { observe, createObservers } = createObservationStream();
+  const recordAnchor = vi.fn<(anchor: Anchor) => void>();
+  const recordSource = vi.fn<(request: { readonly sourceFile: SyntaxTree }) => void>();
+  const first = preparedPiece({
+    modulePath: "first.ts",
+    bindings: [FIRST_CLAUSE],
+    prepareFile: () => ({
+      outcome: "ok",
+      value: {
+        kind: "syntax",
+        begin: ({
+          sourceFile,
+          anchorAt,
+        }: {
+          readonly sourceFile: SyntaxTree;
+          readonly anchorAt: (request: { readonly position: number }) => Anchor;
+        }) => {
+          recordSource({ sourceFile });
+          recordAnchor(anchorAt({ position: 15 }));
+          return createObservers({ label: "first", hits: [FIRST_HIT] });
+        },
+      },
+    }),
+  });
+  const complete = preparedPiece({
+    modulePath: "second.ts",
+    bindings: [SECOND_CLAUSE],
+    prepareFile: vi
+      .fn()
+      .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
+  });
+  const third = preparedPiece({
+    modulePath: "third.ts",
+    bindings: [THIRD_CLAUSE],
+    prepareFile: () => ({
+      outcome: "ok",
+      value: {
+        kind: "syntax",
+        begin: () => createObservers({ label: "third", hits: [THIRD_HIT] }),
+      },
+    }),
+  });
+  return { observe, recordAnchor, recordSource, first, complete, third };
+};
+
+it("loads TypeScript 6 from the development install", async () => {
+  const loaded = await loadParsePort({
+    peers: defaultTypeScriptPeers({
+      installRoot: `undefined/../../../../..`,
+      installForm: "source",
+    }),
+  });
+
+  expect(loaded).toMatchObject({
+    outcome: "ok",
+    value: { syntaxApi: { version: expect.stringMatching(/^6\./) } },
+  });
+});
 
 describe("observeWalkerFile", () => {
   it("completes path-only pieces and skips ineligible pieces without reading or parsing input", () => {
@@ -199,6 +247,7 @@ describe("observeWalkerFile", () => {
         hits: [{ ...FIRST_HIT, file: FILE }],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address],
+        inapplicable: [SECOND_CLAUSE.address],
       },
     });
     expect(readText).not.toHaveBeenCalled();
@@ -288,6 +337,7 @@ describe("observeWalkerFile", () => {
         ],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address, SECOND_CLAUSE.address, THIRD_CLAUSE.address],
+        inapplicable: [SECOND_CLAUSE.address],
       },
     });
     expect(readText).toHaveBeenCalledTimes(1);
@@ -302,48 +352,8 @@ describe("observeWalkerFile", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const observe = vi.fn<(event: ObserverEvent) => void>();
-    const recordAnchor = vi.fn<(anchor: Anchor) => void>();
-    const recordSource = vi.fn<(request: { readonly sourceFile: SyntaxTree }) => void>();
-    const first = preparedPiece({
-      modulePath: "first.ts",
-      bindings: [FIRST_CLAUSE],
-      prepareFile: () => ({
-        outcome: "ok",
-        value: {
-          kind: "syntax",
-          begin: ({
-            sourceFile,
-            anchorAt,
-          }: {
-            readonly sourceFile: SyntaxTree;
-            readonly anchorAt: (request: { readonly position: number }) => Anchor;
-          }) => {
-            recordSource({ sourceFile });
-            recordAnchor(anchorAt({ position: 15 }));
-            return recordingObservers({ label: "first", observe, hits: [FIRST_HIT] });
-          },
-        },
-      }),
-    });
-    const complete = preparedPiece({
-      modulePath: "second.ts",
-      bindings: [SECOND_CLAUSE],
-      prepareFile: vi
-        .fn()
-        .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
-    });
-    const third = preparedPiece({
-      modulePath: "third.ts",
-      bindings: [THIRD_CLAUSE],
-      prepareFile: () => ({
-        outcome: "ok",
-        value: {
-          kind: "syntax",
-          begin: () => recordingObservers({ label: "third", observe, hits: [THIRD_HIT] }),
-        },
-      }),
-    });
+    const { observe, recordAnchor, recordSource, first, complete, third } =
+      createSharedSourcePieces();
     const parse = parseFixture();
 
     const observed = observeWalkerFile({
@@ -363,6 +373,7 @@ describe("observeWalkerFile", () => {
         ],
         nativeExceptions: [],
         applicable: [FIRST_CLAUSE.address, SECOND_CLAUSE.address, THIRD_CLAUSE.address],
+        inapplicable: [],
       },
     });
     expect(readText).toHaveBeenCalledTimes(1);
@@ -501,7 +512,7 @@ describe("observeWalkerFile", () => {
           detail: expect.stringContaining("Invalid input: expected function, received number"),
         },
       });
-      expect(JSON.stringify(observed)).toContain(observer);
+      expect(observed).toHaveProperty("error.detail", expect.stringContaining(observer));
     },
   );
 
@@ -703,7 +714,12 @@ describe("observeWalkerFile", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [FIRST_CLAUSE.address] },
+      value: {
+        hits: [],
+        nativeExceptions: [],
+        applicable: [FIRST_CLAUSE.address],
+        inapplicable: [],
+      },
     });
     expect(recordAnchor.mock.calls).toEqual([[{ line: 2, column: 6 }]]);
     expect(enter.mock.calls).toEqual([

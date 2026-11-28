@@ -8,11 +8,11 @@ import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
 import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import { readHoneRecords } from "../application/records/read-hone-records.ts";
-import { type CheckedTree, checkedTreeOf } from "../application/run/checked-tree-of.ts";
+import { checkedTreeOf } from "../application/run/checked-tree-of.ts";
 import {
   type NamedEnginesRequest,
-  namedEngineProjectionsOf,
-  namedEngineRunsOf,
+  projectNamedEngines,
+  runNamedEngines,
 } from "../application/run/engines/named-engines-run.ts";
 import {
   readNamedSettings,
@@ -29,6 +29,7 @@ import type { RunFailureSource } from "../domain/report/run-failure.ts";
 import { runFailureOf } from "../domain/report/run-failure.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { CheckedTree } from "../domain/repository/checked-tree.ts";
 import type { Result } from "../domain/result.ts";
 import { createBoundCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
@@ -126,9 +127,11 @@ const treeStage = (
     : tree;
 };
 
-const enginesRequestOf = (
-  request: StagesRequest & { readonly stage: EngineStageRequest },
-): NamedEnginesRequest => ({
+export const mapEngineStageToEnginesRequest = (request: {
+  readonly ports: Pick<VersionTwoPorts, "path" | "modules" | "namedEngine">;
+  readonly locations: Pick<VersionTwoLocations, "repoRoot" | "installRoot" | "moduleExtension">;
+  readonly stage: EngineStageRequest;
+}): NamedEnginesRequest => ({
   ...request.stage,
   repoRoot: request.locations.repoRoot,
   installRoot: request.locations.installRoot,
@@ -136,7 +139,7 @@ const enginesRequestOf = (
   path: request.ports.path,
   modules: request.ports.modules,
   engine: request.ports.namedEngine,
-  checks: request.stage.catalogue.checks,
+  checks: request.stage.checks,
   answered: answeredFilesOf({ records: request.stage.records.records }),
 });
 
@@ -165,12 +168,12 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
   engines: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineRunsOf(enginesRequestOf({ ...request, stage })),
+      outcome: await runNamedEngines(mapEngineStageToEnginesRequest({ ...request, stage })),
     }),
   projections: async (stage) =>
     runtimeOutcome({
       catalogue: stage.catalogue,
-      outcome: await namedEngineProjectionsOf(enginesRequestOf({ ...request, stage })),
+      outcome: await projectNamedEngines(mapEngineStageToEnginesRequest({ ...request, stage })),
     }),
   renamed: () =>
     renamedSinceBaseOf({
@@ -180,8 +183,7 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
     }),
   touched: (stage) =>
     touchedSetOf({
-      assessment: stage.assessment,
-      measuring: stage.measuring,
+      scope: stage.scope,
       records: stage.records.records,
       repoRoot: request.locations.repoRoot,
       baseRevision: request.locations.baseRevision,
@@ -189,3 +191,20 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       renamed: stage.renamed,
     }),
 });
+
+export const createChildMeasuredStagesOver =
+  (options: {
+    readonly createEngines: (
+      locations: VersionTwoLocations & { readonly path: PathPort },
+    ) => VersionTwoStages["engines"];
+  }): StagesOver =>
+  (request) => ({
+    ...versionTwoStagesOver(request),
+    engines: options.createEngines({
+      path: request.ports.path,
+      installRoot: request.locations.installRoot,
+      repoRoot: request.locations.repoRoot,
+      moduleExtension: request.locations.moduleExtension,
+      baseRevision: request.locations.baseRevision,
+    }),
+  });

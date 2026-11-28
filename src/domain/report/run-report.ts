@@ -2,6 +2,7 @@ import type { AttributedCheckException, CheckFinding } from "../finding/governan
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
 import type {
   AnsweredFinding,
+  ForfeitureJudgement,
   HeldException,
   PaidDebt,
   StaleRecord,
@@ -15,7 +16,11 @@ import type {
 import type { RecordsUnmeasured } from "../records/measurement/records-unmeasured.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { Edition } from "../rule-set/edition-types.ts";
-import type { MisnamedRuleId } from "../runner/checks-run-report.ts";
+import type {
+  ChecksSliceProblem,
+  MisnamedRuleId,
+  ProjectionInclusion,
+} from "../runner/checks-run-report.ts";
 import type { SettingsNote } from "../settings/settings-note.ts";
 
 export type CheckEdition = {
@@ -26,12 +31,19 @@ export type CheckEdition = {
 };
 
 export type EngineNotRun =
-  | { readonly kind: "engine-not-run"; readonly engine: Engine; readonly projection: "missing" }
+  | {
+      readonly kind: "engine-not-run";
+      readonly engine: Engine;
+      readonly projection: "missing";
+      readonly file: RepoPath;
+    }
   | {
       readonly kind: "engine-not-run";
       readonly engine: Engine;
       readonly projection: "not-included";
+      readonly file: RepoPath;
       readonly nestedConfigurations: readonly RepoPath[];
+      readonly recovery: ProjectionInclusion;
     }
   | {
       readonly kind: "engine-not-run";
@@ -44,13 +56,19 @@ export type MissingProjection = Extract<EngineNotRun, { readonly projection: "mi
 export type RunUnmeasured = RecordsUnmeasured | EngineNotRun;
 
 export type RunProjectionProblem =
-  | { readonly scope: "projection"; readonly engine: Engine; readonly state: "out-of-date" }
   | {
-      readonly scope: "slice";
+      readonly scope: "projection";
       readonly engine: Engine;
-      readonly state: "out-of-date" | "missing" | "unconfigured";
-      readonly slice: RepoPath;
-    };
+      readonly state: "out-of-date";
+      readonly file: RepoPath;
+    }
+  | {
+      readonly scope: "file";
+      readonly engine: Engine;
+      readonly state: "left-over";
+      readonly file: RepoPath;
+    }
+  | Readonly<ChecksSliceProblem & { scope: "slice"; engine: Engine }>;
 
 export type ForfeitureElsewhere = {
   readonly concern: "forfeiture";
@@ -74,7 +92,7 @@ export type RunAssessment =
       readonly folders: readonly RepoPath[];
     };
 
-export type RunReport = {
+export type RunReportSections = {
   readonly excluded: readonly RepoPath[];
   readonly "not-adopted": readonly Check[];
   readonly "not-run": readonly Check[];
@@ -97,3 +115,5 @@ export type RunReport = {
   readonly carried: readonly CarriedListing[];
   readonly symptoms: readonly Symptom[];
 };
+
+export type RunReport = RunReportSections & ForfeitureJudgement;

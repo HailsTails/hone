@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "fixed-versions"
-  },
+  "serves": [
+    {
+      "rule": "fixed-versions"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "\"dependencies must be pinned\"; \"If we ship with dependencies we need lock files.\"",

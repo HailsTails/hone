@@ -15,19 +15,7 @@
     },
     {
       "answers": "name-off-its-casing#naming-convention",
-      "file": "delivery/install-proof/install-proof-plan.test.ts"
-    },
-    {
-      "answers": "name-off-its-casing#naming-convention",
       "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts"
-    },
-    {
-      "answers": "name-off-its-casing#naming-convention",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "name-off-its-casing#naming-convention",
-      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
     }
   ]
 }

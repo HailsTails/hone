@@ -1,13 +1,6 @@
-export type ProjectionOutputs = { readonly configuration: string; readonly declaration: string };
+import type { RepoPath } from "./repo-path-types.ts";
 
-export const projectionOutputsOf = (request: {
-  readonly engineName: string;
-}): ProjectionOutputs => ({
-  configuration: `hone.${request.engineName}.mjs`,
-  declaration: `hone.${request.engineName}.d.mts`,
-});
-
-export const projectionOutputNamesOf = (request: {
-  readonly engineNames: readonly string[];
-}): readonly string[] =>
-  request.engineNames.flatMap((engineName) => Object.values(projectionOutputsOf({ engineName })));
+export const excludeProjectionOutputs = (request: {
+  readonly files: readonly RepoPath[];
+  readonly outputs: ReadonlySet<RepoPath>;
+}): readonly RepoPath[] => request.files.filter((file) => !request.outputs.has(file));

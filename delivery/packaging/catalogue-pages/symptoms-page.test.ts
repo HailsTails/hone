@@ -38,7 +38,7 @@ const FILE: CatalogueFile = {
     {
       name: "fix-the-declaration",
       title: "Fix the declaration",
-      serves: { rule: "declared-not-asserted" },
+      serves: [{ rule: "declared-not-asserted" }],
       standing: "accepted",
       reason: { text: "The declaration is wrong.", standing: "accepted" },
     },
@@ -49,12 +49,6 @@ const FILE: CatalogueFile = {
       title: "Authorised location",
       phrase: "an authorised location",
       todaysFormat: "authorised-location",
-    },
-    {
-      name: "boundary-record",
-      title: "Boundary record",
-      phrase: "a boundary record",
-      todaysFormat: "none-yet",
     },
   ],
   engines: [],
@@ -79,7 +73,6 @@ const FILE: CatalogueFile = {
       recipes: ["fix-the-declaration"],
       correctUses: [
         { situation: "correct use", kind: "authorised-location", at: "in the adapter" },
-        { situation: "the unit's output", kind: "boundary-record" },
       ],
     },
     {
@@ -135,7 +128,7 @@ describe("symptomsPageOf", () => {
       outcome: "ok",
       value: {
         path: "rules/typescript/symptoms.md",
-        text: '# Symptoms in TypeScript\n\n## Claimed types\n\n### Claimed type\n\n- **Seen:** An `as T` cast.\n- **May indicate:** Gives a value its type: in a test → Declared, not asserted, One place decides ("casts hide a problem"); Does one job → Declared, not asserted.\n- **Breach usually sits:** in the declaration.\n- **Covered by a record:** correct use: an authorised location in the adapter; the unit\'s output: a boundary record.\n- **Seen by:** syntax, types.\n- **Reports:** seen → breach.\n- **Check today:** reuse.\n- **Checks:** [cast-to-any](symptoms/claimed-type/cast-to-any.md).\n- **Recipes:** [Fix the declaration](recipes.md#fix-the-declaration).\n\n- **How it is seen:** syntax. See [the recipe](recipes/fix-the-declaration.md).\n\n## Loose types\n\n### Absence as state\n\n- **Seen:** A null.\n- **May indicate:** Does one job → One place decides.\n- **Breach usually sits:** in the type.\n- **Seen by:** person.\n- **Check today:** only review.\n',
+        text: '# Symptoms in TypeScript\n\n## Claimed types\n\n### Claimed type\n\n- **Seen:** An `as T` cast.\n- **May indicate:** Gives a value its type: in a test → Declared, not asserted, One place decides ("casts hide a problem"); Does one job → Declared, not asserted.\n- **Breach usually sits:** in the declaration.\n- **Covered by a record:** correct use: an authorised location in the adapter.\n- **Seen by:** syntax, types.\n- **Reports:** seen → breach.\n- **Check today:** reuse.\n- **Checks:** [cast-to-any](symptoms/claimed-type/cast-to-any.md).\n- **Recipes:** [Fix the declaration](recipes.md#fix-the-declaration).\n\n- **How it is seen:** syntax. See [the recipe](recipes/fix-the-declaration.md).\n\n## Loose types\n\n### Absence as state\n\n- **Seen:** A null.\n- **May indicate:** Does one job → One place decides.\n- **Breach usually sits:** in the type.\n- **Seen by:** person.\n- **Check today:** only review.\n',
       },
     });
   });

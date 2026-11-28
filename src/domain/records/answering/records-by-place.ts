@@ -1,12 +1,11 @@
 import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
-import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { SymptomAddress } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
-import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { type OwnedName, ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
-import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
-import { reachOf, type Site } from "./record-reach.ts";
+import type { HoneRecord, PlacedRecord, RecordReach } from "../hone-records/hone-record.ts";
+import type { Holding, ResolvedSite } from "./record-reach.ts";
 
 type ReachKey = `symptom:${string}` | `check:${string}` | `recipe:${string}`;
 
@@ -19,20 +18,18 @@ type ByKey = ReadonlyMap<ReachKey, readonly Ranked[]>;
 export type RecordsByPlace = {
   readonly ranks: ReadonlyMap<PlacedRecord, number>;
   readonly inFile: ReadonlyMap<RepoPath, ByKey>;
-  readonly inModule: ReadonlyMap<RepoPath, ByKey>;
 };
 
-const FOLDER_SEPARATOR = "/";
-
-type OwnedSymptom = Pick<Symptom, "ruleSet" | "name">;
-
-const symptomKey = (request: { readonly symptom: OwnedSymptom }): ReachKey =>
+const symptomKey = (request: { readonly symptom: SymptomAddress }): ReachKey =>
   `symptom:${ownedNameText(request.symptom)}`;
 
 const addressKey = (request: { readonly address: OwnedName }): ReachKey =>
   `check:${ownedNameText(request.address)}`;
 
-const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
+const checkKey = (request: {
+  readonly symptom: SymptomAddress;
+  readonly check: string;
+}): ReachKey =>
   addressKey({
     address: {
       ruleSet: request.symptom.ruleSet,
@@ -64,22 +61,22 @@ export const answeredAt = (request: {
   readonly ruleSet: RuleSetIdentity;
   readonly symptom: string;
   readonly address: string;
-}): boolean => {
+}): Holding => {
   const answers = request.byPlace.get(request.file);
   const { ruleSet } = request;
-  return (
-    answers !== undefined &&
+  return answers !== undefined &&
     (answers.has(symptomKey({ symptom: { ruleSet, name: request.symptom } })) ||
       answers.has(addressKey({ address: { ruleSet, name: request.address } })))
-  );
+    ? "holds"
+    : "does-not-hold";
 };
 
 const recipeKey = (request: { readonly recipe: OwnedName }): ReachKey =>
   `recipe:${ownedNameText(request.recipe)}`;
 
 const symptomReachKeysOf = (request: {
-  readonly symptom: OwnedSymptom;
-  readonly reach: AuthorisedReach;
+  readonly symptom: SymptomAddress;
+  readonly reach: RecordReach;
 }): readonly ReachKey[] => {
   const { symptom, reach } = request;
   switch (reach.reaches) {
@@ -100,10 +97,6 @@ const reachKeysOf = (request: { readonly record: HoneRecord }): readonly ReachKe
       return symptomReachKeysOf({ symptom: record.symptom, reach: record.reach });
     case "deviation":
       return [recipeKey({ recipe: record.recipe })];
-    case "boundary-record":
-      return reachOf({ party: record.outsideParty }).map((name) =>
-        symptomKey({ symptom: { ruleSet: TOOL_RULE_SET, name } }),
-      );
     case "dependency-record":
       return [];
   }
@@ -142,15 +135,9 @@ export const recordsByPlaceOf = (request: {
       ? keyedOf({ placed, rank, path: record.file })
       : [];
   });
-  const inModule = request.records.flatMap((placed, rank) =>
-    placed.record.kind === "boundary-record"
-      ? keyedOf({ placed, rank, path: placed.record.module })
-      : [],
-  );
   return {
     ranks: new Map(request.records.map((placed, rank) => [placed, rank])),
     inFile: byPathAndKey({ keyed: inFile }),
-    inModule: byPathAndKey({ keyed: inModule }),
   };
 };
 
@@ -177,46 +164,33 @@ export const placedInRecordOrder = (request: {
     ),
   });
 
-const siteKeysOf = (request: { readonly site: Site }): readonly ReachKey[] => {
-  const { symptom, check } = request.site;
+const siteKeysOf = (request: { readonly site: ResolvedSite }): readonly ReachKey[] => {
+  const { symptom, check, recipes } = request.site;
   return [
     symptomKey({ symptom }),
     ...(check.found === "check" ? [checkKey({ symptom, check: check.check.name })] : []),
-    ...symptom.recipes.map((recipe) => recipeKey({ recipe })),
+    ...recipes.map((recipe) => recipeKey({ recipe })),
   ];
 };
 
-const modulesCovering = (request: { readonly file: RepoPath }): readonly string[] => {
-  const parts = request.file.split(FOLDER_SEPARATOR);
-  return [...parts.keys()].map((end) => parts.slice(0, end + 1).join(FOLDER_SEPARATOR));
-};
-
 const rankedAt = (request: {
-  readonly byPath: ReadonlyMap<string, ByKey>;
-  readonly paths: readonly string[];
+  readonly byPath: ReadonlyMap<RepoPath, ByKey>;
+  readonly path: RepoPath;
   readonly keys: readonly ReachKey[];
-}): readonly Ranked[] =>
-  request.paths.flatMap((path) => {
-    const byKey = request.byPath.get(path);
-    return byKey === undefined ? [] : request.keys.flatMap((key) => byKey.get(key) ?? []);
-  });
+}): readonly Ranked[] => {
+  const byKey = request.byPath.get(request.path);
+  return byKey === undefined ? [] : request.keys.flatMap((key) => byKey.get(key) ?? []);
+};
 
 export const recordsReachingSites = (request: {
   readonly byPlace: RecordsByPlace;
-  readonly sites: readonly Site[];
+  readonly sites: readonly ResolvedSite[];
 }): readonly PlacedRecord[] =>
   inRankOrder({
     ranked: new Map(
       request.sites.flatMap((site) => {
         const keys = siteKeysOf({ site });
-        return [
-          ...rankedAt({ byPath: request.byPlace.inFile, paths: [site.file], keys }),
-          ...rankedAt({
-            byPath: request.byPlace.inModule,
-            paths: modulesCovering({ file: site.file }),
-            keys,
-          }),
-        ].map(rankEntry);
+        return rankedAt({ byPath: request.byPlace.inFile, path: site.file, keys }).map(rankEntry);
       }),
     ),
   });

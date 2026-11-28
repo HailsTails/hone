@@ -433,7 +433,7 @@ describe("touchedSetFor", () => {
       changedSince: vi.mocked(git.changedSince).mock.calls,
     }).toEqual({
       touched: { measured: "yes", paths: new Set([LEGACY_FILE]) },
-      changedSince: [[{ repoRoot: REPO_ROOT, baseRevision: "main" }]],
+      changedSince: [[{ repoRoot: REPO_ROOT, baseRevision: "main", baseScope: "merge-base" }]],
     });
   });
 

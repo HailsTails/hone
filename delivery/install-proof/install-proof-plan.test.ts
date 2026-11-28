@@ -10,7 +10,9 @@ import {
   packageManagerPinOf,
   packagedConsumerManifest,
   packagedScriptsOf,
+  type ConsumerSetup,
   type ProofAction,
+  type ProofCase,
   type StepExpectation,
   toolchainPinsOf,
 } from "./install-proof-plan.ts";
@@ -184,6 +186,40 @@ describe("toolchainPinsOf, over this package's own package.json read as a build-
     });
   });
 
+  it("pins every peer and the jiti config loader at the development versions for a TypeScript config consumer", () => {
+    const pins = toolchainPinsOf({
+      developmentManifest: packageFiles["../../package.json"],
+      toolchain: "typescript-config",
+    });
+
+    expect(pins).toEqual({
+      outcome: "ok",
+      value: {
+        typescript: "6.0.3",
+        eslint: "10.15.0",
+        "@typescript-eslint/parser": "8.73.0",
+        "@typescript-eslint/eslint-plugin": "8.73.0",
+        jiti: "2.7.0",
+      },
+    });
+  });
+
+  it("fails naming a config loader with no development pin", () => {
+    const pins = toolchainPinsOf({
+      developmentManifest:
+        '{ "peerDependencies": { "typescript": ">=4.8.4 <7.0.0", "eslint": "^10.15.0", "@typescript-eslint/parser": "^8.73.0", "@typescript-eslint/eslint-plugin": "^8.73.0" }, "devDependencies": { "typescript": "6.0.3", "eslint": "10.15.0", "@typescript-eslint/parser": "8.73.0", "@typescript-eslint/eslint-plugin": "8.73.0" } }',
+      toolchain: "typescript-config",
+    });
+
+    expect(pins).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "manifest-invalid",
+        detail: "no development pin for the config loader jiti",
+      },
+    });
+  });
+
   it("fails on a manifest that is not JSON", () => {
     expect(
       toolchainPinsOf({ developmentManifest: "{", toolchain: "typescript-floor" }).outcome,
@@ -300,12 +336,55 @@ const WORKSPACE_SETUP = {
   ],
 };
 
+const PACKAGE_CONFIG_PARSING_TS =
+  'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.mjs";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n';
+
+const WORKSPACE_PACKAGE_CONFIG_SETUP = {
+  replace: ["disciplines.json", "discipline-exceptions.json", "eslint.config.mjs", "package.json"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint"
+  },
+  "forfeiture": "elsewhere",
+  "eslintConfigLookup": "nearest-to-file"
+}\n`,
+    },
+    { name: "packages/web/eslint.config.mjs", text: PACKAGE_CONFIG_PARSING_TS },
+    {
+      name: "packages/web/package.json",
+      text: '{"name":"web","private":true,"type":"module","scripts":{"lint":"node lint.mjs ."}}\n',
+    },
+    {
+      name: "hone-records/debt/authored-class-or-this.json",
+      text: '{"version":2,"records":[{"answers":"authored-class-or-this#class-keyword","file":"packages/web/src/legacy.ts","note":"existing debt in a legacy file, recorded at adoption"}]}\n',
+    },
+  ],
+};
+
 const ESLINT_PROJECTION = `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
 `;
 
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
+
+const ESLINT_CHECK: ProofAction = {
+  kind: "check",
+  expectation: {
+    exitCode: 1,
+    output: `findings (1)
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+symptoms (1)
+${CLASS_SYMPTOM}
+verdict: fail
+`,
+  },
+};
 
 const ESLINT_ACTIONS: readonly ProofAction[] = [
   {
@@ -314,18 +393,49 @@ const ESLINT_ACTIONS: readonly ProofAction[] = [
   },
   { kind: "read", path: V2_PROJECTION, text: ESLINT_PROJECTION },
   { kind: "commit", message: "project" },
-  {
-    kind: "check",
-    expectation: {
-      exitCode: 1,
-      output: `findings (1)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-symptoms (1)
-${CLASS_SYMPTOM}
-verdict: fail
-`,
-    },
+  ESLINT_CHECK,
+];
+
+const TYPESCRIPT_CONFIG_SETUP = {
+  replace: ["disciplines.json", "disciplines.eslint.mjs", "eslint.config.mjs"],
+  files: [
+    {
+      name: V2_CONFIG,
+      text: `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "eslint"
   },
+  "eslintProjectionKind": "ts"
+}\n`,
+    },
+    {
+      name: "eslint.config.ts",
+      text: 'import parser from "@typescript-eslint/parser";\nimport projection from "./hone.eslint.js";\nexport default [{ files: ["**/*.ts"], languageOptions: { parser } }, ...projection];\n',
+    },
+  ],
+};
+
+const TYPESCRIPT_CONFIG_ACTIONS: readonly ProofAction[] = [
+  { kind: "project", expectation: { exitCode: 0, output: "hone.eslint.ts written\n" } },
+  {
+    kind: "read",
+    path: "hone.eslint.ts",
+    text: `import hone from "@hailstails/hone/eslint-plugin";
+const projection: {
+  name: string;
+  files: string[];
+  ignores?: string[];
+  plugins?: Record<string, object>;
+  rules: Record<string, "error" | "off" | ["error", ...unknown[]]>;
+}[] = [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.ts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error", "hone/authored-class-or-this#static-members-only": ["error",{"allowConstructorOnly":true,"allowEmpty":true,"allowStaticOnly":false,"allowWithDecorator":true}] } }];
+export default projection;
+`,
+  },
+  { kind: "commit", message: "project" },
+  ESLINT_CHECK,
 ];
 
 const AUDIT_ACTIONS: readonly ProofAction[] = [
@@ -355,7 +465,7 @@ const ESLINT_MISSING_ACTIONS: readonly ProofAction[] = [
 ];
 
 const WORKSPACE_SLICE = `import hone from "@hailstails/hone/eslint-plugin";
-export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
+export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], ignores: ["hone.eslint.d.mts"], plugins: { hone }, rules: { "hone/authored-class-or-this#class-keyword": "error" } },
 { name: "hone/answered/authored-class-or-this#class-keyword", files: ["src/legacy.ts"], rules: { "hone/authored-class-or-this#class-keyword": "off" } }];
 `;
 
@@ -403,6 +513,31 @@ const WRONG_FIELDS_REJECTED: ProofAction = {
   expectation: { exitCode: 2, output: WRONG_FIELD_REPORT },
 };
 
+const TEAM_SETUP: ConsumerSetup = {
+  replace: [],
+  files: [
+    {
+      name: "discipline-exceptions.json",
+      text: '{"version":1,"exceptions":[{"kind":"authorised-location","clause":"acme/ACME-2#scratch-files","file":"plan.scratch.md","reason":"the one plan kept in the repository","whyChain":{"whys":[{"why":"Why is plan.scratch.md committed?","because":"It is the page the build plan is read from","evidence":"plan.scratch.md line 1"},{"why":"Why read the plan from a page?","because":"Reviewers open it beside the change","evidence":"The review guide links it"},{"why":"Why one page rather than many?","because":"A single page is checked in one sitting","evidence":"The weekly agenda names one page"},{"why":"Why not a tracker?","because":"Releases embed the page they were built from","evidence":"Release notes quote it"},{"why":"Why does it stay?","because":"Every release ships its own plan","evidence":"The release checklist asks for it"}],"rootCause":"The release process embeds one plan page","owner":"Team"}},{"kind":"file-carve-out","clause":"acme/ACME-2#scratch-files","file":"legacy.scratch.md","reason":"kept from before the rule","whyChain":{"whys":[{"why":"Why is legacy.scratch.md committed?","because":"It predates the scratch rule","evidence":"legacy.scratch.md line 1"},{"why":"Why was it never moved?","because":"An importer reads it by name","evidence":"The importer configuration"},{"why":"Why does the importer name it?","because":"Its path is fixed in a partner contract","evidence":"The contract\'s appendix"},{"why":"Why is the contract fixed?","because":"Renewal happens once a year","evidence":"The renewal calendar"},{"why":"Why wait for renewal?","because":"The partner changes paths only then","evidence":"Their support reply"}],"rootCause":"A partner contract fixes the path until renewal","owner":"Team"}}]}\n',
+    },
+    { name: "plan.scratch.md", text: "plan\n" },
+    { name: "legacy.scratch.md", text: "legacy\n" },
+  ],
+};
+
+const TEAM_ANSWERED_REPORT = `editions (1)
+acme/scratch-file#scratch-files walker edition 1 of 2
+answered (4)
+acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); answered by debt
+acme/scratch-file#scratch-files walker legacy.scratch.md:1:0 legacy.scratch.md answered by debt carried
+acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md answered by debt
+acme/scratch-file#scratch-files walker plan.scratch.md:1:0 plan.scratch.md answered by authorised-location carried
+carried (2)
+hone-records/acme/authorised-locations/scratch-file.json records[0] established lacks case, owes, whyChain
+hone-records/acme/debt/scratch-file.json records[0] established
+verdict: pass
+`;
+
 const TEAM_ACTIONS: readonly ProofAction[] = [
   {
     kind: "typecheck",
@@ -414,9 +549,10 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 0,
       output:
-        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/rules/version-one-names.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone-records/acme/authorised-locations/scratch-file.json\nwrote hone-records/acme/debt/scratch-file.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote hone-records/acme/debt/direct-console.json\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nauthorised-location acme/ACME-2#scratch-files plan.scratch.md -> authorised-location scratch-file#scratch-files\nfile-carve-out acme/ACME-2#scratch-files legacy.scratch.md -> debt scratch-file#scratch-files\ncarried scratch-file#scratch-files plan.scratch.md\ncarried scratch-file#scratch-files legacy.scratch.md\nkeep tools/disciplines/acme/rules/version-one-names.json until your main branch is on version 2, then you can delete it: until then the check judges carried records by it\nacme/scratch-file#scratch-files recorded notes.scratch.md\nacme/direct-console#console-calls recorded src/start-banner.ts\nprojected hone.eslint.mjs\nupgrade: records written 2, carried records removed 0, debt recorded 2, debt pruned 0; version 2's check passes\n",
     },
   },
+  { kind: "check", expectation: { exitCode: 0, output: TEAM_ANSWERED_REPORT } },
   { kind: "commit", message: "upgrade" },
   {
     kind: "typecheck",
@@ -440,81 +576,89 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   },
   {
     kind: "check",
-    expectation: {
-      exitCode: 1,
-      output: `editions (1)
-acme/scratch-file#scratch-files walker edition 1 of 2
-findings (2)
-acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); symptom: direct-console (tools/disciplines/acme/rules/typescript/symptoms/direct-console.md) may indicate: repository-ready
-acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md symptom: scratch-file (tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md) may indicate: repository-ready
-symptoms (2)
-direct-console: Direct console. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/direct-console.md
-scratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md
-verdict: fail
-`,
-    },
+    expectation: { exitCode: 0, output: TEAM_ANSWERED_REPORT },
+  },
+];
+
+const EXPECTED_PROOF_CASES: readonly ProofCase[] = [
+  {
+    consumer: "audit",
+    fixture: "audit",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    setup: WALKER_SETUP,
+    actions: AUDIT_ACTIONS,
+  },
+  {
+    consumer: "eslint-10",
+    fixture: "eslint",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_ACTIONS,
+  },
+  {
+    consumer: "eslint-9",
+    fixture: "eslint",
+    toolchain: "eslint-9",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_ACTIONS,
+  },
+  {
+    consumer: "eslint-typescript-config",
+    fixture: "eslint",
+    toolchain: "typescript-config",
+    typeStripping: "disabled",
+    setup: TYPESCRIPT_CONFIG_SETUP,
+    actions: TYPESCRIPT_CONFIG_ACTIONS,
+  },
+  {
+    consumer: "eslint-missing",
+    fixture: "eslint",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    setup: ESLINT_SETUP,
+    actions: ESLINT_MISSING_ACTIONS,
+  },
+  {
+    consumer: "team-floor",
+    fixture: "team",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    actions: [WRONG_FIELDS_REJECTED],
+  },
+  {
+    consumer: "team",
+    fixture: "team",
+    toolchain: "current",
+    typeStripping: "enabled",
+    setup: TEAM_SETUP,
+    actions: TEAM_ACTIONS,
+  },
+  {
+    consumer: "workspace",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: WORKSPACE_SETUP,
+    actions: WORKSPACE_ACTIONS,
+  },
+  {
+    consumer: "workspace-package-config",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    setup: WORKSPACE_PACKAGE_CONFIG_SETUP,
+    actions: WORKSPACE_ACTIONS,
   },
 ];
 
 describe("the proof cases", () => {
-  it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, and a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import", () => {
-    expect(PROOF_CASES).toEqual([
-      {
-        consumer: "audit",
-        fixture: "audit",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        setup: WALKER_SETUP,
-        actions: AUDIT_ACTIONS,
-      },
-      {
-        consumer: "eslint-10",
-        fixture: "eslint",
-        toolchain: "current",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_ACTIONS,
-      },
-      {
-        consumer: "eslint-9",
-        fixture: "eslint",
-        toolchain: "eslint-9",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_ACTIONS,
-      },
-      {
-        consumer: "eslint-missing",
-        fixture: "eslint",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        setup: ESLINT_SETUP,
-        actions: ESLINT_MISSING_ACTIONS,
-      },
-      {
-        consumer: "team-floor",
-        fixture: "team",
-        toolchain: "typescript-floor",
-        typeStripping: "disabled",
-        actions: [WRONG_FIELDS_REJECTED],
-      },
-      {
-        consumer: "team",
-        fixture: "team",
-        toolchain: "current",
-        typeStripping: "enabled",
-        actions: TEAM_ACTIONS,
-      },
-      {
-        consumer: "workspace",
-        fixture: "workspace",
-        toolchain: "current",
-        typeStripping: "disabled",
-        setup: WORKSPACE_SETUP,
-        actions: WORKSPACE_ACTIONS,
-      },
-    ]);
+  it("plans the supported packed consumers", () => {
+    expect(PROOF_CASES).toEqual(EXPECTED_PROOF_CASES);
   });
+
   it("name a packaged consumer's scripts after the command and its subcommands", () => {
     expect(
       packagedScriptsOf({

@@ -16,7 +16,6 @@ import {
   packageSliceProblemsOf,
   type ProjectionClause,
   type SliceOrigin,
-  slicedProjectionCurrency,
   slicedProjectionWrites,
   sliceTextOf,
 } from "./sliced-projection.ts";
@@ -443,36 +442,5 @@ describe("slicedProjectionWrites on Windows paths", () => {
     expect(projectionFiles.writeAt.mock.calls).toEqual([
       [{ file: "packages/a/disciplines.eslint.mjs", text: EMPTY_PACKAGE_SLICE }],
     ]);
-  });
-});
-
-describe("slicedProjectionCurrency", () => {
-  it("reports current and missing slices, reading only the selected roots", () => {
-    const projectionFiles = projectionFilesHolding(
-      new Map([
-        [REPOSITORY_PROJECTION, ABSENT],
-        [PACKAGE_A_SLICE_FILE, present(EMPTY_PACKAGE_SLICE)],
-      ]),
-    );
-    expect(
-      slicedProjectionCurrency({
-        clauses: [CLASS_CLAUSE],
-        records: [],
-        origin: ORIGIN,
-        projectionFiles,
-        roots: [REPOSITORY, PACKAGE_A],
-        trackedPaths: [OLD_SLICE_FILE],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [
-        { file: REPOSITORY_PROJECTION, state: "missing" },
-        { file: PACKAGE_A_SLICE_FILE, state: "current" },
-      ],
-    });
-    expect(projectionFiles.currentOf).toHaveBeenCalledExactlyOnceWith({
-      files: [REPOSITORY_PROJECTION, PACKAGE_A_SLICE_FILE],
-    });
-    expect(projectionFiles.writeAt).not.toHaveBeenCalled();
   });
 });

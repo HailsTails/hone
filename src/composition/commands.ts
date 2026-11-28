@@ -182,7 +182,7 @@ export const VERSION_TWO_NEEDED: ToolCommand<
 export const VERSION_TWO_PROJECT: ToolCommand<
   ProjectArguments,
   readonly ProjectionWrite[],
-  VersionTwoRepositoryPorts
+  VersionTwoRepositoryPorts & Pick<ToolPorts, "fileRemoval">
 > = {
   parse: parseProjectArguments,
   run: async ({ command, ports, parsed }) => {
@@ -201,6 +201,7 @@ export const VERSION_TWO_PROJECT: ToolCommand<
         located: located.value,
         baseRevision: undefined,
       }),
+      fileRemoval: ports.fileRemoval,
       fileText: ports.fileText,
       path: ports.path,
       repoRoot: located.value.repoRoot,
@@ -291,6 +292,14 @@ export const VERSION_TWO_PRUNE_DEBT: ToolCommand<
     if (located.outcome === "failed") {
       return loadFailed({ failure: located.error });
     }
+    const projectCommand = projectCommandOf({
+      path: ports.path,
+      moduleUrl: command.moduleUrl,
+      repoRoot: located.value.repoRoot,
+    });
+    if (projectCommand.outcome === "failed") {
+      return loadFailed({ failure: projectCommand.error });
+    }
     const pruned = await versionTwoPruneDebtOf({
       ...recordInputOf({
         ports,
@@ -299,6 +308,7 @@ export const VERSION_TWO_PRUNE_DEBT: ToolCommand<
         baseRevision: parsed.baseRevision,
       }),
       forfeiture: parsed.forfeiture,
+      projectCommand: projectCommand.value,
     });
     return pruned.outcome === "failed"
       ? runFailed({ failure: pruned.error, repoRoot: located.value.repoRoot })

@@ -4,6 +4,7 @@ import type { Result } from "../../domain/result.ts";
 import type { ToolRuleSet } from "../../domain/rule-set/clause-address-types.ts";
 import type { Edition } from "../../domain/rule-set/edition-types.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import type { CheckBinding } from "../../domain/runner/check-binding.ts";
 import type { CheckConformanceFailure } from "../../domain/runner/conformance-types.ts";
 
 export type { CheckConformanceFailure } from "../../domain/runner/conformance-types.ts";
@@ -39,7 +40,10 @@ export type CaseUnderTest = {
   readonly edition: Edition;
 };
 
-export type CheckUnderTest = CheckRequest & { readonly examples: readonly CaseUnderTest[] };
+export type CheckUnderTest = CheckRequest & {
+  readonly binding: CheckBinding;
+  readonly examples: readonly CaseUnderTest[];
+};
 
 export type CheckConformanceOf = (
   request: CheckRequest,

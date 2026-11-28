@@ -12,10 +12,10 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
 import {
+  locateVersionOneNames,
   NO_VERSION_ONE_NAMES,
   readVersionOneNames,
   type VersionOneNames,
-  VERSION_ONE_NAMES_SEGMENTS,
 } from "../../disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
@@ -30,20 +30,16 @@ type CatalogueSource = {
   readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
   readonly inheritedRecordKinds: readonly RecordKind[];
-  readonly upgradeNames?: VersionOneNames;
 };
 
-const namesOfRuleSet = (request: CatalogueSource): Result<VersionOneNames, VersionTwoLoadFailure> =>
-  request.upgradeNames !== undefined
-    ? { outcome: "ok", value: request.upgradeNames }
-    : request.ruleSetRoot === request.installRoot
-      ? readVersionOneNames({
-          fileText: request.fileText,
-          path: request.path.join({
-            segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS],
-          }),
-        })
-      : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
+const readNames = (request: CatalogueSource): Result<VersionOneNames, VersionTwoLoadFailure> => {
+  const path = request.path.join({
+    segments: [request.ruleSetRoot, ...locateVersionOneNames(request)],
+  });
+  return request.fileText.exists({ path }) === "present"
+    ? readVersionOneNames({ fileText: request.fileText, path, ruleSet: request.ruleSet })
+    : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
+};
 
 const VERSION_ONE_RULE_FILE = "discipline.json";
 
@@ -104,7 +100,10 @@ const readSymptomCatalogue = (
       error: { kind: "file-unreadable", path: itemRoot, detail: "is not an absolute path" },
     };
   }
-  const names = namesOfRuleSet(request);
+  if (request.fileText.exists({ path: root.data }) === "absent") {
+    return { outcome: "ok", value: { held: "none" } };
+  }
+  const names = readNames(request);
   if (names.outcome === "failed") {
     return names;
   }
@@ -115,9 +114,6 @@ const readSymptomCatalogue = (
   });
   if (clauses.outcome === "failed") {
     return clauses;
-  }
-  if (request.fileText.exists({ path: root.data }) === "absent") {
-    return { outcome: "ok", value: { held: "none" } };
   }
   const beside = {
     engines: ENGINE_REGISTRY,
@@ -133,7 +129,7 @@ const readSymptomCatalogue = (
     ruleSet: request.ruleSet,
     beside,
     inheritedRecordKinds: request.inheritedRecordKinds,
-    symptomSourcePrefix:
+    sourcePrefix:
       request.ruleSetRoot === request.installRoot
         ? undefined
         : SYMPTOM_CATALOGUE_SEGMENTS.join("/"),
@@ -146,5 +142,5 @@ const readSymptomCatalogue = (
 export const createSymptomCatalogueRepository = (
   options: CatalogueSource,
 ): SymptomCatalogueRepository => ({
-  read: (_request) => readSymptomCatalogue(options),
+  read: () => readSymptomCatalogue(options),
 });

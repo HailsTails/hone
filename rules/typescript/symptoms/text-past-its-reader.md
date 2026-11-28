@@ -53,7 +53,7 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
+      "kind": "authorised-location",
       "at": "on the adapter for whoever produced or receives the text"
     },
     {

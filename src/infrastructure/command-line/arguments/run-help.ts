@@ -5,6 +5,7 @@ import { VERSION_TWO_REPORT_OUTPUTS } from "../../../domain/settings/report-outp
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import {
   AUTHORISE_COMMAND_OPTIONS,
+  CHECK_FORFEITURE_OPTION,
   COMMANDS,
   type CommandOption,
   type CommandSpec,
@@ -105,7 +106,7 @@ const LEAVE_OPTION: CommandOption = {
 export const RUN_COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   check: {
     summary: `check the repository against the checks ${SETTINGS_FILE_NAME} lists and print the report, ending in its verdict`,
-    options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, FORFEITURE_OPTION],
+    options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, CHECK_FORFEITURE_OPTION],
     exits: [
       { code: 0, meaning: "the verdict is pass" },
       { code: 1, meaning: "the verdict is fail" },

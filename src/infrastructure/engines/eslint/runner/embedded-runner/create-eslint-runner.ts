@@ -46,7 +46,6 @@ import {
   packageSliceProblemsOf,
   type ProjectionClause,
   type SliceOrigin,
-  slicedProjectionCurrency,
   slicedProjectionWrites,
   sliceTextOf,
 } from "../config-roots/sliced-projection.ts";
@@ -81,7 +80,7 @@ import {
 import { trackedExceptionsOfRules } from "../native-exceptions/checks-tracked-exceptions.ts";
 import type { SelectedRule } from "../native-exceptions/package-script-scanner.ts";
 import { scriptOptionJudge } from "../native-exceptions/script-option-effect.ts";
-import { ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
+import { readLegacyEslintCheckOptions } from "../pieces/check-options.ts";
 import type { LoadedEslintPlugin } from "../pieces/eslint-plugin-schema.ts";
 import { type CoreInstall, coreInstallOf } from "../projection/core-install.ts";
 import { projectionHolding } from "../projection/projection-holding.ts";
@@ -285,7 +284,11 @@ const projectionClausesOf = (request: {
   request.configured.map((entry) => ({
     address: entry.clause.address,
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
+    options: readLegacyEslintCheckOptions({
+      address: entry.clause.address,
+      settings: entry.settings,
+      edition: entry.clause.edition,
+    }),
     pluginNamespace: entry.settings.pluginNamespace,
     pieceRoot: entry.clause.pieceRoot,
     pluginModule: entry.settings.pluginModule,
@@ -494,7 +497,11 @@ const governedRulesOf = (request: {
 }): readonly GovernedRule[] =>
   request.selected.map((entry) => ({
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
+    options: readLegacyEslintCheckOptions({
+      address: entry.clause.address,
+      settings: entry.settings,
+      edition: entry.clause.edition,
+    }),
   }));
 
 const pluginsByNamespace = (request: {
@@ -1002,12 +1009,10 @@ export const versionOneProjectionOver = (platform: {
     inspect: async (request) => {
       const plan = projectionPlanOf({ request, ports });
       if (plan.outcome === "failed") return plan;
-      const files = slicedProjectionCurrency(plan.value);
-      if (files.outcome === "failed") return files;
       return {
         outcome: "ok",
         value: {
-          files: files.value,
+          files: plan.value.roots.map((root) => slicePathOf({ root })),
           ruleIds: new Map(
             plan.value.clauses.map(({ address, ruleId }) => [
               clauseAddressText({ address }),

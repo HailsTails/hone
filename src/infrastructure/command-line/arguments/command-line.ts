@@ -1,5 +1,8 @@
 import type { ExitCode } from "../../../application/ports/host/process-port.ts";
-import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
+import {
+  CHECK_FORFEITURE_ASSESSMENTS,
+  FORFEITURE_ASSESSMENTS,
+} from "../../../domain/settings/assessment.ts";
 import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 import { PRUNE_DEBT_SUBCOMMAND, RECORD_DEBT_SUBCOMMAND } from "./subcommand-names.ts";
 
@@ -33,6 +36,7 @@ export type OptionName =
   | "--leave"
   | "--answers"
   | "--file"
+  | "--outside-party"
   | "--case"
   | "--owes"
   | "--why"
@@ -109,6 +113,13 @@ export const FORFEITURE_OPTION: CommandOption = {
     "assess file carve-out decay in this run or leave it to another, over forfeiture in hone.config.json; this-run when neither is set",
 };
 
+export const CHECK_FORFEITURE_OPTION: CommandOption = {
+  ...FORFEITURE_OPTION,
+  value: choiceValue({ choices: CHECK_FORFEITURE_ASSESSMENTS }),
+  summary:
+    "assess debt now, leave it to another run, or compare counted debt with a pinned landing commit in no-new-findings",
+};
+
 export const ADOPTION_BASE_REVISION_OPTION: CommandOption = {
   name: "--base-revision",
   value: "<revision>",
@@ -151,13 +162,21 @@ export const AUTHORISE_COMMAND_OPTIONS: readonly CommandOption[] = [
   onceRequired({
     name: "--answers",
     value: "<address>",
-    summary: "the symptom, or the symptom#check, the location answers, by the catalogue's names",
+    summary: "the symptom#check the location answers, by the catalogue's names",
   }),
   onceRequired({
     name: "--file",
     value: "<path>",
     summary: "the file the location is for, relative to --repo",
   }),
+  {
+    name: "--outside-party",
+    value: "<party>",
+    need: "optional",
+    occurrence: "once",
+    summary:
+      "the package, or the module such as node:fs, the location is for, when its symptom binds an outside party",
+  },
   onceRequired({
     name: "--case",
     value: "<case>",
@@ -201,7 +220,9 @@ export const AUTHORISE_COMMAND_OPTIONS: readonly CommandOption[] = [
 
 export const COMMANDS: Readonly<Record<Subcommand, Pick<CommandSpec, "options">>> &
   Readonly<Record<MigrationSubcommand, CommandSpec>> = {
-  check: { options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, FORFEITURE_OPTION] },
+  check: {
+    options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, CHECK_FORFEITURE_OPTION],
+  },
   project: { options: [REPO_OPTION] },
   [RECORD_DEBT_SUBCOMMAND]: { options: [REPO_OPTION, ADOPTION_BASE_REVISION_OPTION, LEAVE_OPTION] },
   [PRUNE_DEBT_SUBCOMMAND]: { options: [REPO_OPTION, BASE_REVISION_OPTION, FORFEITURE_OPTION] },

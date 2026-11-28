@@ -108,6 +108,63 @@ describe("packagePlanOf", () => {
     });
   });
 
+  it("builds one shared implementation when either engine selects the check", () => {
+    const sourcePaths = [
+      "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/piece.json",
+      "src/infrastructure/engines/oxlint/name-off-its-casing/filename-case/piece.json",
+      "src/infrastructure/engines/protocol/plugin-rules/filename-case.ts",
+    ];
+    const pieces = [
+      {
+        path: "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/piece.json",
+        text: '{"version":2,"moduleScope":"shared","settings":{"pluginModule":"filename-case.ts"}}',
+      },
+      {
+        path: "src/infrastructure/engines/oxlint/name-off-its-casing/filename-case/piece.json",
+        text: '{"version":2,"moduleScope":"shared","settings":{"module":"filename-case.ts"}}',
+      },
+    ];
+
+    const plan = packagePlanOf({ sourcePaths, pieces });
+
+    expect(plan).toMatchObject({
+      outcome: "ok",
+      value: {
+        exported: [
+          "src/infrastructure/engines/protocol/plugin-rules/filename-case.js",
+          {
+            specifier:
+              "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/eslint-plugin.js",
+            module: "src/infrastructure/engines/protocol/plugin-rules/filename-case.js",
+          },
+        ],
+      },
+    });
+  });
+
+  it("exports Oxlint plugin modules for adopter configurations", () => {
+    const declaration = "src/infrastructure/engines/oxlint/naming/name-format/piece.json";
+    const module = "src/infrastructure/engines/oxlint/naming/name-format/plugin.ts";
+
+    expect(
+      packagePlanOf({
+        sourcePaths: [declaration, module],
+        pieces: [
+          {
+            path: declaration,
+            text: '{"version":2,"settings":{"rule":"naming-convention","pluginNamespace":"hone-naming","module":"plugin.ts"}}',
+          },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        entryPoints: expect.arrayContaining([module]),
+        exported: ["src/infrastructure/engines/oxlint/naming/name-format/plugin.js"],
+      },
+    });
+  });
+
   const plan = packagePlanOf({ sourcePaths: SOURCE_PATHS, pieces: [AUDIT_PIECE, ESLINT_PIECE] });
 
   it("builds the one command, each public entry, each runner and each piece module a shipped piece names, once each", () => {
@@ -126,6 +183,64 @@ describe("packagePlanOf", () => {
           "src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts",
         ],
         command: "src/hone.js",
+      },
+    });
+  });
+
+  it.each([
+    {
+      shape: "a top-level process entry",
+      sourcePath: "src/x.process.ts",
+      entryPoints: [
+        "src/hone.ts",
+        "src/eslint-plugin.ts",
+        "src/rule-set.ts",
+        "src/testing.ts",
+        "src/walker.ts",
+        "src/x.process.ts",
+      ],
+    },
+    {
+      shape: "an engine's runner entry",
+      sourcePath: "src/infrastructure/engines/walker/runner/runner.ts",
+      entryPoints: [
+        "src/hone.ts",
+        "src/eslint-plugin.ts",
+        "src/rule-set.ts",
+        "src/testing.ts",
+        "src/walker.ts",
+        "src/infrastructure/engines/walker/runner/runner.ts",
+      ],
+    },
+  ])("builds $shape as a process entry", ({ sourcePath, entryPoints }) => {
+    const planned = packagePlanOf({ sourcePaths: [sourcePath], pieces: [] });
+
+    expect(planned).toEqual({
+      outcome: "ok",
+      value: { entryPoints, command: "src/hone.js", copied: [], pieces: [], exported: [] },
+    });
+  });
+
+  it.each([
+    { shape: "a plain top-level module", sourcePath: "src/x.ts" },
+    { shape: "a process entry nested below the top of src", sourcePath: "src/a/b.process.ts" },
+  ])("leaves $shape out of the entry points", ({ sourcePath }) => {
+    const planned = packagePlanOf({ sourcePaths: [sourcePath], pieces: [] });
+
+    expect(planned).toEqual({
+      outcome: "ok",
+      value: {
+        entryPoints: [
+          "src/hone.ts",
+          "src/eslint-plugin.ts",
+          "src/rule-set.ts",
+          "src/testing.ts",
+          "src/walker.ts",
+        ],
+        command: "src/hone.js",
+        copied: [],
+        pieces: [],
+        exported: [],
       },
     });
   });

@@ -7,7 +7,9 @@ import type {
   Recipe,
   RecordKind,
   Rule,
+  Check,
   Symptom,
+  AuthorisedLocationKind,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
@@ -126,14 +128,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -157,7 +152,14 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLAIMED_TYPE: Symptom = {
@@ -174,7 +176,22 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
+  engines: [],
+  forms: [],
+  findingSpecifics: [],
 };
 
 const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
@@ -206,9 +223,10 @@ const AUTHORISED_LOCATION_PLACED: PlacedRecord = {
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
-    reach: WHOLE_SYMPTOM,
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: ORDER_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "stated",
       owing: {
         matches: "the-catalogue",

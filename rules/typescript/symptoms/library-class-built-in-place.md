@@ -34,7 +34,7 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
+      "kind": "authorised-location",
       "at": "on that dependency's adapter"
     }
   ]

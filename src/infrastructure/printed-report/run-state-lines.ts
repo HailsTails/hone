@@ -8,7 +8,6 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../domain/report/run-report.ts";
-import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { SettingsNote, UnreadConventionKey } from "../../domain/settings/settings-note.ts";
@@ -57,9 +56,6 @@ const recordsUnmeasuredLine = (request: { readonly unmeasured: RecordsUnmeasured
   }
 };
 
-const projectionFileOf = (request: { readonly engine: Engine }): string =>
-  projectionOutputsOf({ engineName: request.engine.name }).configuration;
-
 const refreshStep = (request: ProjectCommand): string =>
   `run ${request.projectCommand} and commit every file it writes`;
 
@@ -86,7 +82,7 @@ export const projectionMissingLine = (
   request: ProjectCommand & { readonly unmeasured: MissingProjection },
 ): string => {
   const { engine } = request.unmeasured;
-  return `${request.unmeasured.kind} ${engine.name} missing: ${projectionFileOf({ engine })} is not written; ${refreshStep(request)}`;
+  return `${request.unmeasured.kind} ${engine.name} missing: ${request.unmeasured.file} is not written; ${refreshStep(request)}`;
 };
 
 const engineNotRunLine = (
@@ -94,14 +90,18 @@ const engineNotRunLine = (
 ): string => {
   const { unmeasured } = request;
   const { engine } = unmeasured;
-  const file = projectionFileOf({ engine });
   switch (unmeasured.projection) {
     case "missing":
       return projectionMissingLine({ ...request, unmeasured });
     case "measured-nothing":
       return `${unmeasured.kind} ${engine.name} measured-nothing: the ${engine.name} engine measured no file in this run, so the records its checks answer were not judged, neither kept as answering nor removed as stale; ${measuredNothingNextStep({ ...request, engine })}`;
-    case "not-included":
-      return `${unmeasured.kind} ${engine.name} not-included: the ${engine.name} configuration leaves the projection out of effect for a file under check; spread the default export of ${file}, or of a package's own ${file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, engine })}${nestedNote({ ...request, folders: unmeasured.nestedConfigurations })}`;
+    case "not-included": {
+      const detail =
+        unmeasured.recovery.kind === "engine-instructions"
+          ? unmeasured.recovery.detail
+          : `the ${engine.name} configuration leaves the projection out of effect for a file under check; spread the default export of ${unmeasured.file}, or of a package's own ${unmeasured.file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, engine })}${nestedNote({ ...request, folders: unmeasured.nestedConfigurations })}`;
+      return `${unmeasured.kind} ${engine.name} not-included: ${detail}`;
+    }
   }
 };
 
@@ -126,15 +126,21 @@ const folderOf = (request: { readonly slice: RepoPath }): string =>
 const sliceProblemReason = (
   request: ProjectCommand & { readonly problem: SliceProblem },
 ): string => {
-  const { engine, slice } = request.problem;
-  const folder = folderOf({ slice });
+  const { engine, file } = request.problem;
+  const folder = folderOf({ slice: file });
   switch (request.problem.state) {
     case "out-of-date":
       return `that slice differs from what hone project writes now; ${refreshStep(request)}`;
     case "missing":
       return `that slice is not written; ${refreshStep(request)}`;
+    case "not-included":
+      return request.problem.recovery.kind === "engine-instructions"
+        ? request.problem.recovery.detail
+        : `the ${engine.name} configuration in ${folder} leaves that slice out of effect`;
     case "unconfigured":
-      return `${folder} has no ${engine.name} configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check`;
+      return request.problem.recovery.kind === "generate-configuration"
+        ? `${folder} has no ${engine.name} configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check`
+        : `${request.problem.recovery.detail}; regenerate the projection with ${request.projectCommand}`;
   }
 };
 
@@ -144,9 +150,11 @@ export const projectionProblemLine = (
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
-      return `${problem.engine.name} ${problem.state}: ${projectionFileOf(problem)} differs from what hone project writes now; ${refreshStep(request)}`;
+      return `${problem.engine.name} ${problem.state}: ${problem.file} differs from what hone project writes now; ${refreshStep(request)}`;
+    case "file":
+      return `${problem.engine.name} left-over ${problem.file}: hone project no longer writes this file for the selected projection kind; run ${request.projectCommand} to remove it`;
     case "slice":
-      return `${problem.engine.name} ${problem.state} ${problem.slice}: ${sliceProblemReason({ ...request, problem })}`;
+      return `${problem.engine.name} ${problem.state} ${problem.file}: ${sliceProblemReason({ ...request, problem })}`;
   }
 };
 

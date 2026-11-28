@@ -47,10 +47,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {
@@ -63,19 +59,7 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -83,27 +67,11 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
@@ -159,27 +127,11 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/application/run/settings/read-settings.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/piece-engines.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/protocol/toolchain/toolchain-unavailable.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/built-unit-called-in-place/call-of-a-call/call-of-a-call.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/engines/walker/export-from-a-test-file/test-file-export/test-file-export.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",

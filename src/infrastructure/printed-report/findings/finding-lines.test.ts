@@ -12,6 +12,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -44,8 +46,6 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
-
-const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
@@ -139,29 +139,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -186,7 +179,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -206,7 +204,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -224,7 +222,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -247,26 +251,32 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -279,20 +289,34 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -322,17 +346,18 @@ const BRANCH_FINDING: CheckFinding = {
   snippet: "if (result.ok) {\n  return;",
   remedy: {
     fix: "write one test per case, or one it.each table",
-    page: CHECKS_PAGE,
-    section: "branching-with-if",
+    form: "branching-with-if",
   },
 };
 
 const SECOND_CAST_CHECK: Check = {
   name: "cast-walker",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-walker.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEAM_FINDING: CheckFinding = {
@@ -347,20 +372,10 @@ const DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: {
     kind: "debt",
-    symptom: CLAIMED_TYPE,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
     reach: WHOLE_SYMPTOM,
     file: WEBHOOK_FILE,
     holding: { held: "stated" },
-  },
-};
-
-const CLOCK_BOUNDARY: PlacedRecord = {
-  place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
-  record: {
-    kind: "boundary-record",
-    module: ORDER_FILE,
-    outsideParty: { kind: "runtime", facility: "clock" },
-    holding: { held: "stated", ports: ["Clock"] },
   },
 };
 
@@ -368,7 +383,7 @@ const TEST_BODY_DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/branch-in-a-test.json"), index: 0 },
   record: {
     kind: "debt",
-    symptom: BRANCH_IN_A_TEST,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
     reach: WHOLE_SYMPTOM,
     file: TEST_FILE,
     holding: { held: "stated" },
@@ -379,10 +394,11 @@ const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
   place: { file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"), index: 0 },
   record: {
     kind: "authorised-location",
-    symptom: BRANCH_IN_A_TEST,
+    symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
     reach: { reaches: "unknown-check", check: "test-bodies" },
     file: TEST_FILE,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "carried",
       entry: {},
       lacks: ["case", "owes", "whyChain"],
@@ -396,6 +412,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map([["date-used-directly", DATE_USED_DIRECTLY]]) },
         finding: CLOCK_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -404,15 +421,202 @@ describe("findingLine", () => {
     );
   });
 
-  it("ends with the fix and the page that shows it when the check names one, and keeps a line break in the snippet on one line", () => {
+  it("ends with the form and its check's page, then the fix, when no recipe example answers the form, and keeps a line break in the snippet on one line", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
         finding: BRANCH_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table`,
+    );
+  });
+
+  it("names after a Hone finding's fix each Hone example of its form, and no other form's", () => {
+    const narrowing: Recipe = {
+      ...ASSERT_TO_NARROW,
+      examples: [
+        {
+          anchor: "a-ternary",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "a-ternary",
+            },
+          ],
+        },
+        {
+          anchor: "an-if",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+    const typedRows: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: {
+                name: "test-body",
+                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+              },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      checks: [{ ...TEST_BODY_CHECK, forms: ["a-ternary", "branching-with-if"] }],
+      recipes: [narrowing, typedRows],
+    };
+
+    const line = findingLine({
+      catalogue,
+      content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (assert-to-narrow.md#an-if, it-each-over-typed-rows.md#branching)`,
+    );
+  });
+
+  it("names after a Hone finding's fix no team example answering the team's own check of the same name", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = {
+      ...BRANCH_IN_A_TEST,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+      recipes: [],
+    };
+    const teamCheck: Check = {
+      name: "test-body",
+      symptom: { ruleSet: acme, name: "branch-in-a-test" },
+      page: "team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+      engines: [WALKER],
+      forms: ["branching-with-if"],
+      findingSpecifics: [],
+    };
+    const teamRecipe: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      symptoms: [BRANCH_IN_A_TEST, teamSymptom],
+      checks: [TEST_BODY_CHECK, teamCheck],
+      recipes: [teamRecipe],
+    };
+
+    const line = findingLine({
+      catalogue,
+      content: {
+        symptoms: new Map([
+          ["branch-in-a-test", BRANCH_IN_A_TEST],
+          ["acme/branch-in-a-test", teamSymptom],
+        ]),
+      },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table`,
+    );
+  });
+
+  it("names after a team finding's fix the team's example by its own file", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const symptom: Symptom = {
+      ...BRANCH_IN_A_TEST,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+      recipes: [],
+    };
+    const check: Check = {
+      name: "test-body",
+      symptom: { ruleSet: acme, name: "branch-in-a-test" },
+      page: "team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+      engines: [WALKER],
+      forms: ["branching-with-if"],
+      findingSpecifics: [],
+    };
+    const recipe: Recipe = {
+      ...IT_EACH_OVER_TYPED_ROWS,
+      ruleSet: acme,
+      sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+      examples: [
+        {
+          anchor: "branching",
+          answers: [
+            {
+              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
+              form: "branching-with-if",
+            },
+          ],
+        },
+      ],
+    };
+
+    const line = findingLine({
+      catalogue: {
+        ...REPORT_CATALOGUE,
+        symptoms: [symptom],
+        checks: [check],
+        recipes: [recipe],
+      },
+      content: { symptoms: new Map([["acme/branch-in-a-test", symptom]]) },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      "acme/branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (team-rules/rules/typescript/symptoms/branch-in-a-test.md) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (team-rules/rules/typescript/checks/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)",
+    );
+  });
+
+  it("names no fix when the catalogue has no check for the finding", () => {
+    const catalogue = { ...REPORT_CATALOGUE, checks: [CLOCK_CHECK, CAST_CHECK] };
+
+    const line = findingLine({
+      catalogue,
+      content: { symptoms: new Map<string, Symptom>() },
+      finding: BRANCH_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      "branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return;",
     );
   });
 
@@ -430,9 +634,11 @@ describe("findingLine", () => {
     };
     const check: Check = {
       name: "no-moment",
-      symptom,
+      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "outside-import-past-a-boundary" },
+      page: "rules/team/checks/no-moment.md",
       engines: [ESLINT_ENGINE],
       forms: [],
+      findingSpecifics: [],
     };
     expect(
       findingLine({
@@ -441,6 +647,7 @@ describe("findingLine", () => {
           checks: [check],
           symptoms: [symptom],
         },
+        content: { symptoms: new Map([["acme/outside-import-past-a-boundary", symptom]]) },
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -453,6 +660,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
+        content: { symptoms: new Map<string, Symptom>() },
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -460,28 +668,62 @@ describe("findingLine", () => {
       "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
     );
   });
+
+  it("says the catalogue and the records disagree when no catalogue holds the symptom its check names", () => {
+    const content = { symptoms: new Map<string, Symptom>() };
+
+    const line = findingLine({
+      catalogue: REPORT_CATALOGUE,
+      content,
+      finding: CLOCK_FINDING,
+      symptomPage: SYMPTOM_PAGE,
+    });
+
+    expect(line).toBe(
+      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); date-used-directly: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it",
+    );
+  });
 });
 
 describe("answeredLine", () => {
   it("names each record that answers the finding, by its kind, after the finding's place and snippet", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
-        answered: { finding: CLOCK_FINDING, by: [DEBT, CLOCK_BOUNDARY] },
+        answered: { finding: CLOCK_FINDING, by: [DEBT, clockLocation] },
       }),
     ).toBe(
-      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); answered by debt answered by boundary-record runtime:clock",
+      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); answered by debt answered by authorised-location carried",
     );
   });
 
-  it("names the fix and the page that shows it before the records when any answering record is a debt and the check names one, and names no indications", () => {
+  it("names the form and the fix before the records when any answering record is a debt and the check names one, and names no indications", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if) answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test answered by debt`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test answered by debt`,
     );
   });
 
@@ -499,6 +741,25 @@ describe("answeredLine", () => {
 
 describe("heldLine", () => {
   it("prints a held inline disable that names its rule by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       heldLine({
         catalogue: REPORT_CATALOGUE,
@@ -512,15 +773,34 @@ describe("heldLine", () => {
             reach: "one-check",
             mechanism: ESLINT,
           },
-          by: [DEBT, CLOCK_BOUNDARY],
+          by: [DEBT, clockLocation],
         },
       }),
     ).toBe(
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by boundary-record runtime:clock",
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by authorised-location carried",
     );
   });
 
   it("notes that a held inline disable naming no rule escapes every selected check", () => {
+    const clockLocation: PlacedRecord = {
+      place: {
+        file: repoPathOf("hone-records/authorised-locations/date-used-directly.json"),
+        index: 0,
+      },
+      record: {
+        kind: "authorised-location",
+        symptom: DATE_USED_DIRECTLY,
+        reach: { reaches: "one-check", check: CLOCK_CHECK },
+        file: ORDER_FILE,
+        holding: {
+          binding: { binds: "check-and-file" },
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "unjudged",
+        },
+      },
+    };
     expect(
       heldLine({
         catalogue: REPORT_CATALOGUE,
@@ -534,11 +814,11 @@ describe("heldLine", () => {
             reach: "every-selected-check",
             mechanism: ESLINT,
           },
-          by: [DEBT, CLOCK_BOUNDARY],
+          by: [DEBT, clockLocation],
         },
       }),
     ).toBe(
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by boundary-record runtime:clock",
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by authorised-location carried",
     );
   });
 });

@@ -5,11 +5,13 @@ import type {
   TeamDefinition,
   TeamDefinitionAddress,
 } from "../../../application/ports/upgrade/version-one-team-layout.ts";
+import { findCaseNameFaults } from "../../../domain/language-layer/case-name.ts";
 import {
   checkAddressOfNames,
   checkNamesOf,
   type CheckNames,
 } from "../../../domain/language-layer/check-address-text.ts";
+import { findUnowedPointFaults } from "../../../domain/language-layer/owed-points.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
@@ -17,6 +19,7 @@ import {
   caseWireSchema,
   catalogueFileSchema,
   catalogueNameSchema,
+  mapWireToOwedPoint,
   symptomWireSchema,
 } from "../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
@@ -34,13 +37,13 @@ const NO_NAMES: VersionTwoNames = { clauses: new Map(), definitions: [] };
 
 const CLAUSE_SEPARATOR = "#";
 
-const isTeamClauseText = (text: string): boolean => {
+const mapTextToClauseKind = (text: string): "a-clause" | "not-a-clause" => {
   const [discipline, clause, trailing] = text.split(CLAUSE_SEPARATOR);
-  return (
-    trailing === undefined &&
+  return trailing === undefined &&
     disciplineIdSchema.safeParse(discipline).success &&
     clauseIdSchema.safeParse(clause).success
-  );
+    ? "a-clause"
+    : "not-a-clause";
 };
 
 const checkNamesSchema = z.string().transform((text, context): CheckNames => {
@@ -56,7 +59,7 @@ const clausesSchema = z
   .record(z.string(), z.strictObject({ check: checkNamesSchema, title: z.string().min(1) }))
   .superRefine((clauses, context) => {
     Object.keys(clauses)
-      .filter((clause) => !isTeamClauseText(clause))
+      .filter((clause) => mapTextToClauseKind(clause) === "not-a-clause")
       .forEach((clause) => {
         context.addIssue({
           code: "custom",
@@ -73,16 +76,52 @@ const clausesSchema = z
 
 const NAME_OMITTED = { name: true } as const;
 
-const versionTwoNamesSchema = z.strictObject({
-  clauses: clausesSchema,
-  symptoms: z.record(catalogueNameSchema, symptomWireSchema.omit({ ...NAME_OMITTED, seen: true })),
-  cases: z.record(catalogueNameSchema, caseWireSchema.omit(NAME_OMITTED)),
-  principles: z.record(
-    catalogueNameSchema,
-    catalogueFileSchema.shape.principles.element.omit(NAME_OMITTED),
-  ),
-  rules: z.record(catalogueNameSchema, catalogueFileSchema.shape.rules.element.omit(NAME_OMITTED)),
-});
+const versionTwoNamesSchema = z
+  .strictObject({
+    clauses: clausesSchema,
+    symptoms: z.record(
+      catalogueNameSchema,
+      symptomWireSchema.omit({ ...NAME_OMITTED, seen: true }),
+    ),
+    cases: z
+      .record(catalogueNameSchema, caseWireSchema.omit(NAME_OMITTED))
+      .superRefine((cases, context) => {
+        Object.entries(cases)
+          .flatMap(([name, { title }]) => findCaseNameFaults({ name, title }))
+          .forEach((message) => {
+            context.addIssue({ code: "custom", message });
+          });
+      }),
+    principles: z.record(
+      catalogueNameSchema,
+      catalogueFileSchema.shape.principles.element.omit(NAME_OMITTED),
+    ),
+    rules: z.record(
+      catalogueNameSchema,
+      catalogueFileSchema.shape.rules.element.omit(NAME_OMITTED),
+    ),
+  })
+  .superRefine((file, context) => {
+    Object.entries(file.symptoms)
+      .flatMap(([symptom, { mayIndicate }]) =>
+        mayIndicate.flatMap((indication) => {
+          const owing = file.cases[indication.case];
+          return owing === undefined
+            ? []
+            : findUnowedPointFaults({
+                symptom,
+                owing: {
+                  name: indication.case,
+                  owes: owing.owes.map((point) => mapWireToOwedPoint({ point })),
+                },
+                points: indication.points.map((point) => mapWireToOwedPoint({ point })),
+              });
+        }),
+      )
+      .forEach((message) => {
+        context.addIssue({ code: "custom", message });
+      });
+  });
 
 type VersionTwoNamesFile = z.output<typeof versionTwoNamesSchema>;
 

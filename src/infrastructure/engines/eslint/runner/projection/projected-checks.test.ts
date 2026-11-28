@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  Symptom,
-} from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
@@ -19,53 +15,10 @@ const WALKER_ENGINE: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const TEST_SWITCHED_OFF: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "test-switched-off",
-  title: "Test switched off",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const CLAIMED_TYPE: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "claimed-type",
-  title: "Claimed type",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const POSITIONAL_PARAMETERS: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "positional-parameters",
-  title: "Positional parameters",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
-const REBINDING: Symptom = {
-  ruleSet: TOOL_RULE_SET,
-  name: "rebinding",
-  title: "Rebinding",
-  seen: "a site",
-  mayIndicate: [],
-  breachUsuallySits: "in the unit",
-  recipes: [],
-  correctUses: [],
-};
-
 const SKIPPED_TESTS_CHECK: Check = {
   name: "skipped-tests",
-  symptom: TEST_SWITCHED_OFF,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "test-switched-off" },
+  page: "test-switched-off/skipped-tests.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -73,11 +26,13 @@ const SKIPPED_TESTS_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const NON_NULL_ASSERTIONS_CHECK: Check = {
   name: "non-null-assertions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -85,11 +40,13 @@ const NON_NULL_ASSERTIONS_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const PARAMETER_COUNT_CHECK: Check = {
   name: "parameter-count",
-  symptom: POSITIONAL_PARAMETERS,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "positional-parameters" },
+  page: "positional-parameters/parameter-count.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-40"),
@@ -97,11 +54,13 @@ const PARAMETER_COUNT_CHECK: Check = {
   },
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
-  symptom: REBINDING,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "rebinding" },
+  page: "rebinding/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -109,6 +68,7 @@ const REBINDING_TEST_BODY: Check = {
   },
   engines: [WALKER_ENGINE],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const PLUGIN_CHECKS: readonly Check[] = [
@@ -132,13 +92,14 @@ const PARAMETER_COUNT_BINDING: CheckBinding = {
     pluginNamespace: "hone-cd40",
     pluginModule: "cd40/cd40.eslint-plugin.ts",
     rule: "max-params",
-    options: [{ max: 2, countVoidThis: true }],
   },
+  checkOptions: { kind: "parameter-count", maximumSlots: 2, voidReceiver: "count" },
   checkSettings: {},
   edition: editionOf("1"),
 };
 
 const SKIPPED_TESTS_BINDING: CheckBinding = {
+  checkOptions: { kind: "skipped-tests", coverage: "skips-and-fixmes" },
   address: "test-switched-off#skipped-tests",
   ruleSet: TOOL_RULE_SET,
   engine: ESLINT,
@@ -157,7 +118,7 @@ const TEAM = { name: ruleSetNameOf("team") };
 
 const TEAM_SKIPPED_TESTS_CHECK: Check = {
   ...SKIPPED_TESTS_CHECK,
-  symptom: { ...TEST_SWITCHED_OFF, ruleSet: TEAM },
+  symptom: { ruleSet: TEAM, name: "test-switched-off" },
   clause: {
     ruleSet: TEAM,
     discipline: disciplineIdOf("CD-27"),
@@ -207,14 +168,14 @@ describe("projectedNamedChecksOf", () => {
   });
 
   it("projects the options that belong to the selected ESLint edition", () => {
-    const binding = {
+    const binding: CheckBinding = {
       ...SKIPPED_TESTS_BINDING,
       edition: editionOf("2"),
+      checkOptions: { kind: "skipped-tests", coverage: "including-conditional-and-todo" },
       settings: {
         pluginNamespace: "hone-cd27",
         pluginModule: "cd27/cd27.eslint-plugin.ts",
         rule: "skipped-tests",
-        optionsByEdition: { "2": ["conditional-and-todo"] },
       },
     };
     expect(projectedNamedChecksOf({ checks: PLUGIN_CHECKS, bindings: [binding] })).toEqual({
@@ -247,7 +208,15 @@ describe("projectedNamedChecksOf", () => {
     expect(
       projectedNamedChecksOf({
         checks: PLUGIN_CHECKS,
-        bindings: [{ ...WALKER_BINDING, engine: ESLINT, settings: SKIPPED_TESTS_BINDING.settings }],
+        bindings: [
+          {
+            ...WALKER_BINDING,
+            ruleSet: TOOL_RULE_SET,
+            engine: ESLINT,
+            checkOptions: { kind: "none" },
+            settings: SKIPPED_TESTS_BINDING.settings,
+          },
+        ],
       }),
     ).toEqual({
       outcome: "failed",
@@ -263,6 +232,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             settings: { pluginNamespace: "hone", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -282,6 +252,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             pieceRoot: "/repo/team",
             settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
           },
@@ -304,6 +275,7 @@ describe("projectedNamedChecksOf", () => {
           {
             ...SKIPPED_TESTS_BINDING,
             ruleSet: TEAM,
+            checkOptions: { kind: "piece" },
             settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -323,9 +295,15 @@ describe("projectedNamedChecksOf", () => {
             address: "test-switched-off#skipped-tests",
             engine: "eslint",
             ruleSet: { name: ruleSetNameOf("team") },
+            checkOptions: { kind: "piece" },
             anchor: { kind: "file" },
             pieceRoot: "/repo/team",
-            settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
+            settings: {
+              pluginNamespace: "team",
+              pluginModule: "plugin.ts",
+              rule: "no-skips",
+              options: [{ allowed: ["warn"] }],
+            },
             checkSettings: {},
             edition: editionOf("1"),
           },
@@ -339,7 +317,7 @@ describe("projectedNamedChecksOf", () => {
           symptom: "test-switched-off",
           check: "skipped-tests",
           ruleId: "team/no-skips",
-          options: [],
+          options: [{ allowed: ["warn"] }],
           plugin: { namespace: "team", module: "plugin.ts", pieceRoot: "/repo/team" },
         },
       ],
@@ -366,6 +344,7 @@ describe("projectedNamedChecksOf", () => {
             address: "leftover-debugging#debug-call",
             ruleSet: TOOL_RULE_SET,
             engine: "eslint",
+            checkOptions: { kind: "none" },
             anchor: { kind: "file" },
             pieceRoot: "/install/pieces/leftover-debugging",
             settings: {
@@ -387,7 +366,7 @@ describe("projectedNamedChecksOf", () => {
           symptom: "leftover-debugging",
           check: "debug-call",
           ruleId: "hone/leftover-debugging#debug-call",
-          options: [{ allowed: ["warn"] }],
+          options: [],
         },
       ],
     });

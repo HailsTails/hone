@@ -11,10 +11,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
@@ -23,15 +19,7 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/packaging/catalogue-pages/check-today.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/packaging/packing/package-commands.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -51,10 +39,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/application/upgrade/found-tree/found-tree-git.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {
@@ -63,31 +47,11 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/version-chosen-command.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/finding/finding-check.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/domain/gathered-outcomes.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/language-layer/check-address.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/language-layer/symptom-catalogue.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/domain/settings/check-choices.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -107,14 +71,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {
@@ -127,23 +83,11 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/embedded-runner/eslint-repository.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/checks-queried-files.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -155,19 +99,7 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -175,31 +107,7 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/protocol/runner-module/runner-result-schema.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-logic.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -215,23 +123,11 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/runner/pieces/cast-shape.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
@@ -252,14 +148,6 @@
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/hone-config-file/listed-address.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/hone-config-file/settings-file.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/printed-report/upgrade/upgrade-refusal-text.test.ts"
     }
   ]
 }

@@ -52,9 +52,9 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 
 | Item | Source and its claim | Relation |
 |---|---|---|
-| [Stub with vi.fn](typescript/recipes.md#stub-with-vifn) | Meszaros, [Test Stub](http://xunitpatterns.com/Test%20Stub.html). Martin, [The Little Mocker (2014)](https://blog.cleancoder.com/uncle-bob/2014/05/14/TheLittleMocker.html). GOOS §4.6: "Mock objects are still stubs"; adding behaviour signals misplaced responsibility. | SAME |
+| [Stub with vi.fn](typescript/recipes.md#stub-with-vi-fn) | Meszaros, [Test Stub](http://xunitpatterns.com/Test%20Stub.html). Martin, [The Little Mocker (2014)](https://blog.cleancoder.com/uncle-bob/2014/05/14/TheLittleMocker.html). GOOS §4.6: "Mock objects are still stubs"; adding behaviour signals misplaced responsibility. | SAME |
 | [Ports in the argument](typescript/recipes.md#ports-in-the-argument) | Fowler 2004, DI article (constructor injection); Seemann, [Pure DI (2014)](https://blog.ploeh.dk/2014/06/10/pure-di/). | NARROWER: one of Fowler's three injection forms |
-| [it.each over typed rows](typescript/recipes.md#iteach-over-typed-rows) | Meszaros, [Parameterized Test](http://xunitpatterns.com/Parameterized%20Test.html). | STRICTER: rows typed and hard-coded |
+| [it.each over typed rows](typescript/recipes.md#it-each-over-typed-rows) | Meszaros, [Parameterized Test](http://xunitpatterns.com/Parameterized%20Test.html). | STRICTER: rows typed and hard-coded |
 | [Assert to narrow](typescript/recipes.md#assert-to-narrow) | Meszaros, [Guard Assertion](http://xunitpatterns.com/Guard%20Assertion.html): "Replace an if statement in a test with an assertion…" | SAME |
 | [Whole written-out expectation](typescript/recipes.md#whole-written-out-expectation) | Meszaros, Literal Value. | SAME |
 | [Failure asserted as a value](typescript/recipes.md#failure-asserted-as-a-value) | Follows from Failures are values. No test-pattern name found. | NO SOURCE |
@@ -71,7 +71,7 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 | [Copy, never write in](typescript/recipes.md#copy-never-write-in) | Fowler, [ValueObject](https://martinfowler.com/bliki/ValueObject.html): value objects should be immutable. | SAME |
 | [Closure factory](typescript/recipes.md#closure-factory) | Crockford, [Private Members in JavaScript](https://www.crockford.com/javascript/private.html): privileged methods over closure state. | SAME (conflict: Evans's mutable entities) |
 | [Adapter per outside party](typescript/recipes.md#adapter-per-outside-party) | Cockburn, Hexagonal Architecture. | SAME |
-| [Port in the domain](typescript/recipes.md#port-in-the-domain) | Martin DIP 1996; Martin 2012: the output port sits in the inner circle, implemented outside. Evans 2013: ACL-backed repository. | SAME on ownership |
+| [Port in a module of its own](typescript/recipes.md#port-in-a-module-of-its-own) | Martin DIP 1996; Martin 2012: the output port sits in the inner circle, implemented outside. Evans 2013: ACL-backed repository. | SAME on ownership |
 | [World values through a port](typescript/recipes.md#world-values-through-a-port) | Seemann, [Volatile Dependencies](https://learn.microsoft.com/en-us/archive/blogs/ploeh/volatile-dependencies): time and randomness are volatile and go behind an abstraction. | STRICTER: Seemann exempts stable dependencies; ours does not |
 | [Composition root](typescript/recipes.md#composition-root) | Seemann, [Composition Root (2011)](https://blog.ploeh.dk/2011/07/28/CompositionRoot/). | SAME |
 | [Zod at the producer's adapter](typescript/recipes.md#zod-at-the-producers-adapter) | King 2019; Evans 2013: "ideally the translator should just translate". | SAME |
@@ -80,7 +80,7 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 | [Result union](typescript/recipes.md#result-union) | Wlaschin, Against ROP. | SAME |
 | [Named, exported type](typescript/recipes.md#named-exported-type) | No source found. | NO SOURCE |
 | [Fix the declaration, not the value](typescript/recipes.md#fix-the-declaration-not-the-value) | No source found; nearest is King 2019. | NO SOURCE |
-| [Bounded context generic](typescript/recipes.md#bounded-context-generic) | No source found. | NO SOURCE |
+| [Constrained context generic](typescript/recipes.md#constrained-context-generic) | No source found. | NO SOURCE |
 | [Shared strict base config](typescript/recipes.md#shared-strict-base-config) | No source found; a tool feature, not a named practice. | NO SOURCE |
 | [Tagged union and exhaustive switch](typescript/recipes.md#tagged-union-and-exhaustive-switch) | TypeScript Handbook, [Narrowing: exhaustiveness checking](https://www.typescriptlang.org/docs/handbook/2/narrowing.html): a `default` branch assigns to `never`. | STRICTER: this recipe has no `default` branch |
 | [Domain vocabulary list](typescript/recipes.md#domain-vocabulary-list) | Fowler, UbiquitousLanguage. | SAME |
@@ -99,7 +99,7 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 | [Authorised location](records.md#authorised-location) | Microsoft, [SuppressMessageAttribute.Justification](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute.justification): "the justification for suppressing the code analysis message". | SAME |
 | [Deviation](records.md#deviation) | EASA, [FAQ 19026](https://www.easa.europa.eu/en/faq/19026): an alternative means of compliance must show it meets "the intent of the IR". | STRICTER: a deviation must show the recipe's reason fails at this site; meeting the rule another way is not enough |
 | [Debt](records.md#debt) | ESLint, [bulk suppressions](https://eslint.org/docs/latest/use/suppressions): existing violations "will not be reported", new ones are. Martin, [The Boy Scout Rule](https://github.com/97-things/97-things-every-programmer-should-know/blob/master/en/thing_08/README.md): leave it "a little bit better". | STRICTER: touching the file forfeits the whole file's debt |
-| [Boundary record](records.md#boundary-record) | Evans 2013: an ACL presents a clean interface in the downstream model; the ACL-backed repository. | SAME |
+| [Authorised location for an outside party](records.md#authorised-location) | Evans 2013: an ACL presents a clean interface in the downstream model; the ACL-backed repository. | SAME |
 | [Dependency record](records.md#dependency-record) | Nygard 2011; NTIA SBOM. | SAME |
 
 ## The model
@@ -111,7 +111,7 @@ A CONFLICTS source sits beside an item's main source, never in place of it. Stri
 | Symptom | Fowler, [CodeSmell](https://martinfowler.com/bliki/CodeSmell.html): "a surface indication that usually corresponds to a deeper problem". | SAME |
 | Check | Thoughtworks Radar, [Architectural fitness function](https://www.thoughtworks.com/radar/techniques/architectural-fitness-function): "provides an objective integrity assessment of some architectural characteristics". | SAME |
 | Case | Fowler, [Writing Software Patterns](https://martinfowler.com/articles/writingPatterns.html): the Coplien form has "Problem, Context, Forces, and Solution". | SAME |
-| Record | Nygard 2011, ADR; MISRA deviation records. | SAME |
+| Record | Nygard 2011, ADR. | SAME |
 | Cross-language rules with a language layer | [SEI CERT coding standards](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/front-matter/introduction/how-this-coding-standard-is-organized): per-language standards, each with noncompliant and compliant examples. | SAME (parallel) |
 | Two addresses per finding | No source found. | NO SOURCE |
 | The chain: symptom, case, why, reason to change | No source found. Pieces only: smell to deeper problem (Fowler); problem and context (pattern form). | NO SOURCE |
@@ -136,7 +136,6 @@ None of these is closed off.
 - **Open-Closed**: would extend Upstream stays untouched to our own modules.
 - **Liskov substitution**: would extend Ports declared inside, so any adapter honours the port's contract.
 - **Tell, Don't Ask** ([Fowler](https://martinfowler.com/bliki/TellDontAsk.html)): would extend Doer or orchestrator.
-- **The use-case ring**: would extend External behaviour sits at a boundary, adding a layer between the domain and the adapters.
 - **Walking skeleton** (GOOS): would extend Tests are ours, with an end-to-end slice first.
 - **Humble Object** ([Meszaros](http://xunitpatterns.com/Humble%20Object.html)): would extend Tested where it's owned, keeping the untestable shell thin.
 - **Domain events**: would extend No hidden effects, making a change an explicit value.

@@ -11,6 +11,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -169,21 +171,14 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -207,7 +202,14 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLAIMED_TYPE: Symptom = {
@@ -224,23 +226,29 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+  correctUses: [
+    { situation: "a schema proves the type", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+  ],
 };
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -248,7 +256,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   rules: [PORTS_DECLARED_INSIDE, WRITTEN_OUT_ANSWERS, DOER_OR_ORCHESTRATOR, DECLARED_NOT_ASSERTED],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
-  recordKinds: [AUTHORISED_LOCATION, BOUNDARY_RECORD, DEBT],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, CLAIMED_TYPE],
   clauses: [
@@ -344,7 +352,7 @@ const storeOf = () => {
 
 const readerRefusing = (request: {
   readonly refused: readonly RefusedRecord[];
-}): RecordsReader => ({
+}): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {
@@ -356,7 +364,9 @@ const readerRefusing = (request: {
   }),
 });
 
-const readerHolding = (request: { readonly records: readonly PlacedRecord[] }): RecordsReader => ({
+const readerHolding = (request: {
+  readonly records: readonly PlacedRecord[];
+}): Pick<RecordsReader, "recordsReadingOf"> => ({
   recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
     outcome: "ok",
     value: {

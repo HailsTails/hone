@@ -7,7 +7,7 @@ import type {
 } from "../../../../../application/ports/host/module-loader-port.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import cd27Plugin from "../../test-switched-off/focused-tests/eslint-plugin.ts";
+import cd27Plugin from "../../../protocol/plugin-rules/test-modifiers.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { PluginCheck } from "./check-rule-id.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";

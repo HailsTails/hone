@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { LoadedEngine, NamedEnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { SettingsSources, SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
+import type { EngineStageRequest, VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
   Check,
@@ -17,6 +20,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading, SymptomReach } from "../domain/records/hone-records/hone-record.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
@@ -24,11 +29,18 @@ import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
-import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
+import {
+  createChildMeasuredStagesOver,
+  mapEngineStageToEnginesRequest,
+  type VersionTwoLocations,
+  type VersionTwoPorts,
+  versionTwoStagesOver,
+} from "./version-two-stages.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -128,29 +140,22 @@ const ASSERT_TO_NARROW: Recipe = {
   reason: { text: "it narrows the type", standing: "accepted" },
 };
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = {
+const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   ruleSet: TOOL_RULE_SET,
-  name: "iteach-over-typed-rows",
+  name: "it-each-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -175,7 +180,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -195,7 +205,7 @@ const BRANCH_IN_A_TEST: Symptom = {
   ],
   breachUsuallySits:
     "in the unit's output type, where optional or loose shapes force the test to branch",
-  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recipes: [ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
 
@@ -213,7 +223,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -236,26 +252,32 @@ const CAST_EXPRESSIONS = {
 
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
-  symptom: DATE_USED_DIRECTLY,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
   name: "test-body",
-  symptom: BRANCH_IN_A_TEST,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+  page: "branch-in-a-test/test-body.md",
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
-  symptom: CLAIMED_TYPE,
+  symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+  page: "claimed-type/cast-expressions.md",
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -268,20 +290,34 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
     DECLARED_NOT_ASSERTED,
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
-  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
-    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    {
+      clause: CLOCK_SOURCES,
+      sight: {
+        kind: "one-symptom",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+    },
     {
       clause: TEST_BODY_LOGIC,
       sight: {
         kind: "symptom-by-form",
-        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+        forms: [
+          {
+            form: "branching-with-if",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+        ],
       },
     },
-    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+    {
+      clause: CAST_EXPRESSIONS,
+      sight: { kind: "one-symptom", symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" } },
+    },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
   namedBans: [{ outsideDependency: "lodash" }],
@@ -316,7 +352,7 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   fileText: { ...NOTHING_PRESENT, write: vi.fn<FileTextPort["write"]>() },
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
-  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  namedEngine: { load: vi.fn() },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: request.git,
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
@@ -354,18 +390,135 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
 
+describe("mapEngineStageToEnginesRequest", () => {
+  it("hands the engines the stage's checks, with their symptoms' titles, and the files its records answer, alongside the ports and locations", () => {
+    const stage = {
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: {
+        records: [
+          {
+            place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: repoPathOf("src/clock.ts"),
+              holding: { held: "stated" },
+            },
+          },
+        ],
+      },
+      tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [
+        {
+          name: "clock-sources",
+          symptom: {
+            ruleSet: TOOL_RULE_SET,
+            name: "date-used-directly",
+            title: "Date used directly",
+          },
+          engines: [WALKER],
+        },
+      ],
+    } satisfies EngineStageRequest;
+    const ports = {
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+      modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
+      namedEngine: { load: vi.fn() },
+    };
+
+    const mapped = mapEngineStageToEnginesRequest({
+      ports,
+      locations: { repoRoot: REPO, installRoot: INSTALL, moduleExtension: ".ts" },
+      stage,
+    });
+
+    expect(mapped).toEqual({
+      ...stage,
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: ports.path,
+      modules: ports.modules,
+      engine: ports.namedEngine,
+      answered: [
+        { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: repoPathOf("src/clock.ts") },
+      ],
+    });
+  });
+});
+
 describe("versionTwoStagesOver", () => {
-  it("fails as a catalogue not read, unreadable, when the install holds nothing, not even its version 1 names", () => {
+  it("runs the selected Walker check over the tracked TypeScript file", async () => {
+    const run = vi.fn<LoadedEngine["run"]>().mockResolvedValue({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "tool-failed", detail: "stopped" },
+      },
+    });
+    const load = vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+      outcome: "ok",
+      value: { run, project: async () => ({ outcome: "ok", value: [] }) },
+    });
+    const stages = versionTwoStagesOver({
+      ports: { ...portsOver({ git: GIT_LISTING_NOTHING }), namedEngine: { load } },
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
+    });
+
+    const outcome = await stages.engines({
+      catalogue: REPORT_CATALOGUE,
+      settings: {
+        selection: {
+          selected: [
+            {
+              binding: {
+                engine: "walker",
+                address: "date-used-directly#clock-sources",
+                ruleSet: TOOL_RULE_SET,
+                anchor: { kind: "file" },
+                pieceRoot: "/install/pieces",
+                checkSettings: {},
+                edition: editionOf("1"),
+                settings: {},
+              },
+            },
+          ],
+        },
+        eslintConfigLookup: { lookup: "detected" },
+        eslintProjectionKind: "mjs",
+        conventions: DEFAULT_CONVENTIONS,
+      },
+      records: { records: [] },
+      tree: { tracked: [repoPathOf("src/clock.ts")], declaredConfigRoots: [] },
+      checks: [{ name: "clock-sources", symptom: DATE_USED_DIRECTLY, engines: [WALKER] }],
+    });
+
+    expect(outcome.outcome).toBe("failed");
+    expect(run.mock.calls).toMatchObject([
+      [{ checks: [{ name: "clock-sources" }], files: ["src/clock.ts"] }],
+    ]);
+  });
+
+  it("fails as a catalogue not read, absent, when the install holds nothing", () => {
     expect(stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).catalogue()).toEqual({
       outcome: "failed",
       error: {
         kind: "catalogue-not-read",
         path: "/install/rules",
-        reason: { reason: "unreadable", detail: "ENOENT" },
+        reason: { reason: "absent" },
       },
     });
   });
@@ -478,12 +631,11 @@ describe("versionTwoStagesOver", () => {
       records: [],
       refused: [],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", placements: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records,
         renamed: { measured: "yes", renamed: new Map() },
       }),
@@ -500,7 +652,7 @@ describe("versionTwoStagesOver", () => {
           place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
           record: {
             kind: "debt",
-            symptom: CLAIMED_TYPE,
+            symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
             reach: WHOLE_SYMPTOM,
             file: repoPathOf("src/a.ts"),
             holding: { held: "stated" },
@@ -509,18 +661,61 @@ describe("versionTwoStagesOver", () => {
       ],
       refused: [],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", placements: [] },
     };
     expect(
       stagesOver({ git, baseRevision: "origin/main" }).touched({
-        assessment: { forfeiture: "this-run" },
-        measuring: "when-debt-held",
+        scope: { baseScope: "merge-base", measuring: "when-debt-held" },
         records,
         renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({
       measured: "yes",
       paths: new Set([repoPathOf("src/a.ts")]),
+    });
+  });
+});
+
+describe("createChildMeasuredStagesOver", () => {
+  it("builds the engines stage over the run's locations", async () => {
+    const engines = vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "config-absent", repo: REPO },
+    });
+    const createEngines = vi
+      .fn<
+        (
+          locations: VersionTwoLocations & { readonly path: PathPort },
+        ) => VersionTwoStages["engines"]
+      >()
+      .mockReturnValue(engines);
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const childMeasuredStagesOver = createChildMeasuredStagesOver({ createEngines });
+    const stages = childMeasuredStagesOver({
+      ports,
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: "origin/main",
+      },
+    });
+
+    const runs = await stages.engines({
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: { records: [] },
+      tree: { tracked: [], declaredConfigRoots: [] },
+      checks: [],
+    });
+
+    expect(runs).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: REPO } });
+    expect(createEngines).toHaveBeenCalledExactlyOnceWith({
+      path: ports.path,
+      installRoot: INSTALL,
+      repoRoot: REPO,
+      moduleExtension: ".ts",
+      baseRevision: "origin/main",
     });
   });
 });

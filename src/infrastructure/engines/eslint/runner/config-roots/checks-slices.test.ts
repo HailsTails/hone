@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { answeredWithin, slicesOf } from "./checks-slices.ts";
+import { answeredWithin, declarationPathOf, slicesOf } from "./checks-slices.ts";
 
 const TRACKED = [
   repoPathOf("eslint.config.mjs"),
@@ -36,6 +36,7 @@ describe("slicesOf", () => {
         declared: [],
         lookup: "nearest-to-file",
         nestedRepositories: [],
+        configuration: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       root: ROOT_SLICE,
@@ -50,6 +51,7 @@ describe("slicesOf", () => {
         declared: [],
         lookup: "repository-root",
         nestedRepositories: [],
+        configuration: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({ root: ROOT_SLICE, packages: [] });
   });
@@ -61,6 +63,7 @@ describe("slicesOf", () => {
         declared: [],
         lookup: "nearest-to-file",
         nestedRepositories: ["packages/a"],
+        configuration: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       root: ROOT_SLICE,
@@ -75,11 +78,64 @@ describe("slicesOf", () => {
         declared: [repoPathOf("packages/c"), repoPathOf("packages/a")],
         lookup: "nearest-to-file",
         nestedRepositories: [],
+        configuration: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({
       root: ROOT_SLICE,
       packages: [PACKAGE_A_SLICE, PACKAGE_B_TOOLS_SLICE, PACKAGE_C_SLICE],
     });
+  });
+
+  it("names a declared folder even when only the repository root's config is looked up", () => {
+    expect(
+      slicesOf({
+        trackedPaths: TRACKED,
+        declared: [repoPathOf("packages/c")],
+        lookup: "repository-root",
+        nestedRepositories: [],
+        configuration: repoPathOf("hone.eslint.mjs"),
+      }),
+    ).toEqual({ root: ROOT_SLICE, packages: [PACKAGE_C_SLICE] });
+  });
+});
+
+describe("slicesOf, for the ts projection kind", () => {
+  it("names each slice's file after the typed configuration it is given", () => {
+    const slices = slicesOf({
+      trackedPaths: [repoPathOf("eslint.config.ts"), repoPathOf("packages/a/eslint.config.ts")],
+      declared: [],
+      lookup: "nearest-to-file",
+      nestedRepositories: [],
+      configuration: repoPathOf("hone.eslint.ts"),
+    });
+
+    expect(slices).toEqual({
+      root: { directory: undefined, file: "hone.eslint.ts" },
+      packages: [{ directory: "packages/a", file: "packages/a/hone.eslint.ts" }],
+    });
+  });
+});
+
+describe("declarationPathOf", () => {
+  it("places the declaration at the repository root for the root slice", () => {
+    const path = declarationPathOf({
+      slice: { directory: undefined, file: repoPathOf("hone.eslint.mjs") },
+      declaration: repoPathOf("hone.eslint.d.mts"),
+    });
+
+    expect(path).toBe("hone.eslint.d.mts");
+  });
+
+  it("places the declaration in a package slice's folder", () => {
+    const path = declarationPathOf({
+      slice: {
+        directory: repoPathOf("packages/a"),
+        file: repoPathOf("packages/a/hone.eslint.mjs"),
+      },
+      declaration: repoPathOf("hone.eslint.d.mts"),
+    });
+
+    expect(path).toBe("packages/a/hone.eslint.d.mts");
   });
 });
 
@@ -95,6 +151,7 @@ describe("slicesOf, declared folders and nested repositories", () => {
         ],
         lookup: "repository-root",
         nestedRepositories: ["vendor/lib"],
+        configuration: repoPathOf("hone.eslint.mjs"),
       }),
     ).toEqual({ root: ROOT_SLICE, packages: [PACKAGE_C_SLICE] });
   });

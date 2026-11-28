@@ -44,7 +44,7 @@ const recordsAtBaseOf = (request: {
 
 export const readHoneRecords = (request: {
   readonly source: RecordsSource;
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly catalogue: SymptomCatalogue;
   readonly baseRevision: string | undefined;
 }): Result<RecordsReading, HoneRecordsFailure> => {

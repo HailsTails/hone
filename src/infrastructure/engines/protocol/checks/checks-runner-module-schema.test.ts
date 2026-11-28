@@ -27,8 +27,9 @@ const REPORT = {
     },
   ],
   measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
+  inapplicable: [],
   projection: "current",
-  slices: [{ slice: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
+  slices: [{ file: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [
@@ -45,13 +46,13 @@ const REPORT = {
 
 describe("the checks runner's ties to its module schema", () => {
   it("declares each required runner capability and its projected kinds", () => {
-    expect(Object.keys(namedChecksRunnerModuleSchema.shape).sort()).toEqual([
-      "conform",
-      "fileScope",
-      "project",
-      "projectedKinds",
-      "run",
-    ]);
+    expect(namedChecksRunnerModuleSchema.shape).toEqual({
+      conform: expect.anything(),
+      fileScope: expect.anything(),
+      project: expect.anything(),
+      projectedKinds: expect.anything(),
+      run: expect.anything(),
+    });
   });
 
   it("holds the same slice problem, misnamed rule id and projected file as the types", () => {
@@ -179,15 +180,29 @@ describe("namedChecksRunnerModuleSchema", () => {
 });
 
 describe("checksProjectResultSchema", () => {
-  it("accepts the files to write, keeping every field", () => {
+  it("accepts entries to write and remove, keeping every field", () => {
     const projected = {
       outcome: "ok",
-      value: [{ file: "hone.eslint.mjs", text: "export default [];\n" }],
+      value: [
+        { kind: "write", file: "hone.eslint.mjs", text: "export default [];\n" },
+        { kind: "remove", file: "hone.eslint.ts" },
+      ],
     };
-    expect(checksProjectResultSchema.safeParse(projected)).toEqual({
-      success: true,
-      data: projected,
-    });
+
+    const parsed = checksProjectResultSchema.safeParse(projected);
+
+    expect(parsed).toEqual({ success: true, data: projected });
+  });
+
+  it.each([
+    { kind: "replace", file: "hone.eslint.ts" },
+    { kind: "remove", file: "hone.eslint.ts", text: "unexpected" },
+    { kind: "write", file: "hone.eslint.ts" },
+    { file: "hone.eslint.ts", text: "export {};" },
+  ])("rejects an invalid projection entry %#", (entry) => {
+    const parsed = checksProjectResultSchema.safeParse({ outcome: "ok", value: [entry] });
+
+    expect(parsed.success).toBe(false);
   });
 
   it("accepts a runner failure", () => {
@@ -258,6 +273,14 @@ describe("namedChecksRunResultSchema", () => {
     );
   });
 
+  it("refuses a root file when there is no root projection", () => {
+    const report = { ...REPORT, projection: "none", projectionFile: "hone.oxlint.json" };
+
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects a report that leaves out the misnamed rule ids", () => {
     const { misnamedRuleIds: _left, ...withoutMisnamed } = REPORT;
     expect(
@@ -275,7 +298,7 @@ describe("namedChecksRunResultSchema", () => {
   it("rejects a slice problem in a state that is not a slice state", () => {
     const report = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "stale" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "stale" }],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(
       false,
@@ -283,34 +306,62 @@ describe("namedChecksRunResultSchema", () => {
   });
 
   it("preserves nested folder reach as report metadata and validates repository paths", () => {
-    const value = {
+    const report = {
       ...REPORT,
       projection: "not-included",
+      projectionFile: "hone.eslint.mjs",
+      recovery: { kind: "engine-instructions", detail: "include the projected rules last" },
+      slices: [
+        {
+          file: "pkg/hone.eslint.mjs",
+          state: "unconfigured",
+          recovery: { kind: "engine-instructions", detail: "add a configuration" },
+        },
+      ],
       nestedConfigurations: ["pkg"],
       unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
     };
-    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value })).toMatchObject({
+    const parsed = namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report });
+
+    expect(parsed).toMatchObject({
       success: true,
       data: {
-        value: { nestedConfigurations: ["pkg"], unprojectedFolders: value.unprojectedFolders },
+        value: {
+          recovery: { kind: "engine-instructions", detail: "include the projected rules last" },
+          slices: report.slices,
+          nestedConfigurations: ["pkg"],
+          unprojectedFolders: report.unprojectedFolders,
+        },
       },
     });
     expect(
       namedChecksRunResultSchema.safeParse({
         outcome: "ok",
-        value: { ...value, nestedConfigurations: ["/pkg"] },
+        value: { ...report, nestedConfigurations: ["/pkg"] },
       }).success,
     ).toBe(false);
+  });
+
+  it("decodes an obsolete output as its own file", () => {
+    const report = {
+      ...REPORT,
+      slices: [{ file: "packages/web/hone.eslint.ts", state: "left-over" }],
+    };
+
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
+      success: true,
+      data: { outcome: "ok", value: report },
+    });
   });
 
   it("rejects the slice states that only a version 1 runner reports", () => {
     const notApplied = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "not-applied" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "not-applied" }],
     };
     const nested = {
       ...REPORT,
-      slices: [{ slice: "packages/web/hone.eslint.mjs", state: "nested-configuration" }],
+      slices: [{ file: "packages/web/hone.eslint.mjs", state: "nested-configuration" }],
     };
     expect([
       namedChecksRunResultSchema.safeParse({ outcome: "ok", value: notApplied }).success,
@@ -322,9 +373,18 @@ describe("namedChecksRunResultSchema", () => {
     const report = {
       ...REPORT,
       slices: [
-        { slice: "packages/a/hone.eslint.mjs", state: "missing" },
-        { slice: "packages/b/hone.eslint.mjs", state: "out-of-date" },
-        { slice: "packages/c/hone.eslint.mjs", state: "unconfigured" },
+        { file: "packages/a/hone.eslint.mjs", state: "missing" },
+        { file: "packages/b/hone.eslint.mjs", state: "out-of-date" },
+        {
+          file: "packages/c/hone.eslint.mjs",
+          state: "unconfigured",
+          recovery: { kind: "generate-configuration" },
+        },
+        {
+          file: "packages/d/hone.oxlint.json",
+          state: "not-included",
+          recovery: { kind: "include-projection" },
+        },
       ],
     };
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
@@ -332,4 +392,13 @@ describe("namedChecksRunResultSchema", () => {
       data: { outcome: "ok", value: report },
     });
   });
+});
+
+it("preserves valid inapplicability across the runner boundary", () => {
+  const inapplicable = [{ check: "authored-class-or-this#class-keyword", file: "src/readme.md" }];
+  const input = { outcome: "ok", value: { ...REPORT, inapplicable } };
+
+  const parsed = namedChecksRunResultSchema.safeParse(input);
+
+  expect(parsed).toMatchObject({ success: true, data: { value: { inapplicable } } });
 });

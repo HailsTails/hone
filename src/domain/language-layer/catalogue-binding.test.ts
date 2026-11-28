@@ -10,20 +10,22 @@ import type {
   Engine,
   RecordKind,
   Symptom,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "./symptom-catalogue.ts";
 
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT: Engine = { name: "eslint" };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -56,15 +58,19 @@ const LOOPS = {
 const CLOCK_SOURCES_CHECK: CheckContent = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOPS_CHECK: CheckContent = {
   name: "loops",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/loops.md",
   clause: LOOPS,
   forms: [],
+  findingSpecifics: [],
 };
 
 const CONTENT: CatalogueContent = {
@@ -95,15 +101,19 @@ describe("catalogueBoundTo", () => {
           {
             name: "clock-sources",
             symptom: DATE_USED_DIRECTLY,
+            page: "date-used-directly/clock-sources.md",
             clause: CLOCK_SOURCES,
             forms: [],
+            findingSpecifics: [],
             engines: [WALKER],
           },
           {
             name: "loops",
             symptom: DATE_USED_DIRECTLY,
+            page: "date-used-directly/loops.md",
             clause: LOOPS,
             forms: [],
+            findingSpecifics: [],
             engines: [WALKER, ESLINT],
           },
         ],

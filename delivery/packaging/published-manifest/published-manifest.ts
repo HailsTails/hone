@@ -13,6 +13,8 @@ export type TypedExport = {
   readonly module: string;
 };
 
+export type ModuleExport = string | { readonly specifier: string; readonly module: string };
+
 type TypedExportConditions = { readonly types: string; readonly default: string };
 
 const versionsSchema = z.record(z.string(), z.string());
@@ -53,6 +55,11 @@ const bareExportEntry = (request: { readonly path: string }): readonly [string, 
   request.path,
   request.path,
 ];
+
+const moduleExportEntry = (entry: ModuleExport): readonly [string, string] =>
+  typeof entry === "string"
+    ? bareExportEntry({ path: exportPathOf(entry) })
+    : [exportPathOf(entry.specifier), exportPathOf(entry.module)];
 
 type RepositoryLinks = {
   readonly repository: { readonly type: "git"; readonly url: string };
@@ -148,7 +155,7 @@ export const publishManifestOf = (request: {
   readonly identity: ToolIdentity;
   readonly command: string;
   readonly files: readonly string[];
-  readonly exported: readonly string[];
+  readonly exported: readonly ModuleExport[];
   readonly typed: readonly TypedExport[];
   readonly nodeRange: string;
 }): Result<string, ManifestFailure> => {
@@ -176,7 +183,7 @@ export const publishManifestOf = (request: {
         exports: Object.fromEntries([
           bareExportEntry({ path: MANIFEST_EXPORT }),
           ...request.typed.map((typed) => typedExportEntry({ typed })),
-          ...request.exported.map((path) => bareExportEntry({ path: exportPathOf(path) })),
+          ...request.exported.map(moduleExportEntry),
         ]),
         files: request.files,
         engines: { node: request.nodeRange },

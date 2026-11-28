@@ -14,23 +14,29 @@ import type {
   Unrestored,
 } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
+import type {
+  SmoothingFailure,
+  SmoothingStep,
+} from "../../../application/ports/upgrade/smoothing-commands.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
 import { replacementText } from "../misnamed-lines.ts";
-
-export const UPGRADE_ISSUES_URL = `${TOOL_IDENTITY.repository}/issues`;
+import { unmeasuredLine } from "../run-state-lines.ts";
+import {
+  FAULT_IN_HONE,
+  mapMappingRefusalToLine,
+  UPGRADE_ISSUES_URL,
+} from "./mapping-refusal-text.ts";
 
 export type UpgradeFailureCode = 1 | 2 | 3;
 
@@ -38,10 +44,10 @@ export type UpgradeFailureOutcome = { readonly code: UpgradeFailureCode; readonl
 
 const NOTHING_CHANGED = "Nothing was changed.";
 
+const PROJECT_COMMAND = "hone project";
+
 const VERSION_ONE_PROJECT_MAY_HAVE_CHANGED =
   "version 1's own project may have changed files before it failed; check version control for what it changed.";
-
-const FAULT_IN_HONE = `This is a fault in hone, not in your repository. Report it at ${UPGRADE_ISSUES_URL}, with this output.`;
 
 const unrestoredLineOf = (request: { readonly unrestored: Unrestored }): string => {
   const { written, path, detail } = request.unrestored;
@@ -51,6 +57,7 @@ const unrestoredLineOf = (request: { readonly unrestored: Unrestored }): string 
     case "directory-created":
       return `  delete the empty folder ${path} (${detail})`;
     case "file-replaced":
+    case "file-removed":
       return `  restore ${path} from version control (${detail})`;
   }
 };
@@ -93,55 +100,28 @@ const unrestoredLinesOf = (
   ];
 };
 
+const folderTextOf = (request: { readonly folder: string }): string =>
+  request.folder === "" ? "the repository root" : request.folder;
+
+const folderOf = (request: { readonly file: RepoPath }): string =>
+  request.file.slice(0, Math.max(request.file.lastIndexOf("/"), 0));
+
 const oracleLineOf = (request: { readonly failure: OracleFailure }): string => {
   const { failure } = request;
   switch (failure.kind) {
     case "version-one-run-failed":
-      return `version 1's own run could not be made (${failure.detail}). Run hone check and fix its load failure first.`;
+      return `version 1's own run could not be made (${failure.detail}). Fix what it names, then run the upgrade again.`;
     case "finding-not-attributable":
       return `a finding of ${failure.clause} in ${failure.file} names no check of version 2. Report it at ${UPGRADE_ISSUES_URL}.`;
     case "record-doubly-held":
       return `${failure.clause} in ${failure.file} is held by both a file carve-out and an authorised location. Remove one of them first, then run the upgrade again.`;
     case "projection-not-current":
-      return `the version 1 projection ${failure.file} is ${failure.state}. ${projectionActionOf({ state: failure.state })}`;
+      return `the version 1 projection ${failure.file} is ${failure.state}. Spread its default export last in the ESLint config that loads for ${folderTextOf({ folder: folderOf({ file: failure.file }) })}, then run the upgrade again.`;
   }
 };
-
-const projectionActionOf = (request: {
-  readonly state: Extract<OracleFailure, { readonly kind: "projection-not-current" }>["state"];
-}): string => {
-  switch (request.state) {
-    case "out-of-date":
-    case "missing":
-      return "Run hone project with your version 1 release, commit what it writes, then run the upgrade again.";
-    case "not-applied":
-    case "not-included":
-    case "unconfigured":
-      return "Run hone check with your version 1 release, fix what it reports, then run the upgrade again.";
-  }
-};
-
-const folderTextOf = (request: { readonly folder: string }): string =>
-  request.folder === "" ? "the repository root" : request.folder;
 
 const specifierOf = (request: { readonly projection: string }): string =>
   `./${request.projection.slice(request.projection.lastIndexOf("/") + 1)}`;
-
-const mappingLineOf = (request: { readonly refusal: UpgradeRefusal }): string => {
-  const { refusal } = request;
-  switch (refusal.kind) {
-    case "clause-without-check":
-      return `${refusal.clause} has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.`;
-    case "no-engine-on-mechanism":
-      return `${refusal.check} has no engine on the ${refusal.mechanism} mechanism. ${FAULT_IN_HONE}`;
-    case "two-engines-on-mechanism":
-      return `${refusal.check} could run on ${refusal.engines.join(" or ")} through the ${refusal.mechanism} mechanism; the upgrade cannot choose. ${FAULT_IN_HONE}`;
-    case "record-answers-nothing":
-      return `the file carve-out for ${refusal.clause} in ${refusal.file} answers ${refusal.credited === "nothing" ? "no finding" : "only a suppression no version 2 record can hold"}. Remove it, or fix the file it names, then run the upgrade again.`;
-    case "records-name-refused":
-      return `${refusal.name} is not a name version 2 can file records under. ${FAULT_IN_HONE}`;
-  }
-};
 
 const configLineOf = (request: { readonly refusal: ConfigImportRefusal }): string => {
   const { refusal } = request;
@@ -166,7 +146,7 @@ const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string =>
     case "version-one-projection-unpaired":
       return `the version 1 projection ${refusal.projection} has no version 2 projection to take its place, since version 2 runs no lint config in ${folderTextOf({ folder: refusal.folder })}. Remove it and its import in ${refusal.config}, then run the upgrade again.`;
     case "version-two-projection-unpaired":
-      return `version 2 would project ${refusal.file}, but version 1 has no projection in ${folderTextOf({ folder: refusal.folder })}. With your version 1 release, run hone project and import what it writes in the lint config of ${folderTextOf({ folder: refusal.folder })}, commit, then run the upgrade again.`;
+      return `version 2 would project ${refusal.file}, but version 1 projects nothing in ${folderTextOf({ folder: refusal.folder })}: it leaves out a folder that holds its own disciplines.json. Remove that disciplines.json and spread ./disciplines.eslint.mjs last in the ESLint config of ${folderTextOf({ folder: refusal.folder })}, then run the upgrade again.`;
   }
 };
 
@@ -200,7 +180,7 @@ const pieceFolderSplitLineOf = (request: {
     case "specifier-not-literal":
       return `${split.file}:${split.line} names a module with an expression rather than a string, so the upgrade cannot point it at where the files of ${folder} move. Write the path as a string, then run the upgrade again.`;
     case "target-not-moved":
-      return `${split.file}:${split.line} imports a file of ${folder} that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
+      return `${split.file}:${split.line} imports something in ${folder} that the upgrade does not move: piece.json, which the upgrade replaces, the folder itself, or a file that is not there. So it cannot point the import at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
   }
 };
 
@@ -239,7 +219,7 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
         `the upgrade would write ${refusal.path}, which is not a path inside the repository. ${FAULT_IN_HONE}`,
       ];
     case "mapping-refused":
-      return refusal.refusals.map((each) => mappingLineOf({ refusal: each }));
+      return refusal.refusals.map((each) => mapMappingRefusalToLine({ refusal: each }));
     case "reach-beyond-entries":
       return [
         `the version 2 records would reach beyond the version 1 entries: ${refusal.records.map(({ symptom, file }) => `${symptom} in ${file}`).join(", ")}.`,
@@ -257,10 +237,14 @@ const writeLineOf = (request: { readonly failure: ProofWriteFailure }): string =
       return `${failure.path} already exists. Move it aside, then run the upgrade again.`;
     case "replaced-file-unreadable":
       return `${failure.path} could not be read to be replaced (${failure.detail}). Make it readable, then run the upgrade again.`;
+    case "removed-file-unreadable":
+      return `${failure.path} could not be read to be removed (${failure.detail}). Make it readable, then run the upgrade again.`;
     case "directory-uncreatable":
       return `${failure.path} could not be created (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
     case "unwritable":
       return `${failure.path} could not be written (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
+    case "unremovable":
+      return `${failure.path} could not be removed (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
   }
 };
 
@@ -278,7 +262,7 @@ const readFailureLinesOf = (request: {
   switch (failure.kind) {
     case "version-one-unreadable":
       return [
-        `version 1's files could not be read (${loadFailureDetail({ failure: failure.failure })}). Run hone check and fix its load failure first.`,
+        `version 1's files could not be read (${loadFailureDetail({ failure: failure.failure })}). Fix what it names, then run the upgrade again.`,
       ];
     case "records-refused":
       return failure.refusal.kind === "invalid-records"
@@ -310,22 +294,6 @@ const removalLineOf = (request: {
   request.failure.kind === "unremovable"
     ? `${request.failure.path} could not be removed (${request.failure.detail})`
     : `${request.failure.path} is outside ${request.failure.root}`;
-
-const differenceCauseLineOf = (request: {
-  readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
-}): string =>
-  request.failure.writtenReported.length === 0
-    ? `Nothing in the two runs shows the cause. Check whether something in your repository explains it; if nothing does, report it at ${UPGRADE_ISSUES_URL}, with this output.`
-    : `version 2 reports files the upgrade writes: ${request.failure.writtenReported.join(", ")}. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.`;
-
-const differenceLinesOf = (request: {
-  readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
-}): readonly string[] =>
-  request.failure.differences.flatMap(({ section, onlyBefore, onlyAfter }) => [
-    `  ${section}:`,
-    ...onlyBefore.map((line) => `    only before: ${line}`),
-    ...onlyAfter.map((line) => `    only after: ${line}`),
-  ]);
 
 type DirectiveBlock<Directive> = {
   readonly directives: readonly Directive[];
@@ -364,14 +332,68 @@ const directiveLinesOf = (request: {
 const uncoveredLineOf = (request: { readonly clauses: readonly ClauseAddress[] }): string =>
   `version 1 already reports ${request.clauses.map((address) => clauseAddressText({ address })).join(", ")} as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.`;
 
-const proofLinesOf = (request: {
-  readonly failure: ProofRefusal;
+const mapSmoothingFailureToLines = (request: {
+  readonly step: SmoothingStep;
+  readonly failure: SmoothingFailure;
+}): readonly string[] => {
+  const { step, failure } = request;
+  switch (failure.kind) {
+    case "run-failed":
+      return [
+        `the upgrade's ${step} step failed (${runLoadFailureLine({ failure: failure.failure, upgradeCommand: undefined })}). Fix what it names, then run the upgrade again.`,
+      ];
+    case "run-unmeasured":
+      return [
+        `the upgrade's ${step} step could not judge which carried records answer nothing, because version 2 left this unmeasured:`,
+        ...failure.unmeasured.map(
+          (unmeasured) =>
+            `  ${unmeasuredLine({ unmeasured, problems: [], projectCommand: PROJECT_COMMAND })}`,
+        ),
+        "Fix what it names, then run the upgrade again.",
+      ];
+  }
+};
+
+type VersionTwoRefusal = Extract<
+  ProofRefusal,
+  {
+    readonly kind:
+      | "team-layout-unreadable"
+      | "version-two-run-failed"
+      | "directives-name-no-check"
+      | "smoothing-failed"
+      | "check-failed"
+      | "removal-failed";
+  }
+>;
+
+type ProofLines = { readonly code: UpgradeFailureCode; readonly lines: readonly string[] };
+
+type VersionOneRunRefusal = Extract<
+  ProofRefusal,
+  {
+    readonly kind:
+      | "oracle-failed"
+      | "plan-refused"
+      | "version-one-run-failed"
+      | "version-one-uncovered";
+  }
+>;
+
+const mapVersionOneRunRefusalToLines = (request: {
+  readonly failure: VersionOneRunRefusal;
   readonly placement: RepositoryPlacement;
-}): { readonly code: UpgradeFailureCode; readonly lines: readonly string[] } => {
+}): ProofLines => {
   const { failure, placement } = request;
   switch (failure.kind) {
     case "oracle-failed":
-      return { code: 1, lines: [oracleLineOf({ failure: failure.failure }), NOTHING_CHANGED] };
+      return {
+        code: 1,
+        lines: [
+          oracleLineOf({ failure: failure.failure }),
+          ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
+        ],
+      };
     case "plan-refused":
       return {
         code: 1,
@@ -384,7 +406,7 @@ const proofLinesOf = (request: {
       return {
         code: 1,
         lines: [
-          `version 1's run failed (${failure.failure.detail}). Run hone check and fix its load failure first.`,
+          `version 1's run failed (${failure.failure.detail}). Fix what it names, then run the upgrade again.`,
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
@@ -396,20 +418,21 @@ const proofLinesOf = (request: {
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
+  }
+};
+
+const mapVersionOneWriteRefusalToLines = (request: {
+  readonly failure: Exclude<ProofRefusal, VersionTwoRefusal | VersionOneRunRefusal>;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
     case "version-one-project-failed":
       return {
         code: 1,
         lines: [
-          `version 1's own project failed (${failure.detail}). Run hone project with your version 1 release, fix what it reports, then run the upgrade again.`,
+          `version 1's own project failed (${failure.detail}). Fix what it names, then run the upgrade again.`,
           VERSION_ONE_PROJECT_MAY_HAVE_CHANGED,
-        ],
-      };
-    case "version-one-project-rewrote":
-      return {
-        code: 1,
-        lines: [
-          `version 1's own project rewrote ${failure.files.join(", ")}, which the upgrade had already measured. Commit what it wrote, then run the upgrade again.`,
-          ...removedByVersionOneLinesOf({ ...failure, placement }),
         ],
       };
     case "unplaceable-path":
@@ -436,6 +459,15 @@ const proofLinesOf = (request: {
           ...unrestoredLinesOf({ ...failure, placement, unrestored: failure.refusal.unrestored }),
         ],
       };
+  }
+};
+
+const mapVersionTwoRefusalToLines = (request: {
+  readonly failure: VersionTwoRefusal;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
     case "team-layout-unreadable":
       return {
         code: 1,
@@ -460,13 +492,21 @@ const proofLinesOf = (request: {
           ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
-    case "differences":
+    case "smoothing-failed":
       return {
         code: 1,
         lines: [
-          "version 2 does not report what version 1 reported:",
-          ...differenceLinesOf({ failure }),
-          differenceCauseLineOf({ failure }),
+          ...mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure }),
+          ...unrestoredLinesOf({ ...failure, placement }),
+        ],
+      };
+    case "check-failed":
+      return {
+        code: 1,
+        lines: [
+          "version 2's check fails on the upgraded repository:",
+          ...failure.failing.map((line) => `  ${line}`),
+          "Fix what it reports, then run the upgrade again.",
           ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
@@ -479,6 +519,29 @@ const proofLinesOf = (request: {
           ...failure.remaining.map((remaining) => `  ${remaining}`),
         ],
       };
+  }
+};
+
+const proofLinesOf = (request: {
+  readonly failure: ProofRefusal;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
+    case "team-layout-unreadable":
+    case "version-two-run-failed":
+    case "directives-name-no-check":
+    case "smoothing-failed":
+    case "check-failed":
+    case "removal-failed":
+      return mapVersionTwoRefusalToLines({ failure, placement });
+    case "oracle-failed":
+    case "plan-refused":
+    case "version-one-run-failed":
+    case "version-one-uncovered":
+      return mapVersionOneRunRefusalToLines({ failure, placement });
+    default:
+      return mapVersionOneWriteRefusalToLines({ failure, placement });
   }
 };
 

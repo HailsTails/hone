@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ParsedNamedRunner } from "../application/ports/engine/engine-run.ts";
 import type { RunnerModuleOf } from "../application/ports/engine/runner-location.ts";
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
@@ -25,12 +24,15 @@ describe("runnerEnginesOver", () => {
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
       mechanism: "eslint",
     } as const;
-    await expect(runnerEnginesOver({ runnerModuleOf }).namedEngine.load(location)).resolves.toEqual(
-      {
-        outcome: "failed",
-        error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
-      },
-    );
+    await expect(
+      runnerEnginesOver({ runnerModuleOf }).namedEngine.load({
+        ...location,
+        projectionKind: "mjs",
+      }),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "runner-invalid", mechanism: "eslint", detail: "missing" },
+    });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(location);
   });
 
@@ -83,26 +85,16 @@ describe("runnerEnginesOver", () => {
     } as const;
     await expect(
       runnerEnginesOver({ runnerModuleOf }).measureVersionOne({
-        call: {
-          mechanism: "eslint",
-          runner: {
-            fileScope: "typescript",
-            projectedKinds: [],
-            run: vi.fn<ParsedNamedRunner["run"]>(),
-            conform: vi.fn<ParsedNamedRunner["conform"]>(),
-            project: vi.fn<ParsedNamedRunner["project"]>(),
-          },
-          request: {
-            repoRoot: absoluteRootOf("/repo"),
-            installRoot: absoluteRootOf("/install"),
-            files: [],
-            trackedPaths: [],
-            answered: [],
-            declaredConfigRoots: [],
-            declaredConfigLookup: undefined,
-            testFiles: { suffixes: ["test"], folders: [] },
-            bindings: [],
-          },
+        request: {
+          repoRoot: absoluteRootOf("/repo"),
+          installRoot: absoluteRootOf("/install"),
+          files: [],
+          trackedPaths: [],
+          answered: [],
+          declaredConfigRoots: [],
+          declaredConfigLookup: undefined,
+          testFiles: { suffixes: ["test"], folders: [] },
+          bindings: [],
         },
         location,
         projection: {

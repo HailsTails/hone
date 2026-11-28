@@ -1,20 +1,12 @@
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RenamedSinceBase } from "../../../domain/repository/renamed-path.ts";
 import { type TouchedSet, withoutPureMoves } from "../../../domain/repository/touched-set.ts";
-import type { ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
-import type { GitPort } from "../../ports/git-port.ts";
-import { computeTouchedSet } from "./touched-set.ts";
+import { type ChangeMeasurement, computeTouchedSet } from "./touched-set.ts";
 
-type TouchedRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly baseRevision: string | undefined;
-  readonly git: Pick<GitPort, "changedSince">;
-  readonly renamed: RenamedSinceBase;
-};
+type TouchedRequest = ChangeMeasurement & { readonly renamed: RenamedSinceBase };
 
 const touchedBeyondPureMoves = (request: TouchedRequest): TouchedSet => {
   const touched = computeTouchedSet(request);
-  if (touched.measured !== "yes") {
+  if (touched.measured === "no") {
     return touched;
   }
   return request.renamed.measured === "no"
@@ -23,6 +15,12 @@ const touchedBeyondPureMoves = (request: TouchedRequest): TouchedSet => {
 };
 
 export const touchedSetUnder = (
-  request: TouchedRequest & { readonly forfeiture: ForfeitureAssessment },
-): TouchedSet =>
-  request.forfeiture === "elsewhere" ? { measured: "elsewhere" } : touchedBeyondPureMoves(request);
+  request: Omit<TouchedRequest, "baseScope"> & {
+    readonly baseScope: TouchedRequest["baseScope"] | "elsewhere";
+  },
+): TouchedSet => {
+  const { baseScope } = request;
+  return baseScope === "elsewhere"
+    ? { measured: "elsewhere" }
+    : touchedBeyondPureMoves({ ...request, baseScope });
+};

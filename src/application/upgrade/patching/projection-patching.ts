@@ -32,6 +32,9 @@ const plannedPatchOf = (
       error: { kind: "unplaceable-path", file: request.file, removedByVersionOne: [] },
     };
   }
+  if (request.queries.fileText.exists({ path }) === "absent") {
+    return { outcome: "ok", value: [] };
+  }
   const read = request.queries.fileText.read({ path });
   if (read.outcome === "failed") {
     return {
@@ -90,16 +93,13 @@ export const patchedProjectionsOf = (
     : written;
 };
 
-const keptAsVersionOneLeftThem = (request: {
+const filesVersionOneRemoved = (request: {
   readonly queries: Pick<ProofQueries, "path">;
   readonly repoRoot: AbsolutePath;
   readonly refusal: ProofRefusal;
 }): readonly AbsolutePath[] => {
   const { refusal } = request;
-  const files = [
-    ...("removedByVersionOne" in refusal ? refusal.removedByVersionOne : []),
-    ...(refusal.kind === "version-one-project-rewrote" ? refusal.files : []),
-  ];
+  const files = "removedByVersionOne" in refusal ? refusal.removedByVersionOne : [];
   return files.flatMap((file) => {
     const path = request.queries.path.join({ segments: [request.repoRoot, file] });
     return isAbsolutePath(path) ? [path] : [];
@@ -115,7 +115,8 @@ const withUnrestored = (request: {
     case "team-layout-unreadable":
     case "version-two-run-failed":
     case "directives-name-no-check":
-    case "differences":
+    case "smoothing-failed":
+    case "check-failed":
       return { ...refusal, unrestored: [...refusal.unrestored, ...unrestored] };
     case "write-refused":
       return {
@@ -146,13 +147,13 @@ export const restoredOriginalProjections = (request: {
   readonly queries: Pick<ProofQueries, "path">;
   readonly effects: Pick<ProofEffects, "undo">;
   readonly repoRoot: AbsolutePath;
-  readonly patches: ProofWrites;
+  readonly writes: ProofWrites;
   readonly refusal: ProofRefusal;
 }): ProofRefusal => {
-  const kept = keptAsVersionOneLeftThem(request);
+  const removed = filesVersionOneRemoved(request);
   return restoredAfterRefusal({
     effects: request.effects,
-    writes: request.patches.filter((write) => !kept.includes(write.path)),
+    writes: request.writes.filter((write) => !removed.includes(write.path)),
     refusal: request.refusal,
   });
 };

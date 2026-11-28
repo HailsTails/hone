@@ -63,8 +63,9 @@ const BASE_AUTHORISED_IMPORTS_TEXT = `{
   "version": 2,
   "records": [
     {
-      "answers": "outside-import-past-a-boundary",
+      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/adapters/ids.ts",
+      "outsideParty": "uuid",
       "carried": {
         "kind": "authorised-location",
         "clause": "CD-19#import-boundaries",
@@ -77,8 +78,9 @@ const BASE_AUTHORISED_IMPORTS_TEXT = `{
       }
     },
     {
-      "answers": "outside-import-past-a-boundary",
+      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/adapters/clock-source.ts",
+      "outsideParty": "date-fns",
       "carried": {
         "kind": "authorised-location",
         "clause": "CD-19#import-boundaries",
@@ -98,8 +100,9 @@ const WORKING_AUTHORISED_IMPORTS_TEXT = `{
   "version": 2,
   "records": [
     {
-      "answers": "outside-import-past-a-boundary",
+      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/adapters/ids.ts",
+      "outsideParty": "uuid",
       "carried": {
         "kind": "authorised-location",
         "clause": "CD-19#import-boundaries",
@@ -112,8 +115,9 @@ const WORKING_AUTHORISED_IMPORTS_TEXT = `{
       }
     },
     {
-      "answers": "outside-import-past-a-boundary",
+      "answers": "outside-import-past-a-boundary#import-or-require",
       "file": "src/adapters/clock-source.ts",
+      "outsideParty": "date-fns",
       "carried": {
         "kind": "authorised-location",
         "clause": "CD-19#import-boundaries",

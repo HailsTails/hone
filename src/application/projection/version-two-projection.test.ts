@@ -3,27 +3,29 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   RecordKind,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
+import type { CheckedTree } from "../../domain/repository/checked-tree.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
-import type { CheckedTree } from "../run/checked-tree-of.ts";
 import type { NamedSettingsReading } from "../run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../run/version-two-run.ts";
 import { versionTwoProjectionOver } from "./version-two-projection.ts";
 
 const FILE_A = repoPathOf("src/a.ts");
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -54,6 +56,7 @@ const SETTINGS: NamedSettingsReading = {
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "mjs",
   conventions: DEFAULT_CONVENTIONS,
   notes: [],
 };
@@ -62,12 +65,13 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 
 const WRITTEN: ProjectedFile = {
+  kind: "write",
   file: repoPathOf("hone.eslint.mjs"),
   text: "export default [];\n",
 };
@@ -105,7 +109,15 @@ describe("versionTwoProjectionOver", () => {
     const stages = stagesGiving({});
     expect(await versionTwoProjectionOver({ stages })).toEqual({ outcome: "ok", value: [WRITTEN] });
     expect(vi.mocked(stages.projections).mock.calls).toEqual([
-      [{ catalogue: REPORT_CATALOGUE, settings: SETTINGS, records: RECORDS, tree: TREE }],
+      [
+        {
+          catalogue: REPORT_CATALOGUE,
+          settings: SETTINGS,
+          records: RECORDS,
+          tree: TREE,
+          checks: [],
+        },
+      ],
     ]);
   });
 

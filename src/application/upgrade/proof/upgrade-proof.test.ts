@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CheckFinding, Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Check,
   Engine,
@@ -8,9 +8,11 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { PrunableDebt } from "../../../domain/records/debt/prunable-debt.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -29,6 +31,7 @@ import type {
   RecordAnswerOracle,
   FileCarveOutRecord,
 } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { SmoothingCommands } from "../../ports/upgrade/smoothing-commands.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { ProjectionFilesOf } from "./upgrade-plan.ts";
@@ -42,14 +45,14 @@ const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -103,25 +106,31 @@ const LAYERING_CLAUSE = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -139,8 +148,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -196,31 +205,15 @@ const ROOT_PROJECTION: VersionOneProjection = {
 };
 
 const FOUND_PROJECTIONS: VersionOneProjectionsReading = {
+  written: [],
   removed: [],
   outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
 };
 
 const ORPHAN = repoPathOf("old/disciplines.eslint.mjs");
 
-const EMPTY_BEFORE: CheckReport = {
-  excluded: [],
-  notAdopted: [],
-  notRun: [],
-  editions: [],
-  findings: [],
-  exempted: [],
-  uncovered: [],
-  stale: [],
-  forfeited: [],
-  unrecorded: [],
-  doublyHeld: [],
-  invalidRecords: [],
-  unmeasured: [],
-  projectionProblems: [],
-  assessment: [],
-};
-
 const EMPTY_AFTER: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -242,15 +235,6 @@ const EMPTY_AFTER: RunReport = {
   "record-notes": [],
   carried: [],
   symptoms: [],
-};
-
-const LOOP_FINDING: Finding = {
-  clause: LOOPS_CLAUSE,
-  file: SRC_A,
-  anchor: { line: 3, column: 1 },
-  snippet: "the loop line",
-  mechanism: AUDIT,
-  check: "loop-keyword#loops",
 };
 
 const NAMED_LOOP_FINDING: CheckFinding = {
@@ -460,16 +444,53 @@ const ANSWERED: Awaited<ReturnType<RecordAnswerOracle["answer"]>> = {
   ],
 };
 
-const BEFORE_RUN = { outcome: "ok", value: EMPTY_BEFORE } as const;
+const VERSION_ONE_PASSING = {
+  outcome: "ok",
+  value: {
+    excluded: [],
+    notAdopted: [],
+    notRun: [],
+    editions: [],
+    findings: [],
+    exempted: [],
+    uncovered: [],
+    stale: [],
+    forfeited: [],
+    unrecorded: [],
+    doublyHeld: [],
+    invalidRecords: [],
+    unmeasured: [],
+    projectionProblems: [],
+    assessment: [],
+  },
+} as const;
 
-const AFTER_RUN = { outcome: "ok", value: EMPTY_AFTER } as const;
+const AFTER_RUN = { outcome: "ok", value: { report: EMPTY_AFTER, failing: [] } } as const;
+
+const NOTHING_CHANGED = { write: [], remove: [] };
+
+const PRUNED_DEBT: PrunableDebt = {
+  place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 },
+  debt: {
+    kind: "debt",
+    symptom: LOOP_KEYWORD,
+    reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+    file: repoPathOf("src/gone.ts"),
+    holding: { held: "stated" },
+  },
+  reason: "file-gone",
+};
 
 const ROOT_PROJECTION_FILES: Awaited<ReturnType<ProjectionFilesOf>> = {
   outcome: "ok",
-  value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] },
+  value: {
+    entries: [{ ...ROOT_PROJECTION_FILE, kind: "write" }],
+    projections: [ROOT_PROJECTION_FILE],
+  },
 };
 
 const SLICE_REMOVED: VersionOneProjectionsReading = {
+  written: [],
   removed: [ORPHAN],
   outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
 };
@@ -483,6 +504,7 @@ const VERSION_ONE_REPOSITORY: Pick<
   | "trackedPaths"
   | "settingsFormat"
   | "ruleSetLayout"
+  | "smoothing"
 > = {
   reading: READING,
   versionOneFiles: {
@@ -496,6 +518,20 @@ const VERSION_ONE_REPOSITORY: Pick<
   trackedPaths: [],
   settingsFormat: SETTINGS_FORMAT,
   ruleSetLayout: { removed: [], folders: [] },
+  smoothing: {
+    project: vi
+      .fn<SmoothingCommands["project"]>()
+      .mockResolvedValue({ outcome: "ok", value: NOTHING_CHANGED }),
+    removeCarried: vi
+      .fn<SmoothingCommands["removeCarried"]>()
+      .mockResolvedValue({ outcome: "ok", value: { changes: NOTHING_CHANGED, done: [] } }),
+    recordDebt: vi
+      .fn<SmoothingCommands["recordDebt"]>()
+      .mockResolvedValue({ outcome: "ok", value: { changes: NOTHING_CHANGED, done: [] } }),
+    pruneDebt: vi
+      .fn<SmoothingCommands["pruneDebt"]>()
+      .mockResolvedValue({ outcome: "ok", value: { changes: NOTHING_CHANGED, done: [] } }),
+  },
 };
 
 const NOTHING_PATCHED: EffectsApplied = { outcome: "all-applied", settled: [] };
@@ -550,6 +586,8 @@ const ROLLING_BACK = {
   ],
 };
 
+const CREATED_SLICE = absoluteRootOf("/repo/packages/a/disciplines.eslint.mjs");
+
 const NOTHING_TO_RESTORE = { writes: [] };
 
 const REMOVING_VERSION_ONE = {
@@ -582,11 +620,11 @@ const CARRIED_OVER = {
     folders: [VERSION_ONE_RECORDS_FOLDER],
   },
   records: [DEBT_LINE],
-  findings: 0,
+  smoothed: { removedCarried: [], recordedDebt: [], prunedDebt: [], projected: [] },
 };
 
 describe("upgradeProof", () => {
-  it("writes the version 2 files, runs version 2 over what it wrote, finds the two runs equal and removes the version 1 files", async () => {
+  it("writes the version 2 files, smooths them, finds version 2's check passes over what it wrote and removes the version 1 files", async () => {
     await expect(
       upgradeProof({
         ...VERSION_ONE_REPOSITORY,
@@ -608,7 +646,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -619,12 +657,20 @@ describe("upgradeProof", () => {
     ).resolves.toEqual({ outcome: "ok", value: CARRIED_OVER });
   });
 
-  it("asks the oracle about each record, applies the patching, then the writing, runs version 2 over every file it created, then applies the removal, undoing nothing", async () => {
+  it("asks the oracle about each record, applies the patching, then the writes and obsolete projection removal, runs version 2 over every file it created, then applies the removal, undoing nothing", async () => {
+    const obsolete = {
+      kind: "remove-restorable-file",
+      path: absoluteRootOf("/repo/hone.eslint.ts"),
+      original: CONFIG_READ.value,
+    } as const;
     const answer = vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED);
     const apply = vi
       .fn<ProofEffects["apply"]>()
       .mockReturnValueOnce(NOTHING_PATCHED)
-      .mockReturnValueOnce(ALL_WRITTEN)
+      .mockReturnValueOnce({
+        ...ALL_WRITTEN,
+        settled: [...ALL_WRITTEN.settled, { effect: obsolete, outcome: "applied" }],
+      })
       .mockReturnValueOnce(VERSION_ONE_REMOVED);
     const undo = vi.fn<ProofEffects["undo"]>();
     const versionTwo = vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN);
@@ -637,15 +683,27 @@ describe("upgradeProof", () => {
           exists: vi.fn<FileTextPort["exists"]>(),
         },
         entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
-        path: recordsFolderPath(),
+        path: {
+          ...recordsFolderPath(),
+          join: joiningRecordsFolderFiles().mockReturnValueOnce("/repo/hone.eslint.ts"),
+        },
       },
       effects: { apply, undo },
       oracle: { answer },
       runs: {
-        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
         versionTwo,
       },
-      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({
+        outcome: "ok",
+        value: {
+          projections: [ROOT_PROJECTION_FILE],
+          entries: [
+            { ...ROOT_PROJECTION_FILE, kind: "write" },
+            { kind: "remove", file: repoPathOf("hone.eslint.ts") },
+          ],
+        },
+      }),
       versionOneProjectionsOf: vi
         .fn<VersionOneProjectionsOf>()
         .mockResolvedValue(FOUND_PROJECTIONS),
@@ -653,7 +711,7 @@ describe("upgradeProof", () => {
 
     expect([answer.mock.calls, apply.mock.calls, versionTwo.mock.calls, undo.mock.calls]).toEqual([
       [[{ records: [CARVE_OUT] }]],
-      [[PATCHING_NOTHING], [WRITING], [REMOVING_VERSION_ONE]],
+      [[PATCHING_NOTHING], [{ effects: [...WRITING.effects, obsolete] }], [REMOVING_VERSION_ONE]],
       [[{ written: WRITTEN_FILES }]],
       [],
     ]);
@@ -680,7 +738,7 @@ describe("upgradeProof", () => {
       },
       oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
       runs: {
-        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
         versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
       },
       projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -734,7 +792,7 @@ describe("upgradeProof", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -785,7 +843,7 @@ describe("upgradeProof", () => {
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
       runs: {
-        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
         versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
       },
       projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -814,7 +872,10 @@ describe("upgradeProof", () => {
     {
       name: "a repository version 1 already reports uncovered",
       answered: ANSWERED,
-      before: { outcome: "ok", value: { ...EMPTY_BEFORE, uncovered: [LOOPS_CLAUSE] } },
+      before: {
+        outcome: "ok",
+        value: { ...VERSION_ONE_PASSING.value, uncovered: [LOOPS_CLAUSE] },
+      },
       error: { kind: "version-one-uncovered", clauses: [LOOPS_CLAUSE], removedByVersionOne: [] },
       versionOneRuns: [[]],
     },
@@ -835,67 +896,162 @@ describe("upgradeProof", () => {
         outcome: "failed",
         error: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
       },
-      before: BEFORE_RUN,
+      before: VERSION_ONE_PASSING,
       error: {
         kind: "oracle-failed",
         failure: { kind: "version-one-run-failed", detail: "the eslint runner threw" },
+        removedByVersionOne: [],
       },
       versionOneRuns: [],
     },
     {
-      name: "a carve-out that answered nothing",
+      name: "a doubly held pair",
       answered: {
-        outcome: "ok",
-        value: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "nothing" } }],
+        outcome: "failed",
+        error: { kind: "record-doubly-held", clause: "CD-15#loops", file: repoPathOf("src/a.ts") },
       },
-      before: BEFORE_RUN,
+      before: VERSION_ONE_PASSING,
       error: {
-        kind: "plan-refused",
-        refusal: {
-          kind: "mapping-refused",
-          refusals: [
-            {
-              kind: "record-answers-nothing",
-              clause: "CD-15#loops",
-              file: "src/a.ts",
-              credited: "nothing",
-            },
-          ],
+        kind: "oracle-failed",
+        failure: {
+          kind: "record-doubly-held",
+          clause: "CD-15#loops",
+          file: repoPathOf("src/a.ts"),
         },
         removedByVersionOne: [],
       },
       versionOneRuns: [],
     },
   ] as const)(
-    "refuses, before reading the projections or writing anything, $name",
+    "refuses, writing nothing more and undoing what version 1's own project rewrote and created, $name",
     async ({ answered, before, error, versionOneRuns }) => {
       const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce(NOTHING_PATCHED);
       const versionOne = vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(before);
-      const versionOneProjectionsOf = vi.fn<VersionOneProjectionsOf>();
+      const versionTwo = vi.fn<ProofRuns["versionTwo"]>();
+      const undo = vi.fn<ProofEffects["undo"]>().mockReturnValue([]);
+      const answer = vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered);
+      const versionOneProjectionsOf = vi.fn<VersionOneProjectionsOf>().mockResolvedValue({
+        ...FOUND_PROJECTIONS,
+        written: [
+          { kind: "file-replaced", path: VERSION_ONE_PROJECTION, original: "drifted" },
+          { kind: "file-created", path: CREATED_SLICE },
+        ],
+      });
 
-      await expect(
-        upgradeProof({
-          ...VERSION_ONE_REPOSITORY,
-          queries: {
-            fileText: {
-              read: vi.fn<FileTextPort["read"]>(),
-              exists: vi.fn<FileTextPort["exists"]>(),
-            },
-            entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
-            path: recordsFolderPath(),
+      const proven = await upgradeProof({
+        ...VERSION_ONE_REPOSITORY,
+        queries: {
+          fileText: {
+            read: vi.fn<FileTextPort["read"]>(),
+            exists: vi.fn<FileTextPort["exists"]>(),
           },
-          effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
-          oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(answered) },
-          runs: { versionOne, versionTwo: vi.fn<ProofRuns["versionTwo"]>() },
-          projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
-          versionOneProjectionsOf,
-        }),
-      ).resolves.toEqual({ outcome: "failed", error });
-      expect([versionOne.mock.calls, versionOneProjectionsOf.mock.calls, apply.mock.calls]).toEqual(
-        [versionOneRuns, [], [[PATCHING_NOTHING]]],
-      );
+          entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>() },
+          path: recordsFolderPath(),
+        },
+        effects: { apply, undo },
+        oracle: { answer },
+        runs: { versionOne, versionTwo },
+        projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+        versionOneProjectionsOf,
+      });
+
+      expect({
+        proven,
+        versionOneRuns: versionOne.mock.calls,
+        versionTwoRuns: versionTwo.mock.calls,
+        projectedBeforeMeasuring:
+          versionOneProjectionsOf.mock.invocationCallOrder[0] < answer.mock.invocationCallOrder[0],
+        undone: undo.mock.calls,
+        applied: apply.mock.calls,
+      }).toEqual({
+        proven: { outcome: "failed", error },
+        versionOneRuns,
+        versionTwoRuns: [],
+        projectedBeforeMeasuring: true,
+        undone: [
+          [
+            {
+              writes: [
+                { kind: "file-created", path: CREATED_SLICE },
+                { kind: "file-replaced", path: VERSION_ONE_PROJECTION, original: "drifted" },
+              ],
+            },
+          ],
+        ],
+        applied: [[PATCHING_NOTHING]],
+      });
     },
   );
+
+  it.each([
+    {
+      name: "a finding",
+      found: {
+        findings: [
+          {
+            clause: LOOPS_CLAUSE,
+            file: repoPathOf("src/a.ts"),
+            anchor: { line: 3, column: 1 },
+            snippet: "loop at the anchor",
+            mechanism: AUDIT,
+          },
+        ],
+      },
+    },
+    {
+      name: "an unrecorded exception",
+      found: {
+        unrecorded: [
+          {
+            kind: "config-override",
+            clause: LOOPS_CLAUSE,
+            file: repoPathOf("src/a.ts"),
+            mechanism: AUDIT,
+          },
+        ],
+      },
+    },
+    { name: "a stale record", found: { stale: [CARVE_OUT] } },
+  ] as const)("continues to version 2's check over version 1's $name", async ({ found }) => {
+    const versionTwo = vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN);
+
+    const proven = await upgradeProof({
+      ...VERSION_ONE_REPOSITORY,
+      queries: {
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
+        entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
+        path: recordsFolderPath(),
+      },
+      effects: {
+        apply: vi
+          .fn<ProofEffects["apply"]>()
+          .mockReturnValueOnce(NOTHING_PATCHED)
+          .mockReturnValueOnce(ALL_WRITTEN)
+          .mockReturnValueOnce(VERSION_ONE_REMOVED),
+        undo: vi.fn<ProofEffects["undo"]>(),
+      },
+      oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
+      runs: {
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue({
+          outcome: "ok",
+          value: { ...VERSION_ONE_PASSING.value, ...found },
+        }),
+        versionTwo,
+      },
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      versionOneProjectionsOf: vi
+        .fn<VersionOneProjectionsOf>()
+        .mockResolvedValue(FOUND_PROJECTIONS),
+    });
+
+    expect({ proven, checkedOver: versionTwo.mock.calls }).toEqual({
+      proven: { outcome: "ok", value: CARRIED_OVER },
+      checkedOver: [[{ written: WRITTEN_FILES }]],
+    });
+  });
 
   it("refuses, writing nothing and running nothing more, when a file it would write already exists", async () => {
     const kindOf = kindsOfExistingFirstFile();
@@ -916,7 +1072,7 @@ describe("upgradeProof", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo,
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -960,7 +1116,7 @@ describe("upgradeProof", () => {
         effects: { apply, undo },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
             outcome: "failed",
             error: { kind: "run-failed", detail: "config unreadable" },
@@ -986,138 +1142,164 @@ describe("upgradeProof", () => {
     ]);
   });
 
-  it("reports the count of findings both runs agree on, and the records it mapped, when it succeeds", async () => {
-    await expect(
-      upgradeProof({
-        ...VERSION_ONE_REPOSITORY,
-        queries: {
-          fileText: {
-            read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
-            exists: vi.fn<FileTextPort["exists"]>(),
-          },
-          entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
-          path: recordsFolderPath(),
-        },
-        effects: {
-          apply: vi
-            .fn<ProofEffects["apply"]>()
-            .mockReturnValueOnce(NOTHING_PATCHED)
-            .mockReturnValueOnce(ALL_WRITTEN)
-            .mockReturnValueOnce(VERSION_ONE_REMOVED),
-          undo: vi.fn<ProofEffects["undo"]>(),
-        },
-        oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
-        runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue({
-            outcome: "ok",
-            value: { ...EMPTY_BEFORE, findings: [LOOP_FINDING] },
-          }),
-          versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
-            outcome: "ok",
-            value: { ...EMPTY_AFTER, findings: [NAMED_LOOP_FINDING] },
-          }),
-        },
-        projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
-        versionOneProjectionsOf: vi
-          .fn<VersionOneProjectionsOf>()
-          .mockResolvedValue(FOUND_PROJECTIONS),
-      }),
-    ).resolves.toMatchObject({ outcome: "ok", value: { findings: 1, records: [DEBT_LINE] } });
-  });
+  it("smooths what it wrote, runs the check over every file the smoothing left, and reports the records it mapped with what the smoothing did", async () => {
+    const versionTwo = vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN);
+    const pruneDebt = vi.fn<SmoothingCommands["pruneDebt"]>().mockResolvedValue({
+      outcome: "ok",
+      value: { changes: { write: [], remove: [] }, done: [PRUNED_DEBT] },
+    });
 
-  it("names the written files version 2 reports when the two runs do not agree on them", async () => {
-    await expect(
-      upgradeProof({
-        ...VERSION_ONE_REPOSITORY,
-        queries: {
-          fileText: {
-            read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
-            exists: vi.fn<FileTextPort["exists"]>(),
+    const proven = await upgradeProof({
+      ...VERSION_ONE_REPOSITORY,
+      queries: {
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
+        entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
+        path: recordsFolderPath(),
+      },
+      effects: {
+        apply: vi
+          .fn<ProofEffects["apply"]>()
+          .mockReturnValueOnce(NOTHING_PATCHED)
+          .mockReturnValueOnce(ALL_WRITTEN)
+          .mockReturnValueOnce(VERSION_ONE_REMOVED),
+        undo: vi.fn<ProofEffects["undo"]>(),
+      },
+      oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
+      runs: {
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
+        versionTwo,
+      },
+      smoothing: { ...VERSION_ONE_REPOSITORY.smoothing, pruneDebt },
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      versionOneProjectionsOf: vi
+        .fn<VersionOneProjectionsOf>()
+        .mockResolvedValue(FOUND_PROJECTIONS),
+    });
+
+    expect({ proven, checkedOver: versionTwo.mock.calls }).toEqual({
+      proven: {
+        outcome: "ok",
+        value: {
+          ...CARRIED_OVER,
+          smoothed: {
+            removedCarried: [],
+            recordedDebt: [],
+            prunedDebt: [PRUNED_DEBT],
+            projected: [],
           },
-          entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
-          path: recordsFolderPath(),
         },
-        effects: {
-          apply: vi
-            .fn<ProofEffects["apply"]>()
-            .mockReturnValueOnce(NOTHING_PATCHED)
-            .mockReturnValueOnce(ALL_WRITTEN),
-          undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]),
-        },
-        oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
-        runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
-          versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
-            outcome: "ok",
-            value: {
-              ...EMPTY_AFTER,
-              findings: [{ ...NAMED_LOOP_FINDING, file: repoPathOf("hone.eslint.mjs") }],
-            },
-          }),
-        },
-        projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
-        versionOneProjectionsOf: vi
-          .fn<VersionOneProjectionsOf>()
-          .mockResolvedValue(FOUND_PROJECTIONS),
-      }),
-    ).resolves.toMatchObject({
-      outcome: "failed",
-      error: { kind: "differences", writtenReported: ["hone.eslint.mjs"] },
+      },
+      checkedOver: [[{ written: WRITTEN_FILES }]],
     });
   });
 
-  it("undoes what it wrote and names the difference when the two runs do not agree, removing nothing", async () => {
+  it("undoes what it wrote and gives the check's failing lines when version 2's check fails, removing nothing", async () => {
     const apply = vi
       .fn<ProofEffects["apply"]>()
       .mockReturnValueOnce(NOTHING_PATCHED)
       .mockReturnValueOnce(ALL_WRITTEN);
     const undo = vi.fn<ProofEffects["undo"]>().mockReturnValue([]);
 
-    await expect(
-      upgradeProof({
-        ...VERSION_ONE_REPOSITORY,
-        queries: {
-          fileText: {
-            read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
-            exists: vi.fn<FileTextPort["exists"]>(),
-          },
-          entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
-          path: recordsFolderPath(),
+    const proven = await upgradeProof({
+      ...VERSION_ONE_REPOSITORY,
+      queries: {
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
+          exists: vi.fn<FileTextPort["exists"]>(),
         },
-        effects: { apply, undo },
-        oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
-        runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
-          versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
-            outcome: "ok",
-            value: { ...EMPTY_AFTER, findings: [NAMED_LOOP_FINDING] },
-          }),
-        },
-        projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
-        versionOneProjectionsOf: vi
-          .fn<VersionOneProjectionsOf>()
-          .mockResolvedValue(FOUND_PROJECTIONS),
-      }),
-    ).resolves.toEqual({
-      outcome: "failed",
-      error: {
-        kind: "differences",
-        differences: [
-          { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
-          { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
-        ],
-        writtenReported: [],
-        unrestored: [],
-        removedByVersionOne: [],
+        entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
+        path: recordsFolderPath(),
       },
+      effects: { apply, undo },
+      oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
+      runs: {
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
+        versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
+          outcome: "ok",
+          value: {
+            report: { ...EMPTY_AFTER, findings: [NAMED_LOOP_FINDING] },
+            failing: ["findings (1)", "the finding's line"],
+          },
+        }),
+      },
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      versionOneProjectionsOf: vi
+        .fn<VersionOneProjectionsOf>()
+        .mockResolvedValue(FOUND_PROJECTIONS),
     });
-    expect([apply.mock.calls, undo.mock.calls]).toEqual([
-      [[PATCHING_NOTHING], [WRITING]],
-      [[ROLLING_BACK], [NOTHING_TO_RESTORE]],
-    ]);
+
+    expect({ proven, applied: apply.mock.calls, undone: undo.mock.calls }).toEqual({
+      proven: {
+        outcome: "failed",
+        error: {
+          kind: "check-failed",
+          failing: ["findings (1)", "the finding's line"],
+          unrestored: [],
+          removedByVersionOne: [],
+        },
+      },
+      applied: [[PATCHING_NOTHING], [WRITING]],
+      undone: [[ROLLING_BACK], [NOTHING_TO_RESTORE]],
+    });
   });
 
-  it("undoes what it wrote and names each directive, before any difference, when version 2 reports a directive naming no check, removing nothing", async () => {
+  it("undoes what it wrote and stops at a smoothing step that fails, running no later step and no check", async () => {
+    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValue([]);
+    const versionTwo = vi.fn<ProofRuns["versionTwo"]>();
+    const recordDebt = vi.fn<SmoothingCommands["recordDebt"]>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+    });
+
+    const proven = await upgradeProof({
+      ...VERSION_ONE_REPOSITORY,
+      queries: {
+        fileText: {
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue(CONFIG_READ),
+          exists: vi.fn<FileTextPort["exists"]>(),
+        },
+        entryKind: { kindOf: kindsOfEveryPlannedFileNew() },
+        path: recordsFolderPath(),
+      },
+      effects: {
+        apply: vi
+          .fn<ProofEffects["apply"]>()
+          .mockReturnValueOnce(NOTHING_PATCHED)
+          .mockReturnValueOnce(ALL_WRITTEN),
+        undo,
+      },
+      oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
+      runs: {
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
+        versionTwo,
+      },
+      smoothing: { ...VERSION_ONE_REPOSITORY.smoothing, recordDebt },
+      projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
+      versionOneProjectionsOf: vi
+        .fn<VersionOneProjectionsOf>()
+        .mockResolvedValue(FOUND_PROJECTIONS),
+    });
+
+    expect({ proven, checked: versionTwo.mock.calls, undone: undo.mock.calls }).toEqual({
+      proven: {
+        outcome: "failed",
+        error: {
+          kind: "smoothing-failed",
+          step: "record-debt",
+          failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
+          unrestored: [],
+          removedByVersionOne: [],
+        },
+      },
+      checked: [],
+      undone: [[ROLLING_BACK], [NOTHING_TO_RESTORE]],
+    });
+  });
+
+  it("undoes what it wrote and names each directive, before the check's verdict, when version 2 reports a directive naming no check, removing nothing", async () => {
     const undo = vi.fn<ProofEffects["undo"]>().mockReturnValue([]);
 
     await expect(
@@ -1140,21 +1322,24 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
             outcome: "ok",
             value: {
-              ...EMPTY_AFTER,
-              findings: [NAMED_LOOP_FINDING],
-              misnamed: [
-                {
-                  kind: "names-no-check",
-                  ruleId: "hone/no-such-check",
-                  file: repoPathOf("src/a.ts"),
-                  line: 3,
-                  text: "the text",
-                },
-              ],
+              report: {
+                ...EMPTY_AFTER,
+                findings: [NAMED_LOOP_FINDING],
+                misnamed: [
+                  {
+                    kind: "names-no-check",
+                    ruleId: "hone/no-such-check",
+                    file: repoPathOf("src/a.ts"),
+                    line: 3,
+                    text: "the text",
+                  },
+                ],
+              },
+              failing: ["findings (1)"],
             },
           }),
         },
@@ -1245,7 +1430,7 @@ describe("upgradeProof", () => {
           },
           oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
           runs: {
-            versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+            versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
             versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
           },
           projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1297,7 +1482,7 @@ describe("upgradeProof", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1344,7 +1529,7 @@ describe("upgradeProof", () => {
         effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1393,7 +1578,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi
             .fn<ProofRuns["versionTwo"]>()
             .mockRejectedValue(new Error("the runner threw")),
@@ -1419,6 +1604,7 @@ describe("upgradeProof", () => {
     {
       name: "the team config is refused and version 1 changed nothing",
       reading: {
+        written: [],
         removed: [],
         outcome: {
           outcome: "failed",
@@ -1434,6 +1620,7 @@ describe("upgradeProof", () => {
     {
       name: "the team config is refused after version 1 removed a slice",
       reading: {
+        written: [],
         removed: [ORPHAN],
         outcome: {
           outcome: "failed",
@@ -1449,6 +1636,7 @@ describe("upgradeProof", () => {
     {
       name: "version 1 left a slice in place",
       reading: {
+        written: [],
         removed: [ORPHAN],
         outcome: {
           outcome: "failed",
@@ -1467,25 +1655,11 @@ describe("upgradeProof", () => {
     {
       name: "version 1's project fails",
       reading: {
+        written: [],
         removed: [],
         outcome: { outcome: "failed", error: { kind: "project-failed", detail: "disk full" } },
       },
       error: { kind: "version-one-project-failed", detail: "disk full", removedByVersionOne: [] },
-    },
-    {
-      name: "version 1's project rewrote a file",
-      reading: {
-        removed: [ORPHAN],
-        outcome: {
-          outcome: "failed",
-          error: { kind: "project-rewrote", files: [repoPathOf("disciplines.eslint.mjs")] },
-        },
-      },
-      error: {
-        kind: "version-one-project-rewrote",
-        files: ["disciplines.eslint.mjs"],
-        removedByVersionOne: ["old/disciplines.eslint.mjs"],
-      },
     },
   ] as const)(
     "refuses, writing nothing and naming any slice version 1 removed, when $name",
@@ -1506,7 +1680,7 @@ describe("upgradeProof", () => {
           effects: { apply, undo: vi.fn<ProofEffects["undo"]>().mockReturnValue([]) },
           oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
           runs: {
-            versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+            versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
             versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
           },
           projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1539,7 +1713,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1573,13 +1747,16 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({
           outcome: "ok",
           value: {
-            files: [ROOT_PROJECTION_FILE, SLICE_PROJECTION_FILE],
+            entries: [
+              { ...ROOT_PROJECTION_FILE, kind: "write" },
+              { ...SLICE_PROJECTION_FILE, kind: "write" },
+            ],
             projections: [ROOT_PROJECTION_FILE, SLICE_PROJECTION_FILE],
           },
         }),
@@ -1620,7 +1797,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1657,7 +1834,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue({
             outcome: "failed",
             error: { kind: "run-failed", detail: "config unreadable" },
@@ -1699,7 +1876,7 @@ describe("upgradeProof", () => {
         },
         oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
         runs: {
-          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+          versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
           versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
         },
         projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),
@@ -1744,7 +1921,7 @@ describe("upgradeProof", () => {
       effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
       oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue(ANSWERED) },
       runs: {
-        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(BEFORE_RUN),
+        versionOne: vi.fn<ProofRuns["versionOne"]>().mockResolvedValue(VERSION_ONE_PASSING),
         versionTwo: vi.fn<ProofRuns["versionTwo"]>().mockResolvedValue(AFTER_RUN),
       },
       projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue(ROOT_PROJECTION_FILES),

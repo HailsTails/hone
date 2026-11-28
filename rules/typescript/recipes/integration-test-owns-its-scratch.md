@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "tested-where-its-owned"
-  },
+  "serves": [
+    {
+      "rule": "tested-where-its-owned"
+    }
+  ],
   "standing": "accepted",
   "reason": {
     "text": "An ambient setting broke the shared checkout three times; each fix to one instance left the class open.",

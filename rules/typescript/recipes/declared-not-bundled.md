@@ -2,9 +2,11 @@
 
 ```json
 {
-  "serves": {
-    "rule": "shipped-risk-declared"
-  },
+  "serves": [
+    {
+      "rule": "shipped-risk-declared"
+    }
+  ],
   "standing": "proposed",
   "reason": {
     "text": "\"Do we still bundle Zod which means a Zod cve won't show up accurately?\"; \"Otherwise we ship as a peer dependency declaration only.\"",

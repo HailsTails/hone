@@ -1,8 +1,8 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { createPathPort } from "../../node/path-port.ts";
 import {
   type PieceLocation,
   pieceFilesOf,
@@ -10,87 +10,17 @@ import {
   pieceImportRefusals,
 } from "./piece-import-rules.ts";
 
-const requiredEntry = <Entry>(request: {
-  readonly table: Readonly<Record<string, Entry>>;
-  readonly key: string;
-}): Entry => {
-  const entry = request.table[request.key];
-  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
-  return entry;
-};
-
 const INSTALL_ROOT = "packages/hone";
 const PROBE_ROOT = "packages/hone/tests/probe-rule-set";
 const TEAM_ROOT = "tools/acme";
 const TEAM_PIECE_FOLDER = "tools/acme/engines/walker/scratch-file/scratch-files";
 
-const PIECE_FOLDER = "packages/hone/src/infrastructure/engines/walker/CD-14";
 const CLASS_SYNTAX_KEY = "../../src/infrastructure/engines/walker/CD-14/class-syntax.ts";
 const HELPER_KEY = "../../src/infrastructure/engines/walker/CD-14/helper.ts";
 const PROBE_KEY = "../../tests/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
-const PROBE_FOLDER = "../../tests/probe-rule-set/mechanisms/audit/PD-1";
 const TYPE_PACKAGES_KEY = "../../src/infrastructure/engines/walker/runner/piece-type-packages.json";
 
-const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
-  '["packages/hone","src","infrastructure","engines","walker","CD-14"]': PIECE_FOLDER,
-  '["packages/hone","rules","CD-14"]': "packages/hone/rules/CD-14",
-  '["packages/hone","src","infrastructure","engines","walker","runner"]':
-    "packages/hone/src/infrastructure/engines/walker/runner",
-  '["packages/hone","src","domain"]': "packages/hone/src/domain",
-  '["packages/hone","src","application","ports"]': "packages/hone/src/application/ports",
-  '["packages/hone","src","infrastructure","content-files"]':
-    "packages/hone/src/infrastructure/content-files",
-  '["packages/hone","src","infrastructure","discipline-exceptions-folder"]':
-    "packages/hone/src/infrastructure/discipline-exceptions-folder",
-  [`["${PIECE_FOLDER}","./nested/helper.ts"]`]: `${PIECE_FOLDER}/nested/helper.ts`,
-  [`["${PIECE_FOLDER}","../runner/walker-piece.ts"]`]:
-    "packages/hone/src/infrastructure/engines/walker/runner/walker-piece.ts",
-  [`["${PIECE_FOLDER}","../../../../../src/domain/values/result.ts"]`]:
-    "packages/hone/src/domain/values/result.ts",
-  [`["${PIECE_FOLDER}","../../../../../rules/CD-14/discipline.json"]`]:
-    "packages/hone/rules/CD-14/discipline.json",
-  [`["${PIECE_FOLDER}","../../eslint/CD-14/cd14.ts"]`]:
-    "packages/hone/src/infrastructure/engines/eslint/CD-14/cd14.ts",
-  [`["${PIECE_FOLDER}","../CD-15/no-for-of.ts"]`]:
-    "packages/hone/src/infrastructure/engines/walker/CD-15/no-for-of.ts",
-  [`["${PIECE_FOLDER}","../../eslint/runner/eslint-instance.ts"]`]:
-    "packages/hone/src/infrastructure/engines/eslint/runner/eslint-instance.ts",
-  '["../..","src","infrastructure","engines","walker","runner","piece-type-packages.json"]':
-    TYPE_PACKAGES_KEY,
-  [`["${TYPE_PACKAGES_KEY}"]`]: TYPE_PACKAGES_KEY,
-  '["../../tests/probe-rule-set","mechanisms","audit","PD-1"]': PROBE_FOLDER,
-  '["../../tests/probe-rule-set","rules","PD-1"]': "../../tests/probe-rule-set/rules/PD-1",
-  '["../..","src","infrastructure","engines","walker","runner"]':
-    "../../src/infrastructure/engines/walker/runner",
-  '["../..","src","domain"]': "../../src/domain",
-  '["../..","src","application","ports"]': "../../src/application/ports",
-  '["../..","src","infrastructure","content-files"]': "../../src/infrastructure/content-files",
-  '["../..","src","infrastructure","discipline-exceptions-folder"]':
-    "../../src/infrastructure/discipline-exceptions-folder",
-  [`["${PROBE_FOLDER}","../../../../../src/infrastructure/engines/walker/runner/walker-piece.ts"]`]:
-    "../../src/infrastructure/engines/walker/runner/walker-piece.ts",
-  '["tools/acme","engines","walker","scratch-file","scratch-files"]': TEAM_PIECE_FOLDER,
-  [`["${TEAM_PIECE_FOLDER}","../../../../rules/markdown/symptoms/scratch-file.md"]`]:
-    "tools/acme/rules/markdown/symptoms/scratch-file.md",
-};
-
-const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
-  "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts": PIECE_FOLDER,
-  [`${TEAM_PIECE_FOLDER}/scratch-files.ts`]: TEAM_PIECE_FOLDER,
-  [PROBE_KEY]: PROBE_FOLDER,
-};
-
-const path: PathPort = {
-  join: vi.fn<PathPort["join"]>(),
-  relative: vi.fn<PathPort["relative"]>(),
-  joinRepository: ({ segments }) =>
-    requiredEntry({ table: JOINED_REPOSITORY_PATHS, key: JSON.stringify(segments) }),
-  directoryOf: vi.fn<PathPort["directoryOf"]>(),
-  repositoryDirectoryOf: ({ path: filePath }) =>
-    requiredEntry({ table: REPOSITORY_DIRECTORIES, key: filePath }),
-  resolve: vi.fn<PathPort["resolve"]>(),
-  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
-};
+const path = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
 const WALKER_PIECE: PieceLocation = {
   file: "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts",
@@ -175,11 +105,11 @@ describe("pieceFilesOf", () => {
   );
 
   it("refuses a file under a team's engines folder for an engine Hone does not have", () => {
-    const file = "tools/acme/engines/oxlint/scratch-file/scratch-files/scratch-files.ts";
+    const file = "tools/acme/engines/biome/scratch-file/scratch-files/scratch-files.ts";
 
     expect(
       pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [TEAM_ROOT], installRoot: INSTALL_ROOT }),
-    ).toEqual({ outcome: "failed", error: { kind: "unknown-engine", file, engine: "oxlint" } });
+    ).toEqual({ outcome: "failed", error: { kind: "unknown-engine", file, engine: "biome" } });
   });
 
   it.each([
@@ -220,8 +150,8 @@ describe("pieceFilesOf", () => {
     },
   );
 
-  it("refuses a piece folder under a mechanism other than audit or eslint", () => {
-    const file = "packages/hone/src/infrastructure/engines/oxlint/CD-14/class-syntax.ts";
+  it("refuses a piece folder under an unknown mechanism", () => {
+    const file = "packages/hone/src/infrastructure/engines/biome/CD-14/class-syntax.ts";
 
     expect(
       pieceFilesOf({
@@ -231,7 +161,7 @@ describe("pieceFilesOf", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "unknown-mechanism", file, mechanism: "oxlint" },
+      error: { kind: "unknown-mechanism", file, mechanism: "biome" },
     });
   });
 });
@@ -363,7 +293,14 @@ const findingsOver = (request: { readonly typePackageTexts: Readonly<Record<stri
 
 describe("pieceImportFindings", () => {
   it("lists every piece in the sources and each refused import with its file", () => {
-    expect(findingsOver({ typePackageTexts: { [TYPE_PACKAGES_KEY]: '["typescript"]' } })).toEqual({
+    expect(
+      findingsOver({
+        typePackageTexts: {
+          "../../src/infrastructure/engines/oxlint/runner/piece-type-packages.json": "invalid JSON",
+          [TYPE_PACKAGES_KEY]: '["typescript"]',
+        },
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
         pieces: [

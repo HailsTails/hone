@@ -155,6 +155,8 @@ const writeOf = (request: { readonly effect: ProofEffect }): readonly ProofWrite
       return [{ kind: "file-created", path: effect.path }];
     case "replace-file":
       return [{ kind: "file-replaced", path: effect.path, original: effect.original }];
+    case "remove-restorable-file":
+      return [{ kind: "file-removed", path: effect.path, original: effect.original }];
     case "remove-file":
     case "remove-directory-if-empty":
       return [];
@@ -166,9 +168,17 @@ const failureOf = (request: { readonly stopped: StoppedEffect }): ProofWriteFail
   if (outcome === "already-exists") {
     return { kind: "path-already-exists", path: effect.path };
   }
-  return effect.kind === "create-directory"
-    ? { kind: "directory-uncreatable", path: effect.path, detail }
-    : { kind: "unwritable", path: effect.path, detail };
+  switch (effect.kind) {
+    case "create-directory":
+      return { kind: "directory-uncreatable", path: effect.path, detail };
+    case "remove-file":
+    case "remove-restorable-file":
+    case "remove-directory-if-empty":
+      return { kind: "unremovable", path: effect.path, detail };
+    case "create-file":
+    case "replace-file":
+      return { kind: "unwritable", path: effect.path, detail };
+  }
 };
 
 const attemptedReplacementOf = (request: { readonly stopped: StoppedEffect }): ProofWrites =>
@@ -208,13 +218,14 @@ export const writtenProofFiles = (request: {
   readonly effects: ProofEffects;
   readonly files: readonly PlannedFile[];
   readonly replacements: readonly PlannedFile[];
+  readonly following?: readonly ProofEffect[];
 }): Result<ProofWrites, ProofWriteRefusal> => {
   const effects = proofWriteEffectsOf(request);
   if (effects.outcome === "failed") {
     return { outcome: "failed", error: { failure: effects.error, unrestored: [] } };
   }
   const applied = proofWritesAppliedOf({
-    applied: request.effects.apply({ effects: effects.value }),
+    applied: request.effects.apply({ effects: [...effects.value, ...(request.following ?? [])] }),
   });
   return applied.outcome === "written"
     ? { outcome: "ok", value: applied.writes }

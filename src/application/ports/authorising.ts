@@ -7,6 +7,7 @@ import type { OwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 export type AuthoriseRequest = {
   readonly answers: OwnedName;
   readonly file: RepoPath;
+  readonly outsideParty?: string;
   readonly case: string;
   readonly owes: string;
   readonly whys: readonly Why[];

@@ -2,7 +2,7 @@
   "version": 2,
   "ruleSets": {},
   "checks": {
-    "assertion-outside-a-test#assertion-site": "walker",
+    "assertion-outside-a-test-body#assertion-site": "walker",
     "authored-class-or-this#class-keyword": "walker",
     "authored-class-or-this#static-members-only": "eslint",
     "boolean-in-a-signature#boolean-annotation": "walker",
@@ -11,14 +11,14 @@
     "claimed-type#cast-to-any": "walker",
     "claimed-type#non-null-assertions": "eslint",
     "claimed-type#unlisted-cast-site": "walker",
-    "code-or-prose-read-as-text#raw-read": "walker",
+    "code-or-prose-read-as-text-in-a-test#raw-read": "walker",
     "computed-value-in-a-test#test-body": "walker",
     "date-used-directly#clock-sources": "walker",
     "default-on-a-closed-union#default-arm": "walker",
     "double-with-a-body#logic-in-a-passed-function": "walker",
     "double-with-a-body#stub-implementation": "walker",
     "drawer-path#drawer-names": "walker",
-    "export-from-a-test-file#test-file-export": "walker",
+    "export-from-a-test#test-file-export": "walker",
     "failure-shaped-as-success#empty-catch": "walker",
     "inherited-environment-in-a-subprocess#git-spawn-environment": "walker",
     "long-function#function-length": "eslint",
@@ -115,5 +115,6 @@
     "src/infrastructure/engines/eslint/runner/native-exceptions/route-brackets",
     "src/infrastructure/engines/eslint/runner/projection/projection-pair/before",
     "src/operations/prune-debt/prune-debt-answered"
-  ]
+  ],
+  "reportOutput": "actionable"
 }

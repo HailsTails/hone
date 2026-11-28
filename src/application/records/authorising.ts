@@ -14,7 +14,7 @@ import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 export type AuthorisingPorts = {
-  readonly recordsReader: RecordsReader;
+  readonly recordsReader: Pick<RecordsReader, "recordsReadingOf">;
   readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition">;
 };
 
@@ -26,10 +26,11 @@ type Judging = AuthorisingPorts & {
 
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const entryOf = (request: { readonly request: AuthoriseRequest }): RecordAddition["entry"] => {
+const createEntry = (request: { readonly request: AuthoriseRequest }): RecordAddition["entry"] => {
   const {
     answers,
     file,
+    outsideParty,
     case: caseName,
     owes,
     whys,
@@ -41,6 +42,7 @@ const entryOf = (request: { readonly request: AuthoriseRequest }): RecordAdditio
   return {
     answers: answers.name,
     file,
+    ...(outsideParty === undefined ? {} : { outsideParty }),
     case: caseName,
     owes,
     whyChain: { whys, rootCause, rootEvidence, readback, owner },
@@ -122,6 +124,6 @@ export const authorisingOf = (
     recordsEditor: request.recordsEditor,
     documents: request.documents,
     catalogue: request.catalogue,
-    addition: { file: file.value, entry: entryOf({ request: request.request }) },
+    addition: { file: file.value, entry: createEntry({ request: request.request }) },
   });
 };
