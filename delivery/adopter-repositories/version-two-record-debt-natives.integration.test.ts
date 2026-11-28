@@ -108,7 +108,14 @@ const runGit = (request: {
 }): StepRun =>
   commands.run({
     command: "git",
-    arguments: [...GIT_IDENTITY, ...request.arguments],
+    arguments: [
+      "--git-dir",
+      `${request.repo}/.git`,
+      "--work-tree",
+      request.repo,
+      ...GIT_IDENTITY,
+      ...request.arguments,
+    ],
     directory: request.repo,
   });
 
@@ -130,14 +137,13 @@ const writeIn = (request: {
 }) => fileText.write({ path: `${request.repo}/${request.file}`, text: request.text });
 
 const createProjectedBase = ({ repo }: { readonly repo: AbsolutePath }): readonly StepRun[] => [
-  runGit({ repo, arguments: GIT_INIT }),
   runGit({ repo, arguments: GIT_ADD }),
   runHone({ repo, subcommand: "project", options: [] }),
   runGit({ repo, arguments: GIT_ADD }),
   runGit({ repo, arguments: GIT_COMMIT }),
 ];
 
-const BASE_CREATED = [SUCCEEDED, SUCCEEDED, SUCCEEDED, SUCCEEDED, SUCCEEDED];
+const BASE_CREATED = [SUCCEEDED, SUCCEEDED, SUCCEEDED, SUCCEEDED];
 
 const AT_HEAD = ["--base-revision", "HEAD"];
 
@@ -256,6 +262,7 @@ describe("hone record-debt over a repository that inherits a finding, an inline 
     () => {
       const repo = INHERITED_REPO;
       expect(writeInheritedFiles({ repo })).toMatchObject(INHERITED_FILES_WRITTEN);
+      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
       expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
 
       const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
@@ -426,6 +433,7 @@ describe("hone over a repository whose ESLint configuration ignores files that H
     () => {
       const repo = EXCLUDED_REPO;
       expect(writeExcludedFiles({ repo })).toMatchObject(EXCLUDED_FILES_WRITTEN);
+      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
       expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
 
       const checked = runHone({ repo, subcommand: "check", options: [] });
@@ -452,6 +460,7 @@ describe("hone record-debt over a repository whose ESLint configuration ignores 
     () => {
       const repo = HIDDEN_REPO;
       expect(writeHiddenFiles({ repo })).toMatchObject(HIDDEN_FILES_WRITTEN);
+      expect(runGit({ repo, arguments: GIT_INIT })).toMatchObject(SUCCEEDED);
       expect(createProjectedBase({ repo })).toMatchObject(BASE_CREATED);
 
       const inherited = runHone({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
