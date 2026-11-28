@@ -426,6 +426,79 @@ const UNSITED_CONTENT = {
   ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
 };
 
+const HONE_REMEDY_CHECK: CheckAddress = {
+  name: "test-body",
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+};
+const HONE_NARROWING_RECIPE: Recipe = {
+  ...ASSERT_TO_NARROW,
+  sourceFile: "/installed/rules/typescript/recipes/assert-to-narrow.md",
+  examples: [
+    { anchor: "a-ternary", answers: [{ check: HONE_REMEDY_CHECK, form: "a-ternary" }] },
+    { anchor: "an-if", answers: [{ check: HONE_REMEDY_CHECK, form: "branching-with-if" }] },
+  ],
+};
+const HONE_TYPED_ROWS_RECIPE: Recipe = {
+  ...IT_EACH_OVER_TYPED_ROWS,
+  sourceFile: "/installed/rules/typescript/recipes/it-each-over-typed-rows.md",
+  examples: [
+    { anchor: "branching", answers: [{ check: HONE_REMEDY_CHECK, form: "branching-with-if" }] },
+  ],
+};
+const HONE_REMEDY_CATALOGUE: SymptomCatalogue = {
+  ...REPORT_CATALOGUE,
+  checks: [
+    {
+      ...TEST_BODY_CHECK,
+      page: "/installed/rules/typescript/symptoms/branch-in-a-test/test-body.md",
+      forms: ["a-ternary", "branching-with-if"],
+    },
+  ],
+  recipes: [HONE_NARROWING_RECIPE, HONE_TYPED_ROWS_RECIPE],
+};
+
+const ACME_REMEDY_RULE_SET = { name: ruleSetNameOf("acme") };
+const ACME_REMEDY_SYMPTOM: Symptom = {
+  ...BRANCH_IN_A_TEST,
+  ruleSet: ACME_REMEDY_RULE_SET,
+  sourceFile: "/repo/team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+  recipes: [],
+};
+const ACME_REMEDY_CHECK: Check = {
+  name: "test-body",
+  symptom: { ruleSet: ACME_REMEDY_RULE_SET, name: "branch-in-a-test" },
+  page: "/repo/team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+  engines: [WALKER],
+  forms: ["branching-with-if"],
+  findingSpecifics: [],
+};
+const ACME_REMEDY_RECIPE: Recipe = {
+  ...IT_EACH_OVER_TYPED_ROWS,
+  ruleSet: ACME_REMEDY_RULE_SET,
+  sourceFile: "/repo/team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+  examples: [
+    {
+      anchor: "branching",
+      answers: [
+        {
+          check: {
+            name: "test-body",
+            symptom: { ruleSet: ACME_REMEDY_RULE_SET, name: "branch-in-a-test" },
+          },
+          form: "branching-with-if",
+        },
+      ],
+    },
+  ],
+};
+
+const ACME_REMEDY_CATALOGUE: SymptomCatalogue = {
+  ...REPORT_CATALOGUE,
+  symptoms: [ACME_REMEDY_SYMPTOM],
+  checks: [ACME_REMEDY_CHECK],
+  recipes: [ACME_REMEDY_RECIPE],
+};
+
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
     expect(
@@ -456,35 +529,6 @@ describe("findingLine", () => {
   });
 
   it("names after a Hone finding's fix each Hone example of its form, and no other form's", () => {
-    const check: CheckAddress = {
-      name: "test-body",
-      symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-    };
-    const narrowing: Recipe = {
-      ...ASSERT_TO_NARROW,
-      sourceFile: "/installed/rules/typescript/recipes/assert-to-narrow.md",
-      examples: [
-        { anchor: "a-ternary", answers: [{ check, form: "a-ternary" }] },
-        { anchor: "an-if", answers: [{ check, form: "branching-with-if" }] },
-      ],
-    };
-    const typedRows: Recipe = {
-      ...IT_EACH_OVER_TYPED_ROWS,
-      sourceFile: "/installed/rules/typescript/recipes/it-each-over-typed-rows.md",
-      examples: [{ anchor: "branching", answers: [{ check, form: "branching-with-if" }] }],
-    };
-    const catalogue: SymptomCatalogue = {
-      ...REPORT_CATALOGUE,
-      checks: [
-        {
-          ...TEST_BODY_CHECK,
-          page: "/installed/rules/typescript/symptoms/branch-in-a-test/test-body.md",
-          forms: ["a-ternary", "branching-with-if"],
-        },
-      ],
-      recipes: [narrowing, typedRows],
-    };
-
     const showPage = vi
       .fn<ShownPathOf>()
       .mockReturnValueOnce(SYMPTOM_PAGE)
@@ -499,10 +543,10 @@ describe("findingLine", () => {
       );
 
     const line = findingLine({
-      catalogue,
+      catalogue: HONE_REMEDY_CATALOGUE,
       content: {
-        ...createRuleContent({ catalogues: [catalogue] }),
-        ...createCheckPages({ catalogues: [catalogue] }),
+        ...createRuleContent({ catalogues: [HONE_REMEDY_CATALOGUE] }),
+        ...createCheckPages({ catalogues: [HONE_REMEDY_CATALOGUE] }),
       },
       finding: BRANCH_FINDING,
       symptomPage: "/installed/rules/typescript/symptoms.md",
@@ -576,45 +620,6 @@ describe("findingLine", () => {
   });
 
   it("names after a team finding's fix the team's example by its own file", () => {
-    const acme = { name: ruleSetNameOf("acme") };
-    const symptom: Symptom = {
-      ...BRANCH_IN_A_TEST,
-      ruleSet: acme,
-      sourceFile: "/repo/team-rules/rules/typescript/symptoms/branch-in-a-test.md",
-      recipes: [],
-    };
-    const check: Check = {
-      name: "test-body",
-      symptom: { ruleSet: acme, name: "branch-in-a-test" },
-      page: "/repo/team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
-      engines: [WALKER],
-      forms: ["branching-with-if"],
-      findingSpecifics: [],
-    };
-    const recipe: Recipe = {
-      ...IT_EACH_OVER_TYPED_ROWS,
-      ruleSet: acme,
-      sourceFile: "/repo/team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
-      examples: [
-        {
-          anchor: "branching",
-          answers: [
-            {
-              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
-              form: "branching-with-if",
-            },
-          ],
-        },
-      ],
-    };
-
-    const catalogue: SymptomCatalogue = {
-      ...REPORT_CATALOGUE,
-      symptoms: [symptom],
-      checks: [check],
-      recipes: [recipe],
-    };
-
     const showPage = vi
       .fn<ShownPathOf>()
       .mockReturnValueOnce("team-rules/rules/typescript/symptoms/branch-in-a-test.md")
@@ -622,12 +627,12 @@ describe("findingLine", () => {
       .mockReturnValueOnce("team-rules/rules/typescript/recipes/it-each-over-typed-rows.md");
 
     const line = findingLine({
-      catalogue,
+      catalogue: ACME_REMEDY_CATALOGUE,
       content: {
-        ...createRuleContent({ catalogues: [catalogue] }),
-        ...createCheckPages({ catalogues: [catalogue] }),
+        ...createRuleContent({ catalogues: [ACME_REMEDY_CATALOGUE] }),
+        ...createCheckPages({ catalogues: [ACME_REMEDY_CATALOGUE] }),
       },
-      finding: { ...BRANCH_FINDING, ruleSet: symptom.ruleSet },
+      finding: { ...BRANCH_FINDING, ruleSet: ACME_REMEDY_RULE_SET },
       symptomPage: SYMPTOM_PAGE,
       showPage,
     });
