@@ -68,6 +68,7 @@ describe("createFlaggedFormsPort", () => {
         ],
         nativeExceptions: [],
         measured: [],
+        inapplicable: [],
       },
     });
     const createRunner = vi.fn<CreateBlockRunner>().mockReturnValue({ run });

@@ -91,6 +91,7 @@ describe("test-file exports", () => {
         ],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -134,6 +135,7 @@ describe("test-file exports", () => {
         hits: [{ file, check: BINDING.address, anchor: { line: 1, column: 0 }, snippet: "export" }],
         nativeExceptions: [],
         applicable: [BINDING.address],
+        inapplicable: [],
       },
     });
   });
@@ -175,7 +177,7 @@ describe("test-file exports", () => {
 
       expect(observed).toEqual({
         outcome: "ok",
-        value: { hits: [], nativeExceptions: [], applicable: [] },
+        value: { hits: [], nativeExceptions: [], applicable: [], inapplicable: [BINDING.address] },
       });
     },
   );
@@ -215,7 +217,7 @@ describe("test-file exports", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address] },
+      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address], inapplicable: [] },
     });
   });
 
@@ -254,7 +256,7 @@ describe("test-file exports", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [] },
+      value: { hits: [], nativeExceptions: [], applicable: [], inapplicable: [BINDING.address] },
     });
   });
 
@@ -294,7 +296,7 @@ describe("test-file exports", () => {
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address] },
+      value: { hits: [], nativeExceptions: [], applicable: [BINDING.address], inapplicable: [] },
     });
   });
 });

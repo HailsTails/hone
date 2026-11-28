@@ -1,13 +1,13 @@
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
+import type { CheckForfeiture, ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
 import type { ReportOutput } from "../../../domain/settings/report-output.ts";
 
 export type CheckArguments<Output extends string> = {
   readonly repo: string;
   readonly baseRevision: string | undefined;
   readonly reportOutput: Output | undefined;
-  readonly forfeiture: ForfeitureAssessment | undefined;
+  readonly forfeiture: CheckForfeiture | undefined;
 };
 
 export type PruneDebtArguments = {

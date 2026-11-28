@@ -845,7 +845,7 @@ describe("recordOf, authorised locations", () => {
 describe("recordOf, a record naming one check of its symptom", () => {
   const DEBT_ON_CLAIMED_TYPE_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-  it("reads debt on <symptom>#<check> as reaching that check, filed in its symptom's file", () => {
+  it("reads a counted debt on <symptom>#<check> in its symptom's file", () => {
     expect(
       recordOf({
         symptoms: [CLAIMED_TYPE],
@@ -856,7 +856,11 @@ describe("recordOf, a record naming one check of its symptom", () => {
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
         filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
-        entry: { answers: "claimed-type#cast-expressions", file: "src/adapters/stripe-webhook.ts" },
+        entry: {
+          answers: "claimed-type#cast-expressions",
+          file: "src/adapters/stripe-webhook.ts",
+          findings: 2,
+        },
       }),
     ).toEqual({
       outcome: "ok",
@@ -871,6 +875,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
           },
         },
         file: "src/adapters/stripe-webhook.ts",
+        findings: 2,
         holding: { held: "stated" },
       },
     });
@@ -1287,52 +1292,55 @@ describe("recordOf, carried records", () => {
 });
 
 describe("recordOf, an authorised location's outside party", () => {
+  const OUTSIDE_IMPORT_SYMPTOM: Symptom = {
+    ruleSet: TOOL_RULE_SET,
+    name: "outside-import-past-a-boundary",
+    title: "Outside import past a boundary",
+    seen: "A package imported outside its adapter.",
+    mayIndicate: [],
+    breachUsuallySits: "in the importing file",
+    recipes: [],
+    correctUses: [
+      {
+        situation: "the adapter for that outside party",
+        kind: AUTHORISED_LOCATION_KIND,
+        binding: "check-file-and-outside-party",
+      },
+    ],
+  };
+  const OUTSIDE_IMPORT_CHECK: Check = {
+    name: "import-or-require",
+    symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
+    page: "outside-import-past-a-boundary/import-or-require.md",
+    engines: [],
+    forms: [],
+    findingSpecifics: ["outside-party"],
+  };
+
   it.each<BoundPartyRow>([
     { outsideParty: "zod", party: { kind: "package", dependency: "zod" } },
     { outsideParty: "@scope/pkg", party: { kind: "package", dependency: "@scope/pkg" } },
     { outsideParty: "node:fs", party: { kind: "scheme-module", specifier: "node:fs" } },
   ])("reads a stated record bound to $outsideParty", ({ outsideParty, party }) => {
-    const outsideImportPastABoundary: Symptom = {
-      ruleSet: TOOL_RULE_SET,
-      name: "outside-import-past-a-boundary",
-      title: "Outside import past a boundary",
-      seen: "A package imported outside its adapter.",
-      mayIndicate: [],
-      breachUsuallySits: "in the importing file",
+    const request: Parameters<typeof recordOf>[0] = {
+      symptoms: [OUTSIDE_IMPORT_SYMPTOM],
+      checks: [OUTSIDE_IMPORT_CHECK],
       recipes: [],
-      correctUses: [
-        {
-          situation: "the adapter for that outside party",
-          kind: AUTHORISED_LOCATION_KIND,
-          binding: "check-file-and-outside-party",
-        },
-      ],
+      cases: [GIVES_A_VALUE_ITS_TYPE],
+      namedBans: [],
+      base: UNMEASURED,
+      file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+      filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+      entry: {
+        ...STATED_AUTHORISED_LOCATION,
+        answers: "outside-import-past-a-boundary#import-or-require",
+        outsideParty,
+      },
     };
-    const importCheck: Check = {
-      name: "import-or-require",
-      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
-      page: "outside-import-past-a-boundary/import-or-require.md",
-      engines: [],
-      forms: [],
-      findingSpecifics: ["outside-party"],
-    };
-    expect(
-      recordOf({
-        symptoms: [outsideImportPastABoundary],
-        checks: [importCheck],
-        recipes: [],
-        cases: [GIVES_A_VALUE_ITS_TYPE],
-        namedBans: [],
-        base: UNMEASURED,
-        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
-        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
-        entry: {
-          ...STATED_AUTHORISED_LOCATION,
-          answers: "outside-import-past-a-boundary#import-or-require",
-          outsideParty,
-        },
-      }),
-    ).toEqual({
+
+    const location = recordOf(request);
+
+    expect(location).toEqual({
       outcome: "ok",
       value: {
         kind: "authorised-location",
@@ -1360,47 +1368,25 @@ describe("recordOf, an authorised location's outside party", () => {
   });
 
   it("reads a carried record bound to a whole scheme", () => {
-    const outsideImportPastABoundary: Symptom = {
-      ruleSet: TOOL_RULE_SET,
-      name: "outside-import-past-a-boundary",
-      title: "Outside import past a boundary",
-      seen: "A package imported outside its adapter.",
-      mayIndicate: [],
-      breachUsuallySits: "in the importing file",
+    const request: Parameters<typeof recordOf>[0] = {
+      symptoms: [OUTSIDE_IMPORT_SYMPTOM],
+      checks: [OUTSIDE_IMPORT_CHECK],
       recipes: [],
-      correctUses: [
-        {
-          situation: "the adapter for that outside party",
-          kind: AUTHORISED_LOCATION_KIND,
-          binding: "check-file-and-outside-party",
-        },
-      ],
+      cases: [],
+      namedBans: [],
+      base: UNMEASURED,
+      file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
+      filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+      entry: {
+        ...CARRIED_AUTHORISED_LOCATION,
+        answers: "outside-import-past-a-boundary#import-or-require",
+        outsideParty: "node:",
+      },
     };
-    const importCheck: Check = {
-      name: "import-or-require",
-      symptom: { ruleSet: TOOL_RULE_SET, name: "outside-import-past-a-boundary" },
-      page: "outside-import-past-a-boundary/import-or-require.md",
-      engines: [],
-      forms: [],
-      findingSpecifics: ["outside-party"],
-    };
-    expect(
-      recordOf({
-        symptoms: [outsideImportPastABoundary],
-        checks: [importCheck],
-        recipes: [],
-        cases: [],
-        namedBans: [],
-        base: UNMEASURED,
-        file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
-        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
-        entry: {
-          ...CARRIED_AUTHORISED_LOCATION,
-          answers: "outside-import-past-a-boundary#import-or-require",
-          outsideParty: "node:",
-        },
-      }),
-    ).toEqual({
+
+    const location = recordOf(request);
+
+    expect(location).toEqual({
       outcome: "ok",
       value: {
         kind: "authorised-location",
@@ -1584,50 +1570,53 @@ describe("recordOf, an authorised location's outside party", () => {
     });
   });
 
+  const NAMING_SYMPTOM: Symptom = {
+    ruleSet: TOOL_RULE_SET,
+    name: "name-off-its-casing",
+    title: "Name off its casing",
+    seen: "A name in another casing.",
+    mayIndicate: [],
+    breachUsuallySits: "in the unit",
+    recipes: [],
+    correctUses: [
+      {
+        situation: "an outside contract names it",
+        kind: AUTHORISED_LOCATION_KIND,
+        binding: "check-and-file",
+      },
+    ],
+  };
+  const NAMING_CHECK: Check = {
+    name: "naming-convention",
+    symptom: { ruleSet: TOOL_RULE_SET, name: "name-off-its-casing" },
+    page: "name-off-its-casing/naming-convention.md",
+    engines: [],
+    forms: [],
+    findingSpecifics: [],
+  };
+
   it("reads Hone's own record on git-port.test.ts as bound to its check and file", () => {
-    const nameOffItsCasing: Symptom = {
-      ruleSet: TOOL_RULE_SET,
-      name: "name-off-its-casing",
-      title: "Name off its casing",
-      seen: "A name in another casing.",
-      mayIndicate: [],
-      breachUsuallySits: "in the unit",
+    const request: Parameters<typeof recordOf>[0] = {
+      symptoms: [NAMING_SYMPTOM],
+      checks: [NAMING_CHECK],
       recipes: [],
-      correctUses: [
-        {
-          situation: "an outside contract names it",
-          kind: AUTHORISED_LOCATION_KIND,
-          binding: "check-and-file",
-        },
-      ],
+      cases: [GIVES_A_VALUE_ITS_TYPE],
+      namedBans: [],
+      base: UNMEASURED,
+      file: repoPathOf("hone-records/authorised-locations/name-off-its-casing.json"),
+      filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
+      entry: {
+        answers: "name-off-its-casing#naming-convention",
+        file: "src/infrastructure/git/git-port.test.ts",
+        case: "gives-a-value-its-type",
+        owes: "declared-not-asserted",
+        whyChain: WHY_CHAIN,
+      },
     };
-    const namingCheck: Check = {
-      name: "naming-convention",
-      symptom: { ruleSet: TOOL_RULE_SET, name: "name-off-its-casing" },
-      page: "name-off-its-casing/naming-convention.md",
-      engines: [],
-      forms: [],
-      findingSpecifics: [],
-    };
-    expect(
-      recordOf({
-        symptoms: [nameOffItsCasing],
-        checks: [namingCheck],
-        recipes: [],
-        cases: [GIVES_A_VALUE_ITS_TYPE],
-        namedBans: [],
-        base: UNMEASURED,
-        file: repoPathOf("hone-records/authorised-locations/name-off-its-casing.json"),
-        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
-        entry: {
-          answers: "name-off-its-casing#naming-convention",
-          file: "src/infrastructure/git/git-port.test.ts",
-          case: "gives-a-value-its-type",
-          owes: "declared-not-asserted",
-          whyChain: WHY_CHAIN,
-        },
-      }),
-    ).toEqual({
+
+    const location = recordOf(request);
+
+    expect(location).toEqual({
       outcome: "ok",
       value: {
         kind: "authorised-location",

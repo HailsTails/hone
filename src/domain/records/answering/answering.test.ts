@@ -30,7 +30,9 @@ import type { RunMeasurement } from "../measurement/measured-at.ts";
 import type { WhyChain } from "../why-chain.ts";
 import {
   type Answering,
+  answerCountedFindings,
   answerFindings,
+  filterFindingsForDebtComparison,
   type RaisedFinding,
   type StaleReason,
   type StaleRecord,
@@ -479,6 +481,8 @@ const creditedNothing = (placed: PlacedRecord): StaleRecord =>
   staleFor({ placed, reason: "credited-nothing" });
 
 const NOTHING_ANSWERED = {
+  judged: "touched-debt",
+  unmeasured: [],
   findings: [],
   answered: [],
   held: [],
@@ -918,9 +922,15 @@ describe("answerFindings, forfeit", () => {
     });
   });
 
-  it.each([{ touched: UNMEASURED }, { touched: ELSEWHERE }])(
+  it.each([
+    {
+      touched: UNMEASURED,
+      unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
+    },
+    { touched: ELSEWHERE, unmeasured: [] },
+  ])(
     "forfeits nothing when the touched set is measured $touched.measured, so the debt still answers",
-    ({ touched }) => {
+    ({ touched, unmeasured }) => {
       expect(
         answerFindings({
           catalogue: CATALOGUE,
@@ -935,6 +945,7 @@ describe("answerFindings, forfeit", () => {
         outcome: "ok",
         value: {
           ...NOTHING_ANSWERED,
+          unmeasured,
           answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
         },
       });
@@ -2186,4 +2197,117 @@ describe("answerFindings, what the runs measured", () => {
       }),
     ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
   });
+});
+
+it("retains touched debt when a finding comparison judges it", () => {
+  const request = {
+    catalogue: CATALOGUE,
+    content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
+    records: [DEBT_ON_CLASS_IN_A],
+    findings: [unreported(NO_CLASS_IN_A)],
+    touched: FILE_A_TOUCHED,
+    runs: [],
+    measurements: { runs: [], tracked: [], excluded: [] },
+    readComparison: () => ({
+      base: {
+        measured: "yes",
+        placements: [DEBT_ON_CLASS_IN_A],
+      },
+      ruleSets: ["hone"],
+      coverage: { kind: "scoped", pairs: [], inapplicable: [] },
+      measured: [],
+      exceptions: [],
+      projection: "current",
+    }),
+  } satisfies Parameters<typeof answerCountedFindings>[0];
+
+  const answered = answerCountedFindings(request);
+
+  expect(answered).toMatchObject({
+    outcome: "ok",
+    value: {
+      judged: "counted-debt",
+      unmeasured: [],
+      forfeited: [],
+      answered: [{ finding: NO_CLASS_IN_A }],
+      debtComparison: { issues: [{ kind: "base-unavailable" }] },
+    },
+  });
+});
+
+it("keeps findings reached only by a proposed broader outside-party location in the debt count", () => {
+  const fs = { ...UUID_IMPORT_IN_IDS, importSpecifier: "node:fs" };
+  const path = { ...UUID_IMPORT_IN_IDS, importSpecifier: "node:path" };
+  const location: AuthorisedLocation = {
+    ...CLASS_LOCATION_IN_A,
+    file: IDS_ADAPTER,
+    symptom: OUTSIDE_IMPORT,
+    reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+  };
+  const fromLanding: PlacedRecord = {
+    ...LOCATED_UUID_IN_IDS,
+    record: {
+      ...location,
+      holding: {
+        ...location.holding,
+        binding: {
+          binds: "check-file-and-outside-party",
+          outsideParty: { kind: "scheme-module", specifier: "node:fs" },
+        },
+      },
+    },
+  };
+  const fromHead: PlacedRecord = {
+    ...LOCATED_UUID_IN_IDS,
+    record: {
+      ...location,
+      holding: {
+        ...location.holding,
+        binding: {
+          binds: "check-file-and-outside-party",
+          outsideParty: { kind: "scheme-module", specifier: "node:path" },
+        },
+      },
+    },
+  };
+  const content = { symptoms: new Map([["outside-import-past-a-boundary", { recipes: [] }]]) };
+  const findings = [
+    importing({ finding: fs, specifier: fs.importSpecifier }),
+    importing({ finding: path, specifier: path.importSpecifier }),
+  ];
+
+  const compared = filterFindingsForDebtComparison({
+    catalogue: CATALOGUE,
+    content,
+    findings,
+    answered: [
+      { finding: fs, by: [fromLanding] },
+      { finding: path, by: [fromHead] },
+    ],
+    landing: [fromLanding],
+  });
+
+  expect(compared).toEqual({ outcome: "ok", value: [path] });
+});
+
+it.each([
+  { landing: [], answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }] },
+  { landing: [LOCATED_CLASS_IN_A], answered: [] },
+  {
+    landing: [CARRIED_CLASS_IN_A],
+    answered: [{ finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+  },
+])("counts head-only, removed and unjudged allowances as debt %#", ({ landing, answered }) => {
+  const findings = [unreported(NO_CLASS_IN_A)];
+  const content = { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) };
+
+  const compared = filterFindingsForDebtComparison({
+    catalogue: CATALOGUE,
+    content,
+    findings,
+    landing,
+    answered,
+  });
+
+  expect(compared).toEqual({ outcome: "ok", value: [NO_CLASS_IN_A] });
 });

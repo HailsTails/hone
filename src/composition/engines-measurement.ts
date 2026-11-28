@@ -3,7 +3,7 @@ import { moduleExtensionOf } from "../application/ports/host/module-extension.ts
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { ReplyPort } from "../application/ports/host/reply-port.ts";
 import type { RequestPort } from "../application/ports/host/request-port.ts";
-import { measureEngines } from "../application/run/version-two-run.ts";
+import { measureEngines, versionTwoInputsOf } from "../application/run/version-two-run.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import type { Result } from "../domain/result.ts";
 import {
@@ -25,8 +25,11 @@ const measureInProcess = async (request: {
       moduleExtension: moduleExtensionOf({ moduleUrl: request.moduleUrl }),
     },
   });
+  const inputs = versionTwoInputsOf({ stages });
+  if (inputs.outcome === "failed") return inputs;
   const measured = await measureEngines({
-    stages: { ...stages, tree: () => ({ outcome: "ok", value: tree }) },
+    inputs: inputs.value,
+    stages: { engines: stages.engines, tree: () => ({ outcome: "ok", value: tree }) },
   });
   return measured.outcome === "failed" ? measured : { outcome: "ok", value: measured.value.runs };
 };

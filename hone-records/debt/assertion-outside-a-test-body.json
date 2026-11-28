@@ -39,10 +39,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/command-line/installation/install-root.test.ts"
     },
     {
@@ -107,10 +103,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
     },
     {
@@ -124,10 +116,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/cast-expressions.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/piece.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
@@ -187,15 +175,7 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/moved-imports.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
@@ -252,10 +232,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",

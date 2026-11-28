@@ -20,21 +20,25 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
       .mockReturnValue({ outcome: "ok", value: [ORDER_FILE] });
     expect(
       touchedSetUnder({
-        forfeiture: "this-run",
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: { changedSince },
         renamed: { measured: "yes", renamed: new Map() },
       }),
     ).toEqual({ measured: "yes", paths: new Set([ORDER_FILE]) });
-    expect(changedSince).toHaveBeenCalledWith({ repoRoot: REPO_ROOT, baseRevision: "origin/main" });
+    expect(changedSince).toHaveBeenCalledWith({
+      repoRoot: REPO_ROOT,
+      baseRevision: "origin/main",
+      baseScope: "merge-base",
+    });
   });
 
   it("measures nothing when another run assesses forfeiture", () => {
     const changedSince = vi.fn<GitPort["changedSince"]>();
     expect(
       touchedSetUnder({
-        forfeiture: "elsewhere",
+        baseScope: "elsewhere",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: { changedSince },
@@ -47,7 +51,7 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
   it("leaves out a file only moved since the base, keeping one moved and edited", () => {
     expect(
       touchedSetUnder({
-        forfeiture: "this-run",
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: {
@@ -69,7 +73,7 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
   it("is unmeasured, carrying git's message, when the renames since the base are unmeasured", () => {
     expect(
       touchedSetUnder({
-        forfeiture: "this-run",
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: "origin/main",
         git: {
@@ -91,12 +95,35 @@ describe("the change a run measures to assess forfeiture, by the forfeiture sett
   it("is unmeasured with no base revision given, whatever the renames", () => {
     expect(
       touchedSetUnder({
-        forfeiture: "this-run",
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: undefined,
         git: { changedSince: vi.fn<GitPort["changedSince"]>() },
         renamed: { measured: "no", base: { state: "not-given" } },
       }),
     ).toEqual({ measured: "no", base: { state: "not-given" } });
+  });
+});
+
+it("keeps the verified landing after dropping an unchanged move", () => {
+  const touched = touchedSetUnder({
+    repoRoot: REPO_ROOT,
+    baseRevision: "pinned",
+    baseScope: "pinned-ancestor",
+    git: {
+      changedSince: vi
+        .fn<GitPort["changedSince"]>()
+        .mockReturnValue({ outcome: "ok", value: [MOVED_BASKET, ORDER_FILE] }),
+    },
+    renamed: {
+      measured: "yes",
+      renamed: new Map([[MOVED_BASKET, { basePath: BASKET, content: "unchanged" }]]),
+    },
+  });
+
+  expect(touched).toEqual({
+    measured: "pinned-ancestor",
+    paths: new Set([ORDER_FILE]),
+    landingRevision: "pinned",
   });
 });

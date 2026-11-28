@@ -5,11 +5,13 @@ import type { NamedEngineRunRequest } from "../../../../application/ports/engine
 import type { RunnerModuleOf } from "../../../../application/ports/engine/runner-location.ts";
 import type { RunnerCall } from "../../../../application/ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import type { CheckedVersionOneProjection } from "../../../../application/ports/upgrade/version-one-measurement.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { createPathPort } from "../../../node/path-port.ts";
+import type { NamedChecksRunReport } from "../checks/checks-runner-types.ts";
 import {
   createNamedEnginePort,
   createRunnerLoader,
@@ -138,6 +140,7 @@ describe("createNamedEnginePort", () => {
 
   it("passes only the engine's named bindings and accepts a walker measurement on a tracked config file", async () => {
     const measured = [{ check: BINDING.address, file: CONFIG }];
+    const inapplicable = [{ check: BINDING.address, file: FILE_A }];
     const report = {
       hits: [],
       nativeExceptions: [],
@@ -148,7 +151,10 @@ describe("createNamedEnginePort", () => {
       unprojectedFolders: [],
       misnamedRuleIds: [],
     };
-    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
+    const run = vi.fn<RunnerCall>().mockResolvedValue({
+      outcome: "ok",
+      value: { ...report, inapplicable },
+    });
     const runner = {
       fileScope: "tracked",
       projectedKinds: [],
@@ -167,7 +173,13 @@ describe("createNamedEnginePort", () => {
 
     expect(measuredRun).toEqual({
       outcome: "ok",
-      value: { ...report, mechanism: "walker", coverableKinds: [] },
+      value: {
+        ...report,
+        mechanism: "walker",
+        coverableKinds: [],
+        coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable },
+        comparedOutputs: [],
+      },
     });
     expect(runnerModuleOf).toHaveBeenCalledExactlyOnceWith(LOCATION);
     expect(run).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
@@ -183,6 +195,7 @@ describe("createNamedEnginePort", () => {
           hits: [],
           nativeExceptions: [],
           measured: [{ check: BINDING.address, file: CONFIG }],
+          inapplicable: [],
           projection: "none",
           slices: [],
           nestedConfigurations: [],
@@ -221,6 +234,7 @@ describe("createNamedEnginePort", () => {
           hits: [],
           nativeExceptions: [],
           measured: [],
+          inapplicable: [],
           projection: "none",
           slices: [{ file: "packages/example/disciplines.eslint.mjs", state: "not-applied" }],
           nestedConfigurations: [],
@@ -262,6 +276,7 @@ describe("createNamedEnginePort", () => {
       hits: [],
       nativeExceptions: [],
       measured: [{ check: "leftover-debugging#debug-statement", file: FILE_A }],
+      inapplicable: [],
       projection: "none",
       slices: [],
       nestedConfigurations: [],
@@ -314,6 +329,7 @@ describe("createNamedEnginePort", () => {
           ],
           nativeExceptions: [],
           measured: [],
+          inapplicable: [],
           projection: "none",
           slices: [],
           nestedConfigurations: [],
@@ -413,6 +429,38 @@ describe("createNamedEnginePort", () => {
     expect(project).toHaveBeenCalledExactlyOnceWith({ ...REQUEST, bindings: [BINDING] });
   });
 
+  it("keeps the declared ESLint scope when no check is inapplicable", async () => {
+    const report: NamedChecksRunReport = {
+      projection: "current",
+      slices: [],
+      measured: [],
+      inapplicable: [],
+      hits: [],
+      nativeExceptions: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+    };
+    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
+    const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
+      outcome: "ok",
+      value: { namedChecksRunner: { ...namedRunner(), run } },
+    });
+    const engine = await createNamedEnginePort({ runnerModuleOf }).load({
+      ...LOCATION,
+      mechanism: "eslint",
+      projectionKind: "ts",
+    });
+    assert(engine.outcome === "ok");
+
+    const scopedRun = await engine.value.run(REQUEST);
+
+    expect(scopedRun).toMatchObject({
+      outcome: "ok",
+      value: { coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] } },
+    });
+  });
+
   it("passes the required projection kind only into the named ESLint runner request", async () => {
     const project = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: [] });
     const runnerModuleOf = vi.fn<RunnerModuleOf>().mockResolvedValue({
@@ -455,30 +503,33 @@ describe("createNamedEnginePort", () => {
   });
 });
 
+const UPGRADE_SLICE = repoPathOf("packages/web/disciplines.eslint.mjs");
+
+const UPGRADE_PROJECTION: CheckedVersionOneProjection = {
+  settingsFile: "disciplines.json",
+  projectionFile: repoPathOf("disciplines.eslint.mjs"),
+  packageFiles: [UPGRADE_SLICE],
+  rules: new Map(),
+};
+
+const UPGRADE_REPORT = {
+  hits: [],
+  nativeExceptions: [],
+  measured: [],
+  projection: "not-included",
+  projectionFile: UPGRADE_PROJECTION.projectionFile,
+  recovery: { kind: "include-projection" },
+  slices: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+  misnamedRuleIds: [],
+} satisfies Omit<Extract<NamedChecksRunReport, { projection: "not-included" }>, "inapplicable">;
+
 describe("measureVersionOneProjectionOver", () => {
   it("uses an engine’s declared upgrade export and returns the inspected slice separately from the named report", async () => {
-    const slice = repoPathOf("packages/web/disciplines.eslint.mjs");
-    const projection = {
-      settingsFile: "disciplines.json",
-      projectionFile: repoPathOf("disciplines.eslint.mjs"),
-      packageFiles: [slice],
-      rules: new Map(),
-    };
-    const report = {
-      hits: [],
-      nativeExceptions: [],
-      measured: [],
-      projection: "not-included",
-      projectionFile: projection.projectionFile,
-      recovery: { kind: "include-projection" },
-      slices: [],
-      nestedConfigurations: [],
-      unprojectedFolders: [],
-      misnamedRuleIds: [],
-    };
     const upgradeExport = vi.fn().mockResolvedValue({
       outcome: "ok",
-      value: { report, unappliedSlices: [slice] },
+      value: { report: { ...UPGRADE_REPORT, inapplicable: [] }, unappliedSlices: [UPGRADE_SLICE] },
     });
     const run = vi.fn<RunnerCall>();
     const runner = {
@@ -499,13 +550,19 @@ describe("measureVersionOneProjectionOver", () => {
       measureVersionOneProjection({
         request: REQUEST,
         location: LOCATION,
-        projection,
+        projection: UPGRADE_PROJECTION,
       }),
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        report: { ...report, mechanism: "walker", coverableKinds: [] },
-        unappliedSlices: [slice],
+        report: {
+          ...UPGRADE_REPORT,
+          mechanism: "walker",
+          coverableKinds: [],
+          coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+          comparedOutputs: [],
+        },
+        unappliedSlices: [UPGRADE_SLICE],
       },
     });
     expect(upgradeExport).toHaveBeenCalledExactlyOnceWith({
@@ -513,7 +570,7 @@ describe("measureVersionOneProjectionOver", () => {
         ...REQUEST,
         bindings: [BINDING],
       },
-      projection,
+      projection: UPGRADE_PROJECTION,
     });
     expect(run).not.toHaveBeenCalled();
   });
@@ -560,7 +617,9 @@ describe("measureVersionOneProjectionOver", () => {
       unprojectedFolders: [],
       misnamedRuleIds: [],
     };
-    const run = vi.fn<RunnerCall>().mockResolvedValue({ outcome: "ok", value: report });
+    const run = vi
+      .fn<RunnerCall>()
+      .mockResolvedValue({ outcome: "ok", value: { ...report, inapplicable: [] } });
     const runner = {
       fileScope: "tracked",
       projectedKinds: [],
@@ -583,7 +642,13 @@ describe("measureVersionOneProjectionOver", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        report: { ...report, mechanism: "walker", coverableKinds: [] },
+        report: {
+          ...report,
+          mechanism: "walker",
+          coverableKinds: [],
+          coverage: { kind: "scoped", candidateFiles: [FILE_A, CONFIG], inapplicable: [] },
+          comparedOutputs: [],
+        },
         unappliedSlices: [],
       },
     });

@@ -59,14 +59,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/engines/walker/runner/pieces/syntax-node-check.test.ts"
     }
   ]

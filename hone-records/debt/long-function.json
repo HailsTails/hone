@@ -7,10 +7,6 @@
     },
     {
       "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts"
     },
     {
@@ -28,10 +24,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.ts"
     },
     {
       "answers": "long-function#function-length",
@@ -56,14 +48,6 @@
     {
       "answers": "long-function#function-length",
       "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/hone-records-folder/reading/record-resolution.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
-      "file": "src/infrastructure/hone-records-folder/reading/records-reading.test.ts"
     },
     {
       "answers": "long-function#function-length",

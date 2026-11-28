@@ -306,7 +306,7 @@ const debtOf = (request: Resolving & { readonly ruleSet: RuleSetIdentity }): Res
   if (form.outcome === "failed") {
     return form;
   }
-  const { answers: recorded, file, note, carried } = form.value;
+  const { answers: recorded, file, note, carried, findings } = form.value;
   const symptom = debtSymptomFiledAt({ ...request, recorded });
   const holding = debtHoldingOf({ ...request, carried });
   if (symptom.outcome === "failed" || holding.outcome === "failed") {
@@ -317,6 +317,7 @@ const debtOf = (request: Resolving & { readonly ruleSet: RuleSetIdentity }): Res
     ...symptom.value,
     file,
     ...(note === undefined ? {} : { note }),
+    ...(findings === undefined ? {} : { findings }),
     holding: holding.value,
   });
 };

@@ -7,6 +7,7 @@ import type {
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   AuthorisedLocation,
+  CatalogueNote,
   RecordsAtBase,
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
@@ -301,71 +302,77 @@ describe("readRecords", () => {
     });
   });
 
+  const UNKNOWN_CASE_NOTE: CatalogueNote = {
+    kind: "unknown-case",
+    case: "needs-it-here",
+    owes: "declared-not-asserted",
+  };
+
+  const UNKNOWN_CASE_LOCATION: AuthorisedLocation = {
+    kind: "authorised-location",
+    symptom: { ruleSet: "hone", name: "claimed-type" },
+    reach: {
+      reaches: "one-check",
+      check: {
+        name: "cast-expressions",
+        symptom: { ruleSet: "hone", name: "claimed-type" },
+      },
+    },
+    file: repoPathOf("src/held.ts"),
+    holding: {
+      binding: { binds: "check-and-file" },
+      held: "stated",
+      owing: {
+        matches: "not-the-catalogue",
+        note: UNKNOWN_CASE_NOTE,
+      },
+      whyChain: WHY_CHAIN,
+    },
+  };
+
   it("keeps an authorised location whose case is not the catalogue's among the records, and notes it by its place for the report", () => {
-    expect(
-      readRecords({
-        documents: [
-          {
-            file: AUTHORISED_FILE,
-            document: {
-              version: 2,
-              records: [
-                {
-                  answers: "claimed-type#cast-expressions",
-                  file: "src/held.ts",
-                  case: "needs-it-here",
-                  owes: "declared-not-asserted",
-                  whyChain: WHY_CHAIN,
-                },
-              ],
-            },
+    const request: Parameters<typeof readRecords>[0] = {
+      documents: [
+        {
+          file: AUTHORISED_FILE,
+          document: {
+            version: 2,
+            records: [
+              {
+                answers: "claimed-type#cast-expressions",
+                file: "src/held.ts",
+                case: "needs-it-here",
+                owes: "declared-not-asserted",
+                whyChain: WHY_CHAIN,
+              },
+            ],
           },
-        ],
-        symptoms: [CLAIMED_TYPE],
-        checks: [CAST_CHECK],
-        recipes: [],
-        cases: [],
-        namedBans: [],
-        base: UNMEASURED,
-      }),
-    ).toEqual({
+        },
+      ],
+      symptoms: [CLAIMED_TYPE],
+      checks: [CAST_CHECK],
+      recipes: [],
+      cases: [],
+      namedBans: [],
+      base: UNMEASURED,
+    };
+
+    const reading = readRecords(request);
+
+    expect(reading).toEqual({
       outcome: "ok",
       value: {
         records: [
           {
             place: { file: AUTHORISED_FILE, index: 0 },
-            record: {
-              kind: "authorised-location",
-              symptom: { ruleSet: "hone", name: "claimed-type" },
-              reach: {
-                reaches: "one-check",
-                check: {
-                  name: "cast-expressions",
-                  symptom: { ruleSet: "hone", name: "claimed-type" },
-                },
-              },
-              file: "src/held.ts",
-              holding: {
-                binding: { binds: "check-and-file" },
-                held: "stated",
-                owing: {
-                  matches: "not-the-catalogue",
-                  note: {
-                    kind: "unknown-case",
-                    case: "needs-it-here",
-                    owes: "declared-not-asserted",
-                  },
-                },
-                whyChain: WHY_CHAIN,
-              },
-            },
+            record: UNKNOWN_CASE_LOCATION,
           },
         ],
         refused: [],
         notes: [
           {
             place: { file: AUTHORISED_FILE, index: 0 },
-            note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" },
+            note: UNKNOWN_CASE_NOTE,
           },
         ],
         base: { measured: "no", base: { state: "not-given" } },
@@ -373,7 +380,7 @@ describe("readRecords", () => {
     });
   });
 
-  it("says the base revision was measured when it was, with each record the base held and none it refuses", () => {
+  it("preserves the readable landing records and marks refused evidence incomplete", () => {
     expect(
       readRecords({
         documents: [],
@@ -406,14 +413,17 @@ describe("readRecords", () => {
         refused: [],
         notes: [],
         base: {
-          measured: "yes",
-          held: [
+          measured: "partial",
+          placements: [
             {
-              kind: "debt",
-              symptom: { ruleSet: "hone", name: "claimed-type" },
-              reach: WHOLE_SYMPTOM,
-              file: "src/basket.ts",
-              holding: { held: "stated" },
+              place: { file: DEBT_FILE, index: 0 },
+              record: {
+                kind: "debt",
+                symptom: { ruleSet: "hone", name: "claimed-type" },
+                reach: WHOLE_SYMPTOM,
+                file: "src/basket.ts",
+                holding: { held: "stated" },
+              },
             },
           ],
         },
@@ -818,95 +828,99 @@ describe("readRecords", () => {
     ).toBe("different");
   });
 
+  const OUTSIDE_IMPORT_SYMPTOM: Symptom = {
+    ruleSet: "hone",
+    name: "outside-import-past-a-boundary",
+    title: "Outside import past a boundary",
+    seen: "A package imported outside its adapter.",
+    mayIndicate: [],
+    breachUsuallySits: "in the importing file",
+    recipes: [],
+    correctUses: [
+      {
+        situation: "the adapter for that outside party",
+        kind: AUTHORISED_LOCATION_KIND,
+        binding: "check-file-and-outside-party",
+      },
+    ],
+  };
+  const OUTSIDE_IMPORT_CHECK: Check = {
+    name: "import-or-require",
+    symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
+    page: "outside-import-past-a-boundary/import-or-require.md",
+    engines: [],
+    forms: [],
+    findingSpecifics: ["outside-party"],
+  };
+  const OUTSIDE_IMPORT_RECORDS_FILE = repoPathOf(
+    "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+  );
+  const UUID_LOCATION: AuthorisedLocation = {
+    kind: "authorised-location",
+    symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
+    reach: {
+      reaches: "one-check",
+      check: {
+        name: "import-or-require",
+        symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
+      },
+    },
+    file: repoPathOf("src/adapters/ids.ts"),
+    holding: {
+      held: "carried",
+      binding: {
+        binds: "check-file-and-outside-party",
+        outsideParty: { kind: "package", dependency: "uuid" },
+      },
+      entry: { kind: "authorised-location" },
+      lacks: ["case", "owes", "whyChain"],
+      standing: "unjudged",
+    },
+  };
+
+  const CARRIED_IMPORT_LOCATION = {
+    answers: "outside-import-past-a-boundary#import-or-require",
+    file: "src/adapters/ids.ts",
+    carried: { kind: "authorised-location" },
+  };
+
   it("reads two authorised locations that differ only by their outside party as two records", () => {
-    const outsideImportPastABoundary: Symptom = {
-      ruleSet: "hone",
-      name: "outside-import-past-a-boundary",
-      title: "Outside import past a boundary",
-      seen: "A package imported outside its adapter.",
-      mayIndicate: [],
-      breachUsuallySits: "in the importing file",
-      recipes: [],
-      correctUses: [
+    const request: Parameters<typeof readRecords>[0] = {
+      documents: [
         {
-          situation: "the adapter for that outside party",
-          kind: AUTHORISED_LOCATION_KIND,
-          binding: "check-file-and-outside-party",
+          file: OUTSIDE_IMPORT_RECORDS_FILE,
+          document: {
+            version: 2,
+            records: [
+              { ...CARRIED_IMPORT_LOCATION, outsideParty: "uuid" },
+              { ...CARRIED_IMPORT_LOCATION, outsideParty: "node:" },
+            ],
+          },
         },
       ],
+      symptoms: [OUTSIDE_IMPORT_SYMPTOM],
+      checks: [OUTSIDE_IMPORT_CHECK],
+      recipes: [],
+      cases: [],
+      namedBans: [],
+      base: UNMEASURED,
     };
-    const importCheck: Check = {
-      name: "import-or-require",
-      symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-      page: "outside-import-past-a-boundary/import-or-require.md",
-      engines: [],
-      forms: [],
-      findingSpecifics: ["outside-party"],
-    };
-    const importsFile = repoPathOf(
-      "hone-records/authorised-locations/outside-import-past-a-boundary.json",
-    );
-    const uuidLocation: AuthorisedLocation = {
-      kind: "authorised-location",
-      symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-      reach: {
-        reaches: "one-check",
-        check: {
-          name: "import-or-require",
-          symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-        },
-      },
-      file: repoPathOf("src/adapters/ids.ts"),
-      holding: {
-        held: "carried",
-        binding: {
-          binds: "check-file-and-outside-party",
-          outsideParty: { kind: "package", dependency: "uuid" },
-        },
-        entry: { kind: "authorised-location" },
-        lacks: ["case", "owes", "whyChain"],
-        standing: "unjudged",
-      },
-    };
-    const record = {
-      answers: "outside-import-past-a-boundary#import-or-require",
-      file: "src/adapters/ids.ts",
-      carried: { kind: "authorised-location" },
-    };
-    expect(
-      readRecords({
-        documents: [
-          {
-            file: importsFile,
-            document: {
-              version: 2,
-              records: [
-                { ...record, outsideParty: "uuid" },
-                { ...record, outsideParty: "node:" },
-              ],
-            },
-          },
-        ],
-        symptoms: [outsideImportPastABoundary],
-        checks: [importCheck],
-        recipes: [],
-        cases: [],
-        namedBans: [],
-        base: UNMEASURED,
-      }),
-    ).toEqual({
+
+    const reading = readRecords(request);
+
+    expect(reading).toEqual({
       outcome: "ok",
       value: {
         base: UNMEASURED,
         notes: [],
         records: [
-          { place: { file: importsFile, index: 0 }, record: uuidLocation },
+          { place: { file: OUTSIDE_IMPORT_RECORDS_FILE, index: 0 }, record: UUID_LOCATION },
           {
-            place: { file: importsFile, index: 1 },
+            place: { file: OUTSIDE_IMPORT_RECORDS_FILE, index: 1 },
             record: {
-              ...uuidLocation,
+              ...UUID_LOCATION,
               holding: {
-                ...uuidLocation.holding,
+                ...UUID_LOCATION.holding,
                 binding: {
                   binds: "check-file-and-outside-party",
                   outsideParty: { kind: "scheme", scheme: "node:" },
@@ -921,82 +935,36 @@ describe("readRecords", () => {
   });
 
   it("refuses a second authorised location for one check, file and outside party, naming the first", () => {
-    const outsideImportPastABoundary: Symptom = {
-      ruleSet: "hone",
-      name: "outside-import-past-a-boundary",
-      title: "Outside import past a boundary",
-      seen: "A package imported outside its adapter.",
-      mayIndicate: [],
-      breachUsuallySits: "in the importing file",
-      recipes: [],
-      correctUses: [
+    const carriedUuid = { ...CARRIED_IMPORT_LOCATION, outsideParty: "uuid" };
+    const request: Parameters<typeof readRecords>[0] = {
+      documents: [
         {
-          situation: "the adapter for that outside party",
-          kind: AUTHORISED_LOCATION_KIND,
-          binding: "check-file-and-outside-party",
+          file: OUTSIDE_IMPORT_RECORDS_FILE,
+          document: { version: 2, records: [carriedUuid, carriedUuid] },
         },
       ],
-    };
-    const importCheck: Check = {
-      name: "import-or-require",
-      symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-      page: "outside-import-past-a-boundary/import-or-require.md",
-      engines: [],
-      forms: [],
-      findingSpecifics: ["outside-party"],
-    };
-    const importsFile = repoPathOf(
-      "hone-records/authorised-locations/outside-import-past-a-boundary.json",
-    );
-    const uuidLocation: AuthorisedLocation = {
-      kind: "authorised-location",
-      symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-      reach: {
-        reaches: "one-check",
-        check: {
-          name: "import-or-require",
-          symptom: { ruleSet: "hone", name: "outside-import-past-a-boundary" },
-        },
-      },
-      file: repoPathOf("src/adapters/ids.ts"),
-      holding: {
-        held: "carried",
-        binding: {
-          binds: "check-file-and-outside-party",
-          outsideParty: { kind: "package", dependency: "uuid" },
-        },
-        entry: { kind: "authorised-location" },
-        lacks: ["case", "owes", "whyChain"],
-        standing: "unjudged",
-      },
-    };
-    const record = {
-      answers: "outside-import-past-a-boundary#import-or-require",
-      file: "src/adapters/ids.ts",
-      outsideParty: "uuid",
-      carried: { kind: "authorised-location" },
-    };
-
-    const reading = readRecords({
-      documents: [{ file: importsFile, document: { version: 2, records: [record, record] } }],
-      symptoms: [outsideImportPastABoundary],
-      checks: [importCheck],
+      symptoms: [OUTSIDE_IMPORT_SYMPTOM],
+      checks: [OUTSIDE_IMPORT_CHECK],
       recipes: [],
       cases: [],
       namedBans: [],
       base: UNMEASURED,
-    });
+    };
+
+    const reading = readRecords(request);
 
     expect(reading).toEqual({
       outcome: "ok",
       value: {
         base: UNMEASURED,
         notes: [],
-        records: [{ place: { file: importsFile, index: 0 }, record: uuidLocation }],
+        records: [
+          { place: { file: OUTSIDE_IMPORT_RECORDS_FILE, index: 0 }, record: UUID_LOCATION },
+        ],
         refused: [
           {
-            place: { file: importsFile, index: 1 },
-            refusals: [{ kind: "duplicate", of: { file: importsFile, index: 0 } }],
+            place: { file: OUTSIDE_IMPORT_RECORDS_FILE, index: 1 },
+            refusals: [{ kind: "duplicate", of: { file: OUTSIDE_IMPORT_RECORDS_FILE, index: 0 } }],
           },
         ],
       },
@@ -1234,5 +1202,36 @@ describe("recordsReader", () => {
         base: UNMEASURED,
       },
     });
+  });
+});
+
+it("keeps readable landing records and marks incomplete evidence when a landing row is refused", () => {
+  const good = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings: 2 };
+  const bad = { answers: "claimed-type#cast-expressions", file: "src/order.ts", findings: -1 };
+  const documents = [{ file: DEBT_FILE, document: { version: 2, records: [good, bad] } }];
+
+  const read = readRecords({
+    documents: [],
+    base: { measured: "yes", documents },
+    symptoms: [CLAIMED_TYPE],
+    checks: [CAST_CHECK],
+    recipes: [],
+    cases: [],
+    namedBans: [],
+  });
+
+  expect(read).toMatchObject({
+    outcome: "ok",
+    value: {
+      base: {
+        measured: "partial",
+        placements: [
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: { file: "src/cart.ts", findings: 2 },
+          },
+        ],
+      },
+    },
   });
 });

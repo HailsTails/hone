@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import type {
+  NamedEngineProjection,
+  NamedEngineRun,
+} from "../../../../application/ports/engine/engine-run.ts";
+import type {
   ChecksSliceProblem,
   MisnamedRuleId,
   ProjectedFile,
@@ -106,28 +110,52 @@ const checksReportSchema = z.strictObject({
   measured: z.array(checkMeasurementSchema).readonly(),
 });
 
-export const namedChecksRunReportSchema = z.discriminatedUnion("projection", [
-  checksReportSchema.extend({ projection: z.literal("none") }).readonly(),
-  checksReportSchema
-    .extend({
-      projection: z.literal("current"),
-      projectionFile: repoPathSchema.optional(),
-    })
-    .readonly(),
-  checksReportSchema
-    .extend({
-      projection: z.enum(["out-of-date", "missing"]),
-      projectionFile: repoPathSchema,
-    })
-    .readonly(),
-  checksReportSchema
-    .extend({
-      projection: z.literal("not-included"),
-      projectionFile: repoPathSchema,
-      recovery: projectionInclusionSchema,
-    })
-    .readonly(),
-]);
+const reportWithProjection = <Shape extends z.ZodRawShape>(observations: Shape) => {
+  const report = checksReportSchema.extend(observations);
+  return z.discriminatedUnion("projection", [
+    report.extend({ projection: z.literal("none") }).readonly(),
+    report
+      .extend({
+        projection: z.literal("current"),
+        projectionFile: repoPathSchema.optional(),
+      })
+      .readonly(),
+    report
+      .extend({
+        projection: z.enum(["out-of-date", "missing"]),
+        projectionFile: repoPathSchema,
+      })
+      .readonly(),
+    report
+      .extend({
+        projection: z.literal("not-included"),
+        projectionFile: repoPathSchema,
+        recovery: projectionInclusionSchema,
+      })
+      .readonly(),
+  ]);
+};
+
+export const unscopedChecksRunReportSchema = reportWithProjection({});
+export const namedChecksRunReportSchema = reportWithProjection({
+  inapplicable: z.array(checkMeasurementSchema).readonly(),
+});
+
+type DecodedRunReport = NamedEngineProjection &
+  Omit<
+    NamedEngineRun,
+    "projection" | "mechanism" | "coverableKinds" | "coverage" | "comparedOutputs"
+  >;
+
+export const decodeUnscopedChecksReport = (
+  wire: z.output<typeof unscopedChecksRunReportSchema>,
+): DecodedRunReport => {
+  if (wire.projection !== "current") return wire;
+  const { projectionFile, ...report } = wire;
+  return projectionFile === undefined
+    ? report
+    : { ...report, projection: "current-with-file", projectionFile };
+};
 
 export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [
   z.strictObject({ outcome: z.literal("ok"), value: namedChecksRunReportSchema }).readonly(),

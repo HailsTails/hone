@@ -30,6 +30,7 @@ import {
 } from "../../../../domain/runner/runner-failure.ts";
 import {
   checksProjectResultSchema,
+  decodeUnscopedChecksReport,
   measurementResultSchema,
   namedChecksRunReportSchema,
   namedChecksRunResultSchema,
@@ -92,6 +93,9 @@ export const createRunnerLoader =
       : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
   };
 
+const filesInScope = (scope: ParsedNamedRunner["fileScope"], request: NamedEngineRunRequest) =>
+  scope === "tracked" ? request.trackedPaths : request.files;
+
 const mapCallToRunnerRequest = (call: NamedEngineCall): NamedEngineRunRequest => ({
   ...call.request,
   bindings: call.request.bindings.filter(({ engine }) => engine === call.mechanism),
@@ -103,18 +107,29 @@ const verifiedNamedRun = (request: {
   readonly report: z.output<typeof namedChecksRunReportSchema>;
 }): NamedOutcome<NamedEngineRun> => {
   const { call, requested, report } = request;
-  const files = call.runner.fileScope === "tracked" ? requested.trackedPaths : requested.files;
-  const checked = checkedObservations({ requested: { ...requested, files }, report });
-  return checked.outcome === "failed"
-    ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
-    : {
-        outcome: "ok",
-        value: {
-          ...checked.value,
-          mechanism: call.mechanism,
-          coverableKinds: call.runner.projectedKinds,
-        },
-      };
+  const { inapplicable: reportedInapplicable, ...reportWithoutScope } = report;
+  const files = filesInScope(call.runner.fileScope, requested);
+  const checked = checkedObservations({
+    requested: { ...requested, files },
+    report: {
+      ...decodeUnscopedChecksReport(reportWithoutScope),
+      inapplicable: reportedInapplicable,
+    },
+  });
+  if (checked.outcome === "failed") {
+    return runnerFailed({ mechanism: call.mechanism, failure: checked.error });
+  }
+  const { inapplicable, ...observations } = checked.value;
+  return {
+    outcome: "ok",
+    value: {
+      ...observations,
+      mechanism: call.mechanism,
+      coverableKinds: call.runner.projectedKinds,
+      coverage: { kind: "scoped", candidateFiles: files, inapplicable },
+      comparedOutputs: [],
+    },
+  };
 };
 
 const runNamedEngine = async (call: NamedEngineCall): Promise<NamedOutcome<NamedEngineRun>> => {
@@ -228,7 +243,14 @@ const bindRunner = (location: NamedEngineLocation, runner: ParsedNamedRunner) =>
         : request,
   });
   return {
-    run: (request: NamedEngineRunRequest) => runNamedEngine(createCall(request)),
+    run: (request: NamedEngineRunRequest): Promise<NamedOutcome<NamedEngineRun>> =>
+      runNamedEngine(
+        createCall(
+          mechanism === "walker"
+            ? { ...request, trackedPaths: filesInScope(runner.fileScope, request) }
+            : request,
+        ),
+      ),
     project: (request: NamedEngineRunRequest) => projectNamedEngine(createCall(request)),
   };
 };

@@ -50,30 +50,38 @@ describe("createMeasurementInput", () => {
   });
 });
 
+const MEASURED_WITH_APPLICABILITY: NamedEngineRun = {
+  mechanism: "eslint",
+  coverableKinds: ["inline-disable"],
+  projection: "current",
+  slices: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+  misnamedRuleIds: [],
+  hits: [],
+  nativeExceptions: [
+    {
+      kind: "config-override",
+      check: "claimed-type#non-null-assertions",
+      file: repoPathOf("src/a.ts"),
+    },
+  ],
+  measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
+  coverage: {
+    kind: "scoped",
+    candidateFiles: [repoPathOf("src/a.ts"), repoPathOf("hone.eslint.d.mts")],
+    inapplicable: [
+      { check: "claimed-type#non-null-assertions", file: repoPathOf("hone.eslint.d.mts") },
+    ],
+  },
+  comparedOutputs: [],
+};
+
 describe("runEnginesMeasurement", () => {
   it("measures over the roots, base revision and tree it was given, files the repository does not track included, replying with each engine's run", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({
       outcome: "ok",
-      value: [
-        {
-          mechanism: "eslint",
-          coverableKinds: ["inline-disable"],
-          projection: "current",
-          slices: [],
-          nestedConfigurations: [],
-          unprojectedFolders: [],
-          misnamedRuleIds: [],
-          hits: [],
-          nativeExceptions: [
-            {
-              kind: "config-override",
-              check: "claimed-type#non-null-assertions",
-              file: repoPathOf("src/a.ts"),
-            },
-          ],
-          measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
-        },
-      ],
+      value: [MEASURED_WITH_APPLICABILITY],
     });
     const request: RequestPort = {
       read: vi
@@ -111,7 +119,7 @@ describe("runEnginesMeasurement", () => {
       replied: [
         [
           {
-            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
           },
         ],
       ],
@@ -276,6 +284,7 @@ describe("decodeMeasuredRuns", () => {
           measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
           projection: "out-of-date",
           projectionFile: repoPathOf("hone.eslint.ts"),
+          coverage: { kind: "scope-unavailable" },
           comparedOutputs: [repoPathOf("hone.eslint.ts"), repoPathOf("hone.eslint.d.mts")],
         },
       ],
@@ -286,7 +295,10 @@ describe("decodeMeasuredRuns", () => {
     const eslintRun: NamedEngineRun = {
       mechanism: "eslint",
       coverableKinds: ["inline-disable"],
-      projection: "current",
+      projection: "current-with-file",
+      projectionFile: repoPathOf("hone.eslint.mjs"),
+      coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+      comparedOutputs: [],
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
@@ -299,6 +311,8 @@ describe("decodeMeasuredRuns", () => {
       mechanism: "walker",
       coverableKinds: [],
       projection: "none",
+      coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+      comparedOutputs: [],
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],
@@ -325,7 +339,7 @@ describe("decodeMeasuredRuns", () => {
     expect(vi.mocked(reply.write).mock.calls).toEqual([
       [
         {
-          text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]}},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+          text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]},"comparedOutputs":[]},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
         },
       ],
     ]);
@@ -336,7 +350,7 @@ describe("decodeMeasuredRuns", () => {
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]}},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]}}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"projection":"current","projectionFile":"hone.eslint.mjs","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[]},"comparedOutputs":[]},{"mechanism":"walker","coverableKinds":[],"report":{"projection":"none","slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}]},"comparedOutputs":[]}]}',
     });
 
     expect(runs).toEqual({
@@ -345,7 +359,10 @@ describe("decodeMeasuredRuns", () => {
         {
           mechanism: "eslint",
           coverableKinds: ["inline-disable"],
-          projection: "current",
+          projection: "current-with-file",
+          projectionFile: repoPathOf("hone.eslint.mjs"),
+          coverage: { kind: "scope-unavailable" },
+          comparedOutputs: [],
           slices: [],
           nestedConfigurations: [],
           unprojectedFolders: [],
@@ -358,6 +375,8 @@ describe("decodeMeasuredRuns", () => {
           mechanism: "walker",
           coverableKinds: [],
           projection: "none",
+          coverage: { kind: "scope-unavailable" },
+          comparedOutputs: [],
           slices: [],
           nestedConfigurations: [],
           unprojectedFolders: [],
@@ -392,7 +411,7 @@ describe("decodeMeasuredRuns", () => {
       status: 0,
       stderr: "",
       reply:
-        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":[],"report":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}]}',
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":[],"report":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}},"comparedOutputs":[]}]}',
     });
 
     expect(runs).toEqual({
@@ -407,7 +426,11 @@ describe("decodeMeasuredRuns", () => {
   });
 
   it("fails as an unexpected error naming the exit status and error output when the reply is not JSON", () => {
-    const runs = decodeMeasuredRuns({ status: 1, stderr: "TypeError: boom", reply: "" });
+    const runs = decodeMeasuredRuns({
+      status: 1,
+      stderr: "TypeError: boom",
+      reply: "",
+    });
 
     expect(runs).toEqual({
       outcome: "failed",
@@ -421,7 +444,11 @@ describe("decodeMeasuredRuns", () => {
   });
 
   it("fails as an unexpected error when the reply is JSON but no measurement reply", () => {
-    const runs = decodeMeasuredRuns({ status: 0, stderr: "", reply: '{"outcome":"finished"}' });
+    const runs = decodeMeasuredRuns({
+      status: 0,
+      stderr: "",
+      reply: '{"outcome":"finished"}',
+    });
 
     expect(runs).toEqual({
       outcome: "failed",

@@ -1,7 +1,4 @@
-import type {
-  NamedEngineProjection,
-  NamedEngineRunRequest,
-} from "../../../../application/ports/engine/engine-run.ts";
+import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../domain/gathered-outcomes.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
@@ -9,6 +6,7 @@ import { installRootOfRunnerEntry } from "../../../node/modules/package-location
 import { createDefaultPathPort } from "../../../node/path-port.ts";
 import type { RunnerFileScope } from "../../protocol/checks/checks-runner-module-schema.ts";
 import type {
+  ChecksRunProjection,
   NamedChecksRunner,
   NamedChecksRunReport,
 } from "../../protocol/checks/checks-runner-types.ts";
@@ -39,7 +37,7 @@ const instructionsForMissingConfiguration = (file: ScopeObservation["file"]): st
   return `${folder} has no tracked Oxlint config; add and track one, or exclude files outside your intended scope and remove any obsolete projection`;
 };
 
-const createRootProjection = (root: ScopeObservation | undefined): NamedEngineProjection => {
+const createRootProjection = (root: ScopeObservation | undefined): ChecksRunProjection => {
   if (root === undefined || root.state === "unconfigured") return { projection: "none" };
   const { state, file } = root;
   return state === "not-included"
@@ -91,6 +89,7 @@ const createReport = (request: {
     misnamedRuleIds: [],
     hits: request.observations.flatMap(({ hits }) => hits),
     measured: request.observations.flatMap(({ measured }) => measured),
+    inapplicable: [],
     nativeExceptions: request.observations.flatMap(({ nativeExceptions }) => nativeExceptions),
   };
 };

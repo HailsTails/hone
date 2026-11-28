@@ -292,3 +292,19 @@ describe("the version 2 records forms", () => {
     expect(carriedFormSchema.safeParse(entry).success).toBe(form);
   });
 });
+
+it("accepts a positive whole count on a debt row", () => {
+  const entry = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings: 2 };
+
+  const parsed = debtWireSchema.safeParse(entry);
+
+  expect(parsed).toMatchObject({ success: true, data: { findings: 2 } });
+});
+
+it.each([0, -1, 1.5, "2"])("refuses an invalid debt finding count %s", (findings) => {
+  const entry = { answers: "claimed-type#cast-expressions", file: "src/cart.ts", findings };
+
+  const parsed = debtWireSchema.safeParse(entry);
+
+  expect(parsed.success).toBe(false);
+});

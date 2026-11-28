@@ -33,19 +33,17 @@ const underlyingGit = (): GitPort => ({
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-type Tree = Pick<FileTextPort, "read" | "exists">;
-
-const treeHolding = (request: { readonly text: string }): Tree => ({
+const treeHolding = (request: { readonly text: string }) => ({
   read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: request.text }),
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
 });
 
-const treeLacking = (): Tree => ({
+const treeLacking = () => ({
   read: vi.fn<FileTextPort["read"]>(),
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
 });
 
-const treeUnreadable = (): Tree => ({
+const treeUnreadable = () => ({
   read: vi.fn<FileTextPort["read"]>().mockReturnValue({
     outcome: "failed",
     error: { kind: "unreadable", path: "/repo/src/a.ts", detail: "EACCES" },
@@ -54,7 +52,7 @@ const treeUnreadable = (): Tree => ({
 });
 
 const foundTreeOver = (request: {
-  readonly fileText: Tree;
+  readonly fileText: Parameters<typeof foundTreeGitOf>[0]["fileText"];
   readonly written: readonly RepoPath[];
   readonly removed: readonly RepoPath[];
 }) => {
@@ -77,7 +75,11 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   it("reports nothing changed since the base, which is the tree itself, and never asks git", () => {
     const { found, git } = foundTreeOver({ fileText: treeLacking(), written: [], removed: [] });
     expect({
-      changed: found.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
+      changed: found.changedSince({
+        baseScope: "merge-base",
+        repoRoot: REPO_ROOT,
+        baseRevision: FOUND_TREE_REVISION,
+      }),
       asked: vi.mocked(git.changedSince).mock.calls,
     }).toEqual({
       changed: { outcome: "ok", value: [] },

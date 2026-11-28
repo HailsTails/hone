@@ -13,6 +13,7 @@ import type {
   AuthorisedLocationKind,
   UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
+import { answerCountedFindings, answerFindings } from "../../domain/records/answering/answering.ts";
 import type {
   Debt,
   PlacedRecord,
@@ -327,22 +328,34 @@ const CAST_HIT: CheckHit = {
 
 const CAST_FINDING = { ...CAST_HIT, mechanism: ESLINT };
 
-const eslintRunOf = (
-  request: {
-    readonly hits: readonly CheckHit[];
-  } & (
-    | Pick<
-        Extract<NamedEngineRun, { readonly projection: "not-included" }>,
-        "projection" | "recovery"
-      >
-    | { readonly projection: Exclude<NamedEngineRun["projection"], "not-included"> }
-  ),
-): NamedEngineRun => ({
+const PROJECTION_FILE = repoPathOf("hone.eslint.mjs");
+
+const PROJECTIONS = {
+  none: { projection: "none" },
+  current: { projection: "current-with-file", projectionFile: PROJECTION_FILE },
+  "out-of-date": { projection: "out-of-date", projectionFile: PROJECTION_FILE },
+  missing: { projection: "missing", projectionFile: PROJECTION_FILE },
+  "not-included": {
+    projection: "not-included",
+    projectionFile: PROJECTION_FILE,
+    recovery: { kind: "include-projection" },
+  },
+} satisfies Record<
+  "none" | "current" | "out-of-date" | "missing" | "not-included",
+  NamedEngineProjection
+>;
+
+const eslintRunOf = (request: {
+  readonly hits: readonly CheckHit[];
+  readonly projection: keyof typeof PROJECTIONS;
+}): NamedEngineRun => ({
   mechanism: ESLINT,
   ...request,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
-  projectionFile: repoPathOf("hone.eslint.mjs"),
+  ...PROJECTIONS[request.projection],
+  coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -416,12 +429,13 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const REQUEST: RunReportRequest = {
+  answer: answerFindings,
   available: [],
   catalogue: REPORT_CATALOGUE,
   selection: { selected: [], notAdopted: [], notRun: [], excluded: [], eslintConfigRoots: [] },
@@ -441,6 +455,7 @@ const REQUEST: RunReportRequest = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -465,22 +480,14 @@ const EMPTY_REPORT: RunReport = {
 };
 
 describe("namedRunReportOf, findings and records", () => {
-  it.each<NamedEngineProjection>([
-    {
-      projection: "not-included",
-      projectionFile: repoPathOf("hone.eslint.mjs"),
-      recovery: { kind: "include-projection" },
-    },
-    { projection: "current" },
-    { projection: "out-of-date", projectionFile: repoPathOf("hone.eslint.mjs") },
-  ])(
-    "names the nested folder once when the $projection projection measured nothing",
+  it.each(["not-included", "current", "out-of-date"] as const)(
+    "names the nested folder once when the %s projection measured nothing",
     (projection) => {
       const nested = repoPathOf("packages/web");
       expect(
         namedRunReportOf({
           ...REQUEST,
-          runs: [{ ...eslintRunOf({ hits: [], ...projection }), nestedConfigurations: [nested] }],
+          runs: [{ ...eslintRunOf({ hits: [], projection }), nestedConfigurations: [nested] }],
         }),
       ).toMatchObject({
         outcome: "ok",
@@ -686,7 +693,6 @@ describe("namedRunReportOf, findings and records", () => {
           eslintRunOf({
             hits: [],
             projection: "not-included",
-            recovery: { kind: "include-projection" },
           }),
         ],
       }),
@@ -889,7 +895,7 @@ describe("namedRunReportOf, findings and records", () => {
           records: [carried],
           refused: [refused],
           notes: [],
-          base: { measured: "yes", held: [] },
+          base: { measured: "yes", placements: [] },
         },
       }),
     ).toMatchObject({
@@ -903,12 +909,19 @@ describe("namedRunReportOf, findings and records", () => {
 });
 
 describe("namedRunReportOf, what the run could not measure", () => {
-  it("lists debt unmeasured for forfeiture when no base revision was given, beside an engine whose projection is not written", () => {
+  it("lists unmeasured forfeiture before unmeasured carryover and a missing engine projection", () => {
     expect(
       namedRunReportOf({
         ...REQUEST,
         touched: { measured: "no", base: { state: "not-given" } },
-        records: { ...NO_RECORDS, records: [debtAt({ file: FILE_B, index: 0 })] },
+        records: {
+          ...NO_RECORDS,
+          base: { measured: "no", base: { state: "not-given" } },
+          records: [
+            debtAt({ file: FILE_B, index: 0 }),
+            carriedLocationAt({ file: FILE_A, index: 1 }),
+          ],
+        },
         runs: [eslintRunOf({ hits: [], projection: "missing" })],
       }),
     ).toMatchObject({
@@ -916,6 +929,7 @@ describe("namedRunReportOf, what the run could not measure", () => {
       value: {
         unmeasured: [
           { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
+          { kind: "import-unmeasured", base: { state: "not-given" } },
           {
             kind: "engine-not-run",
             engine: ESLINT_ENGINE,
@@ -1111,5 +1125,142 @@ describe("namedRunReportOf, the selection and the settings", () => {
         ],
       }),
     ).toMatchObject({ outcome: "ok", value: { misnamed: [misnamed] } });
+  });
+});
+
+it("reports unavailable landing records in the no-new-findings assessment", () => {
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    records: { ...REQUEST.records, base: { measured: "no", base: { state: "not-given" } } },
+  };
+
+  const report = namedRunReportOf(request);
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] } },
+  });
+});
+
+it("counts a finding held only by the proposal and accepts one answered by landing", () => {
+  const carried = carriedLocationAt({ file: FILE_A, index: 0 });
+  const location: PlacedRecord = {
+    ...carried,
+    record: {
+      ...carried.record,
+      kind: "authorised-location",
+      symptom: CAST_CHECK.symptom,
+      reach: { reaches: "one-check", check: CAST_CHECK },
+      file: FILE_A,
+      holding: {
+        held: "carried",
+        entry: { reason: "A cast at the handoff" },
+        lacks: [],
+        standing: "established",
+        binding: { binds: "check-and-file" },
+      },
+    },
+  };
+  const run = { ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }), measured: [CAST_HIT] };
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [run],
+  };
+
+  const fromHead = namedRunReportOf({
+    ...request,
+    records: { ...NO_RECORDS, records: [location] },
+  });
+  const fromLanding = namedRunReportOf({
+    ...request,
+    records: {
+      ...NO_RECORDS,
+      records: [location],
+      base: {
+        measured: "yes",
+        placements: [location],
+      },
+    },
+  });
+
+  expect(fromHead).toMatchObject({
+    outcome: "ok",
+    value: {
+      findings: [],
+      judged: "counted-debt",
+      debtComparison: { issues: [{ kind: "uncovered", observed: 1 }] },
+    },
+  });
+  expect(fromLanding).toMatchObject({
+    outcome: "ok",
+    value: { judged: "counted-debt", debtComparison: { issues: [] } },
+  });
+});
+
+it("refuses unmeasured files in the engine's verified scope and stale projection", () => {
+  const config = repoPathOf("tsconfig.json");
+  const output = repoPathOf("hone.eslint.d.mts");
+  const run: NamedEngineRun = {
+    ...eslintRunOf({ hits: [], projection: "current" }),
+    coverage: {
+      kind: "scoped",
+      candidateFiles: [FILE_A, FILE_B, config, output],
+      inapplicable: [{ check: CAST_HIT.check, file: FILE_B }],
+    },
+    measured: [CAST_HIT],
+    comparedOutputs: [output],
+  };
+  const request: RunReportRequest = {
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A, FILE_B, config, output],
+    selection: SELECTS_CAST,
+  };
+
+  const unknown = namedRunReportOf({ ...request, runs: [run] });
+  const stale = namedRunReportOf({
+    ...request,
+    runs: [{ ...run, projection: "out-of-date", projectionFile: repoPathOf("hone.eslint.mjs") }],
+  });
+
+  expect(unknown).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "unmeasured", file: config }] } },
+  });
+  expect(stale).toMatchObject({
+    outcome: "ok",
+    value: { debtComparison: { issues: [{ kind: "projection-unmeasured" }] } },
+  });
+});
+
+it("refuses a counted report when a child run did not report candidate scope", () => {
+  const report = namedRunReportOf({
+    ...REQUEST,
+    answer: answerCountedFindings,
+    touched: { measured: "pinned-ancestor", paths: new Set(), landingRevision: "pinned" },
+    tracked: [FILE_A],
+    selection: SELECTS_CAST,
+    runs: [
+      {
+        ...eslintRunOf({ hits: [], projection: "current" }),
+        coverage: { kind: "scope-unavailable" },
+        measured: [CAST_HIT],
+      },
+    ],
+  });
+
+  expect(report).toMatchObject({
+    outcome: "ok",
+    value: {
+      judged: "counted-debt",
+      debtComparison: { issues: [{ kind: "coverage-unavailable", engines: [ESLINT] }] },
+    },
   });
 });

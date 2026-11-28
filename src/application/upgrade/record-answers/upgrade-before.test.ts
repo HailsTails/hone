@@ -110,6 +110,8 @@ const ESLINT_MEASURED = {
     measured: [],
     nativeExceptions: [],
     projection: "current",
+    coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+    comparedOutputs: [],
     slices: [],
     nestedConfigurations: [],
     unprojectedFolders: [],

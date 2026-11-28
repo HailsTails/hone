@@ -12,6 +12,7 @@ import {
   type RunSectionRole,
   runSectionRoleOf,
   runVerdictOf,
+  summariseRunFailures,
 } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";
 
@@ -69,6 +70,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -226,5 +228,20 @@ describe("runVerdictOf", () => {
         },
       }),
     ).toBe("fail");
+  });
+});
+
+it("fails a run when the measured debt comparison refuses a pair", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const summary = summariseRunFailures({ report });
+
+  expect(summary).toEqual({
+    verdict: "fail",
+    sections: [{ name: "debtComparison", count: 1 }],
   });
 });

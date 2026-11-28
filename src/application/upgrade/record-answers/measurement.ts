@@ -77,7 +77,9 @@ export const touchedSetFor = (request: {
   readonly records: readonly ExceptionRecord[];
 }): TouchedSet => {
   const need = changeSetNeedOf({ assessment: request.check.assessment, records: request.records });
-  return need.kind === "settled" ? need.touched : computeTouchedSet(request.check);
+  return need.kind === "settled"
+    ? need.touched
+    : computeTouchedSet({ ...request.check, baseScope: "merge-base" });
 };
 
 export const partialAssessmentsOf = (request: {

@@ -76,6 +76,8 @@ const CURRENT_ESLINT_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -101,7 +103,7 @@ const stagesHolding = (request: {
       records: request.records,
       refused: [],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", placements: [] },
     },
   }),
   tree: vi

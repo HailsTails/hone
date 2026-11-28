@@ -7,26 +7,23 @@ import type { ModuleLoaderPort } from "../../../../application/ports/host/module
 import type { CheckAddressText } from "../../../../domain/language-layer/check-address-text.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../../../domain/result.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { CASE_ROOT } from "./pieces/walker-disk.ts";
-import type { PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
+import type { PreparedFileCheck, PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
+import { defaultTypeScriptModules } from "./toolchain/typescript-parse.ts";
+import {
+  createParsePort,
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "./toolchain/typescript-toolchain.ts";
 
-const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({
-    installRoot: `${import.meta.dirname}/../../../../..`,
-    installForm: "source",
-  }),
-});
-assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(
-  /^6\./.test(loadedParsePort.value.syntaxApi.version),
-  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
-);
-const defaultParsePort = loadedParsePort.value;
+const { default: syntaxApi } = await defaultTypeScriptModules.typescript();
+const defaultParsePort = createParsePort({ syntaxApi });
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const ALPHA = repoPathOf("src/alpha.ts");
@@ -198,6 +195,20 @@ const skippingPrepare = () =>
     },
   });
 
+it("loads TypeScript 6 from the development install", async () => {
+  const loaded = await loadParsePort({
+    peers: defaultTypeScriptPeers({
+      installRoot: `undefined/../../../../..`,
+      installForm: "source",
+    }),
+  });
+
+  expect(loaded).toMatchObject({
+    outcome: "ok",
+    value: { syntaxApi: { version: expect.stringMatching(/^6\./) } },
+  });
+});
+
 describe("createWalkerRunner run", () => {
   it("walks every tracked path and reports each file's hits in source then clause order, then each piece's finishing hits", async () => {
     const runner = runnerWith({
@@ -229,6 +240,7 @@ describe("createWalkerRunner run", () => {
           },
         ],
         nativeExceptions: [],
+        inapplicable: [],
         measured: [
           { check: FIRST, file: ALPHA },
           { check: SECOND, file: ALPHA },
@@ -239,7 +251,7 @@ describe("createWalkerRunner run", () => {
     });
   });
 
-  it("names no clause measured on a file every piece skipped, such as a file that is not TypeScript", async () => {
+  it("names skipped pairs separately from completed measurements", async () => {
     expect(
       await runnerWith({
         fileText: fileTextOf({ read: vi.fn() }),
@@ -251,6 +263,12 @@ describe("createWalkerRunner run", () => {
         hits: [],
         nativeExceptions: [],
         measured: [],
+        inapplicable: [
+          { check: FIRST, file: ALPHA },
+          { check: SECOND, file: ALPHA },
+          { check: FIRST, file: CONFIG },
+          { check: SECOND, file: CONFIG },
+        ],
         projection: "none",
         slices: [],
         nestedConfigurations: [],
@@ -401,14 +419,15 @@ const SKIPPED = repoPathOf("src/skipped.ts");
 
 const DIRECTIVE_SOURCE = `// ${NOCHECK}\n// ${EXPECTATION} legacy\nexport const a: number = "x";\n// ${IGNORE} reason (#42)\nexport const b = 1;\n// ordinary\n`;
 
-type PreparedFile = ReturnType<PreparedWalkerCheck["prepareFile"]>;
-
-const SYNTAX_FILE: PreparedFile = {
+const SYNTAX_FILE: Result<PreparedFileCheck, PieceFailure> = {
   outcome: "ok",
   value: { kind: "syntax", begin: () => ({ finish: () => [] }) },
 };
 
-const SKIPPED_FILE: PreparedFile = { outcome: "ok", value: { kind: "skipped" } };
+const SKIPPED_FILE: Result<PreparedFileCheck, PieceFailure> = {
+  outcome: "ok",
+  value: { kind: "skipped" },
+};
 
 const pieceReadingAlphaThenBeta = (): WalkerPiece => ({
   prepare: vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
@@ -464,6 +483,12 @@ const BOTH_CLAUSES_ON_ALPHA_AND_BETA = [
   { check: FIRST, file: BETA },
   { check: SECOND, file: BETA },
 ];
+const BOTH_CLAUSES_ON_SKIPPED_PATHS = [
+  { check: FIRST, file: SKIPPED },
+  { check: SECOND, file: SKIPPED },
+  { check: FIRST, file: CONFIG },
+  { check: SECOND, file: CONFIG },
+];
 
 describe("createWalkerRunner run, type directives a clause declares as its escapes", () => {
   it("reports each declared directive, tracked reference or not, as an inline disable of that clause in every file its piece reads", async () => {
@@ -494,6 +519,10 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
           { check: FIRST, file: ALPHA },
           { check: FIRST, file: BETA },
         ],
+        inapplicable: [
+          { check: FIRST, file: SKIPPED },
+          { check: FIRST, file: CONFIG },
+        ],
       },
     });
   });
@@ -520,6 +549,7 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
           inlineDisable({ check: FIRST, file: BETA, line: 4, text: `// ${IGNORE} reason (#42)` }),
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
+        inapplicable: BOTH_CLAUSES_ON_SKIPPED_PATHS,
       },
     });
   });
@@ -550,6 +580,7 @@ describe("createWalkerRunner run, type directives several bindings or conform me
           inlineDisable({ check: SECOND, file: BETA, line: 2, text: `// ${EXPECTATION} legacy` }),
         ],
         measured: BOTH_CLAUSES_ON_ALPHA_AND_BETA,
+        inapplicable: BOTH_CLAUSES_ON_SKIPPED_PATHS,
       },
     });
   });

@@ -9,15 +9,15 @@ import type {
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../../domain/report/run-report.ts";
+import { typescriptFilesOf } from "../../../domain/repository/checked-tree.ts";
 import { excludeProjectionOutputs } from "../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
-import { typescriptFilesOf } from "../checked-tree-of.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
-type Selected = Pick<CheckBinding, "address" | "engine">;
+export type SelectedEngineCheck = Pick<CheckBinding, "address" | "engine">;
 
 const engineOf = (request: {
   readonly catalogue: CatalogueEngines;
@@ -48,7 +48,7 @@ export const engineMeasurementOf = (request: {
 
 const runMeasurementOf = (request: {
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
 }): RunMeasurement => ({
   mechanism: request.run.mechanism,
   selected: request.selected
@@ -59,7 +59,7 @@ const runMeasurementOf = (request: {
 
 export const runMeasurementsOf = (request: {
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
 }): RunMeasurements => ({
@@ -86,7 +86,7 @@ const measuredNothingOf = (request: {
 const notRunOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly run: NamedEngineRun;
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
@@ -110,10 +110,10 @@ const notRunOf = (request: {
     case "none":
       return [];
     case "current":
+    case "current-with-file":
     case "out-of-date": {
-      const { projectionFile } = request.run;
       if (
-        projectionFile !== undefined &&
+        request.run.projection !== "current" &&
         measured.length === 0 &&
         nestedConfigurations.length > 0
       ) {
@@ -122,7 +122,7 @@ const notRunOf = (request: {
             kind: "engine-not-run",
             engine,
             projection: "not-included",
-            file: projectionFile,
+            file: request.run.projectionFile,
             nestedConfigurations,
             recovery: { kind: "include-projection" },
           },
@@ -132,7 +132,7 @@ const notRunOf = (request: {
         engine,
         measurement: runMeasurementOf(request),
         tracked: request.tracked,
-        comparedOutputs: request.run.comparedOutputs ?? [],
+        comparedOutputs: request.run.comparedOutputs,
       });
     }
   }
@@ -171,7 +171,7 @@ const problemOf = (request: {
 export const engineUnmeasuredOf = (request: {
   readonly catalogue: CatalogueEngines;
   readonly runs: readonly NamedEngineRun[];
-  readonly selected: readonly Selected[];
+  readonly selected: readonly SelectedEngineCheck[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] =>
   request.runs.flatMap((run) =>

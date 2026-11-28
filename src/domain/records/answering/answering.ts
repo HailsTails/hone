@@ -12,7 +12,6 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { Result } from "../../result.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { CheckNativeException } from "../../runner/check-observations.ts";
-import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
   type MeasurementIndex,
@@ -20,6 +19,16 @@ import {
   measurementOf,
   type RunMeasurements,
 } from "../measurement/measured-at.ts";
+import {
+  type RecordsUnmeasured,
+  unmeasuredDebtForfeiture,
+} from "../measurement/records-unmeasured.ts";
+import {
+  compareDebt,
+  type DebtComparison,
+  type DebtComparisonEvidence,
+} from "./debt-comparison.ts";
+import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import {
   createResolvedSite,
   holdsAt,
@@ -70,7 +79,13 @@ export type AnsweringRequest = Catalogued & {
   readonly measurements: RunMeasurements;
 };
 
-export type Answering = {
+type ComparisonRequest = AnsweringRequest & {
+  readonly readComparison: () => DebtComparisonEvidence;
+};
+
+export type FindingAssessment = (request: ComparisonRequest) => Result<Answering, SymptomUnheld>;
+
+type FindingAnswers = {
   readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
   readonly held: readonly HeldException[];
@@ -79,6 +94,23 @@ export type Answering = {
   readonly paid: readonly PaidDebt[];
   readonly unrecorded: readonly AttributedCheckException[];
 };
+
+type TouchedFileAnswering = FindingAnswers & {
+  readonly judged: "touched-debt";
+  readonly unmeasured: readonly RecordsUnmeasured[];
+};
+
+type CountedAnswering = FindingAnswers & {
+  readonly judged: "counted-debt";
+  readonly unmeasured: readonly RecordsUnmeasured[];
+  readonly debtComparison: DebtComparison;
+};
+
+export type Answering = TouchedFileAnswering | CountedAnswering;
+
+export type ForfeitureJudgement =
+  | Pick<TouchedFileAnswering, "judged">
+  | Pick<CountedAnswering, "judged" | "debtComparison">;
 
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
@@ -342,6 +374,35 @@ const findingHoldings = (
     }),
   });
 
+export const filterFindingsForDebtComparison = (
+  request: Catalogued & {
+    readonly findings: readonly RaisedFinding[];
+    readonly answered: readonly AnsweredFinding[];
+    readonly landing: readonly PlacedRecord[];
+  },
+): Result<readonly CheckFinding[], SymptomUnheld> => {
+  const answered = new Set(
+    request.answered.flatMap(({ finding, by }) =>
+      answersInDebtsPlace({ records: by }).length === 0 ? [] : [finding],
+    ),
+  );
+  const landing = findingHoldings({
+    ...request,
+    findings: request.findings.filter(({ finding }) => answered.has(finding)),
+    byPlace: recordsByPlaceOf({ records: answersInDebtsPlace({ records: request.landing }) }),
+  });
+  if (landing.outcome === "failed") return landing;
+  const covered = new Set(
+    landing.value.flatMap(({ finding, holders }) => (holders.length > 0 ? [finding] : [])),
+  );
+  return {
+    outcome: "ok",
+    value: request.findings
+      .map(({ finding }) => finding)
+      .filter((finding) => !covered.has(finding)),
+  };
+};
+
 const heldExceptions = (request: {
   readonly natives: readonly NativeHolding[];
 }): readonly HeldException[] =>
@@ -351,9 +412,10 @@ const heldExceptions = (request: {
       : [],
   );
 
-export const answerFindings = (request: AnsweringRequest): Result<Answering, SymptomUnheld> => {
-  const { catalogue, content } = request;
-  const forfeited = forfeitedRecords(request);
+const judgeFindings = (
+  request: AnsweringRequest & { readonly forfeited: readonly PlacedRecord[] },
+): Result<FindingAnswers, SymptomUnheld> => {
+  const { catalogue, content, forfeited } = request;
   const forfeit = new Set(forfeited);
   const inForce = request.records.filter((placed) => !forfeit.has(placed));
   const byPlace = recordsByPlaceOf({ records: inForce });
@@ -384,11 +446,12 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
     measurements: measurementIndexOf({ measurements: request.measurements }),
   });
   if (stale.outcome === "failed") return stale;
+  const answered = judged.filter((entry) => entry.by.length > 0);
   return {
     outcome: "ok",
     value: {
       findings: judged.flatMap((entry) => (entry.by.length === 0 ? [entry.finding] : [])),
-      answered: judged.filter((entry) => entry.by.length > 0),
+      answered,
       held: heldExceptions({ natives: natives.value }),
       stale: stale.value,
       forfeited,
@@ -396,6 +459,52 @@ export const answerFindings = (request: AnsweringRequest): Result<Answering, Sym
       unrecorded: natives.value.flatMap((native) =>
         native.holders.length === 0 ? [native.exception] : [],
       ),
+    },
+  };
+};
+
+export const answerFindings = (
+  request: AnsweringRequest,
+): Result<TouchedFileAnswering, SymptomUnheld> => {
+  const judged = judgeFindings({ ...request, forfeited: forfeitedRecords(request) });
+  return judged.outcome === "failed"
+    ? judged
+    : {
+        outcome: "ok",
+        value: {
+          ...judged.value,
+          judged: "touched-debt",
+          unmeasured: unmeasuredDebtForfeiture(request),
+        },
+      };
+};
+
+export const answerCountedFindings = (
+  request: ComparisonRequest,
+): Result<CountedAnswering, SymptomUnheld> => {
+  const judged = judgeFindings({ ...request, forfeited: [] });
+  if (judged.outcome === "failed") return judged;
+  const comparison = request.readComparison();
+  const { base } = comparison;
+  const debtFindings = filterFindingsForDebtComparison({
+    ...request,
+    answered: judged.value.answered,
+    landing: base.measured === "yes" ? base.placements : [],
+  });
+  if (debtFindings.outcome === "failed") return debtFindings;
+  return {
+    outcome: "ok",
+    value: {
+      ...judged.value,
+      judged: "counted-debt",
+      unmeasured: [],
+      debtComparison: compareDebt({
+        ...comparison,
+        records: request.records,
+        touched: request.touched,
+        findings: request.findings.map(({ finding }) => finding),
+        debtFindings: debtFindings.value,
+      }),
     },
   };
 };

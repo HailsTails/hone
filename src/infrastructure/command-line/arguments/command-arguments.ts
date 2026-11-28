@@ -11,6 +11,7 @@ import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import {
+  CHECK_FORFEITURE_ASSESSMENTS,
   FORFEITURE_ASSESSMENTS,
   WAIVED_CLAUSES_REPLACEMENT,
 } from "../../../domain/settings/assessment.ts";
@@ -19,6 +20,7 @@ import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
   ADOPTION_BASE_REVISION_OPTION,
   BASE_REVISION_OPTION,
+  CHECK_FORFEITURE_OPTION,
   COMMANDS,
   type CommandOption,
   FORFEITURE_OPTION,
@@ -201,18 +203,31 @@ const checkArgumentsOf = <Output extends string>(request: {
     return reportOutput;
   }
   const forfeiture = chosenValue({
-    option: FORFEITURE_OPTION,
-    choices: FORFEITURE_ASSESSMENTS,
+    option: CHECK_FORFEITURE_OPTION,
+    choices: CHECK_FORFEITURE_ASSESSMENTS,
     values: request.values,
   });
   if (forfeiture.outcome === "failed") {
     return forfeiture;
   }
+  const baseRevision = singleValue({ option: BASE_REVISION_OPTION, values: request.values });
+  if (
+    forfeiture.value === "no-new-findings" &&
+    (baseRevision === undefined || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(baseRevision))
+  ) {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "arguments-invalid",
+        detail: "no-new-findings requires --base-revision with the full landing commit SHA",
+      },
+    };
+  }
   return {
     outcome: "ok",
     value: {
       repo: repo.value,
-      baseRevision: singleValue({ option: BASE_REVISION_OPTION, values: request.values }),
+      baseRevision,
       reportOutput: reportOutput.value,
       forfeiture: forfeiture.value,
     },

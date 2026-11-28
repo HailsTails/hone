@@ -83,7 +83,7 @@ const READING: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const readerGiving = (
@@ -281,7 +281,7 @@ const READING_DEBT_ON_A: RecordsReading = {
   records: [DEBT_ON_A],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 describe("readingFollowingRenames", () => {
@@ -325,7 +325,7 @@ describe("readingFollowingRenames", () => {
         },
       ],
       notes: [],
-      base: { measured: "yes", held: [] },
+      base: { measured: "yes", placements: [] },
     });
   });
 

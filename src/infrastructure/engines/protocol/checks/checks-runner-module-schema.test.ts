@@ -27,6 +27,7 @@ const REPORT = {
     },
   ],
   measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
+  inapplicable: [],
   projection: "current",
   slices: [{ file: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
   nestedConfigurations: [],
@@ -391,4 +392,13 @@ describe("namedChecksRunResultSchema", () => {
       data: { outcome: "ok", value: report },
     });
   });
+});
+
+it("preserves valid inapplicability across the runner boundary", () => {
+  const inapplicable = [{ check: "authored-class-or-this#class-keyword", file: "src/readme.md" }];
+  const input = { outcome: "ok", value: { ...REPORT, inapplicable } };
+
+  const parsed = namedChecksRunResultSchema.safeParse(input);
+
+  expect(parsed).toMatchObject({ success: true, data: { value: { inapplicable } } });
 });

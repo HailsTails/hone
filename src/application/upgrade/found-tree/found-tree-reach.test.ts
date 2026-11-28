@@ -227,6 +227,7 @@ describe("foundTreeCheckReachOf", () => {
     expect({
       baseRevision: reach.baseRevision,
       changedSince: reach.git.changedSince({
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: FOUND_TREE_REVISION,
       }),
@@ -272,6 +273,7 @@ describe("foundTreeRunReachOf", () => {
     const given = {
       baseRevision: reach.baseRevision,
       changedSince: reach.git.changedSince({
+        baseScope: "merge-base",
         repoRoot: REPO_ROOT,
         baseRevision: FOUND_TREE_REVISION,
       }),

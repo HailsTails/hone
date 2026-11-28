@@ -1,4 +1,5 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { DebtComparisonIssue } from "../../domain/records/answering/debt-comparison.ts";
 import {
   RUN_SECTION_NAMES,
   type RunSectionName,
@@ -142,7 +143,7 @@ export const renderRunSectionsText = (request: RunReportRequest): string =>
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => printedLines({ output: request.output, section }))
     .map((line) => `${line}\n`)
-    .join("");
+    .join("") + renderDebtComparison(request);
 
 export const mapRunReportToFailingLines = (
   request: Omit<RunReportRequest, "output">,
@@ -151,6 +152,49 @@ export const mapRunReportToFailingLines = (
     .map((name) => ({ name, lines: SECTION_LINES[name]({ ...request, output: "full" }) }))
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => [headingOf({ section }), ...section.lines]);
+
+const mapDebtIssueToLine = (issue: DebtComparisonIssue): string => {
+  switch (issue.kind) {
+    case "base-unavailable":
+      return "landing records or changes could not be read. Fetch the landing history and update your branch to include the pinned landing commit.";
+    case "base-refused":
+      return "landing records could not be validated";
+    case "settings-changed":
+      return "hone.config.json changed since the landing commit";
+    case "projection-unmeasured":
+      return "refresh the projection and restore measured coverage";
+    case "coverage-unavailable":
+      return `no verified file scope for ${issue.engines.join(", ")}. Run the check with its engine coverage available.`;
+    case "no-checks":
+      return "no checks selected";
+    case "external-checks":
+      return "the preview requires checks shipped with Hone";
+    case "whole-symptom":
+      return `${issue.file} ${issue.symptom}: check-specific landing debt required`;
+    case "base-count-missing":
+      return `${issue.file} ${issue.check}: landing count is missing`;
+    case "head-record-changed":
+      return `${issue.file} ${issue.check}: the proposed debt differs from recorded landing debt`;
+    case "unmeasured":
+      return `${issue.file} ${issue.check}: no verified measurement`;
+    case "suppressed":
+      return `${issue.file} ${issue.check}: suppressed coverage`;
+    case "uncovered":
+      return `${issue.file} ${issue.check}: no landing debt allowance, observed ${issue.observed}`;
+    case "increased":
+      return `${issue.file} ${issue.check}: landing ${issue.ceiling}, observed ${issue.observed}; reduce by ${issue.observed - issue.ceiling}`;
+  }
+};
+
+const renderDebtComparison = ({ report, output }: RunReportRequest): string => {
+  if (report.judged !== "counted-debt" || output === "verdict-only") return "";
+  const { revision, issues } = report.debtComparison;
+  const landing = revision === undefined ? "" : ` against ${revision}`;
+  const heading = `debt comparison (${issues.length})${landing}\n`;
+  return output === "counts"
+    ? heading
+    : `${heading}${issues.map((issue) => `${mapDebtIssueToLine(issue)}\n`).join("")}`;
+};
 
 export const renderRunReportText = (request: RunReportRequest): string =>
   `${renderRunSectionsText(request)}${verdictLine(request)}\n`;

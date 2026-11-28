@@ -29,7 +29,7 @@ describe("COMMANDS", () => {
         value: "<full|failures-only|counts|verdict-only>",
         need: "optional",
       },
-      { name: "--forfeiture", value: "<this-run|elsewhere>", need: "optional" },
+      { name: "--forfeiture", value: "<this-run|elsewhere|no-new-findings>", need: "optional" },
     ]);
   });
 

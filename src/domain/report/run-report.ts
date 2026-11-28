@@ -2,6 +2,7 @@ import type { AttributedCheckException, CheckFinding } from "../finding/governan
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
 import type {
   AnsweredFinding,
+  ForfeitureJudgement,
   HeldException,
   PaidDebt,
   StaleRecord,
@@ -91,7 +92,7 @@ export type RunAssessment =
       readonly folders: readonly RepoPath[];
     };
 
-export type RunReport = {
+export type RunReportSections = {
   readonly excluded: readonly RepoPath[];
   readonly "not-adopted": readonly Check[];
   readonly "not-run": readonly Check[];
@@ -114,3 +115,5 @@ export type RunReport = {
   readonly carried: readonly CarriedListing[];
   readonly symptoms: readonly Symptom[];
 };
+
+export type RunReport = RunReportSections & ForfeitureJudgement;

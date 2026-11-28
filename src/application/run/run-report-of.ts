@@ -14,21 +14,24 @@ import type {
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import {
   type Answering,
-  answerFindings,
+  type FindingAssessment,
   type RaisedFinding,
 } from "../../domain/records/answering/answering.ts";
+import type { DebtComparisonEvidence } from "../../domain/records/answering/debt-comparison.ts";
 import type { PartyReport } from "../../domain/records/answering/record-reach.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { carriedListingOf } from "../../domain/records/hone-records/record-listings.ts";
+import type { RunMeasurements } from "../../domain/records/measurement/measured-at.ts";
 import {
   carriedJudgementOf,
-  recordsUnmeasuredOf,
+  unmeasuredCarriedRecords,
 } from "../../domain/records/measurement/records-unmeasured.ts";
 import type {
   AssessmentLeftElsewhere,
   RunAssessment,
   RunReport,
 } from "../../domain/report/run-report.ts";
+import { excludeProjectionOutputs } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
@@ -39,6 +42,7 @@ import {
   engineProblemsOf,
   engineUnmeasuredOf,
   runMeasurementsOf,
+  type SelectedEngineCheck,
 } from "./engines/engine-states.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 
@@ -108,7 +112,9 @@ const carriedStandingLeftElsewhereOf = (
 
 const nestedProjectionAssessments = (runs: readonly NamedEngineRun[]): readonly RunAssessment[] =>
   runs.flatMap(({ mechanism, projection, measured, nestedConfigurations }) =>
-    (projection === "current" || projection === "out-of-date") &&
+    (projection === "current" ||
+      projection === "current-with-file" ||
+      projection === "out-of-date") &&
     measured.length > 0 &&
     nestedConfigurations.length > 0
       ? [
@@ -136,7 +142,7 @@ const reportAfterAnswering = (
     readonly answering: Answering;
     readonly status: ReportStatus;
     readonly runs: readonly NamedEngineRun[];
-    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+    readonly unmeasured: RunReport["unmeasured"];
   },
 ): Result<RunReport, SymptomUnheld> => {
   const { answering, catalogue, content, records, runs } = request;
@@ -157,19 +163,10 @@ const reportAfterAnswering = (
     misnamed: runs.flatMap((run) => run.misnamedRuleIds),
     paid: answering.paid,
     refused: records.refused,
-    unmeasured: [
-      ...recordsUnmeasuredOf({
-        records: records.records,
-        base: records.base,
-        touched: request.touched,
-      }),
-      ...engineUnmeasuredOf({
-        catalogue,
-        runs,
-        selected: request.selected,
-        tracked: request.tracked,
-      }),
-    ],
+    unmeasured: [...answering.unmeasured, ...request.unmeasured],
+    ...(answering.judged === "counted-debt"
+      ? { judged: answering.judged, debtComparison: answering.debtComparison }
+      : { judged: answering.judged }),
     assessment: assessmentOf(request),
     "settings-notes": request.notes,
     "record-notes": records.notes,
@@ -181,8 +178,59 @@ const reportAfterAnswering = (
 
 export type RunReportRequest = ReportInputs & {
   readonly selection: NamedSettingsReading["selection"];
+  readonly answer: FindingAssessment;
   readonly runs: readonly NamedEngineRun[];
 };
+
+const createComparisonCoverage = (request: {
+  readonly runs: readonly NamedEngineRun[];
+  readonly selected: readonly SelectedEngineCheck[];
+}): DebtComparisonEvidence["coverage"] => {
+  const outputs = new Set(request.runs.flatMap(({ comparedOutputs }) => comparedOutputs));
+  const scoped = request.runs.flatMap(({ mechanism, coverage }) =>
+    coverage.kind === "scoped" ? [{ mechanism, ...coverage }] : [],
+  );
+  const candidates = new Map(
+    scoped.map(({ mechanism, candidateFiles }) => [
+      mechanism,
+      excludeProjectionOutputs({ files: candidateFiles, outputs }),
+    ]),
+  );
+  const unavailable = new Set(
+    request.selected.flatMap(({ engine }) => (candidates.has(engine) ? [] : [engine])),
+  );
+  return unavailable.size > 0
+    ? { kind: "scope-unavailable", engines: [...unavailable] }
+    : {
+        kind: "scoped",
+        pairs: request.selected.flatMap(({ address: check, engine }) =>
+          (candidates.get(engine) ?? []).map((file) => ({ check, file })),
+        ),
+        inapplicable: scoped.flatMap(({ inapplicable }) => inapplicable),
+      };
+};
+
+const createComparisonEvidence = (
+  request: RunReportRequest & {
+    readonly status: ReportStatus;
+    readonly unmeasured: RunReport["unmeasured"];
+    readonly selected: readonly SelectedEngineCheck[];
+    readonly measurements: RunMeasurements;
+  },
+): DebtComparisonEvidence => ({
+  base: request.records.base,
+  ruleSets: request.selection.selected.map(({ binding }) => binding.ruleSet),
+  coverage: createComparisonCoverage(request),
+  measured: request.measurements.runs.flatMap(({ measured, selected }) => {
+    const chosen = new Set(selected);
+    return measured.filter(({ check }) => chosen.has(check));
+  }),
+  exceptions: request.runs.flatMap(({ nativeExceptions }) => nativeExceptions),
+  projection:
+    request.status["projection-problems"].length === 0 && request.unmeasured.length === 0
+      ? "current"
+      : "unmeasured",
+});
 
 export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, SymptomUnheld> => {
   const { catalogue, records, runs, selection } = request;
@@ -207,13 +255,33 @@ export const namedRunReportOf = (request: RunReportRequest): Result<RunReport, S
     }),
   );
   const measurements = runMeasurementsOf({ ...request, selected });
-  const answering = answerFindings({
+  const unmeasured = [
+    ...unmeasuredCarriedRecords({
+      records: records.records,
+      base: records.base,
+      touched: request.touched,
+    }),
+    ...engineUnmeasuredOf({ ...request, selected }),
+  ];
+  const answering = request.answer({
     ...request,
     records: records.records,
     findings,
     measurements,
+    readComparison: () =>
+      createComparisonEvidence({
+        ...request,
+        status,
+        unmeasured,
+        selected,
+        measurements,
+      }),
   });
-  return answering.outcome === "failed"
-    ? answering
-    : reportAfterAnswering({ ...request, selected, answering: answering.value, status });
+  if (answering.outcome === "failed") return answering;
+  return reportAfterAnswering({
+    ...request,
+    answering: answering.value,
+    status,
+    unmeasured,
+  });
 };

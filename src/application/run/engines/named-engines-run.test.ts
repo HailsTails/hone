@@ -268,6 +268,8 @@ describe("runNamedEngines", () => {
       mechanism: "walker",
       coverableKinds: [],
       projection: "none",
+      coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+      comparedOutputs: [],
       slices: [],
       nestedConfigurations: [],
       unprojectedFolders: [],

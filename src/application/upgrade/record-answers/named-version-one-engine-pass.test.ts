@@ -125,6 +125,8 @@ const WALKER_MEASURED = {
     measured: [],
     nativeExceptions: [],
     projection: "none",
+    coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+    comparedOutputs: [],
     slices: [],
     nestedConfigurations: [],
     unprojectedFolders: [],

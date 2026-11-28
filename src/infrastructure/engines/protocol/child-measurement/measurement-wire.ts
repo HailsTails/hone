@@ -12,7 +12,10 @@ import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { parsedJson } from "../../../content-files/parsed-json.ts";
 import { engineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { namedChecksRunReportSchema } from "../checks/checks-runner-module-schema.ts";
+import {
+  decodeUnscopedChecksReport,
+  unscopedChecksRunReportSchema,
+} from "../checks/checks-runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
 import { runLoadFailureSchema } from "./run-load-failure-schema.ts";
@@ -51,8 +54,8 @@ export const isCheckedTreeSchemaEqual: Equal<
 const engineReplySchema = z.strictObject({
   mechanism: engineIdSchema,
   coverableKinds: z.array(nativeExceptionKindSchema).readonly(),
-  report: namedChecksRunReportSchema,
-  comparedOutputs: z.array(repoPathSchema).readonly().optional(),
+  report: unscopedChecksRunReportSchema,
+  comparedOutputs: z.array(repoPathSchema).readonly(),
 });
 
 const measurementReplySchema = z.discriminatedUnion("outcome", [
@@ -73,8 +76,20 @@ export const createMeasurementInput = (request: { readonly tree: CheckedTree }):
 const mapRunToEngineReply = (request: {
   readonly run: NamedEngineRun;
 }): z.input<typeof engineReplySchema> => {
-  const { mechanism, coverableKinds, comparedOutputs, ...report } = request.run;
-  return { mechanism, coverableKinds, report, comparedOutputs };
+  const {
+    mechanism,
+    coverableKinds,
+    comparedOutputs,
+    coverage: _coverage,
+    ...report
+  } = request.run;
+  return {
+    mechanism,
+    coverableKinds,
+    report:
+      report.projection === "current-with-file" ? { ...report, projection: "current" } : report,
+    comparedOutputs,
+  };
 };
 
 const mapMeasuredToReply = (request: {
@@ -147,16 +162,17 @@ const decodeReply = (request: { readonly reply: string }): Result<MeasurementRep
     : { outcome: "failed", error: z.prettifyError(reply.error) };
 };
 
-const mapReplyToRuns = (request: { readonly reply: MeasurementReply }): MeasuredRuns =>
-  request.reply.outcome === "not-loaded"
-    ? { outcome: "failed", error: request.reply.failure }
+const mapReplyToRuns = (reply: MeasurementReply): MeasuredRuns =>
+  reply.outcome === "not-loaded"
+    ? { outcome: "failed", error: reply.failure }
     : {
         outcome: "ok",
-        value: request.reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
-          ...report,
+        value: reply.runs.map(({ mechanism, coverableKinds, report, comparedOutputs }) => ({
+          ...decodeUnscopedChecksReport(report),
           mechanism,
           coverableKinds,
-          ...(comparedOutputs === undefined ? {} : { comparedOutputs }),
+          coverage: { kind: "scope-unavailable" },
+          comparedOutputs,
         })),
       };
 
@@ -167,7 +183,7 @@ export const decodeMeasuredRuns = (request: {
 }): MeasuredRuns => {
   const reply = decodeReply(request);
   return reply.outcome === "ok"
-    ? mapReplyToRuns({ reply: reply.value })
+    ? mapReplyToRuns(reply.value)
     : {
         outcome: "failed",
         error: {

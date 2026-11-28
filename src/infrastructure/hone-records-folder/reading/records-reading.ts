@@ -160,37 +160,25 @@ const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): rea
   );
 };
 
-const recordsHeldAtBase = (request: {
-  readonly documents: readonly RecordsDocument[];
-  readonly lookups: RecordLookups;
-  readonly base: RecordsAtBase;
-}): readonly HoneRecord[] => {
-  const ruleSetsRead = ruleSetsReadOf(request.lookups);
-  return request.documents.flatMap((document) => {
-    const listed = entriesOf({ document, ruleSetsRead });
-    return listed.outcome === "failed"
-      ? []
-      : listed.value.flatMap((placed) => {
-          const judged = judgedEntry({ placed, lookups: request.lookups, base: request.base });
-          return judged.placed === "record" ? [judged.record.record] : [];
-        });
-  });
-};
-
 const baseMeasurementOf = (request: {
   readonly base: RecordsAtBase;
   readonly lookups: RecordLookups;
-}): BaseMeasurement =>
-  request.base.measured === "yes"
-    ? {
-        measured: "yes",
-        held: recordsHeldAtBase({
-          documents: request.base.documents,
-          lookups: request.lookups,
-          base: request.base,
-        }),
-      }
-    : { measured: "no", base: request.base.base };
+}): BaseMeasurement => {
+  const { base, lookups } = request;
+  if (base.measured === "no") return { measured: "no", base: base.base };
+  const ruleSetsRead = ruleSetsReadOf(lookups);
+  const listed = base.documents.map((document) => entriesOf({ document, ruleSetsRead }));
+  const judged = listed.flatMap((entries) =>
+    entries.outcome === "ok"
+      ? entries.value.map((placed) => judgedEntry({ placed, lookups, base }))
+      : [],
+  );
+  const incomplete =
+    listed.some((entries) => entries.outcome === "failed") ||
+    judged.some((entry) => entry.placed === "refused");
+  const placements = judged.flatMap((entry) => (entry.placed === "record" ? [entry.record] : []));
+  return incomplete ? { measured: "partial", placements } : { measured: "yes", placements };
+};
 
 const notesOf = (request: { readonly placed: PlacedRecord }): readonly RecordNote[] => {
   const { place, record } = request.placed;

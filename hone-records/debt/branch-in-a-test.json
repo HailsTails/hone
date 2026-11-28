@@ -71,10 +71,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
     },
     {

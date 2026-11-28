@@ -39,10 +39,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/application/upgrade/found-tree/found-tree-git.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {
@@ -127,23 +123,11 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/runner/pieces/cast-shape.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",

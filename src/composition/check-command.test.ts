@@ -355,7 +355,7 @@ const RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const CLEAN_RUN: NamedEngineRun = {
@@ -364,6 +364,8 @@ const CLEAN_RUN: NamedEngineRun = {
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -652,6 +654,7 @@ verdict: fail
 });
 
 const EMPTY_RUN_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],

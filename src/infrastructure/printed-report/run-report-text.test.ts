@@ -419,6 +419,7 @@ const NOTED_LOCATION: PlacedRecord = {
 };
 
 const EMPTY_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -443,6 +444,7 @@ const EMPTY_REPORT: RunReport = {
 };
 
 const EVERY_SECTION: RunReport = {
+  judged: "touched-debt",
   excluded: [repoPathOf("dist")],
   "not-adopted": [CAST_CHECK],
   "not-run": [TEST_BODY_CHECK],
@@ -761,4 +763,57 @@ describe("assessmentScopeOf", () => {
       assessmentScopeOf({ report: { ...EMPTY_REPORT, assessment: EVERY_SECTION.assessment } }),
     ).toBe(" (partial assessment)");
   });
+});
+
+it("prints the landing ceiling and the observed count before the verdict", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: {
+      revision: "pinned",
+      issues: [
+        {
+          kind: "increased",
+          check: "claimed-type#cast-expressions",
+          file: repoPathOf("src/cart.ts"),
+          ceiling: 2,
+          observed: 3,
+        },
+      ],
+    },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toContain("src/cart.ts claimed-type#cast-expressions");
+  expect(text).toContain("landing 2, observed 3");
+  expect(text).toMatch(/verdict: fail\s*$/);
+});
+
+it("includes the comparison count or just the verdict at the requested detail", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+
+  const counts = rendered({ report, output: "counts" });
+  const verdict = rendered({ report, output: "verdict-only" });
+
+  expect(counts).toBe("debt comparison (1) against pinned\nverdict: fail\n");
+  expect(verdict).toBe("verdict: fail\n");
+});
+
+it("explains how to restore the landing history when the preview cannot use the base", () => {
+  const report: RunReport = {
+    ...EMPTY_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: undefined, issues: [{ kind: "base-unavailable" }] },
+  };
+
+  const text = rendered({ report, output: "actionable" });
+
+  expect(text).toContain("debt comparison (1)\n");
+  expect(text).toMatch(/update your branch.*include the pinned landing commit/);
+  expect(text).toMatch(/verdict: fail\s*$/);
 });

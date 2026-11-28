@@ -18,50 +18,22 @@ import type { TypeScriptParsePort } from "../../runner/toolchain/typescript-pars
 import {
   defaultTypeScriptPeers,
   loadParsePort,
-  type TypeScriptPeers,
   typeScriptPeersNamed,
 } from "../../runner/toolchain/typescript-toolchain.ts";
 
 const path = createDefaultPathPort({});
 
-type TypeScriptLine = "typescript" | "typescript-floor";
-
-const LINE_VERSIONS: Readonly<Record<TypeScriptLine, RegExp>> = {
-  typescript: /^6\./,
-  "typescript-floor": /^4\.8\.4$/,
-};
-
 const DEVELOPMENT_ROOT = `${import.meta.dirname}/../../../../../..`;
+const install = path.resolve({ path: DEVELOPMENT_ROOT });
+const repository = path.resolve({ path: `${import.meta.dirname}/cd3-extends` });
 
-const PEERS_ON: Readonly<Record<TypeScriptLine, TypeScriptPeers>> = {
-  typescript: defaultTypeScriptPeers({ installRoot: DEVELOPMENT_ROOT, installForm: "source" }),
-  "typescript-floor": typeScriptPeersNamed({
-    installRoot: DEVELOPMENT_ROOT,
-    installForm: "source",
-    packageName: "typescript-floor",
-  }),
-};
-
-const parsePortOn = async (request: {
-  readonly line: TypeScriptLine;
-}): Promise<TypeScriptParsePort> => {
-  const loaded = await loadParsePort({ peers: PEERS_ON[request.line] });
-  assert(loaded.outcome === "ok", `the ${request.line} line loads from the development install`);
-  assert(
-    LINE_VERSIONS[request.line].test(loaded.value.syntaxApi.version),
-    `the ${request.line} line runs TypeScript ${loaded.value.syntaxApi.version}`,
-  );
-  return loaded.value;
-};
-
-const auditRunnerOn = (request: { readonly line: TypeScriptLine }): NamedChecksRunner =>
+const createFixtureRunner = (
+  toolchain: Promise<Result<TypeScriptParsePort, RunnerFailure>>,
+): NamedChecksRunner =>
   toolchainBoundNamedChecksRunner({
     fileScope: "tracked",
     projectedKinds: [],
-    toolchain: parsePortOn(request).then((parse): Result<TypeScriptParsePort, RunnerFailure> => ({
-      outcome: "ok",
-      value: parse,
-    })),
+    toolchain,
     runnerOf: (parse) =>
       createWalkerRunner({
         fileText: createDefaultFileTextPort({}),
@@ -71,16 +43,6 @@ const auditRunnerOn = (request: { readonly line: TypeScriptLine }): NamedChecksR
         entryKind: createDefaultEntryKindPort({}),
       }),
   });
-
-const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
-  const resolved = path.resolve(request);
-  assert(resolved.outcome === "ok", `${request.path} resolves to an absolute path`);
-  return resolved.value;
-};
-
-const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../../../../../..` });
-
-const REPO_ROOT = resolvedPath({ path: `${import.meta.dirname}/cd3-extends` });
 
 const INHERITS = repoPathOf("packages/inherits/tsconfig.json");
 const LOOSENED = repoPathOf("packages/loosened/tsconfig.json");
@@ -97,25 +59,28 @@ const FALLTHROUGH: CheckAddressText = "strictness-weakened#no-fallthrough-cases-
 const PROPERTY: CheckAddressText = "strictness-weakened#no-property-access-from-index-signature";
 const CATCH: CheckAddressText = "strictness-weakened#use-unknown-in-catch-variables";
 
-const secondEditionClause = (request: { readonly address: CheckAddressText }): CheckBinding => ({
+const createCheckBinding = (request: {
+  readonly address: CheckAddressText;
+  readonly installRoot: AbsolutePath;
+}): CheckBinding => ({
   address: request.address,
   ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
-  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/strictness-weakened/strict`,
+  pieceRoot: `${request.installRoot}/src/infrastructure/engines/walker/strictness-weakened/strict`,
   checkSettings: {},
   edition: editionOf("2"),
   settings: { module: "compiler-overrides.ts" },
 });
 
-const CLAUSES: readonly CheckBinding[] = [
-  secondEditionClause({ address: STRICT }),
-  secondEditionClause({ address: UNCHECKED }),
-  secondEditionClause({ address: EXACT }),
-  secondEditionClause({ address: OVERRIDE }),
-  secondEditionClause({ address: FALLTHROUGH }),
-  secondEditionClause({ address: PROPERTY }),
-  secondEditionClause({ address: CATCH }),
+const createCheckBindings = (installRoot: AbsolutePath): readonly CheckBinding[] => [
+  createCheckBinding({ address: STRICT, installRoot }),
+  createCheckBinding({ address: UNCHECKED, installRoot }),
+  createCheckBinding({ address: EXACT, installRoot }),
+  createCheckBinding({ address: OVERRIDE, installRoot }),
+  createCheckBinding({ address: FALLTHROUGH, installRoot }),
+  createCheckBinding({ address: PROPERTY, installRoot }),
+  createCheckBinding({ address: CATCH, installRoot }),
 ];
 
 const AT_FILE = { line: 1, column: 0 } as const;
@@ -256,6 +221,8 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
   it.each([
     {
       line: "typescript",
+      version: /^6\./,
+      peers: defaultTypeScriptPeers({ installRoot: DEVELOPMENT_ROOT, installForm: "source" }),
       layeredHits: [
         {
           check: OVERRIDE,
@@ -268,6 +235,12 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
     },
     {
       line: "typescript-floor",
+      version: /^4\.8\.4$/,
+      peers: typeScriptPeersNamed({
+        installRoot: DEVELOPMENT_ROOT,
+        installForm: "source",
+        packageName: "typescript-floor",
+      }),
       layeredHits: [
         {
           check: STRICT,
@@ -315,13 +288,24 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
     },
   ] as const)(
     "judges each tsconfig.json by the options it resolves to on the $line line",
-    async ({ line, layeredHits }) => {
-      const report = await auditRunnerOn({ line }).run({
-        repoRoot: REPO_ROOT,
-        installRoot: INSTALL_ROOT,
+    async ({ line, version, peers, layeredHits }) => {
+      const parsing = loadParsePort({ peers });
+      const loaded = await parsing;
+      assert(loaded.outcome === "ok", `the ${line} line loads from the development install`);
+      assert(
+        version.test(loaded.value.syntaxApi.version),
+        `the ${line} line runs TypeScript ${loaded.value.syntaxApi.version}`,
+      );
+      assert(install.outcome === "ok", "the development root resolves");
+      assert(repository.outcome === "ok", "the fixture root resolves");
+
+      const installRoot = install.value;
+      const report = await createFixtureRunner(parsing).run({
+        repoRoot: repository.value,
+        installRoot,
         files: [INHERITS, LOOSENED, UNSET, BROKEN, LAYERED, SOLUTION],
         trackedPaths: [INHERITS, LOOSENED, UNSET, BROKEN, LAYERED, SOLUTION],
-        bindings: CLAUSES,
+        bindings: createCheckBindings(installRoot),
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
@@ -334,6 +318,7 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
           hits: [...SHARED_HITS, ...layeredHits],
           nativeExceptions: [],
           measured: EVERY_CLAUSE_ON_EVERY_TSCONFIG,
+          inapplicable: [],
           projection: "none",
           slices: [],
           nestedConfigurations: [],

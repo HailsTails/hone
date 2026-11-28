@@ -33,6 +33,7 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
 const EMPTY_RUN_REPORT: RunReport = {
+  judged: "touched-debt",
   excluded: [],
   "not-adopted": [],
   "not-run": [],
@@ -320,4 +321,21 @@ describe("runSelfCheck", () => {
       reads: [],
     });
   });
+});
+
+it("names the comparison section when it is the only refusal", () => {
+  const report: RunReport = {
+    ...EMPTY_RUN_REPORT,
+    judged: "counted-debt",
+    debtComparison: { revision: "pinned", issues: [{ kind: "base-refused" }] },
+  };
+  const produced = producedOf({ report, output: "actionable" });
+
+  const checked = versionTwoSelfCheckOutcomeOf({ ports: SELF_CHECK_PORTS, produced });
+
+  expect(checked.code).toBe(1);
+  expect(checked.text).toContain("debt comparison (1) against pinned");
+  expect(checked.text).toContain(
+    "self-check: fail, failing sections hold entries: debt comparison (1)",
+  );
 });

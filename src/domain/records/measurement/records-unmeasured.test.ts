@@ -4,7 +4,11 @@ import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
-import { carriedJudgementOf, recordsUnmeasuredOf } from "./records-unmeasured.ts";
+import {
+  carriedJudgementOf,
+  unmeasuredCarriedRecords,
+  unmeasuredDebtForfeiture,
+} from "./records-unmeasured.ts";
 
 const CLAIMED_TYPE: Symptom = {
   ruleSet: "hone",
@@ -66,28 +70,32 @@ const ZOD_DEPENDENCY: PlacedRecord = {
   },
 };
 
-describe("recordsUnmeasuredOf", () => {
+describe("unmeasured records", () => {
   it("lists forfeiture unmeasured when the touched set is unmeasured and debt exists", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [STATED_DEBT],
-        base: { measured: "yes", held: [] },
-        touched: { measured: "no", base: { state: "not-given" } },
-      }),
-    ).toEqual([{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }]);
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [STATED_DEBT],
+      base: { measured: "yes", placements: [] },
+      touched: { measured: "no", base: { state: "not-given" } },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([
+      { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
+    ]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([]);
   });
 
   it("lists import unmeasured when the base was not measured and a carried record exists, which still answers", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [CARRIED_LOCATION],
-        base: {
-          measured: "no",
-          base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" },
-        },
-        touched: { measured: "yes", paths: new Set() },
-      }),
-    ).toEqual([
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [CARRIED_LOCATION],
+      base: {
+        measured: "no",
+        base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" },
+      },
+      touched: { measured: "yes", paths: new Set() },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([
       {
         kind: "import-unmeasured",
         base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" },
@@ -95,47 +103,52 @@ describe("recordsUnmeasuredOf", () => {
     ]);
   });
 
-  it("lists forfeiture before import, as version 1 does", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [STATED_DEBT, CARRIED_LOCATION],
-        base: { measured: "no", base: { state: "not-given" } },
-        touched: { measured: "no", base: { state: "not-given" } },
-      }),
-    ).toEqual([
+  it("lists both kinds of unmeasured debt independently", () => {
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [STATED_DEBT, CARRIED_LOCATION],
+      base: { measured: "no", base: { state: "not-given" } },
+      touched: { measured: "no", base: { state: "not-given" } },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([
       { kind: "forfeiture-unmeasured", base: { state: "not-given" } },
+    ]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([
       { kind: "import-unmeasured", base: { state: "not-given" } },
     ]);
   });
 
   it("lists nothing when nothing needs the base, though neither was measured", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [ZOD_DEPENDENCY],
-        base: { measured: "no", base: { state: "not-given" } },
-        touched: { measured: "no", base: { state: "not-given" } },
-      }),
-    ).toEqual([]);
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [ZOD_DEPENDENCY],
+      base: { measured: "no", base: { state: "not-given" } },
+      touched: { measured: "no", base: { state: "not-given" } },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([]);
   });
 
   it("lists nothing when forfeiture is measured elsewhere and the base was measured", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [STATED_DEBT, CARRIED_LOCATION],
-        base: { measured: "yes", held: [] },
-        touched: { measured: "elsewhere" },
-      }),
-    ).toEqual([]);
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [STATED_DEBT, CARRIED_LOCATION],
+      base: { measured: "yes", placements: [] },
+      touched: { measured: "elsewhere" },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([]);
   });
 
   it("lists nothing for a carried record when forfeiture is left to another run, though the base was not measured", () => {
-    expect(
-      recordsUnmeasuredOf({
-        records: [STATED_DEBT, CARRIED_LOCATION],
-        base: { measured: "no", base: { state: "not-given" } },
-        touched: { measured: "elsewhere" },
-      }),
-    ).toEqual([]);
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [STATED_DEBT, CARRIED_LOCATION],
+      base: { measured: "no", base: { state: "not-given" } },
+      touched: { measured: "elsewhere" },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([]);
   });
 
   it("still lists import unmeasured when forfeiture is left to another run and the base was given but cannot be read", () => {
@@ -144,13 +157,16 @@ describe("recordsUnmeasuredOf", () => {
       revision: "origin/main",
       gitMessage: "fatal: bad object",
     } as const;
-    expect(
-      recordsUnmeasuredOf({
-        records: [CARRIED_LOCATION],
-        base: { measured: "no", base: gitFailed },
-        touched: { measured: "elsewhere" },
-      }),
-    ).toEqual([{ kind: "import-unmeasured", base: gitFailed }]);
+    const request: Parameters<typeof unmeasuredCarriedRecords>[0] = {
+      records: [CARRIED_LOCATION],
+      base: { measured: "no", base: gitFailed },
+      touched: { measured: "elsewhere" },
+    };
+
+    expect(unmeasuredDebtForfeiture(request)).toEqual([]);
+    expect(unmeasuredCarriedRecords(request)).toEqual([
+      { kind: "import-unmeasured", base: gitFailed },
+    ]);
   });
 });
 
@@ -171,7 +187,7 @@ describe("carriedJudgementOf", () => {
     expect(
       carriedJudgementOf({
         records: [CARRIED_LOCATION],
-        base: { measured: "yes", held: [] },
+        base: { measured: "yes", placements: [] },
         touched: ELSEWHERE,
       }),
     ).toEqual({ judgement: "judged" });

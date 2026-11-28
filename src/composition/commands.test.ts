@@ -506,7 +506,7 @@ const NO_RECORDS: RecordsReading = {
   records: [],
   refused: [],
   notes: [],
-  base: { measured: "yes", held: [] },
+  base: { measured: "yes", placements: [] },
 };
 
 const HELD_DEBT: PlacedRecord = {
@@ -533,6 +533,8 @@ const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun 
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
+  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  comparedOutputs: [],
   slices: [],
   measured: [],
   nestedConfigurations: [],
@@ -714,7 +716,9 @@ describe("versionTwoRecordDebtCommandOf", () => {
         },
       }),
     );
-    expect(stages.touched).toHaveBeenCalledWith(expect.objectContaining({ measuring: "always" }));
+    expect(stages.touched).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "always" } }),
+    );
   });
 
   it("writes the debt the run found and prints it recorded, exit 0", async () => {
@@ -744,7 +748,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
           value: {
             ...NO_RECORDS,
             records: [HELD_DEBT],
-            base: { measured: "yes", held: [HELD_DEBT.record] },
+            base: { measured: "yes", placements: [HELD_DEBT] },
           },
         }),
         renamed: vi.fn<VersionTwoStages["renamed"]>().mockReturnValue({
@@ -791,8 +795,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "this-run" },
-      measuring: "always",
+      scope: { baseScope: "merge-base", measuring: "always" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -819,8 +822,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
       held: nothingHeld(),
     });
     expect(touched).toHaveBeenCalledWith({
-      assessment: { forfeiture: "elsewhere" },
-      measuring: "always",
+      scope: { baseScope: "elsewhere" },
       records: NO_RECORDS,
       renamed: { measured: "yes", renamed: new Map() },
     });
@@ -1280,7 +1282,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
       exits: [[{ code: 0 }]],
     });
     expect(stages.touched).toHaveBeenCalledWith(
-      expect.objectContaining({ measuring: "when-debt-held" }),
+      expect.objectContaining({ scope: { baseScope: "merge-base", measuring: "when-debt-held" } }),
     );
   });
 

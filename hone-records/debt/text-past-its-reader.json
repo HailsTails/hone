@@ -27,14 +27,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/single-mechanism.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "src/application/upgrade/team-layout/team-layout-plan.test.ts"
     },
     {

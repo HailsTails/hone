@@ -1,6 +1,11 @@
 import type { NamedGovernedRun } from "../../domain/finding/governance.ts";
 import { createRuleContent, type RuleContent } from "../../domain/language-layer/rule-content.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import {
+  answerCountedFindings,
+  answerFindings,
+  type FindingAssessment,
+} from "../../domain/records/answering/answering.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordRepointing } from "../../domain/records/hone-records/records-edit.ts";
 import { recordsAtMovedPathsOf } from "../../domain/records/hone-records/records-following-renames.ts";
@@ -11,12 +16,8 @@ import type { RenamedSinceBase } from "../../domain/repository/renamed-path.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ProjectionEntry } from "../../domain/runner/checks-run-report.ts";
-import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
-import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
-import {
-  type VersionTwoReportOutput,
-  reportOutputInEffect,
-} from "../../domain/settings/report-output.ts";
+import type { Assessment, CheckForfeiture } from "../../domain/settings/assessment.ts";
+import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import type { EngineCheck, NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { readingFollowingRenames } from "../records/read-hone-records.ts";
 import { mapChecksToEngineChecks } from "./engines/engine-checks.ts";
@@ -26,7 +27,7 @@ import {
   catalogueWithExternalChecks,
   type NamedSettingsReading,
 } from "./settings/read-settings.ts";
-import type { TouchedMeasuring } from "./touched-set/touched-set-of.ts";
+import type { TouchedMeasuring, TouchedScope } from "./touched-set/touched-set-of.ts";
 
 export type VersionTwoRun = {
   readonly report: RunReport;
@@ -65,17 +66,33 @@ export type VersionTwoStages = {
   ) => Promise<Result<readonly ProjectionEntry[], RunLoadFailure>>;
   readonly renamed: () => RenamedSinceBase;
   readonly touched: (request: {
-    readonly assessment: Assessment;
-    readonly measuring: TouchedMeasuring;
+    readonly scope: TouchedScope;
     readonly records: RecordsReading;
     readonly renamed: RenamedSinceBase;
   }) => TouchedSet;
 };
 
-export type VersionTwoRequest = {
-  readonly forfeiture: ForfeitureAssessment | undefined;
-  readonly reportOutput: VersionTwoReportOutput | undefined;
+export type VersionTwoPlan = {
+  readonly assessment: Assessment<CheckForfeiture>;
+  readonly reportOutput: VersionTwoReportOutput;
   readonly measuring: TouchedMeasuring;
+};
+
+const selectForfeiture = (
+  request: VersionTwoPlan,
+): {
+  readonly scope: TouchedScope;
+  readonly answer: FindingAssessment;
+} => {
+  const { measuring } = request;
+  switch (request.assessment.forfeiture) {
+    case "this-run":
+      return { scope: { baseScope: "merge-base", measuring }, answer: answerFindings };
+    case "elsewhere":
+      return { scope: { baseScope: "elsewhere" }, answer: answerFindings };
+    case "no-new-findings":
+      return { scope: { baseScope: "pinned-ancestor" }, answer: answerCountedFindings };
+  }
 };
 
 type ReadStageInputs = {
@@ -129,29 +146,31 @@ export const versionTwoInputsOf = (request: {
       };
 };
 
-export type MeasuredEngines = Omit<EngineStageRequest, keyof ReadStageInputs> &
-  ReadStageInputs & {
-    readonly content: RuleContent;
-    readonly runs: readonly NamedEngineRun[];
-  };
+type MeasuredEngines = Inputs & {
+  readonly tree: CheckedTree;
+  readonly runs: readonly NamedEngineRun[];
+};
 
 export const measureEngines = async (request: {
-  readonly stages: VersionTwoStages;
+  readonly stages: Pick<VersionTwoStages, "tree" | "engines">;
+  readonly inputs: Inputs;
 }): Promise<Result<MeasuredEngines, RunLoadFailure>> => {
-  const inputs = versionTwoInputsOf(request);
-  if (inputs.outcome === "failed") {
-    return inputs;
-  }
-  const tree = request.stages.tree({ settings: inputs.value.settings });
+  const { content, ...stageInputs } = request.inputs;
+  const tree = request.stages.tree({ settings: stageInputs.settings });
   if (tree.outcome === "failed") {
     return tree;
   }
-  const { content, ...stageInputs } = inputs.value;
-  const measuring = { ...stageInputs, tree: tree.value };
+  const measuring: EngineStageRequest = {
+    ...stageInputs,
+    tree: tree.value,
+  };
   const runs = await request.stages.engines(measuring);
   return runs.outcome === "failed"
     ? runs
-    : { outcome: "ok", value: { ...measuring, content, runs: runs.value } };
+    : {
+        outcome: "ok",
+        value: { ...stageInputs, tree: tree.value, content, runs: runs.value },
+      };
 };
 
 type RecordsAfterRenames = {
@@ -162,27 +181,22 @@ type RecordsAfterRenames = {
 
 const createRecordsAfterRenames = (request: {
   readonly stages: Pick<VersionTwoStages, "renamed" | "touched">;
-  readonly arguments: VersionTwoRequest;
-  readonly settings: NamedSettingsReading;
+  readonly scope: TouchedScope;
   readonly records: RecordsReading;
 }): RecordsAfterRenames => {
   const { records } = request;
   const renamed = request.stages.renamed();
   const moved =
-    renamed.measured === "yes" && records.base.measured === "yes"
+    renamed.measured === "yes" && records.base.measured !== "no"
       ? recordsAtMovedPathsOf({
           records: records.records,
           renamed: renamed.renamed,
-          held: records.base.held,
+          held: records.base.placements.map(({ record }) => record),
         })
       : [];
   const followed = readingFollowingRenames({ reading: records, renamed, moved });
   const touched = request.stages.touched({
-    assessment: assessmentInEffect({
-      requested: { forfeiture: request.arguments.forfeiture },
-      configured: request.settings.runSettings.assessment,
-    }),
-    measuring: request.arguments.measuring,
+    scope: request.scope,
     records: followed,
     renamed,
   });
@@ -191,14 +205,20 @@ const createRecordsAfterRenames = (request: {
 
 export const versionTwoRunOver = async (request: {
   readonly stages: VersionTwoStages;
-  readonly arguments: VersionTwoRequest;
+  readonly inputs: Inputs;
+  readonly plan: VersionTwoPlan;
 }): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
   const measured = await measureEngines(request);
   if (measured.outcome === "failed") {
     return measured;
   }
   const { catalogue, settings, records, content, tree, runs } = measured.value;
-  const { moved, followed, touched } = createRecordsAfterRenames({ ...request, settings, records });
+  const { scope, answer } = selectForfeiture(request.plan);
+  const { moved, followed, touched } = createRecordsAfterRenames({
+    stages: request.stages,
+    scope,
+    records,
+  });
   const report = namedRunReportOf({
     catalogue,
     content,
@@ -210,6 +230,7 @@ export const versionTwoRunOver = async (request: {
     runs,
     tracked: tree.tracked,
     available: settings.available,
+    answer,
   });
   if (report.outcome === "failed") {
     return report;
@@ -223,10 +244,7 @@ export const versionTwoRunOver = async (request: {
       touched,
       runs,
       moved,
-      output: reportOutputInEffect({
-        requested: request.arguments.reportOutput,
-        configured: settings.runSettings.reportOutput,
-      }),
+      output: request.plan.reportOutput,
     },
   };
 };
