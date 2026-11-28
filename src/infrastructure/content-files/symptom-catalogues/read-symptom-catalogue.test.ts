@@ -186,7 +186,7 @@ describe("createSymptomCatalogueRepository", () => {
             {
               name: "parameter-reassignment",
               symptom: { ruleSet: "hone", name: "rebinding" },
-              page: "rebinding/parameter-reassignment.md",
+              page: "/install/rules/typescript/symptoms/rebinding/parameter-reassignment.md",
               clause: PARAMETER_REASSIGNMENT,
               forms: [],
               findingSpecifics: [],
@@ -215,7 +215,13 @@ const CONTENT_NAMED_BY_THE_TEAM: CatalogueContent = {
   recipes: [],
   recordKinds: [AUTHORISED_LOCATION, DEBT],
   engines: [WALKER, ESLINT, OXLINT],
-  symptoms: [{ ...REBINDING, ruleSet: TEAM, sourceFile: "rules/typescript/symptoms/rebinding.md" }],
+  symptoms: [
+    {
+      ...REBINDING,
+      ruleSet: TEAM,
+      sourceFile: "/repo/team-rules/rules/typescript/symptoms/rebinding.md",
+    },
+  ],
   clauses: [
     {
       clause: TEAM_CLAUSE,
@@ -226,7 +232,7 @@ const CONTENT_NAMED_BY_THE_TEAM: CatalogueContent = {
     {
       name: "reassigned",
       symptom: { ruleSet: TEAM, name: "rebinding" },
-      page: "rules/typescript/symptoms/rebinding/reassigned.md",
+      page: "/repo/team-rules/rules/typescript/symptoms/rebinding/reassigned.md",
       clause: TEAM_CLAUSE,
       forms: [],
       findingSpecifics: [],
@@ -303,7 +309,9 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
         held: "catalogue",
         content: {
           recordKinds: [AUTHORISED_LOCATION, DEBT],
-          symptoms: [{ name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" }],
+          symptoms: [
+            { name: "rebinding", sourceFile: "/repo/team-rules/rules/sql/symptoms/rebinding.md" },
+          ],
           checks: [
             {
               name: "parameter-reassignment",

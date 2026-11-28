@@ -1,3 +1,4 @@
+import type { ShownPathOf } from "../../application/ports/installation/shown-path-of.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { DebtComparisonIssue } from "../../domain/records/answering/debt-comparison.ts";
 import {
@@ -34,6 +35,7 @@ export type RunReportRequest = PruneCommand & {
   readonly catalogue: SymptomCatalogue;
   readonly content: NotedContent;
   readonly symptomPage: string;
+  readonly showPage: ShownPathOf;
   readonly projectCommand: string;
   readonly output: VersionTwoReportOutput;
 };
@@ -52,11 +54,17 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
         content: request.content,
         finding,
         symptomPage: request.symptomPage,
+        showPage: request.showPage,
       }),
     ),
   answered: (request) =>
     request.report.answered.map((answered) =>
-      answeredLine({ catalogue: request.catalogue, content: request.content, answered }),
+      answeredLine({
+        catalogue: request.catalogue,
+        content: request.content,
+        answered,
+        showPage: request.showPage,
+      }),
     ),
   held: (request) =>
     request.report.held.map((held) => heldLine({ catalogue: request.catalogue, held })),
@@ -97,7 +105,9 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     request.report["record-notes"].map((recordNote) => recordNoteLine({ recordNote })),
   carried: (request) => request.report.carried.map((listing) => carriedLine({ listing })),
   symptoms: (request) =>
-    request.report.symptoms.map((symptom) => symptomLine({ symptom, page: request.symptomPage })),
+    request.report.symptoms.map((symptom) =>
+      symptomLine({ symptom, page: request.symptomPage, showPage: request.showPage }),
+    ),
 };
 
 type PrintedSection = { readonly name: RunSectionName; readonly lines: readonly string[] };

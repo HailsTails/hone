@@ -123,7 +123,7 @@ const ASSEMBLED_CONTENT = {
   recipes: [
     {
       name: "world-values-through-a-port",
-      sourceFile: "rules/typescript/recipes/world-values-through-a-port.md",
+      sourceFile: "/content/typescript/recipes/world-values-through-a-port.md",
       title: "World values through a port",
     },
   ],
@@ -136,7 +136,7 @@ const ASSEMBLED_CONTENT = {
     {
       ruleSet: { name: "acme" },
       name: "date-used-directly",
-      sourceFile: "rules/typescript/symptoms/date-used-directly.md",
+      sourceFile: "/content/typescript/symptoms/date-used-directly.md",
       title: "Date used directly",
       recipes: [{ name: "world-values-through-a-port" }],
     },
@@ -145,7 +145,7 @@ const ASSEMBLED_CONTENT = {
     {
       name: "clock-sources",
       symptom: { ruleSet: { name: "acme" }, name: "date-used-directly" },
-      page: "rules/typescript/symptoms/date-used-directly/clock-sources.md",
+      page: "/content/typescript/symptoms/date-used-directly/clock-sources.md",
       clause: CLOCK_SOURCES,
     },
   ],
@@ -178,7 +178,7 @@ describe("createItemFolderCatalogueRepository", () => {
         path: PATH,
         root: ROOT,
         beside: BESIDE,
-        sourcePrefix: "rules",
+        symptomPages: "individual",
       }).read({}),
     ).toMatchObject({
       outcome: "ok",
@@ -206,6 +206,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText,
         directory,
         path: PATH,
@@ -231,6 +232,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
         path: PATH,
@@ -258,6 +260,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
         path: PATH,
@@ -289,6 +292,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText: fileTextReading(
           vi
             .fn<FileTextPort["read"]>()
@@ -334,6 +338,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText,
         directory,
         path: PATH,
@@ -365,6 +370,7 @@ describe("createItemFolderCatalogueRepository", () => {
       createItemFolderCatalogueRepository({
         inheritedRecordKinds: [],
         ruleSet: "hone",
+        symptomPages: "index",
         fileText: fileTextReading(
           vi
             .fn<FileTextPort["read"]>()

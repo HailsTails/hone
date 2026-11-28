@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { ShownPathOf } from "../../../application/ports/installation/shown-path-of.ts";
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
 import {
   createCheckPages,
@@ -8,6 +9,7 @@ import {
 import type {
   Case,
   Check,
+  CheckAddress,
   Engine,
   Pointed,
   Principle,
@@ -424,6 +426,79 @@ const UNSITED_CONTENT = {
   ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
 };
 
+const HONE_REMEDY_CHECK: CheckAddress = {
+  name: "test-body",
+  symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+};
+const HONE_NARROWING_RECIPE: Recipe = {
+  ...ASSERT_TO_NARROW,
+  sourceFile: "/installed/rules/typescript/recipes/assert-to-narrow.md",
+  examples: [
+    { anchor: "a-ternary", answers: [{ check: HONE_REMEDY_CHECK, form: "a-ternary" }] },
+    { anchor: "an-if", answers: [{ check: HONE_REMEDY_CHECK, form: "branching-with-if" }] },
+  ],
+};
+const HONE_TYPED_ROWS_RECIPE: Recipe = {
+  ...IT_EACH_OVER_TYPED_ROWS,
+  sourceFile: "/installed/rules/typescript/recipes/it-each-over-typed-rows.md",
+  examples: [
+    { anchor: "branching", answers: [{ check: HONE_REMEDY_CHECK, form: "branching-with-if" }] },
+  ],
+};
+const HONE_REMEDY_CATALOGUE: SymptomCatalogue = {
+  ...REPORT_CATALOGUE,
+  checks: [
+    {
+      ...TEST_BODY_CHECK,
+      page: "/installed/rules/typescript/symptoms/branch-in-a-test/test-body.md",
+      forms: ["a-ternary", "branching-with-if"],
+    },
+  ],
+  recipes: [HONE_NARROWING_RECIPE, HONE_TYPED_ROWS_RECIPE],
+};
+
+const ACME_REMEDY_RULE_SET = { name: ruleSetNameOf("acme") };
+const ACME_REMEDY_SYMPTOM: Symptom = {
+  ...BRANCH_IN_A_TEST,
+  ruleSet: ACME_REMEDY_RULE_SET,
+  sourceFile: "/repo/team-rules/rules/typescript/symptoms/branch-in-a-test.md",
+  recipes: [],
+};
+const ACME_REMEDY_CHECK: Check = {
+  name: "test-body",
+  symptom: { ruleSet: ACME_REMEDY_RULE_SET, name: "branch-in-a-test" },
+  page: "/repo/team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
+  engines: [WALKER],
+  forms: ["branching-with-if"],
+  findingSpecifics: [],
+};
+const ACME_REMEDY_RECIPE: Recipe = {
+  ...IT_EACH_OVER_TYPED_ROWS,
+  ruleSet: ACME_REMEDY_RULE_SET,
+  sourceFile: "/repo/team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
+  examples: [
+    {
+      anchor: "branching",
+      answers: [
+        {
+          check: {
+            name: "test-body",
+            symptom: { ruleSet: ACME_REMEDY_RULE_SET, name: "branch-in-a-test" },
+          },
+          form: "branching-with-if",
+        },
+      ],
+    },
+  ],
+};
+
+const ACME_REMEDY_CATALOGUE: SymptomCatalogue = {
+  ...REPORT_CATALOGUE,
+  symptoms: [ACME_REMEDY_SYMPTOM],
+  checks: [ACME_REMEDY_CHECK],
+  recipes: [ACME_REMEDY_RECIPE],
+};
+
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
     expect(
@@ -432,6 +507,7 @@ describe("findingLine", () => {
         content: CONTENT,
         finding: CLOCK_FINDING,
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
       }),
     ).toBe(
       `date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); symptom: date-used-directly (${SYMPTOM_PAGE}#date-used-directly) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator`,
@@ -445,6 +521,7 @@ describe("findingLine", () => {
         content: CONTENT,
         finding: BRANCH_FINDING,
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
       }),
     ).toBe(
       `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table`,
@@ -452,70 +529,38 @@ describe("findingLine", () => {
   });
 
   it("names after a Hone finding's fix each Hone example of its form, and no other form's", () => {
-    const narrowing: Recipe = {
-      ...ASSERT_TO_NARROW,
-      examples: [
-        {
-          anchor: "a-ternary",
-          answers: [
-            {
-              check: {
-                name: "test-body",
-                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-              },
-              form: "a-ternary",
-            },
-          ],
-        },
-        {
-          anchor: "an-if",
-          answers: [
-            {
-              check: {
-                name: "test-body",
-                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-              },
-              form: "branching-with-if",
-            },
-          ],
-        },
-      ],
-    };
-    const typedRows: Recipe = {
-      ...IT_EACH_OVER_TYPED_ROWS,
-      examples: [
-        {
-          anchor: "branching",
-          answers: [
-            {
-              check: {
-                name: "test-body",
-                symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
-              },
-              form: "branching-with-if",
-            },
-          ],
-        },
-      ],
-    };
-    const catalogue: SymptomCatalogue = {
-      ...REPORT_CATALOGUE,
-      checks: [{ ...TEST_BODY_CHECK, forms: ["a-ternary", "branching-with-if"] }],
-      recipes: [narrowing, typedRows],
-    };
+    const showPage = vi
+      .fn<ShownPathOf>()
+      .mockReturnValueOnce(SYMPTOM_PAGE)
+      .mockReturnValueOnce(
+        "node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md",
+      )
+      .mockReturnValueOnce(
+        "node_modules/@hailstails/hone/rules/typescript/recipes/assert-to-narrow.md",
+      )
+      .mockReturnValueOnce(
+        "node_modules/@hailstails/hone/rules/typescript/recipes/it-each-over-typed-rows.md",
+      );
 
     const line = findingLine({
-      catalogue,
+      catalogue: HONE_REMEDY_CATALOGUE,
       content: {
-        ...createRuleContent({ catalogues: [catalogue] }),
-        ...createCheckPages({ catalogues: [catalogue] }),
+        ...createRuleContent({ catalogues: [HONE_REMEDY_CATALOGUE] }),
+        ...createCheckPages({ catalogues: [HONE_REMEDY_CATALOGUE] }),
       },
       finding: BRANCH_FINDING,
-      symptomPage: SYMPTOM_PAGE,
+      symptomPage: "/installed/rules/typescript/symptoms.md",
+      showPage,
     });
 
+    expect(showPage.mock.calls).toEqual([
+      [{ target: "/installed/rules/typescript/symptoms.md" }],
+      [{ target: "/installed/rules/typescript/symptoms/branch-in-a-test/test-body.md" }],
+      [{ target: "/installed/rules/typescript/recipes/assert-to-narrow.md" }],
+      [{ target: "/installed/rules/typescript/recipes/it-each-over-typed-rows.md" }],
+    ]);
     expect(line).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (assert-to-narrow.md#an-if, it-each-over-typed-rows.md#branching)`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (node_modules/@hailstails/hone/rules/typescript/recipes/assert-to-narrow.md#an-if, node_modules/@hailstails/hone/rules/typescript/recipes/it-each-over-typed-rows.md#branching)`,
     );
   });
 
@@ -566,6 +611,7 @@ describe("findingLine", () => {
       },
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
+      showPage: ({ target }) => target,
     });
 
     expect(line).toBe(
@@ -574,55 +620,28 @@ describe("findingLine", () => {
   });
 
   it("names after a team finding's fix the team's example by its own file", () => {
-    const acme = { name: ruleSetNameOf("acme") };
-    const symptom: Symptom = {
-      ...BRANCH_IN_A_TEST,
-      ruleSet: acme,
-      sourceFile: "team-rules/rules/typescript/symptoms/branch-in-a-test.md",
-      recipes: [],
-    };
-    const check: Check = {
-      name: "test-body",
-      symptom: { ruleSet: acme, name: "branch-in-a-test" },
-      page: "team-rules/rules/typescript/checks/branch-in-a-test/test-body.md",
-      engines: [WALKER],
-      forms: ["branching-with-if"],
-      findingSpecifics: [],
-    };
-    const recipe: Recipe = {
-      ...IT_EACH_OVER_TYPED_ROWS,
-      ruleSet: acme,
-      sourceFile: "team-rules/rules/typescript/recipes/it-each-over-typed-rows.md",
-      examples: [
-        {
-          anchor: "branching",
-          answers: [
-            {
-              check: { name: "test-body", symptom: { ruleSet: acme, name: "branch-in-a-test" } },
-              form: "branching-with-if",
-            },
-          ],
-        },
-      ],
-    };
-
-    const catalogue: SymptomCatalogue = {
-      ...REPORT_CATALOGUE,
-      symptoms: [symptom],
-      checks: [check],
-      recipes: [recipe],
-    };
+    const showPage = vi
+      .fn<ShownPathOf>()
+      .mockReturnValueOnce("team-rules/rules/typescript/symptoms/branch-in-a-test.md")
+      .mockReturnValueOnce("team-rules/rules/typescript/checks/branch-in-a-test/test-body.md")
+      .mockReturnValueOnce("team-rules/rules/typescript/recipes/it-each-over-typed-rows.md");
 
     const line = findingLine({
-      catalogue,
+      catalogue: ACME_REMEDY_CATALOGUE,
       content: {
-        ...createRuleContent({ catalogues: [catalogue] }),
-        ...createCheckPages({ catalogues: [catalogue] }),
+        ...createRuleContent({ catalogues: [ACME_REMEDY_CATALOGUE] }),
+        ...createCheckPages({ catalogues: [ACME_REMEDY_CATALOGUE] }),
       },
-      finding: { ...BRANCH_FINDING, ruleSet: symptom.ruleSet },
+      finding: { ...BRANCH_FINDING, ruleSet: ACME_REMEDY_RULE_SET },
       symptomPage: SYMPTOM_PAGE,
+      showPage,
     });
 
+    expect(showPage.mock.calls).toEqual([
+      [{ target: "/repo/team-rules/rules/typescript/symptoms/branch-in-a-test.md" }],
+      [{ target: "/repo/team-rules/rules/typescript/checks/branch-in-a-test/test-body.md" }],
+      [{ target: "/repo/team-rules/rules/typescript/recipes/it-each-over-typed-rows.md" }],
+    ]);
     expect(line).toBe(
       "acme/branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (team-rules/rules/typescript/symptoms/branch-in-a-test.md) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (team-rules/rules/typescript/checks/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)",
     );
@@ -639,6 +658,7 @@ describe("findingLine", () => {
       },
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
+      showPage: ({ target }) => target,
     });
 
     expect(line).toBe(
@@ -681,6 +701,7 @@ describe("findingLine", () => {
         },
         finding: { ...TEAM_FINDING, ruleSet: symptom.ruleSet },
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
       }),
     ).toBe(
       "acme/outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment() symptom: outside-import-past-a-boundary (rules/team/symptoms/outside-import-past-a-boundary.md) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator",
@@ -694,6 +715,7 @@ describe("findingLine", () => {
         content: UNSITED_CONTENT,
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
+        showPage: ({ target }) => target,
       }),
     ).toBe(
       "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
@@ -708,6 +730,7 @@ describe("findingLine", () => {
       content,
       finding: CLOCK_FINDING,
       symptomPage: SYMPTOM_PAGE,
+      showPage: ({ target }) => target,
     });
 
     expect(line).toBe(
@@ -741,6 +764,7 @@ describe("answeredLine", () => {
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         content: CONTENT,
+        showPage: ({ target }) => target,
         answered: { finding: CLOCK_FINDING, by: [DEBT, clockLocation] },
       }),
     ).toBe(
@@ -753,6 +777,7 @@ describe("answeredLine", () => {
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         content: CONTENT,
+        showPage: ({ target }) => target,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
@@ -765,6 +790,7 @@ describe("answeredLine", () => {
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         content: CONTENT,
+        showPage: ({ target }) => target,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION] },
       }),
     ).toBe(

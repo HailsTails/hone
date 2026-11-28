@@ -6,6 +6,7 @@ import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts"
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ShownPathOf } from "../installation/shown-path-of.ts";
 
 export type ProofRunFailure = { readonly kind: "run-failed"; readonly detail: string };
 
@@ -20,6 +21,7 @@ export type ProofRuns = {
 
 export type CheckReportPointers = {
   readonly symptomPage: string;
+  readonly showPage: ShownPathOf;
   readonly pruneCommand: string;
   readonly projectCommand: string;
 };

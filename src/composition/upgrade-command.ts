@@ -29,7 +29,7 @@ import {
   upgradeOf,
 } from "../operations/upgrade/run-upgrade-command.ts";
 import type { FoundTreeReach } from "../operations/upgrade/smoothing-commands.ts";
-import { checkCommandsOf, symptomPageOf } from "./check-command.ts";
+import { checkCommandsOf, createReportPages } from "./check-command.ts";
 import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import {
@@ -90,7 +90,9 @@ export const createFoundTreeReach = (request: Placed & FoundTreeChanges): FoundT
   };
 };
 
-const createPointers = (request: Placed): Result<CheckReportPointers, LoadFailure> => {
+export const createUpgradeReportPointers = (
+  request: Placed,
+): Result<CheckReportPointers, LoadFailure> => {
   const { ports, command, located } = request;
   const commands = checkCommandsOf({
     path: ports.path,
@@ -102,7 +104,7 @@ const createPointers = (request: Placed): Result<CheckReportPointers, LoadFailur
     ? commands
     : {
         outcome: "ok",
-        value: { ...commands.value, symptomPage: symptomPageOf({ ports, located }) },
+        value: { ...commands.value, ...createReportPages({ ports, located }) },
       };
 };
 
@@ -169,7 +171,7 @@ export const UPGRADE: ToolCommand<UpgradeArguments, Upgraded, UpgradeCommandPort
       return loadFailed({ failure: located.error });
     }
     const placed = { ports, command, located: located.value };
-    const pointers = createPointers(placed);
+    const pointers = createUpgradeReportPointers(placed);
     if (pointers.outcome === "failed") {
       return loadFailed({ failure: pointers.error });
     }

@@ -15,8 +15,7 @@ import {
   projectCommandOf,
   pruneCommandOf,
 } from "../infrastructure/command-line/arguments/tool-invocations.ts";
-import { packageLinkOf } from "../infrastructure/command-line/installation/package-link.ts";
-import { shownPathOf } from "../infrastructure/command-line/installation/shown-path.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
 import {
   type RunReportRequest,
   renderRunReportText,
@@ -66,18 +65,15 @@ export const checkCommandsOf = (request: {
       };
 };
 
-export const symptomPageOf = (request: {
+export const createReportPages = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
   readonly located: RepositoryLocated;
-}): string => {
-  const { path, fileText } = request.ports;
-  const { repoRoot, installRoot } = request.located;
-  return shownPathOf({
-    path,
-    repoRoot,
-    link: packageLinkOf({ path, fileText, repoRoot, installRoot }),
-    target: path.join({ segments: [installRoot, ...SYMPTOM_PAGE_SEGMENTS] }),
-  });
+}) => {
+  const { path } = request.ports;
+  return {
+    symptomPage: path.join({ segments: [request.located.installRoot, ...SYMPTOM_PAGE_SEGMENTS] }),
+    showPage: shownPathOfRepository({ ...request.ports, ...request.located }),
+  };
 };
 
 export const versionTwoReportRequestOf = (request: {
@@ -90,7 +86,7 @@ export const versionTwoReportRequestOf = (request: {
     catalogue,
     content,
     output,
-    symptomPage: symptomPageOf({ ports: request.ports, located: request.produced.located }),
+    ...createReportPages({ ports: request.ports, located: request.produced.located }),
     ...request.produced.commands,
   };
 };

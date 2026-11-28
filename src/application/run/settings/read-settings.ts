@@ -3,12 +3,7 @@ import {
   checkNamesOf,
   type AddressedCheck,
 } from "../../../domain/language-layer/check-address-text.ts";
-import type {
-  Check,
-  Recipe,
-  Symptom,
-  SymptomCatalogue,
-} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
@@ -157,31 +152,6 @@ export const catalogueWithExternalChecks = (request: {
       };
 };
 
-const withNamedSource = (request: {
-  readonly held: RuleSetCatalogue;
-  readonly ruleSets: VersionTwoSettingsFile["ruleSets"];
-}): RuleSetCatalogue => {
-  const { ruleSet, catalogue } = request.held;
-  if (ruleSet === TOOL_RULE_SET) return request.held;
-  const location = request.ruleSets.find(({ name }) => name === ruleSet.name)?.location;
-  const folder = location?.location === "folder" ? location.path : undefined;
-  const symptoms = catalogue.symptoms.map((symptom): Symptom =>
-    folder !== undefined && symptom.sourceFile !== undefined
-      ? { ...symptom, sourceFile: `${folder}/${symptom.sourceFile}` }
-      : symptom,
-  );
-  const recipes = catalogue.recipes.map((recipe): Recipe =>
-    folder !== undefined && recipe.sourceFile !== undefined
-      ? { ...recipe, sourceFile: `${folder}/${recipe.sourceFile}` }
-      : recipe,
-  );
-  const checks = catalogue.checks.map((check) => ({
-    ...check,
-    page: folder === undefined ? check.page : `${folder}/${check.page}`,
-  }));
-  return { ruleSet, catalogue: { ...catalogue, symptoms, recipes, checks } };
-};
-
 type NamedSettingsRequest = {
   readonly sources: SettingsSources;
   readonly readPiece: CheckPieceSource;
@@ -288,9 +258,8 @@ export const bindNamedSettings = (
   if (shared !== undefined) {
     return { outcome: "failed", error: shared };
   }
-  const named = catalogues.value.map((held) => withNamedSource({ held, ruleSets: file.ruleSets }));
   const choices = namedCheckChoicesOf({
-    catalogues: named,
+    catalogues: catalogues.value,
     checks: file.checks,
     checkSettings: file.checkSettings,
   });
@@ -300,7 +269,7 @@ export const bindNamedSettings = (
     resolve: (chosen) => selectedCheckOf({ ...request, file, chosen, settingsPath: path }),
   });
   if (selected.outcome === "failed") return selected;
-  const externalCatalogues = named.filter(({ ruleSet }) => ruleSet !== TOOL_RULE_SET);
+  const externalCatalogues = catalogues.value.filter(({ ruleSet }) => ruleSet !== TOOL_RULE_SET);
   return {
     outcome: "ok",
     value: {

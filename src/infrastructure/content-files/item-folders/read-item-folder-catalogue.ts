@@ -27,7 +27,7 @@ type ItemFolder = {
   readonly ruleSet: RuleSetIdentity;
   readonly beside: HeldBesideItems;
   readonly inheritedRecordKinds: readonly RecordKind[];
-  readonly sourcePrefix?: string;
+  readonly symptomPages: "index" | "individual";
 };
 
 type ItemRead = Result<PlacedItem, VersionTwoLoadFailure>;
@@ -65,9 +65,7 @@ const placedItemAt = (request: ItemFolder & { readonly file: string }): ItemRead
         outcome: "ok",
         value: {
           name: identity.value.name,
-          ...(request.sourcePrefix === undefined
-            ? {}
-            : { sourceFile: `${request.sourcePrefix}/${request.file}` }),
+          sourceFile: path,
           within: identity.value.within,
           title: read.value.title,
           item: facts.value,
@@ -111,14 +109,18 @@ const mapItemsToSourceFiles = (request: {
 
 const addSourceFiles = (request: {
   readonly content: CatalogueContent;
+  readonly symptomPages: ItemFolder["symptomPages"];
   readonly items: readonly PlacedItem[];
 }): CatalogueContent => {
   const symptomFiles = mapItemsToSourceFiles({ items: request.items, kind: "symptom" });
   const checkFiles = mapItemsToSourceFiles({ items: request.items, kind: "check" });
-  const symptoms = request.content.symptoms.map((symptom) => {
-    const sourceFile = symptomFiles.get(symptom.name);
-    return sourceFile === undefined ? symptom : { ...symptom, sourceFile };
-  });
+  const symptoms =
+    request.symptomPages === "index"
+      ? request.content.symptoms
+      : request.content.symptoms.map((symptom) => {
+          const sourceFile = symptomFiles.get(symptom.name);
+          return sourceFile === undefined ? symptom : { ...symptom, sourceFile };
+        });
   const recipeFiles = mapItemsToSourceFiles({ items: request.items, kind: "recipe" });
   const recipes = request.content.recipes.map((recipe) => {
     const sourceFile = recipeFiles.get(recipe.name);
@@ -136,6 +138,7 @@ const holdingOf = (request: {
   readonly ruleSet: RuleSetIdentity;
   readonly beside: HeldBesideItems;
   readonly inheritedRecordKinds: readonly RecordKind[];
+  readonly symptomPages: ItemFolder["symptomPages"];
   readonly items: readonly PlacedItem[];
 }): Result<ContentHolding, VersionTwoLoadFailure> => {
   const file = catalogueFileOf({ items: request.items, beside: request.beside });
@@ -154,7 +157,7 @@ const holdingOf = (request: {
     outcome: "ok",
     value: {
       held: "catalogue",
-      content: addSourceFiles({ content: content.value, items: request.items }),
+      content: addSourceFiles({ ...request, content: content.value }),
     },
   };
 };

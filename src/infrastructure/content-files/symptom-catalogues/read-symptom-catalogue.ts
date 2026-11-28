@@ -129,10 +129,7 @@ const readSymptomCatalogue = (
     ruleSet: request.ruleSet,
     beside,
     inheritedRecordKinds: request.inheritedRecordKinds,
-    sourcePrefix:
-      request.ruleSetRoot === request.installRoot
-        ? undefined
-        : SYMPTOM_CATALOGUE_SEGMENTS.join("/"),
+    symptomPages: request.ruleSetRoot === request.installRoot ? "index" : "individual",
   }).read({});
   return holding.outcome === "failed"
     ? holding

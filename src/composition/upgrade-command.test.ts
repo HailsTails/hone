@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../application/ports/git-port.ts";
@@ -13,6 +13,7 @@ import { commandOf } from "./composed-command.ts";
 import {
   alreadyUpgradedCommand,
   createFoundTreeReach,
+  createUpgradeReportPointers,
   UPGRADE,
   type UpgradeCommandPorts,
 } from "./upgrade-command.ts";
@@ -141,6 +142,23 @@ describe("alreadyUpgradedCommand", () => {
       writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
       exits: [[{ code: 0 }]],
     });
+  });
+});
+
+describe("createUpgradeReportPointers", () => {
+  it("gives the upgrade proof a page formatter relative to the adopter repository", () => {
+    const command = commandWith({ arguments: [], git: gitListing(GIT_FAILED) });
+    const located = { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") };
+
+    const pointers = createUpgradeReportPointers({
+      ports: { ...command, ...PORTS },
+      command,
+      located,
+    });
+
+    assert(pointers.outcome === "ok");
+    const page = pointers.value.showPage({ target: pointers.value.symptomPage });
+    expect(page).toBe("../install/rules/typescript/symptoms.md");
   });
 });
 
