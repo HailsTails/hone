@@ -364,8 +364,11 @@ describe("findingSiteOf, a finding that names its check", () => {
       }),
     ).toEqual({
       sited: "check",
-      check: ANGLE_BRACKETS_CHECK,
-      engine: ESLINT_ENGINE,
+      address: {
+        name: "angle-brackets",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+      },
+      mechanism: ESLINT,
     });
   });
 
@@ -395,7 +398,16 @@ describe("nativeSitesOf, an exception that names its check", () => {
           check: "claimed-type#angle-brackets",
         },
       }),
-    ).toEqual([{ sited: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "angle-brackets",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("limits an exception to its named check when another check shares its symptom", () => {
@@ -409,7 +421,16 @@ describe("nativeSitesOf, an exception that names its check", () => {
           mechanism: ESLINT,
         },
       }),
-    ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "cast-expressions",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("names the address and mechanism when the catalogue has no such check", () => {
@@ -431,16 +452,19 @@ describe("findingSiteOf", () => {
   it("names the check and engine that saw a finding", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: CLOCK_FINDING })).toEqual({
       sited: "check",
-      check: CLOCK_CHECK,
-      engine: WALKER,
+      address: {
+        name: "clock-sources",
+        symptom: { ruleSet: TOOL_RULE_SET, name: "date-used-directly" },
+      },
+      mechanism: AUDIT,
     });
   });
 
   it("names the selected check when the finding carries a remedy", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: BRANCH_FINDING })).toEqual({
       sited: "check",
-      check: TEST_BODY_CHECK,
-      engine: WALKER,
+      address: { name: "test-body", symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" } },
+      mechanism: AUDIT,
     });
   });
 
@@ -486,7 +510,16 @@ describe("nativeSitesOf", () => {
           mechanism: ESLINT,
         },
       }),
-    ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
+    ).toEqual([
+      {
+        sited: "check",
+        address: {
+          name: "cast-expressions",
+          symptom: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
+        },
+        mechanism: ESLINT,
+      },
+    ]);
   });
 
   it("names the address and mechanism when the exception is unregistered", () => {
@@ -513,7 +546,16 @@ describe("nativeSitesOf", () => {
 describe("checkSiteText", () => {
   it("prints a check's address and its engine's name", () => {
     expect(
-      checkSiteText({ site: { sited: "check", check: TEST_BODY_CHECK, engine: WALKER } }),
+      checkSiteText({
+        site: {
+          sited: "check",
+          address: {
+            name: "test-body",
+            symptom: { ruleSet: TOOL_RULE_SET, name: "branch-in-a-test" },
+          },
+          mechanism: AUDIT,
+        },
+      }),
     ).toBe("branch-in-a-test#test-body walker");
   });
 

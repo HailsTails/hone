@@ -70,7 +70,7 @@ const symptomsOf = (request: {
 }): Result<readonly Symptom[], SymptomUnheld> => {
   const named = request.findings.flatMap((finding): readonly SymptomAddress[] => {
     const site = findingSiteOf({ catalogue: request.catalogue, finding });
-    return site.sited === "check" ? [site.check.symptom] : [];
+    return site.sited === "check" ? [site.address.symptom] : [];
   });
   return gatheredOutcomes({
     outcomes: named

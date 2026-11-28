@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
-import { createCheckMembership, createRuleContent, mapAddressToSymptom } from "./rule-content.ts";
+import {
+  createCheckMembership,
+  createCheckPages,
+  createRuleContent,
+  mapAddressToSymptom,
+} from "./rule-content.ts";
 import type { CheckAddress } from "./symptom-catalogue.ts";
 
 describe("mapAddressToSymptom", () => {
@@ -134,5 +139,30 @@ describe("createCheckMembership", () => {
     const inTeam = membership.hasCheck(team);
 
     expect([inTool, inTeam]).toEqual([true, false]);
+  });
+});
+
+describe("createCheckPages", () => {
+  it("gives each owner its own page for the same local check address", () => {
+    const tool: CheckAddress = {
+      name: "loops",
+      symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
+    };
+    const team: CheckAddress = {
+      name: "loops",
+      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "loop-keyword" },
+    };
+    const pages = createCheckPages({
+      catalogues: [
+        { checks: [{ ...tool, page: "hone/loops.md" }] },
+        { checks: [{ ...team, page: "team/loops.md" }] },
+      ],
+    });
+
+    const toolPage = pages.checkPage(tool);
+    const teamPage = pages.checkPage(team);
+    const unheld = pages.checkPage({ ...team, name: "missing" });
+
+    expect([toolPage, teamPage, unheld]).toEqual(["hone/loops.md", "team/loops.md", undefined]);
   });
 });

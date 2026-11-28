@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CheckFinding } from "../../domain/finding/governance.ts";
+import { createCheckPages, createRuleContent } from "../../domain/language-layer/rule-content.ts";
 import type {
   Case,
   Check,
@@ -550,6 +551,11 @@ const LINES = {
   symptoms: `date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Read ${SYMPTOM_PAGE}#date-used-directly`,
 };
 
+const CONTENT = {
+  ...createRuleContent({ catalogues: [REPORT_CATALOGUE] }),
+  ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
+};
+
 const rendered = (request: {
   readonly report: RunReport;
   readonly output: VersionTwoReportOutput;
@@ -557,13 +563,7 @@ const rendered = (request: {
   renderRunReportText({
     ...request,
     catalogue: REPORT_CATALOGUE,
-    content: {
-      symptoms: new Map([
-        ["date-used-directly", DATE_USED_DIRECTLY],
-        ["branch-in-a-test", BRANCH_IN_A_TEST],
-        ["claimed-type", CLAIMED_TYPE],
-      ]),
-    },
+    content: CONTENT,
     symptomPage: SYMPTOM_PAGE,
     projectCommand: PROJECT_COMMAND,
     pruneCommand: PRUNE_COMMAND,
@@ -576,13 +576,7 @@ describe("mapRunReportToFailingLines", () => {
     const lines = mapRunReportToFailingLines({
       report,
       catalogue: REPORT_CATALOGUE,
-      content: {
-        symptoms: new Map([
-          ["date-used-directly", DATE_USED_DIRECTLY],
-          ["branch-in-a-test", BRANCH_IN_A_TEST],
-          ["claimed-type", CLAIMED_TYPE],
-        ]),
-      },
+      content: CONTENT,
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
       pruneCommand: PRUNE_COMMAND,
@@ -614,13 +608,7 @@ describe("mapRunReportToFailingLines", () => {
     const lines = mapRunReportToFailingLines({
       report,
       catalogue: REPORT_CATALOGUE,
-      content: {
-        symptoms: new Map([
-          ["date-used-directly", DATE_USED_DIRECTLY],
-          ["branch-in-a-test", BRANCH_IN_A_TEST],
-          ["claimed-type", CLAIMED_TYPE],
-        ]),
-      },
+      content: CONTENT,
       symptomPage: SYMPTOM_PAGE,
       projectCommand: PROJECT_COMMAND,
       pruneCommand: PRUNE_COMMAND,
@@ -720,13 +708,7 @@ describe("renderRunSectionsText", () => {
         },
         output: "full",
         catalogue: REPORT_CATALOGUE,
-        content: {
-          symptoms: new Map([
-            ["date-used-directly", DATE_USED_DIRECTLY],
-            ["branch-in-a-test", BRANCH_IN_A_TEST],
-            ["claimed-type", CLAIMED_TYPE],
-          ]),
-        },
+        content: CONTENT,
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,
@@ -740,13 +722,7 @@ describe("renderRunSectionsText", () => {
         report: EMPTY_REPORT,
         output: "full",
         catalogue: REPORT_CATALOGUE,
-        content: {
-          symptoms: new Map([
-            ["date-used-directly", DATE_USED_DIRECTLY],
-            ["branch-in-a-test", BRANCH_IN_A_TEST],
-            ["claimed-type", CLAIMED_TYPE],
-          ]),
-        },
+        content: CONTENT,
         symptomPage: SYMPTOM_PAGE,
         projectCommand: PROJECT_COMMAND,
         pruneCommand: PRUNE_COMMAND,

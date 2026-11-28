@@ -1,5 +1,10 @@
 import type { NamedGovernedRun } from "../../domain/finding/governance.ts";
-import { createRuleContent, type RuleContent } from "../../domain/language-layer/rule-content.ts";
+import {
+  createCheckPages,
+  createRuleContent,
+  type RuleContent,
+  type CheckPages,
+} from "../../domain/language-layer/rule-content.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import {
   answerCountedFindings,
@@ -33,7 +38,7 @@ import type { TouchedMeasuring, TouchedScope } from "./touched-set/touched-set-o
 export type VersionTwoRun = {
   readonly report: RunReport;
   readonly catalogue: SymptomCatalogue;
-  readonly content: RuleContent;
+  readonly content: RuleContent & CheckPages;
   readonly touched: TouchedSet;
   readonly output: VersionTwoReportOutput;
   readonly runs: readonly NamedGovernedRun[];
@@ -244,7 +249,7 @@ export const versionTwoRunOver = async (request: {
     value: {
       report: report.value,
       catalogue,
-      content,
+      content: { ...content, ...createCheckPages({ catalogues: [catalogue] }) },
       touched,
       runs,
       moved,

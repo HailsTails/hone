@@ -15,6 +15,10 @@ import type {
   AttributedCheckException,
   CheckFinding,
 } from "../../src/domain/finding/governance.ts";
+import {
+  createCheckPages,
+  createRuleContent,
+} from "../../src/domain/language-layer/rule-content.ts";
 import type {
   RecordKind,
   SymptomCatalogue,
@@ -122,7 +126,10 @@ const producedOf = (request: {
   run: {
     report: request.report,
     catalogue: EMPTY_CATALOGUE,
-    content: { symptoms: new Map() },
+    content: {
+      ...createRuleContent({ catalogues: [EMPTY_CATALOGUE] }),
+      ...createCheckPages({ catalogues: [EMPTY_CATALOGUE] }),
+    },
     touched: { measured: "yes", paths: new Set() },
     output: request.output,
     runs: [],

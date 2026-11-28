@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
+import {
+  createCheckPages,
+  createRuleContent,
+} from "../../../domain/language-layer/rule-content.ts";
 import type {
   Case,
   Check,
@@ -410,12 +414,21 @@ const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
   },
 };
 
+const contentFor = (catalogue: Pick<SymptomCatalogue, "symptoms" | "checks">) => ({
+  ...createRuleContent({ catalogues: [catalogue] }),
+  ...createCheckPages({ catalogues: [catalogue] }),
+});
+
+const CONTENT = contentFor(REPORT_CATALOGUE);
+
+const UNSITED_CONTENT = contentFor({ ...REPORT_CATALOGUE, symptoms: [] });
+
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map([["date-used-directly", DATE_USED_DIRECTLY]]) },
+        content: CONTENT,
         finding: CLOCK_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -428,7 +441,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+        content: CONTENT,
         finding: BRANCH_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -492,7 +505,7 @@ describe("findingLine", () => {
 
     const line = findingLine({
       catalogue,
-      content: { symptoms: new Map([["branch-in-a-test", BRANCH_IN_A_TEST]]) },
+      content: contentFor(catalogue),
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
     });
@@ -543,12 +556,7 @@ describe("findingLine", () => {
 
     const line = findingLine({
       catalogue,
-      content: {
-        symptoms: new Map([
-          ["branch-in-a-test", BRANCH_IN_A_TEST],
-          ["acme/branch-in-a-test", teamSymptom],
-        ]),
-      },
+      content: contentFor(catalogue),
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
     });
@@ -591,14 +599,16 @@ describe("findingLine", () => {
       ],
     };
 
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      symptoms: [symptom],
+      checks: [check],
+      recipes: [recipe],
+    };
+
     const line = findingLine({
-      catalogue: {
-        ...REPORT_CATALOGUE,
-        symptoms: [symptom],
-        checks: [check],
-        recipes: [recipe],
-      },
-      content: { symptoms: new Map([["acme/branch-in-a-test", symptom]]) },
+      catalogue,
+      content: contentFor(catalogue),
       finding: { ...BRANCH_FINDING, ruleSet: symptom.ruleSet },
       symptomPage: SYMPTOM_PAGE,
     });
@@ -613,7 +623,7 @@ describe("findingLine", () => {
 
     const line = findingLine({
       catalogue,
-      content: { symptoms: new Map<string, Symptom>() },
+      content: contentFor({ ...catalogue, symptoms: [] }),
       finding: BRANCH_FINDING,
       symptomPage: SYMPTOM_PAGE,
     });
@@ -643,14 +653,16 @@ describe("findingLine", () => {
       forms: [],
       findingSpecifics: [],
     };
+    const catalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      checks: [check],
+      symptoms: [symptom],
+    };
+
     expect(
       findingLine({
-        catalogue: {
-          ...REPORT_CATALOGUE,
-          checks: [check],
-          symptoms: [symptom],
-        },
-        content: { symptoms: new Map([["acme/outside-import-past-a-boundary", symptom]]) },
+        catalogue,
+        content: contentFor(catalogue),
         finding: { ...TEAM_FINDING, ruleSet: symptom.ruleSet },
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -663,7 +675,7 @@ describe("findingLine", () => {
     expect(
       findingLine({
         catalogue: REPORT_CATALOGUE,
-        content: { symptoms: new Map<string, Symptom>() },
+        content: UNSITED_CONTENT,
         finding: TEAM_FINDING,
         symptomPage: SYMPTOM_PAGE,
       }),
@@ -673,7 +685,7 @@ describe("findingLine", () => {
   });
 
   it("says the catalogue and the records disagree when no catalogue holds the symptom its check names", () => {
-    const content = { symptoms: new Map<string, Symptom>() };
+    const content = UNSITED_CONTENT;
 
     const line = findingLine({
       catalogue: REPORT_CATALOGUE,
@@ -712,6 +724,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: CLOCK_FINDING, by: [DEBT, clockLocation] },
       }),
     ).toBe(
@@ -723,6 +736,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
@@ -734,6 +748,7 @@ describe("answeredLine", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
+        content: CONTENT,
         answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION] },
       }),
     ).toBe(
