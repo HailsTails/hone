@@ -35,10 +35,9 @@ const createCatalogueIndex = <Catalogue, Content>(request: {
 }): ReadonlyMap<string, Content> =>
   new Map(
     request.catalogues.flatMap((catalogue) =>
-      request.contents(catalogue).map((content): readonly [string, Content] => [
-        request.address(content),
-        content,
-      ]),
+      request
+        .contents(catalogue)
+        .map((content): readonly [string, Content] => [request.address(content), content]),
     ),
   );
 
@@ -63,7 +62,8 @@ export function createRuleContent(request: SymptomCatalogues): RuleContent;
 export function createRuleContent(
   request: CatalogueContents | SymptomCatalogues,
 ): RuleContent | (RuleContent & RuleContentChecks) {
-  const catalogues = "catalogueContents" in request ? request.catalogueContents : request.catalogues;
+  const catalogues =
+    "catalogueContents" in request ? request.catalogueContents : request.catalogues;
   const symptoms = createCatalogueIndex({
     catalogues,
     contents: ({ symptoms }) => symptoms,
