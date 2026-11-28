@@ -726,43 +726,44 @@ describe("versionTwoReportRequestOf", () => {
       ...createCheckPages({ catalogues: [REPORT_CATALOGUE] }),
     };
 
-    expect(
-      versionTwoReportRequestOf({
-        ports: {
-          path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-          fileText: {
-            exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-            read: vi.fn<FileTextPort["read"]>().mockReturnValue({
-              outcome: "failed",
-              error: { kind: "unreadable", path: "/repo/package.json", detail: "absent" },
-            }),
-            write: vi.fn<FileTextPort["write"]>(),
-          },
+    const { showPage, ...report } = versionTwoReportRequestOf({
+      ports: {
+        path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+        fileText: {
+          exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+          read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+            outcome: "failed",
+            error: { kind: "unreadable", path: "/repo/package.json", detail: "absent" },
+          }),
+          write: vi.fn<FileTextPort["write"]>(),
         },
-        produced: {
-          located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
-          commands: {
-            projectCommand: "node /install/src/hone.ts project --repo /repo",
-            pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
-          },
-          run: {
-            report: EMPTY_RUN_REPORT,
-            catalogue: REPORT_CATALOGUE,
-            content,
-            touched: { measured: "yes", paths: new Set() },
-            output: "counts",
-            runs: [],
-            moved: [],
-          },
+      },
+      produced: {
+        located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
+        commands: {
+          projectCommand: "node /install/src/hone.ts project --repo /repo",
+          pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
         },
-      }),
-    ).toEqual({
+        run: {
+          report: EMPTY_RUN_REPORT,
+          catalogue: REPORT_CATALOGUE,
+          content,
+          touched: { measured: "yes", paths: new Set() },
+          output: "counts",
+          runs: [],
+          moved: [],
+        },
+      },
+    });
+    const shownSymptomPage = showPage({ target: report.symptomPage });
+
+    expect({ ...report, shownSymptomPage }).toEqual({
       report: EMPTY_RUN_REPORT,
       catalogue: REPORT_CATALOGUE,
       content,
       output: "counts",
       symptomPage: "/install/rules/typescript/symptoms.md",
-      showPage: expect.any(Function),
+      shownSymptomPage: "../install/rules/typescript/symptoms.md",
       projectCommand: "node /install/src/hone.ts project --repo /repo",
       pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
     });

@@ -65,7 +65,7 @@ export const checkCommandsOf = (request: {
       };
 };
 
-export const reportPagesOf = (request: {
+export const createReportPages = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
   readonly located: RepositoryLocated;
 }) => {
@@ -86,7 +86,7 @@ export const versionTwoReportRequestOf = (request: {
     catalogue,
     content,
     output,
-    ...reportPagesOf({ ports: request.ports, located: request.produced.located }),
+    ...createReportPages({ ports: request.ports, located: request.produced.located }),
     ...request.produced.commands,
   };
 };

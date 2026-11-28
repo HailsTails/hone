@@ -509,6 +509,12 @@ describe("findingLine", () => {
       showPage,
     });
 
+    expect(showPage.mock.calls).toEqual([
+      [{ target: "/installed/rules/typescript/symptoms.md" }],
+      [{ target: "/installed/rules/typescript/symptoms/branch-in-a-test/test-body.md" }],
+      [{ target: "/installed/rules/typescript/recipes/assert-to-narrow.md" }],
+      [{ target: "/installed/rules/typescript/recipes/it-each-over-typed-rows.md" }],
+    ]);
     expect(line).toBe(
       `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (node_modules/@hailstails/hone/rules/typescript/recipes/assert-to-narrow.md#an-if, node_modules/@hailstails/hone/rules/typescript/recipes/it-each-over-typed-rows.md#branching)`,
     );
@@ -626,6 +632,11 @@ describe("findingLine", () => {
       showPage,
     });
 
+    expect(showPage.mock.calls).toEqual([
+      [{ target: "/repo/team-rules/rules/typescript/symptoms/branch-in-a-test.md" }],
+      [{ target: "/repo/team-rules/rules/typescript/checks/branch-in-a-test/test-body.md" }],
+      [{ target: "/repo/team-rules/rules/typescript/recipes/it-each-over-typed-rows.md" }],
+    ]);
     expect(line).toBe(
       "acme/branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (team-rules/rules/typescript/symptoms/branch-in-a-test.md) may indicate: straight-through-tests, no-hidden-effects form: branching-with-if (team-rules/rules/typescript/checks/branch-in-a-test/test-body.md#branching-with-if) fix: write one test per case, or one it.each table (team-rules/rules/typescript/recipes/it-each-over-typed-rows.md#branching)",
     );

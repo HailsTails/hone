@@ -326,7 +326,7 @@ describe("symptomLine", () => {
     );
   });
 
-  it("names no recipe when the symptom has none, and an indication's situation after its case", () => {
+  it("shows the team symptom's own Markdown page", () => {
     const showPage = vi
       .fn<ShownPathOf>()
       .mockReturnValue("team-rules/rules/typescript/symptoms/claimed-type.md");

@@ -258,9 +258,8 @@ export const bindNamedSettings = (
   if (shared !== undefined) {
     return { outcome: "failed", error: shared };
   }
-  const named = catalogues.value;
   const choices = namedCheckChoicesOf({
-    catalogues: named,
+    catalogues: catalogues.value,
     checks: file.checks,
     checkSettings: file.checkSettings,
   });
@@ -270,7 +269,7 @@ export const bindNamedSettings = (
     resolve: (chosen) => selectedCheckOf({ ...request, file, chosen, settingsPath: path }),
   });
   if (selected.outcome === "failed") return selected;
-  const externalCatalogues = named.filter(({ ruleSet }) => ruleSet !== TOOL_RULE_SET);
+  const externalCatalogues = catalogues.value.filter(({ ruleSet }) => ruleSet !== TOOL_RULE_SET);
   return {
     outcome: "ok",
     value: {

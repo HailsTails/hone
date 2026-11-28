@@ -59,7 +59,12 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     ),
   answered: (request) =>
     request.report.answered.map((answered) =>
-      answeredLine({ catalogue: request.catalogue, content: request.content, answered, showPage: request.showPage }),
+      answeredLine({
+        catalogue: request.catalogue,
+        content: request.content,
+        answered,
+        showPage: request.showPage,
+      }),
     ),
   held: (request) =>
     request.report.held.map((held) => heldLine({ catalogue: request.catalogue, held })),
