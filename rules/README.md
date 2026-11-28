@@ -263,7 +263,7 @@ Until a check can name the breach, a finding names the rules the symptom points 
 
 ## Checks: The test-body checks
 
-List all six test-body checks together under `checks` in `hone.config.json`. The group includes [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
+Select each test-body check independently under `checks` in `hone.config.json`. The six checks are [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
 
 - They read test files only: `.ts` and `.tsx` files that `testFiles` in `hone.config.json` names. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped. Helper files that tests import are not checked.
 - None flags loops, which [loop-statement](typescript/symptoms/loop-keyword/loop-statement.md) covers, or `throw`, which [throw-statement](typescript/symptoms/throw-or-catch-in-a-test/throw-statement.md) covers.
@@ -273,12 +273,7 @@ The checks have two editions. Edition 1 runs by default. Edition 2 adds what eac
 
 ```jsonc
 "checkSettings": {
-  "branch-in-a-test#test-body": { "edition": "2" },
-  "throw-or-catch-in-a-test#try-block": { "edition": "2" },
-  "rebinding#test-body": { "edition": "2" },
-  "computed-value-in-a-test#test-body": { "edition": "2" },
-  "text-past-its-reader#test-body": { "edition": "2" },
-  "double-with-a-body#logic-in-a-passed-function": { "edition": "2" }
+  "rebinding#test-body": { "edition": "2" }
 }
 ```
 

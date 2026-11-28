@@ -26,8 +26,6 @@ On first adoption of an existing codebase, a high count is debt made visible. It
 
 Some code has to touch the outside: a library, the runtime, raw input. Those places are boundaries. A clean boundary is the cheap, authorised place for what the rules forbid elsewhere: one file, recorded once, small enough to read whole. The rest of the code then needs no escape. If an exception keeps wanting to spread, the boundary is in the wrong place or does not exist yet.
 
-<a id="not-adopted-not-run-carved-out-escaped"></a>
-
 ## Not adopted, not run, held as debt, escaped
 
 When a check cannot run clean, declare how the repository will treat it.

@@ -7,7 +7,7 @@
 }
 ```
 
-A construct any other test-body check flags, inside a function a test passes on. These run with the other [test-body checks](../../../README.md#checks-the-test-body-checks), which share their scope, editions and settings.
+A construct any other test-body check flags, inside a function a test passes on. See the other [test-body checks](../../../README.md#checks-the-test-body-checks).
 
 ## Flags
 

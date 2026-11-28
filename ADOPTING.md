@@ -104,14 +104,14 @@ Create `<repo>/hone.config.json`. List every check you adopt with the engine tha
 ```
 
 - `checks` keys are check addresses, `<symptom>#<check>`, listed on [the checks page](rules/typescript/checks.md); the value is an engine the check lists, `walker`, `eslint` or `oxlint`, `"not-run"` or `"not-adopted"`. A check of a rule set of your own is written `<ruleSet>/<symptom>#<check>`.
-- Listing a check adopts it. Only a listed check runs. A check of a symptom that a listed check sees, listed nowhere, is offered under `available` and never fails the run. The symptom [Strictness weakened](rules/typescript/symptoms.md#strictness-weakened) has seven checks, one per compiler flag; list the ones you want. Checks that are one rule today run together: listing one of the six test-body checks without the others stops the run with `checks-run-together` naming them.
+- Listing a check adopts it. Only a listed check runs. A check of a symptom that a listed check sees, listed nowhere, is offered under `available` and never fails the run. The symptom [Strictness weakened](rules/typescript/symptoms.md#strictness-weakened) has seven checks, one per compiler flag; list the ones you want. Each [test-body check](rules/README.md#checks-the-test-body-checks) is selected on its own.
 - A symptom may span engines; list each of its checks on an engine that has it, or mark it. `authored-class-or-this#class-keyword` runs on `walker`, `eslint` or `oxlint`. Its `static-members-only` check runs on `eslint` or `oxlint`.
 - A check's value in `checks` is one of three:
   - an engine id, such as `walker`: the check runs and its findings fail the run;
   - `"not-run"`: the check is adopted, but its engine is not run; the report lists it under `not-run`;
   - `"not-adopted"`: the check is not adopted; the report lists it under `not-adopted`.
 - A `"not-run"` or `"not-adopted"` check is never run and never projected, not even as `"off"`, and its engine is not loaded unless another check uses it, so a repository that lists every ESLint check this way needs no ESLint installed. Both leave the run a whole assessment.
-- When a check cannot simply run clean, [the spirit of the rules](rules/SPIRIT.md#not-adopted-not-run-carved-out-escaped) names three declared states. Choose one deliberately, with reasons:
+- When a check cannot simply run clean, [the spirit of the rules](rules/SPIRIT.md#not-adopted-not-run-held-as-debt-escaped) names three declared states. Choose one deliberately, with reasons:
   - Not adopted: the rule does not apply to this codebase; a tech lead declares that, in the open. Set the check to `"not-adopted"`.
   - Adopted, engine not run: the rule binds, but its check is not a true measure of the rule's intent here, or cannot work here for a technical reason. The check is set aside; the intent is still owed, through review. Set the check to `"not-run"`. For example, `"name-off-its-casing#naming-convention": "not-run", "name-off-its-casing#filename-case": "not-run"`.
   - Debt: the rule binds and its check is sound, but the codebase has debt it cannot address right now. Keep the check's engine, so it still runs, and record the debt file by file as debt records, which `hone record-debt` writes for you (step 7a).
