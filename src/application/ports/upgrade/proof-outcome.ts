@@ -85,7 +85,7 @@ export type AfterWriting = {
   readonly replaced: readonly RepoPath[];
 };
 
-type ProofRefusalBeforeRemoval = (
+export type ProofRefusalBeforeRemoval = (
   | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
   | { readonly kind: "plan-refused"; readonly refusal: PlanRefusal }
   | { readonly kind: "version-one-run-failed"; readonly failure: ProofRunFailure }

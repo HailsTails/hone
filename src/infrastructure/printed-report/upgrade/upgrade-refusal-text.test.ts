@@ -49,6 +49,7 @@ describe("upgradeFailureOutcomeOf", () => {
     expect(outcome.text).toContain(failure.failure.detail);
     expect(outcome.text).toContain(OLD_FILE);
     expect(outcome.text).toContain("EBUSY");
+    expect(outcome.text).not.toContain("Nothing was changed.");
   });
 
   it.each<Row>([

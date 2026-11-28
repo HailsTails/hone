@@ -5,6 +5,7 @@ import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
+import type { ProofRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
 import {
   type PlannedFile,
   type ProofWrites,
@@ -339,7 +340,7 @@ describe("rolledBackWrites", () => {
 const RESTORE_FILE = absoluteRootOf("/repo/acme/rules/principles/acme.md");
 
 describe("restoredAfterRefusal", () => {
-  it("undoes each write it is given and returns the refusal with what it could not restore", () => {
+  it("keeps the failed restoration on an oracle refusal", () => {
     const undo = vi
       .fn<ProofEffects["undo"]>()
       .mockReturnValueOnce([{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }]);
@@ -349,32 +350,37 @@ describe("restoredAfterRefusal", () => {
         effects: { undo },
         writes: [{ kind: "file-created", path: RESTORE_FILE }],
         refusal: {
-          kind: "check-failed",
-          failing: ["findings (1)"],
+          kind: "oracle-failed",
+          failure: { kind: "version-one-run-failed", detail: "runner failed" },
           unrestored: [],
           removedByVersionOne: [],
         },
       }),
     ).toEqual({
-      kind: "check-failed",
-      failing: ["findings (1)"],
+      kind: "oracle-failed",
+      failure: { kind: "version-one-run-failed", detail: "runner failed" },
       unrestored: [{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }],
       removedByVersionOne: [],
     });
     expect(undo.mock.calls).toEqual([[{ writes: [{ kind: "file-created", path: RESTORE_FILE }] }]]);
   });
 
-  it("adds what it could not restore to a smoothing step's refusal", () => {
+  it("keeps earlier failed restorations when another undo fails", () => {
     const undo = vi
       .fn<ProofEffects["undo"]>()
       .mockReturnValueOnce([{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }]);
+    const earlier = {
+      written: "file-replaced",
+      path: DEBT_FILE.path,
+      detail: "EPERM",
+    } satisfies Unrestored;
     const refusal = {
       kind: "smoothing-failed",
       step: "prune-debt",
       failure: { kind: "run-failed", failure: { kind: "config-absent", repo: "/repo" } },
-      unrestored: [],
+      unrestored: [earlier],
       removedByVersionOne: [],
-    } as const;
+    } satisfies ProofRefusal;
 
     const restored = restoredAfterRefusal({
       effects: { undo },
@@ -384,7 +390,7 @@ describe("restoredAfterRefusal", () => {
 
     expect(restored).toEqual({
       ...refusal,
-      unrestored: [{ written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }],
+      unrestored: [earlier, { written: "file-created", path: RESTORE_FILE, detail: "EBUSY" }],
     });
   });
 

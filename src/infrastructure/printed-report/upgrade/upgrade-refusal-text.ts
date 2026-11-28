@@ -10,6 +10,7 @@ import type {
 } from "../../../application/ports/upgrade/plan-refusal.ts";
 import type {
   ProofRefusal,
+  ProofRefusalBeforeRemoval,
   ProofWriteFailure,
   Unrestored,
 } from "../../../application/ports/upgrade/proof-outcome.ts";
@@ -84,7 +85,7 @@ const removedByVersionOneLinesOf = (request: Placed): readonly string[] =>
 
 type RefusalChanges = Placed & { readonly unrestored: readonly Unrestored[] };
 
-const remainingChangesLines = (request: RefusalChanges): readonly string[] => [
+const mapRefusalChangesToLines = (request: RefusalChanges): readonly string[] => [
   ...removedByVersionOneLinesOf(request),
   ...(request.unrestored.length === 0
     ? []
@@ -348,23 +349,25 @@ const mapSmoothingFailureToLines = (request: {
   }
 };
 
+type RefusalWithKnownChanges = Exclude<
+  ProofRefusalBeforeRemoval,
+  { readonly kind: "version-one-project-failed" }
+>;
+
 type VersionTwoRefusal = Extract<
-  ProofRefusal,
+  RefusalWithKnownChanges,
   {
     readonly kind:
       | "team-layout-unreadable"
       | "version-two-run-failed"
       | "directives-name-no-check"
       | "smoothing-failed"
-      | "check-failed"
-      | "removal-failed";
+      | "check-failed";
   }
 >;
 
-type ProofLines = { readonly code: UpgradeFailureCode; readonly lines: readonly string[] };
-
 type VersionOneRunRefusal = Extract<
-  ProofRefusal,
+  RefusalWithKnownChanges,
   {
     readonly kind:
       | "oracle-failed"
@@ -374,118 +377,53 @@ type VersionOneRunRefusal = Extract<
   }
 >;
 
+type ProofLines = { readonly code: 1 | 3; readonly lines: readonly string[] };
+
 const mapVersionOneRunRefusalToLines = (request: {
   readonly failure: VersionOneRunRefusal;
-}): ProofLines => {
+}): readonly string[] => {
   const { failure } = request;
   switch (failure.kind) {
     case "oracle-failed":
-      return {
-        code: 1,
-        lines: [oracleLineOf({ failure: failure.failure })],
-      };
+      return [oracleLineOf({ failure: failure.failure })];
     case "plan-refused":
-      return {
-        code: 1,
-        lines: [...planLinesOf({ refusal: failure.refusal })],
-      };
+      return planLinesOf({ refusal: failure.refusal });
     case "version-one-run-failed":
-      return {
-        code: 1,
-        lines: [
-          `version 1's run failed (${failure.failure.detail}). Fix what it names, then run the upgrade again.`,
-        ],
-      };
+      return [
+        `version 1's run failed (${failure.failure.detail}). Fix what it names, then run the upgrade again.`,
+      ];
     case "version-one-uncovered":
-      return {
-        code: 1,
-        lines: [uncoveredLineOf({ clauses: failure.clauses })],
-      };
-  }
-};
-
-const mapVersionOneWriteRefusalToLines = (request: {
-  readonly failure: Exclude<ProofRefusal, VersionTwoRefusal | VersionOneRunRefusal>;
-}): ProofLines => {
-  const { failure } = request;
-  switch (failure.kind) {
-    case "version-one-project-failed":
-      return {
-        code: 1,
-        lines: [
-          `version 1's own project failed (${failure.detail}). Fix what it names, then run the upgrade again.`,
-          VERSION_ONE_PROJECT_MAY_HAVE_CHANGED,
-        ],
-      };
-    case "unplaceable-path":
-      return {
-        code: 1,
-        lines: [`${failure.file} cannot be placed in the repository. ${FAULT_IN_HONE}`],
-      };
-    case "removal-refused":
-      return {
-        code: 1,
-        lines: [
-          `the version 1 records file ${failure.failure.path} is outside ${failure.failure.root}. ${FAULT_IN_HONE}`,
-        ],
-      };
-    case "write-refused":
-      return {
-        code: 1,
-        lines: [writeLineOf({ failure: failure.failure })],
-      };
+      return [uncoveredLineOf({ clauses: failure.clauses })];
   }
 };
 
 const mapVersionTwoRefusalToLines = (request: {
   readonly failure: VersionTwoRefusal;
-}): ProofLines => {
+}): readonly string[] => {
   const { failure } = request;
   switch (failure.kind) {
     case "team-layout-unreadable":
-      return {
-        code: 1,
-        lines: [
-          `the rule set the upgrade wrote from your names file cannot be read (${loadFailureDetail({ failure: failure.failure })}). Correct what it names in the names file, then run the upgrade again.`,
-        ],
-      };
+      return [
+        `the rule set the upgrade wrote from your names file cannot be read (${loadFailureDetail({ failure: failure.failure })}). Correct what it names in the names file, then run the upgrade again.`,
+      ];
     case "version-two-run-failed":
-      return {
-        code: 1,
-        lines: [`version 2's run failed (${failure.failure.detail}). ${FAULT_IN_HONE}`],
-      };
+      return [`version 2's run failed (${failure.failure.detail}). ${FAULT_IN_HONE}`];
     case "directives-name-no-check":
-      return {
-        code: 1,
-        lines: [...directiveLinesOf({ directives: failure.directives })],
-      };
+      return directiveLinesOf({ directives: failure.directives });
     case "smoothing-failed":
-      return {
-        code: 1,
-        lines: [...mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure })],
-      };
+      return mapSmoothingFailureToLines({ step: failure.step, failure: failure.failure });
     case "check-failed":
-      return {
-        code: 1,
-        lines: [
-          "version 2's check fails on the upgraded repository:",
-          ...failure.failing.map((line) => `  ${line}`),
-          "Fix what it reports, then run the upgrade again.",
-        ],
-      };
-    case "removal-failed":
-      return {
-        code: 3,
-        lines: [
-          `version 2 is in place (written: ${failure.written.join(", ")}${failure.replaced.length === 0 ? "" : `; replaced: ${failure.replaced.join(", ")}`}), but ${removalLineOf({ failure: failure.failure })}.`,
-          "Delete these version 1 files by hand, then commit:",
-          ...failure.remaining.map((remaining) => `  ${remaining}`),
-        ],
-      };
+      return [
+        "version 2's check fails on the upgraded repository:",
+        ...failure.failing.map((line) => `  ${line}`),
+        "Fix what it reports, then run the upgrade again.",
+      ];
   }
 };
 
-const proofLinesOf = (request: { readonly failure: ProofRefusal }): ProofLines => {
+const mapRefusalReasonToLines = (request: {
+  readonly failure: RefusalWithKnownChanges;
+}): readonly string[] => {
   const { failure } = request;
   switch (failure.kind) {
     case "team-layout-unreadable":
@@ -493,16 +431,57 @@ const proofLinesOf = (request: { readonly failure: ProofRefusal }): ProofLines =
     case "directives-name-no-check":
     case "smoothing-failed":
     case "check-failed":
-    case "removal-failed":
       return mapVersionTwoRefusalToLines({ failure });
     case "oracle-failed":
     case "plan-refused":
     case "version-one-run-failed":
     case "version-one-uncovered":
       return mapVersionOneRunRefusalToLines({ failure });
-    default:
-      return mapVersionOneWriteRefusalToLines({ failure });
+    case "unplaceable-path":
+      return [`${failure.file} cannot be placed in the repository. ${FAULT_IN_HONE}`];
+    case "removal-refused":
+      return [
+        `the version 1 records file ${failure.failure.path} is outside ${failure.failure.root}. ${FAULT_IN_HONE}`,
+      ];
+    case "write-refused":
+      return [writeLineOf({ failure: failure.failure })];
   }
+};
+
+const mapPreRemovalRefusalToLines = (request: {
+  readonly failure: ProofRefusalBeforeRemoval;
+  readonly placement: RepositoryPlacement;
+}): readonly string[] => {
+  const { failure, placement } = request;
+  const changes = mapRefusalChangesToLines({ ...failure, placement });
+  if (failure.kind === "version-one-project-failed") {
+    return [
+      `version 1's own project failed (${failure.detail}). Fix what it names, then run the upgrade again.`,
+      VERSION_ONE_PROJECT_MAY_HAVE_CHANGED,
+      ...changes,
+    ];
+  }
+  return [
+    ...mapRefusalReasonToLines({ failure }),
+    ...(changes.length === 0 ? [NOTHING_CHANGED] : changes),
+  ];
+};
+
+const mapProofRefusalToLines = (request: {
+  readonly failure: ProofRefusal;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure } = request;
+  return failure.kind === "removal-failed"
+    ? {
+        code: 3,
+        lines: [
+          `version 2 is in place (written: ${failure.written.join(", ")}${failure.replaced.length === 0 ? "" : `; replaced: ${failure.replaced.join(", ")}`}), but ${removalLineOf({ failure: failure.failure })}.`,
+          "Delete these version 1 files by hand, then commit:",
+          ...failure.remaining.map((remaining) => `  ${remaining}`),
+        ],
+      }
+    : { code: 1, lines: mapPreRemovalRefusalToLines({ failure, placement: request.placement }) };
 };
 
 export const upgradeFailureOutcomeOf = (request: {
@@ -516,17 +495,9 @@ export const upgradeFailureOutcomeOf = (request: {
       text: `${["upgrade refused:", ...readFailureLinesOf({ failure }), NOTHING_CHANGED].join("\n")}\n`,
     };
   }
-  const proof = proofLinesOf({ failure });
-  const remaining =
-    failure.kind === "removal-failed" ? [] : remainingChangesLines({ ...failure, placement });
-  const effects =
-    remaining.length === 0 &&
-    failure.kind !== "removal-failed" &&
-    failure.kind !== "version-one-project-failed"
-      ? [NOTHING_CHANGED]
-      : remaining;
+  const proof = mapProofRefusalToLines({ failure, placement });
   return {
     code: proof.code,
-    text: `${[proof.code === 3 ? "upgrade incomplete:" : "upgrade refused:", ...proof.lines, ...effects].join("\n")}\n`,
+    text: `${[proof.code === 3 ? "upgrade incomplete:" : "upgrade refused:", ...proof.lines].join("\n")}\n`,
   };
 };

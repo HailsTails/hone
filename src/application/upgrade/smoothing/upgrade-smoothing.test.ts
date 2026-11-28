@@ -9,6 +9,7 @@ import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
+import type { Unrestored } from "../../ports/upgrade/proof-outcome.ts";
 import type { SmoothingCommands } from "../../ports/upgrade/smoothing-commands.ts";
 import type { ProofQueries } from "../proof-writes/proof-writes.ts";
 import { runSmoothing } from "./upgrade-smoothing.ts";
@@ -298,6 +299,36 @@ describe("runSmoothing", () => {
         removedByVersionOne: [],
       },
     });
+  });
+
+  it("keeps a failed undo when a smoothing change cannot be placed", async () => {
+    const file = repoPathOf("hone.eslint.mjs");
+    const written = absoluteRootOf("/repo/hone.config.json");
+    const unrestored = [
+      { written: "file-created", path: written, detail: "EBUSY" },
+    ] satisfies readonly Unrestored[];
+    const undo = vi.fn<ProofEffects["undo"]>().mockReturnValueOnce(unrestored);
+    const apply = vi.fn<ProofEffects["apply"]>();
+    const commands = commandsWith({
+      project: vi
+        .fn<SmoothingCommands["project"]>()
+        .mockResolvedValue(projectionWriting(file, "projection")),
+    });
+
+    const smoothed = await runSmoothing({
+      queries: queryWith({ join: vi.fn<PathPort["join"]>().mockReturnValue(file) }),
+      effects: { apply, undo },
+      commands,
+      repoRoot: absoluteRootOf("/repo"),
+      writes: [{ kind: "file-created", path: written }],
+      written: [repoPathOf("hone.config.json")],
+    });
+
+    expect(smoothed).toEqual({
+      outcome: "failed",
+      error: { kind: "unplaceable-path", file, unrestored, removedByVersionOne: [] },
+    });
+    expect(apply).not.toHaveBeenCalled();
   });
 
   it("undoes what was written, the step's attempt included, when applying a step's files stops", async () => {
