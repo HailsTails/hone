@@ -40,8 +40,19 @@ Hone's customer is a tech lead and their engineers, and the AI agents working fo
 
 - Never add, widen, remove, reorder or re-reason an exemption, carve-out, `exclude` entry or authorised location by hand. Changes come from `record-debt`, `prune-debt` and `project`.
 - `record-debt`, `prune-debt` and `project` are mechanical and run without asking. Never edit or filter what they write.
-- A new or widened authorised location needs Helen's OK.
-- Deleting or weakening a guard or policy test is Helen's call, test by test.
+- A new or widened authorised location reaches Helen only as one decision pack showing how it matches a correct use, and only once the finding is real.
+- Removing a guard that only pins prose, pages or sections needs no ask. Deleting or weakening a guard that holds a rule is Helen's call, test by test.
+- Making an existing record accurate needs no ask.
+
+## Picking up roadmap work
+
+- The roadmap is the open issues in the numbered milestones. A task is an issue with a `kind:` label; its sub-issues are its pieces.
+- Work is pulled, not assigned. An issue is free when it is open, no open issue blocks it, it has no `waits:` or `owner:` label, and no open PR closes it.
+- Take the lowest milestone first, then whatever unblocks the most. When a task has pieces, take a free piece; the task closes when its pieces do.
+- Taking an issue means adding your own `owner:` label, then opening a draft PR that says `Closes #N`. If you stop, remove the label and say why in a comment.
+- An `owner:` label set ahead of time means that lane is active and takes the issue next, because it is best done alongside its current work. Only an active lane gets one, and only for the next issue or so.
+- Work is pushed to an agent that runs in a repository workflow by adding its trigger label, `claude` for the Managed agent.
+- A question the issue doesn't answer becomes a `**ruling:**` bullet under Waits on, with the `waits: ruling` label. Leave the issue and pull another.
 
 ## Working
 
