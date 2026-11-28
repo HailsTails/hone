@@ -27,7 +27,7 @@ describe("mapPairsRunToSpeedBaselineOutcome", () => {
       allowancePercents: { coldCpu: 5, coldWall: 5, warmCpu: 5, warmWall: 5 },
       setUpMilliseconds: [12_000, 16_000, 13_000],
       leftovers: [
-        { kind: "index-unremoved", index: absoluteRootOf("/work/index"), detail: "EPERM" },
+        { kind: "directory-unremoved", directory: absoluteRootOf("/work/index"), detail: "EPERM" },
       ],
       createVerdict,
     });
@@ -37,7 +37,7 @@ describe("mapPairsRunToSpeedBaselineOutcome", () => {
         kind: "compared",
         verdict: { outcome: "pass", measures: [] },
         setUp: { medianMilliseconds: 13_000, sampleCount: 3 },
-        leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
+        leftovers: [{ kind: "directory-unremoved", directory: "/work/index", detail: "EPERM" }],
       },
       judged: [
         [

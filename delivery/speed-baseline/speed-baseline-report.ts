@@ -1,3 +1,4 @@
+import type { TemporaryDirectoryCreationFailure } from "../../src/application/ports/file-system/temporary-directory-port.ts";
 import type { PackageManifestUnresolved } from "../../src/application/ports/host/package-manifest-port.ts";
 import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
 import type { BaselineCheckoutFailure, BaselineRemovalFailure } from "./baseline-checkout-port.ts";
@@ -7,7 +8,6 @@ import type { HoneCheckFailure } from "./hone-check-port.ts";
 import type { HoneDependenciesFailure } from "./hone-dependencies-port.ts";
 import type { HoneInstallFailure } from "./hone-install-check.ts";
 import type { HonePackageFailure } from "./hone-package-port.ts";
-import type { IndexRemovalFailure } from "./index-removal-port.ts";
 import type { InstalledCommandFailure } from "./installed-command-port.ts";
 import type { LockfilesFailure } from "./lockfiles-port.ts";
 import type {
@@ -21,7 +21,6 @@ import type {
 import type { SpeedSide } from "./speed-samples.ts";
 import { mapSpeedSpreadsToText, mapSpeedVerdictToText } from "./speed-verdict-text.ts";
 import type { TargetCopyFailure, TargetCopyRemovalFailure } from "./target-copy-port.ts";
-import type { TargetIndexFailure } from "./target-index-port.ts";
 import type { TargetInstallFailure } from "./target-install-port.ts";
 import { SUPPORTED_LOCKFILES, type TargetPackageManagerFailure } from "./target-package-manager.ts";
 import type { TargetTreeFailure, TargetTreeWriteFailure } from "./target-tree-port.ts";
@@ -77,20 +76,12 @@ const mapCopyFailureToText = (request: {
 };
 
 const mapTreeFailureToText = (request: {
-  readonly failure:
-    | TargetIndexFailure
-    | IndexRemovalFailure
-    | TargetTreeFailure
-    | TargetTreeWriteFailure;
+  readonly failure: TemporaryDirectoryCreationFailure | TargetTreeFailure | TargetTreeWriteFailure;
 }): string => {
   const { failure } = request;
   switch (failure.kind) {
-    case "target-index-unread":
-      return `the target's temporary index could not be named: ${mapCommandFailureToText(failure)}`;
-    case "target-index-unresolved":
-      return `the target's temporary index ${failure.path} cannot be resolved`;
-    case "index-unremoved":
-      return `the target's temporary index ${failure.index} could not be removed: ${failure.detail}`;
+    case "temporary-directory-uncreatable":
+      return `the target's temporary index directory could not be created: ${failure.detail}`;
     case "target-tree-unread":
       return `the target's working state could not be written as a tree: ${mapCommandFailureToText(failure)}`;
     case "target-tree-unwritten":
@@ -175,9 +166,7 @@ const mapPreparationFailureToText = (request: {
     case "target-copy-unresolved":
     case "target-copy-unremoved":
       return mapCopyFailureToText({ failure });
-    case "target-index-unread":
-    case "target-index-unresolved":
-    case "index-unremoved":
+    case "temporary-directory-uncreatable":
     case "target-tree-unread":
     case "target-tree-unwritten":
       return mapTreeFailureToText({ failure });

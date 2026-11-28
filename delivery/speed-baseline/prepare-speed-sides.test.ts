@@ -51,7 +51,11 @@ describe("prepareSpeedSides", () => {
         readTargetTree: vi.fn<PrepareStages["readTargetTree"]>().mockReturnValue({
           tree: { outcome: "ok", value: "4b825dc6" },
           leftovers: [
-            { kind: "index-unremoved", index: absoluteRootOf("/work/index"), detail: "EPERM" },
+            {
+              kind: "directory-unremoved",
+              directory: absoluteRootOf("/work/index"),
+              detail: "EPERM",
+            },
           ],
         }),
         writeTarballs: vi.fn<PrepareStages["writeTarballs"]>().mockReturnValue({
@@ -82,7 +86,7 @@ describe("prepareSpeedSides", () => {
           made: { installs: ["/work/install"], checkouts: ["/work/baseline"] },
         },
       },
-      leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
+      leftovers: [{ kind: "directory-unremoved", directory: "/work/index", detail: "EPERM" }],
     });
   });
 
@@ -215,10 +219,20 @@ describe("prepareSpeedSides", () => {
         readTargetTree: vi.fn<PrepareStages["readTargetTree"]>().mockReturnValue({
           tree: {
             outcome: "failed",
-            error: { side: "target", failure: { kind: "target-index-unresolved", path: "index" } },
+            error: {
+              side: "target",
+              failure: {
+                kind: "temporary-directory-uncreatable",
+                detail: "temporary root unavailable",
+              },
+            },
           },
           leftovers: [
-            { kind: "index-unremoved", index: absoluteRootOf("/work/index"), detail: "EPERM" },
+            {
+              kind: "directory-unremoved",
+              directory: absoluteRootOf("/work/index"),
+              detail: "EPERM",
+            },
           ],
         }),
         writeTarballs,
@@ -235,9 +249,15 @@ describe("prepareSpeedSides", () => {
       preparation: {
         prepared: {
           outcome: "failed",
-          error: { side: "target", failure: { kind: "target-index-unresolved", path: "index" } },
+          error: {
+            side: "target",
+            failure: {
+              kind: "temporary-directory-uncreatable",
+              detail: "temporary root unavailable",
+            },
+          },
         },
-        leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
+        leftovers: [{ kind: "directory-unremoved", directory: "/work/index", detail: "EPERM" }],
       },
       packed: [],
     });

@@ -98,6 +98,26 @@ describe("mapSpeedBaselineOutcomeToReport", () => {
     });
   });
 
+  it("reports an index directory allocation failure without a leftover", () => {
+    const outcome: SpeedBaselineOutcome = {
+      kind: "unprepared",
+      refusal: {
+        side: "target",
+        failure: { kind: "temporary-directory-uncreatable", detail: "temporary root unavailable" },
+      },
+      leftovers: [],
+    };
+
+    const report = mapSpeedBaselineOutcomeToReport({ outcome });
+
+    expect(report).toEqual({
+      out: "",
+      error:
+        "speed-baseline: the target was not set up: the target's temporary index directory could not be created: temporary root unavailable\n",
+      exitCode: 3,
+    });
+  });
+
   it("prints each measure's spread and exits 0 when calibrating", () => {
     const outcome: SpeedBaselineOutcome = {
       kind: "calibrated",

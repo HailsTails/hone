@@ -3,9 +3,9 @@ import { createDefaultGitExecutionPort } from "../../src/infrastructure/git/git-
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
 import {
   createDefaultDirectoryPort,
-  createDefaultFileRemovalPort,
   createDefaultFileTextPort,
 } from "../../src/infrastructure/node/file-system/file-system-port.ts";
+import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createPackageManifestPort } from "../../src/infrastructure/node/modules/package-manifest-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultExecutionPort } from "../../src/infrastructure/node/process/execution-port.ts";
@@ -17,10 +17,8 @@ import { createDirectoryRemovalPort } from "./directory-removal-adapter.ts";
 import {
   createBaselineCheckoutPort,
   createTargetCopyPort,
-  createTargetIndexPort,
   createTargetTreePort,
 } from "./git-adapter.ts";
-import { createIndexRemovalPort } from "./index-removal-adapter.ts";
 import { createInstalledCommandPort } from "./installed-command-adapter.ts";
 import { createLockfilesPort } from "./lockfiles-adapter.ts";
 import { createHoneCheckPort, createSampleExecutionPort } from "./node-adapter.ts";
@@ -73,9 +71,8 @@ const ports: SpeedBaselinePorts = {
   dependencies: createHoneDependenciesPort(pnpm),
   packages: createHonePackagePort({ ...pnpm, path }),
   copies: createTargetCopyPort({ git, path }),
-  indexes: createTargetIndexPort({ git, path }),
-  indexRemovals: createIndexRemovalPort({ files: createDefaultFileRemovalPort({}) }),
-  trees: createTargetTreePort({ git, createGit: createDefaultGitExecutionPort }),
+  createIndexDirectory: createTemporaryDirectoryOutside,
+  trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
   lockfiles: createLockfilesPort({ directories }),
   installers: {
     bun: createBunTargetInstallPort({ bun: createDefaultExecutionPort({ policy: BUN_POLICY }) }),

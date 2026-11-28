@@ -4,17 +4,27 @@ import { absolutePathSchema } from "../../src/infrastructure/content-files/absol
 import { createDefaultGitExecutionPort } from "../../src/infrastructure/git/git-port.ts";
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createTemporaryDirectoryOutside } from "../../src/infrastructure/node/file-system/temporary-directory-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 import { createDirectoryRemovalPort } from "./directory-removal-adapter.ts";
-import { createBaselineCheckoutPort, createTargetCopyPort } from "./git-adapter.ts";
+import {
+  createBaselineCheckoutPort,
+  createTargetCopyPort,
+  createTargetTreePort,
+} from "./git-adapter.ts";
 import type { HoneDependenciesPort } from "./hone-dependencies-port.ts";
 import type { HonePackagePort } from "./hone-package-port.ts";
+import { readTargetTree } from "./read-target-tree.ts";
 import { removeTargetCopy } from "./remove-sample.ts";
 import { removeSpeedSides } from "./speed-baseline-cleanup.ts";
 import { writeTarballs } from "./write-tarballs.ts";
 
 const EMPTY_COMMIT = [
+  "-c",
+  "commit.gpgSign=false",
+  "-c",
+  "core.hooksPath=.git/no-hooks",
   "-c",
   "user.name=proof",
   "-c",
@@ -37,6 +47,75 @@ const fileText = createDefaultFileTextPort({});
 const directories = createDirectoryRemovalPort({ tree: createDefaultDirectoryTreePort({}) });
 
 const copies = createTargetCopyPort({ git, path });
+
+describe("readTargetTree, through real git", () => {
+  it("keeps a live private index and the former fixed index through another read", () => {
+    const made = scratch.createTemporaryDirectory({ prefix: "hone-speed-" });
+    assert(made.outcome === "ok");
+    const repo = absolutePathSchema.parse(made.value);
+    onTestFinished(() => {
+      scratch.removeTree({ path: repo });
+    });
+    git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
+    git.run({ arguments: EMPTY_COMMIT, cwd: repo });
+    const existingIndex = path.join({ segments: [repo, ".git", "hone-speed-baseline-index"] });
+    fileText.write({ path: existingIndex, text: "another run's index" });
+    const existingFolder = createTemporaryDirectoryOutside({ outside: repo });
+    assert(existingFolder.outcome === "ok");
+    onTestFinished(() => {
+      directories.remove({ directory: existingFolder.value });
+    });
+    const trees = createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort });
+    const existingTree = trees.read({ repo, indexDirectory: existingFolder.value });
+    const ports = { createIndexDirectory: createTemporaryDirectoryOutside, directories, trees };
+    const allocate = vi.spyOn(ports, "createIndexDirectory");
+
+    const target = readTargetTree({ ports, repo });
+
+    const [allocated] = allocate.mock.results;
+    assert(allocated.type === "return");
+    assert(allocated.value.outcome === "ok");
+    expect(target).toEqual({ tree: existingTree, leftovers: [] });
+    expect(target.tree.outcome).toBe("ok");
+    expect(fileText.exists({ path: allocated.value.value })).toBe("absent");
+    expect(
+      fileText.exists({ path: path.join({ segments: [existingFolder.value, "index"] }) }),
+    ).toBe("present");
+    expect(fileText.read({ path: existingIndex })).toEqual({
+      outcome: "ok",
+      value: "another run's index",
+    });
+  });
+
+  it("removes the directory and reports no leftover when HEAD has no tree", () => {
+    const made = scratch.createTemporaryDirectory({ prefix: "hone-speed-" });
+    assert(made.outcome === "ok");
+    const repo = absolutePathSchema.parse(made.value);
+    onTestFinished(() => {
+      scratch.removeTree({ path: repo });
+    });
+    const initialized = git.run({ arguments: ["init", "--quiet", "--template="], cwd: repo });
+    expect(initialized).toMatchObject({ outcome: "ok", value: { status: 0 } });
+    const ports = {
+      createIndexDirectory: createTemporaryDirectoryOutside,
+      directories,
+      trees: createTargetTreePort({ git, path, createGit: createDefaultGitExecutionPort }),
+    };
+    const allocate = vi.spyOn(ports, "createIndexDirectory");
+
+    const target = readTargetTree({ ports, repo });
+
+    const [allocated] = allocate.mock.results;
+    assert(allocated.type === "return");
+    assert(allocated.value.outcome === "ok");
+    expect(target.tree).toMatchObject({
+      outcome: "failed",
+      error: { side: "target", failure: { kind: "target-tree-unread" } },
+    });
+    expect(fileText.exists({ path: allocated.value.value })).toBe("absent");
+    expect(target.leftovers).toEqual([]);
+  });
+});
 
 describe("a worktree already at the baseline checkout's fixed place, through real git", () => {
   it("survives a refused checkout and the clean-up after it", () => {
