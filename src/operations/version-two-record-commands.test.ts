@@ -6,6 +6,7 @@ import type { RecordsEditor } from "../application/ports/records/records-editor.
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
 import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
+import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Check,
@@ -20,7 +21,9 @@ import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
+import type { CheckMeasurement } from "../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import {
   type RecordsSourceFor,
@@ -134,6 +137,22 @@ const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   misnamedRuleIds: [],
 };
 
+const PROJECTION_SETTINGS: NamedSettingsReading = {
+  available: [],
+  selection: {
+    selected: [],
+    notAdopted: [],
+    notRun: [],
+    excluded: [],
+    eslintConfigRoots: [],
+  },
+  runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
+  eslintConfigLookup: { lookup: "detected" },
+  eslintProjectionKind: "ts",
+  conventions: DEFAULT_CONVENTIONS,
+  notes: [],
+};
+
 const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
   ...inputFailingCatalogue(),
   stages: {
@@ -143,21 +162,7 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
     }),
     settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
       outcome: "ok",
-      value: {
-        available: [],
-        selection: {
-          selected: [],
-          notAdopted: [],
-          notRun: [],
-          excluded: [],
-          eslintConfigRoots: [],
-        },
-        runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
-        eslintConfigLookup: { lookup: "detected" },
-        eslintProjectionKind: "ts",
-        conventions: DEFAULT_CONVENTIONS,
-        notes: [],
-      },
+      value: PROJECTION_SETTINGS,
     }),
     records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
       outcome: "ok",
@@ -224,23 +229,20 @@ const DEBT_ON_BASKET: PlacedRecord = {
   },
 };
 
+const CAST_ADDRESS = "claimed-type#cast-expressions";
+
+const MOVED_BASKET_MEASUREMENT: CheckMeasurement = { check: CAST_ADDRESS, file: MOVED_BASKET };
+
 const CAST_IN_MOVED_BASKET_RUN: NamedEngineRun = {
   mechanism: "walker",
-  hits: [
-    {
-      check: "claimed-type#cast-expressions",
-      file: MOVED_BASKET,
-      anchor: { line: 3, column: 0 },
-      snippet: "as Basket",
-    },
-  ],
+  hits: [{ ...MOVED_BASKET_MEASUREMENT, anchor: { line: 3, column: 0 }, snippet: "as Basket" }],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "none",
-  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  coverage: { kind: "scoped", candidateFiles: [MOVED_BASKET], inapplicable: [] },
   comparedOutputs: [],
   slices: [],
-  measured: [],
+  measured: [MOVED_BASKET_MEASUREMENT],
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
@@ -256,7 +258,47 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
       ...input.stages,
       catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
         outcome: "ok",
-        value: { ...CATALOGUE, symptoms: [CLAIMED_TYPE], checks: [CAST_CHECK] },
+        value: {
+          ...CATALOGUE,
+          engines: [{ name: "walker" }],
+          symptoms: [CLAIMED_TYPE],
+          checks: [CAST_CHECK],
+        },
+      }),
+      settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          ...PROJECTION_SETTINGS,
+          selection: {
+            ...PROJECTION_SETTINGS.selection,
+            selected: [
+              {
+                address: { ruleSet: TOOL_RULE_SET, check: CAST_ADDRESS },
+                check: CAST_CHECK,
+                exceptions: "allowed",
+                binding: {
+                  address: CAST_ADDRESS,
+                  ruleSet: TOOL_RULE_SET,
+                  engine: "walker",
+                  pieceRoot: "/install/cast",
+                  settings: {},
+                  checkSettings: {},
+                  anchor: { kind: "file" },
+                  edition: editionOf("1"),
+                },
+                editions: {
+                  declared: [editionOf("1")],
+                  default: editionOf("1"),
+                  latest: editionOf("1"),
+                },
+              },
+            ],
+          },
+        },
+      }),
+      tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({
+        outcome: "ok",
+        value: { tracked: [MOVED_BASKET], declaredConfigRoots: [] },
       }),
       records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
         outcome: "ok",

@@ -489,7 +489,29 @@ const settingsWith = (request: {
 }): NamedSettingsReading => ({
   available: [],
   selection: {
-    selected: [],
+    selected: [
+      {
+        address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+        check: CAST_CHECK,
+        exceptions: "allowed",
+        binding: {
+          address: "claimed-type#cast-expressions",
+          ruleSet: TOOL_RULE_SET,
+          engine: ESLINT,
+          checkOptions: { kind: "none" },
+          pieceRoot: "/install/cast",
+          settings: {},
+          checkSettings: {},
+          anchor: { kind: "file" },
+          edition: editionOf("1"),
+        },
+        editions: {
+          declared: [editionOf("1")],
+          default: editionOf("1"),
+          latest: editionOf("1"),
+        },
+      },
+    ],
     notAdopted: [],
     notRun: [],
     excluded: [],
@@ -533,10 +555,14 @@ const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun 
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
-  coverage: { kind: "scoped", candidateFiles: [], inapplicable: [] },
+  coverage: {
+    kind: "scoped",
+    candidateFiles: request.hits.map(({ file }) => file),
+    inapplicable: [],
+  },
   comparedOutputs: [],
   slices: [],
-  measured: [],
+  measured: request.hits,
   nestedConfigurations: [],
   unprojectedFolders: [],
   misnamedRuleIds: [],
@@ -888,7 +914,13 @@ describe("versionTwoRecordDebtCommandOf", () => {
     const stages = stagesGiving({
       engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
         outcome: "ok",
-        value: [{ ...runHoldingNatives({ nativeExceptions: [INLINE_DISABLE] }), hits: [CAST] }],
+        value: [
+          {
+            ...runOf({ hits: [CAST] }),
+            nativeExceptions: [INLINE_DISABLE],
+            coverableKinds: ["config-override", "inline-disable"],
+          },
+        ],
       }),
     });
     const ran = await ranWith({
@@ -1056,9 +1088,16 @@ describe("versionTwoPruneDebtCommandOf", () => {
     records: vi
       .fn<VersionTwoStages["records"]>()
       .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
-    engines: vi
-      .fn<VersionTwoStages["engines"]>()
-      .mockResolvedValue({ outcome: "ok", value: [runOf({ hits: [] })] }),
+    engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+      outcome: "ok",
+      value: [
+        {
+          ...runOf({ hits: [] }),
+          coverage: { kind: "scoped", candidateFiles: [FILE_A], inapplicable: [] },
+          measured: [{ check: CAST.check, file: FILE_A }],
+        },
+      ],
+    }),
   });
 
   it("removes the debt the run shows stale, printing each debt removed, and deletes the emptied records file", async () => {
@@ -1077,47 +1116,11 @@ describe("versionTwoPruneDebtCommandOf", () => {
     expect(ran.written).toEqual([]);
   });
 
-  const settingsSelectingCast = (): NamedSettingsReading => {
-    const settings = settingsWith({ forfeiture: "this-run" });
-    return {
-      ...settings,
-      selection: {
-        ...settings.selection,
-        selected: [
-          {
-            address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
-            check: CAST_CHECK,
-            exceptions: "allowed",
-            binding: {
-              address: "claimed-type#cast-expressions",
-              ruleSet: TOOL_RULE_SET,
-              engine: ESLINT,
-              checkOptions: { kind: "none" },
-              pieceRoot: "/install/cast",
-              settings: {},
-              checkSettings: {},
-              anchor: { kind: "file" },
-              edition: editionOf("1"),
-            },
-            editions: {
-              declared: [editionOf("1")],
-              default: editionOf("1"),
-              latest: editionOf("1"),
-            },
-          },
-        ],
-      },
-    };
-  };
-
   const prunedWhileEngineRan = async (request: { readonly run: NamedEngineRun }) => {
     const ran = await ranWith({
       handler: versionTwoPruneDebtCommandOf,
       arguments: ["--repo", "/repo"],
       stages: stagesGiving({
-        settings: vi
-          .fn<VersionTwoStages["settings"]>()
-          .mockReturnValue({ outcome: "ok", value: settingsSelectingCast() }),
         records: vi
           .fn<VersionTwoStages["records"]>()
           .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
@@ -1174,7 +1177,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
       stages: stagesGiving({
         settings: vi
           .fn<VersionTwoStages["settings"]>()
-          .mockReturnValue({ outcome: "ok", value: settingsSelectingCast() }),
+          .mockReturnValue({ outcome: "ok", value: settingsWith({ forfeiture: "this-run" }) }),
         records: vi
           .fn<VersionTwoStages["records"]>()
           .mockReturnValue({ outcome: "ok", value: { ...NO_RECORDS, records: [HELD_DEBT] } }),
@@ -1215,7 +1218,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 
   it("removes the debt on a file the settings exclude, saying its file is excluded, as it did before engines reported what they measured", async () => {
-    const settings = settingsSelectingCast();
+    const settings = settingsWith({ forfeiture: "this-run" });
     const ran = await ranWith({
       handler: versionTwoPruneDebtCommandOf,
       arguments: ["--repo", "/repo"],
