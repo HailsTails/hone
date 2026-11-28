@@ -6,7 +6,6 @@ import type { ExecutionPort } from "../../src/infrastructure/node/process/execut
 import {
   createBaselineCheckoutPort,
   createTargetCopyPort,
-  createTargetIndexPort,
   createTargetTreePort,
 } from "./git-adapter.ts";
 
@@ -373,38 +372,6 @@ describe("createTargetCopyPort remove", () => {
   });
 });
 
-describe("createTargetIndexPort read", () => {
-  it("names the target's temporary index inside its git folder", () => {
-    const run = vi.fn<ExecutionPort<"captured", "none">["run"]>().mockReturnValue({
-      outcome: "ok",
-      value: { status: 0, stdout: "/work/large-repo/.git/hone-speed-baseline-index\n", stderr: "" },
-    });
-    const indexes = createTargetIndexPort({
-      git: { run },
-      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-    });
-
-    const index = indexes.read({ repo: absoluteRootOf("/work/large-repo") });
-
-    expect({ index, git: run.mock.calls }).toEqual({
-      index: { outcome: "ok", value: "/work/large-repo/.git/hone-speed-baseline-index" },
-      git: [
-        [
-          {
-            arguments: [
-              "rev-parse",
-              "--path-format=absolute",
-              "--git-path",
-              "hone-speed-baseline-index",
-            ],
-            cwd: "/work/large-repo",
-          },
-        ],
-      ],
-    });
-  });
-});
-
 describe("createTargetTreePort read", () => {
   it("writes the target's working state into the temporary index and reads back the tree", () => {
     const indexRun = vi
@@ -421,11 +388,12 @@ describe("createTargetTreePort read", () => {
     const trees = createTargetTreePort({
       git: { run: vi.fn<ExecutionPort<"captured", "none">["run"]>() },
       createGit,
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
     });
 
     const tree = trees.read({
       repo: absoluteRootOf("/work/large-repo"),
-      index: absoluteRootOf("/work/large-repo/.git/hone-speed-baseline-index"),
+      indexDirectory: absoluteRootOf("/tmp/hone-w12"),
     });
 
     expect({ tree, index: createGit.mock.calls, indexGit: indexRun.mock.calls }).toEqual({
@@ -433,14 +401,19 @@ describe("createTargetTreePort read", () => {
       index: [
         [
           {
-            indexFile: "/work/large-repo/.git/hone-speed-baseline-index",
+            indexFile: "/tmp/hone-w12/index",
           },
         ],
       ],
       indexGit: [
-        [{ arguments: ["read-tree", "HEAD"], cwd: "/work/large-repo" }],
-        [{ arguments: ["add", "--all"], cwd: "/work/large-repo" }],
-        [{ arguments: ["write-tree"], cwd: "/work/large-repo" }],
+        [
+          {
+            arguments: ["-c", "core.splitIndex=false", "read-tree", "HEAD"],
+            cwd: "/work/large-repo",
+          },
+        ],
+        [{ arguments: ["-c", "core.splitIndex=false", "add", "--all"], cwd: "/work/large-repo" }],
+        [{ arguments: ["-c", "core.splitIndex=false", "write-tree"], cwd: "/work/large-repo" }],
       ],
     });
   });
@@ -453,6 +426,7 @@ describe("createTargetTreePort write", () => {
       .mockReturnValue({ outcome: "ok", value: { status: 0, stdout: "", stderr: "" } });
     const trees = createTargetTreePort({
       git: { run },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
       createGit:
         vi.fn<(request: { readonly indexFile?: string }) => ExecutionPort<"captured", "none">>(),
     });

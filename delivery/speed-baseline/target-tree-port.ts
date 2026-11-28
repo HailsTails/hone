@@ -15,7 +15,7 @@ export type TargetTreeWriteFailure = {
 export type TargetTreePort = {
   readonly read: (request: {
     readonly repo: AbsolutePath;
-    readonly index: AbsolutePath;
+    readonly indexDirectory: AbsolutePath;
   }) => Result<string, TargetTreeFailure>;
   readonly write: (request: {
     readonly copy: AbsolutePath;

@@ -53,7 +53,7 @@ const writeSampleContents = (request: {
   });
   return inside.outcome === "failed"
     ? inside
-    : request.ports.temporaryFolders.write({ copy: request.copy });
+    : request.ports.temporaryFolders.write({ place: "sample", copy: request.copy });
 };
 
 export const prepareSample = (request: {

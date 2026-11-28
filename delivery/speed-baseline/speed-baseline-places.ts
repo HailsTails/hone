@@ -9,8 +9,6 @@ const TARGET_COPY_PREFIX = "hone-speed-";
 
 const SAMPLES_FOLDER = "samples";
 
-export const TARGET_INDEX_NAME = "hone-speed-baseline-index";
-
 const mapSideToInstallName = (request: { readonly side: SpeedSide }): string =>
   `${TARGET_COPY_PREFIX}${request.side}`;
 

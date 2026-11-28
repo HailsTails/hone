@@ -5,13 +5,8 @@ import type { ExecutionPort } from "../../src/infrastructure/node/process/execut
 import type { BaselineCheckoutPort } from "./baseline-checkout-port.ts";
 import type { CommandFailure } from "./command-failure.ts";
 import { mapExecutionToCommandResult } from "./command-result.ts";
-import {
-  mapCommitToCheckoutSegments,
-  mapPlaceToSegments,
-  TARGET_INDEX_NAME,
-} from "./speed-baseline-places.ts";
+import { mapCommitToCheckoutSegments, mapPlaceToSegments } from "./speed-baseline-places.ts";
 import type { TargetCopyPort } from "./target-copy-port.ts";
-import type { TargetIndexPort } from "./target-index-port.ts";
 import type { TargetTreePort } from "./target-tree-port.ts";
 
 type WorktreeFailure =
@@ -200,49 +195,36 @@ export const createTargetCopyPort = (options: {
   },
 });
 
-export const createTargetIndexPort = (options: {
-  readonly git: ExecutionPort<"captured", "none">;
-  readonly path: Pick<PathPort, "resolve">;
-}): TargetIndexPort => ({
-  read: (request) => {
-    const index = runGit({
-      git: options.git,
-      arguments: ["rev-parse", "--path-format=absolute", "--git-path", TARGET_INDEX_NAME],
-      cwd: request.repo,
-    });
-    if (index.outcome === "failed") {
-      return { outcome: "failed", error: { kind: "target-index-unread", command: index.error } };
-    }
-    const resolved = options.path.resolve({ path: index.value.trim() });
-    return resolved.outcome === "failed"
-      ? { outcome: "failed", error: { kind: "target-index-unresolved", path: index.value.trim() } }
-      : resolved;
-  },
-});
-
 const readTree = (request: {
   readonly createGit: CreateGit;
   readonly repo: AbsolutePath;
-  readonly index: AbsolutePath;
+  readonly index: string;
 }): Result<string, CommandFailure> => {
   const indexGit = request.createGit({ indexFile: request.index });
-  const head = runGit({ git: indexGit, arguments: ["read-tree", "HEAD"], cwd: request.repo });
+  const run = (arguments_: readonly string[]): Result<string, CommandFailure> =>
+    runGit({
+      git: indexGit,
+      arguments: ["-c", "core.splitIndex=false", ...arguments_],
+      cwd: request.repo,
+    });
+  const head = run(["read-tree", "HEAD"]);
   if (head.outcome === "failed") return head;
-  const added = runGit({ git: indexGit, arguments: ["add", "--all"], cwd: request.repo });
+  const added = run(["add", "--all"]);
   if (added.outcome === "failed") return added;
-  const tree = runGit({ git: indexGit, arguments: ["write-tree"], cwd: request.repo });
+  const tree = run(["write-tree"]);
   return tree.outcome === "failed" ? tree : { outcome: "ok", value: tree.value.trim() };
 };
 
 export const createTargetTreePort = (options: {
   readonly git: ExecutionPort<"captured", "none">;
   readonly createGit: CreateGit;
+  readonly path: Pick<PathPort, "join">;
 }): TargetTreePort => ({
   read: (request) => {
     const tree = readTree({
       createGit: options.createGit,
       repo: request.repo,
-      index: request.index,
+      index: options.path.join({ segments: [request.indexDirectory, "index"] }),
     });
     return tree.outcome === "failed"
       ? { outcome: "failed", error: { kind: "target-tree-unread", command: tree.error } }

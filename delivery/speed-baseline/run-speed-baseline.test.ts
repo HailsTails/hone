@@ -140,7 +140,9 @@ describe("runSpeedBaseline", () => {
               made: { installs: [], checkouts: [] },
             },
           },
-          leftovers: [{ kind: "index-unremoved", index: absoluteRootOf("/i"), detail: "EPERM" }],
+          leftovers: [
+            { kind: "directory-unremoved", directory: absoluteRootOf("/i"), detail: "EPERM" },
+          ],
         }),
         measure: vi.fn<SpeedBaselinePhases["measure"]>().mockReturnValue({
           run: {
@@ -170,7 +172,7 @@ describe("runSpeedBaseline", () => {
       kind: "unprepared",
       refusal: { side: "head", failure: { kind: "lockfile-missing" } },
       leftovers: [
-        { kind: "index-unremoved", index: "/i", detail: "EPERM" },
+        { kind: "directory-unremoved", directory: "/i", detail: "EPERM" },
         { kind: "directory-unremoved", directory: "/s", detail: "EBUSY" },
         { kind: "directory-unremoved", directory: "/b", detail: "EBUSY" },
       ],
@@ -184,7 +186,7 @@ describe("runSpeedBaseline", () => {
         error: { side: "baseline", failure: { kind: "lockfile-missing" } },
       },
       leftovers: [
-        { kind: "index-unremoved", index: absoluteRootOf("/work/index"), detail: "EPERM" },
+        { kind: "directory-unremoved", directory: absoluteRootOf("/work/index"), detail: "EPERM" },
       ],
     });
 
@@ -210,7 +212,7 @@ describe("runSpeedBaseline", () => {
       outcome: {
         kind: "unprepared",
         refusal: { side: "baseline", failure: { kind: "lockfile-missing" } },
-        leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
+        leftovers: [{ kind: "directory-unremoved", directory: "/work/index", detail: "EPERM" }],
       },
       prepared: [[{ repo: "/work/large-repo", mode: "calibrate", revision: "v2.0.0-pre.4" }]],
       measured: [],

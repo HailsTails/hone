@@ -2,6 +2,7 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import type { Result } from "../../src/domain/result.ts";
 import type { Leftover, PreparationRefusal } from "./speed-baseline-outcome.ts";
 import type { SpeedBaselinePorts } from "./speed-baseline-ports.ts";
+import type { TargetTreePort } from "./target-tree-port.ts";
 
 export type TargetTree = {
   readonly tree: Result<string, PreparationRefusal>;
@@ -9,18 +10,21 @@ export type TargetTree = {
 };
 
 export const readTargetTree = (request: {
-  readonly ports: Pick<SpeedBaselinePorts, "indexes" | "trees" | "indexRemovals">;
+  readonly ports: Pick<SpeedBaselinePorts, "temporaryFolders" | "directories"> & {
+    readonly trees: Pick<TargetTreePort, "read">;
+  };
   readonly repo: AbsolutePath;
 }): TargetTree => {
-  const index = request.ports.indexes.read({ repo: request.repo });
-  if (index.outcome === "failed") {
+  const { ports, repo } = request;
+  const directory = ports.temporaryFolders.write({ place: "target-index", outside: repo });
+  if (directory.outcome === "failed") {
     return {
-      tree: { outcome: "failed", error: { side: "target", failure: index.error } },
+      tree: { outcome: "failed", error: { side: "target", failure: directory.error } },
       leftovers: [],
     };
   }
-  const tree = request.ports.trees.read({ repo: request.repo, index: index.value });
-  const removed = request.ports.indexRemovals.remove({ index: index.value });
+  const tree = ports.trees.read({ repo, indexDirectory: directory.value });
+  const removed = ports.directories.remove({ directory: directory.value });
   return {
     tree:
       tree.outcome === "failed"

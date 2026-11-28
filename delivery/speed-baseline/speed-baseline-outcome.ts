@@ -7,7 +7,6 @@ import type { HoneCheckFailure } from "./hone-check-port.ts";
 import type { HoneDependenciesFailure } from "./hone-dependencies-port.ts";
 import type { HoneInstallFailure } from "./hone-install-check.ts";
 import type { HonePackageFailure } from "./hone-package-port.ts";
-import type { IndexRemovalFailure } from "./index-removal-port.ts";
 import type { InstalledCommandFailure } from "./installed-command-port.ts";
 import type { LockfilesFailure } from "./lockfiles-port.ts";
 import type {
@@ -19,20 +18,14 @@ import { createSpeedSpreads, type MeasureSpread } from "./speed-spread.ts";
 import { mapValuesToMedian } from "./speed-statistics.ts";
 import type { SpeedVerdict } from "./speed-verdict.ts";
 import type { TargetCopyFailure, TargetCopyRemovalFailure } from "./target-copy-port.ts";
-import type { TargetIndexFailure } from "./target-index-port.ts";
 import type { TargetInstallFailure } from "./target-install-port.ts";
 import type { TargetPackageManagerFailure } from "./target-package-manager.ts";
 import type { TargetTreeFailure, TargetTreeWriteFailure } from "./target-tree-port.ts";
 import type { TemporaryFolderFailure } from "./temporary-folder-port.ts";
 
-export type Leftover =
-  | BaselineRemovalFailure
-  | TargetCopyRemovalFailure
-  | DirectoryRemovalFailure
-  | IndexRemovalFailure;
+export type Leftover = BaselineRemovalFailure | TargetCopyRemovalFailure | DirectoryRemovalFailure;
 
 export type PreparationFailure =
-  | TargetIndexFailure
   | PackageManifestUnresolved
   | HoneInstallFailure
   | BaselineCheckoutFailure

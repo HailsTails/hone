@@ -1,70 +1,77 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
-import type { IndexRemovalPort } from "./index-removal-port.ts";
+import type { DirectoryRemovalPort } from "./directory-removal-port.ts";
 import { readTargetTree } from "./read-target-tree.ts";
-import type { TargetIndexPort } from "./target-index-port.ts";
 import type { TargetTreePort } from "./target-tree-port.ts";
+import type { TemporaryFolderPort } from "./temporary-folder-port.ts";
 
 describe("readTargetTree", () => {
-  it("writes the target's working state as one tree through a temporary index, then removes the index", () => {
-    const treesRead = vi
+  it("allocates a directory outside the target, reads its tree, and removes that directory", () => {
+    const write = vi.fn<TemporaryFolderPort["write"]>().mockReturnValue({
+      outcome: "ok",
+      value: absoluteRootOf("/tmp/hone-w12"),
+    });
+    const read = vi
       .fn<TargetTreePort["read"]>()
       .mockReturnValue({ outcome: "ok", value: "4b825dc6" });
-    const indexRemove = vi
-      .fn<IndexRemovalPort["remove"]>()
+    const remove = vi
+      .fn<DirectoryRemovalPort["remove"]>()
       .mockReturnValue({ outcome: "ok", value: null });
 
     const target = readTargetTree({
       ports: {
-        indexes: {
-          read: vi.fn<TargetIndexPort["read"]>().mockReturnValue({
-            outcome: "ok",
-            value: absoluteRootOf("/work/large-repo/.git/speed"),
-          }),
-        },
-        trees: { read: treesRead, write: vi.fn<TargetTreePort["write"]>() },
-        indexRemovals: { remove: indexRemove },
+        temporaryFolders: { write },
+        trees: { read },
+        directories: { remove },
       },
       repo: absoluteRootOf("/work/large-repo"),
     });
 
-    expect({ target, read: treesRead.mock.calls, removed: indexRemove.mock.calls }).toEqual({
+    expect({
+      target,
+      created: write.mock.calls,
+      read: read.mock.calls,
+      removed: remove.mock.calls,
+    }).toEqual({
       target: { tree: { outcome: "ok", value: "4b825dc6" }, leftovers: [] },
-      read: [[{ repo: "/work/large-repo", index: "/work/large-repo/.git/speed" }]],
-      removed: [[{ index: "/work/large-repo/.git/speed" }]],
+      created: [[{ place: "target-index", outside: "/work/large-repo" }]],
+      read: [[{ repo: "/work/large-repo", indexDirectory: "/tmp/hone-w12" }]],
+      removed: [[{ directory: "/tmp/hone-w12" }]],
     });
   });
 
-  it("still removes the index when the tree cannot be written, keeping a failed removal as a leftover", () => {
-    const indexRemove = vi.fn<IndexRemovalPort["remove"]>().mockReturnValue({
+  it("reports the directory when a tree read and its directory cleanup both fail", () => {
+    const write = vi.fn<TemporaryFolderPort["write"]>().mockReturnValue({
+      outcome: "ok",
+      value: absoluteRootOf("/tmp/hone-w12"),
+    });
+    const read = vi.fn<TargetTreePort["read"]>().mockReturnValue({
       outcome: "failed",
-      error: { kind: "index-unremoved", index: absoluteRootOf("/work/index"), detail: "EPERM" },
+      error: {
+        kind: "target-tree-unread",
+        command: { kind: "exited", status: 128, output: "fatal" },
+      },
+    });
+    const remove = vi.fn<DirectoryRemovalPort["remove"]>().mockReturnValue({
+      outcome: "failed",
+      error: {
+        kind: "directory-unremoved",
+        directory: absoluteRootOf("/tmp/hone-w12"),
+        detail: "EPERM",
+      },
     });
 
     const target = readTargetTree({
       ports: {
-        indexes: {
-          read: vi
-            .fn<TargetIndexPort["read"]>()
-            .mockReturnValue({ outcome: "ok", value: absoluteRootOf("/work/index") }),
-        },
-        trees: {
-          read: vi.fn<TargetTreePort["read"]>().mockReturnValue({
-            outcome: "failed",
-            error: {
-              kind: "target-tree-unread",
-              command: { kind: "exited", status: 128, output: "fatal" },
-            },
-          }),
-          write: vi.fn<TargetTreePort["write"]>(),
-        },
-        indexRemovals: { remove: indexRemove },
+        temporaryFolders: { write },
+        trees: { read },
+        directories: { remove },
       },
       repo: absoluteRootOf("/work/large-repo"),
     });
 
-    expect({ target, removed: indexRemove.mock.calls }).toEqual({
+    expect({ target, removed: remove.mock.calls }).toEqual({
       target: {
         tree: {
           outcome: "failed",
@@ -76,41 +83,45 @@ describe("readTargetTree", () => {
             },
           },
         },
-        leftovers: [{ kind: "index-unremoved", index: "/work/index", detail: "EPERM" }],
+        leftovers: [{ kind: "directory-unremoved", directory: "/tmp/hone-w12", detail: "EPERM" }],
       },
-      removed: [[{ index: "/work/index" }]],
+      removed: [[{ directory: "/tmp/hone-w12" }]],
     });
   });
 
-  it("reads no tree and removes nothing when the index cannot be named", () => {
-    const treesRead = vi.fn<TargetTreePort["read"]>();
+  it("reads no tree and removes nothing when allocation fails", () => {
+    const write = vi.fn<TemporaryFolderPort["write"]>().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "target-index-directory-uncreatable", detail: "temporary root unavailable" },
+    });
+    const read = vi.fn<TargetTreePort["read"]>();
+    const remove = vi.fn<DirectoryRemovalPort["remove"]>();
 
     const target = readTargetTree({
       ports: {
-        indexes: {
-          read: vi.fn<TargetIndexPort["read"]>().mockReturnValue({
-            outcome: "failed",
-            error: { kind: "target-index-unresolved", path: "relative/index" },
-          }),
-        },
-        trees: { read: treesRead, write: vi.fn<TargetTreePort["write"]>() },
-        indexRemovals: { remove: vi.fn<IndexRemovalPort["remove"]>() },
+        temporaryFolders: { write },
+        trees: { read },
+        directories: { remove },
       },
       repo: absoluteRootOf("/work/large-repo"),
     });
 
-    expect({ target, read: treesRead.mock.calls }).toEqual({
+    expect({ target, read: read.mock.calls, removed: remove.mock.calls }).toEqual({
       target: {
         tree: {
           outcome: "failed",
           error: {
             side: "target",
-            failure: { kind: "target-index-unresolved", path: "relative/index" },
+            failure: {
+              kind: "target-index-directory-uncreatable",
+              detail: "temporary root unavailable",
+            },
           },
         },
         leftovers: [],
       },
       read: [],
+      removed: [],
     });
   });
 });
